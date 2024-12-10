@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{.Name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Name}}
+    spec:
+      serviceAccountName: {{.Namespace}}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: eks.amazonaws.com/nodegroup
+                    operator: In
+                    values:
+                      - crestal-prod-ng
+      containers:
+        - name: {{.Name}}
+          image: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:latest
+          imagePullPolicy: Always
+          env:
+            - name: CDP_API_KEY_NAME
+              value: {{.CdpApiKeyName}}
+            - name: CDP_API_KEY_PRIVATE_KEY
+              value: {{.CdpApiKeyPrivateKey}}
+            - name: OPENAI_API_KEY
+              value: {{.OpenaiApiKey}}
+            - name: NETWORK_ID
+              value: {{.NetworkId}}
+          resources:
+            limits:
+              cpu: "0.2"
+              memory: "128Mi"
+            requests:
+              cpu: "0.1"
+              memory: "32Mi"
