@@ -2,7 +2,7 @@ import sys
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 
@@ -28,9 +28,8 @@ app = FastAPI(lifespan=lifespan)
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/chat", response_class=PlainTextResponse)
-async def chat(q: str = Query(None, description="Query string")):
-    print(executor)
+@app.get("/{name}/chat", response_class=PlainTextResponse)
+async def chat(name: str = Path(..., description="Name parameter"), q: str = Query(None, description="Query string")):
     # Run agent with the user's input in chat mode
     resp = []
     for chunk in executor.stream(
