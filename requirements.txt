@@ -92,3 +92,6 @@ uvicorn==0.32.1
 web3==7.6.0
 websockets==13.1
 yarl==1.18.3
+
+botocore~=1.35.81
+aws_secretsmanager_caching~=1.1.3

@@ -51,7 +51,6 @@ def initialize_agent():
     # Store buffered conversation history in memory.
     memory = MemorySaver()
 
-    config = {"configurable": {"thread_id": "CDP Agentkit Chatbot Example!"}}
 
     prompt = os.getenv("PROMPT", (
         "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
@@ -71,4 +70,4 @@ def initialize_agent():
         tools=tools,
         checkpointer=memory,
         state_modifier=prompt,
-    ), config
+    )
