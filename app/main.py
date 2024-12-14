@@ -1,23 +1,20 @@
+import logging
 import sys
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query, Path
+from fastapi import FastAPI, Query, Path, Request
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 
 from app.ai import initialize_agent
 
-executor = None
-config = None
-
+executors = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the ML model
-    global executor,config
-    executor,config = initialize_agent()
-    print(executor)
+    logging.info("API server start")
     yield
     # Clean up
     print("Cleaning up and shutdown...")
@@ -28,9 +25,19 @@ app = FastAPI(lifespan=lifespan)
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/{name}/chat", response_class=PlainTextResponse)
-async def chat(name: str = Path(..., description="Name parameter"), q: str = Query(None, description="Query string")):
+@app.get("/{iid}/chat", response_class=PlainTextResponse)
+async def chat(
+        request: Request,
+        iid: str = Path(..., description="instance id"),
+        q: str = Query(None, description="Query string")):
     # Run agent with the user's input in chat mode
+    # get thread_id from request ip
+    thread_id = request.client.host
+    config = {"configurable": {"thread_id": thread_id}}
+    logging.debug(f"thread id: {thread_id}")
+    if iid not in executors:
+        executors[iid] = initialize_agent()
+    executor = executors[iid]
     resp = []
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=q)]}, config
