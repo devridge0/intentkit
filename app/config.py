@@ -18,7 +18,7 @@ class Config:
         self.env = os.getenv("ENV", "local")
         self.release = os.getenv("RELEASE", "local")
         # load secret map from aws secrets manager
-        secret_name = 'intentkit/' + config.env
+        secret_name = 'intentkit/' + self.env
         if self.env == "testnet-dev":
             self.secrets = load_from_aws(secret_name)
             self.db = load_from_aws('rds/crestal-chat-test/rw')
@@ -34,7 +34,7 @@ class Config:
                 "port": os.getenv("DB_PORT"),
                 "dbname": os.getenv("DB_NAME"),
             }
-        if not self.db.host:
+        if "host" not in self.db:
             raise ValueError("db config is not set")
         # this part can be load from env or aws secrets manager
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")

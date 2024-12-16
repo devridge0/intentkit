@@ -7,15 +7,17 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from twitter_langchain import TwitterApiWrapper, TwitterToolkit
 
+from app.db import Agent
+
 # Configure a file to persist the agent's CDP MPC Wallet Data.
 wallet_data_file = "../wallet_data.txt"
 
 
-
-def initialize_agent():
+def initialize_agent(agent):
     """Initialize the agent with CDP Agentkit."""
+    print(agent)
     # Initialize LLM.
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model=agent.model)
 
     wallet_data = None
 

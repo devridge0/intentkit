@@ -1,19 +1,29 @@
 import logging
 import sys
 import time
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query, Path, Request
+from fastapi import FastAPI, Query, Path, Request, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
+from sqlalchemy.orm import Session
 
 from app.ai import initialize_agent
+from app.config import config
+from app.db import init_db,get_db,Agent
 
+if config.env == "local":
+    # Set up logging configuration
+    logging.basicConfig()
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+
+# Global variable to cache all agent executors
 executors = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load the ML model
+    init_db(**config.db)
     logging.info("API server start")
     yield
     # Clean up
@@ -25,19 +35,24 @@ app = FastAPI(lifespan=lifespan)
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/{iid}/chat", response_class=PlainTextResponse)
+@app.get("/{aid}/chat", response_class=PlainTextResponse)
 async def chat(
         request: Request,
-        iid: str = Path(..., description="instance id"),
-        q: str = Query(None, description="Query string")):
+        aid: str = Path(..., description="instance id"),
+        q: str = Query(None, description="Query string"),
+        db: Session = Depends(get_db)):
     # Run agent with the user's input in chat mode
     # get thread_id from request ip
     thread_id = request.client.host
     config = {"configurable": {"thread_id": thread_id}}
     logging.debug(f"thread id: {thread_id}")
-    if iid not in executors:
-        executors[iid] = initialize_agent()
-    executor = executors[iid]
+    print(aid)
+    if aid not in executors:
+        agent = db.query(Agent).filter(Agent.id == aid).first()
+        if agent is None:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        executors[aid] = initialize_agent(agent)
+    executor = executors[aid]
     resp = []
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=q)]}, config
