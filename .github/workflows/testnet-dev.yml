@@ -1,0 +1,87 @@
+name: Build Docker Image and Deploy to TestnetDev
+
+on:
+  push:
+    branches: [ testnet-dev ]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      -
+        name: Get commit message
+        id: commit_message
+        uses: sergeysova/jq-action@v2
+        with:
+          cmd: echo -n "${{github.event.head_commit.message}}" | jq -Rsa . | sed -e 's/^"//' -e 's/"$//'
+      -
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-west-1
+          role-to-assume: arn:aws:iam::058264535500:role/GithubActions
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      -
+        name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      -
+        name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            RELEASE=${{ github.run_number }}
+            GH_CI_USER=${{ secrets.GH_CI_USER }}
+            GH_CI_TOKEN=${{ secrets.GH_CI_TOKEN }}
+          push: true
+          tags: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }},058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      -
+        name: Post to a Slack channel
+        if: ${{ success() }}
+        id: slack-success
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: 'C0786MHAL8J'
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "`${{ github.repository }}`\n*Branch*: `${{ github.ref_name }}`\n*Build result*: (${{ github.run_number }}) *${{ job.status }}* 🟩\n*Changes*:\n${{ steps.commit_message.outputs.value }}\n*Diff*: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      -
+        name: Post to a Slack channel
+        if: ${{ failure() }}
+        id: slack-failure
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: 'C0786MHAL8J'
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "`${{ github.repository }}`\n*Branch*: `${{ github.ref_name }}`\n*Build result*: (${{ github.run_number }}) *${{ job.status }}* 🟥\n*Build Log*: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n*Changes*:\n${{ steps.commit_message.outputs.value }}\n*Diff*: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
