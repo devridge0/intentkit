@@ -1,13 +1,10 @@
 import logging
-import sys
-import time
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, Path, Request, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 
 from app.ai import initialize_agent
 from app.config import config
@@ -19,14 +16,15 @@ if config.env == "local":
     logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 # Global variable to cache all agent executors
-executors = {}
+agents = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # this will run before the API server start
     init_db(**config.db)
     logging.info("API server start")
     yield
-    # Clean up
+    # Clean up will run after the API server shutdown
     print("Cleaning up and shutdown...")
 
 app = FastAPI(lifespan=lifespan)
@@ -47,12 +45,12 @@ async def chat(
     config = {"configurable": {"thread_id": thread_id}}
     logging.debug(f"thread id: {thread_id}")
     print(aid)
-    if aid not in executors:
-        agent = db.query(Agent).filter(Agent.id == aid).first()
+    if aid not in agents:
+        agent = db.exec(select(Agent).filter(Agent.id == aid)).first()
         if agent is None:
             raise HTTPException(status_code=404, detail="Agent not found")
-        executors[aid] = initialize_agent(agent)
-    executor = executors[aid]
+        agents[aid] = initialize_agent(agent.id)
+    executor = agents[aid]
     resp = []
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=q)]}, config
@@ -65,35 +63,8 @@ async def chat(
     print("\n".join(resp))
     return "\n".join(resp)
 
-# Tmp unused
-# Autonomous Mode
-def run_autonomous_mode(agent_executor, config, interval=180):
-    """Run the agent autonomously with specified intervals."""
-    print("Starting autonomous mode...")
-    while True:
-        try:
-            # Provide instructions autonomously
-            thought = (
-                "Get account mentions for the currently authenticated Twitter (X) user context."
-                "If there is no mention, post a new tweet on Twitter,"
-                "saying you are waiting for mentions, every 3 minutes you will reply one person."
-                "If you have a mention, pickup the first one, reply to the mention."
-            )
-
-            # Run agent in autonomous mode
-            for chunk in agent_executor.stream(
-                {"messages": [HumanMessage(content=thought)]}, config
-            ):
-                if "agent" in chunk:
-                    print(chunk["agent"]["messages"][0].content)
-                elif "tools" in chunk:
-                    print(chunk["tools"]["messages"][0].content)
-                print("-------------------")
-
-            # Wait before the next action
-            time.sleep(interval)
-
-        except KeyboardInterrupt:
-            print("Goodbye Agent!")
-            sys.exit(0)
-
+@app.post("/create", status_code=201)
+def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
+    """Create a new agent, if it exists, just update it"""
+    agent.create_or_update(db)
+    return agent
