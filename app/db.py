@@ -1,41 +1,54 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlmodel import SQLModel, Field, Session, create_engine, select
+from typing import List, Optional
 
-SessionLocal = None
+engine = None
+
 
 def init_db(
-    host: str,
-    username: str,
-    password: str,
-    dbname: str,
-    port: str = '5432'):
-    global SessionLocal
-    if SessionLocal is not None:
-        return
-    engine = create_engine(f'postgresql://{username}:{password}@{host}:{port}/{dbname}')
-    SessionLocal = sessionmaker(bind=engine)
-    Base.metadata.create_all(engine)
+        host: str,
+        username: str,
+        password: str,
+        dbname: str,
+        port: str = '5432'
+) -> None:
+    global engine
+    if engine is None:
+        engine = create_engine(f'postgresql://{username}:{password}@{host}:{port}/{dbname}')
+    SQLModel.metadata.create_all(engine)
+
 
 def get_db() -> Session:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Define the base model
-class Base(DeclarativeBase):
-    pass
+    with Session(engine) as session:
+        yield session
 
 
-class Agent(Base):
+class Agent(SQLModel, table=True):
     __tablename__ = 'agents'
 
-    id = Column(String, primary_key=True)
-    name = Column(String)
-    model = Column(String, default='gpt-4o-mini')
-    prompt = Column(String)
-    wallet_data = Column(String)
-    tools = Column(JSON)
+    id: str = Field(primary_key=True)
+    name: Optional[str] = Field(default=None)
+    model: str = Field(default='gpt-4o-mini')
+    prompt: str
+    wallet_data: str
+    cdp_enabled: bool = Field(default=False)
+    cdp_skills: List[str] = Field(sa_column=Column(JSONB, nullable=True))
+    twitter_enabled: bool = Field(default=False)
+    twitter_config: dict = Field(sa_column=Column(JSONB, nullable=True))
+    twitter_skills: List[str] = Field(sa_column=Column(ARRAY(String)))
+    common_skills: List[str] = Field(sa_column=Column(ARRAY(String)))
+
+    def create_or_update(self, db: Session) -> None:
+        """Create the agent if not exists, otherwise update it."""
+        existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
+        if existing_agent:
+            # Update existing agent
+            for field in self.model_fields:
+                if field != 'id':  # Skip the primary key
+                    setattr(existing_agent, field, getattr(self, field))
+            db.add(existing_agent)
+        else:
+            # Create new agent
+            db.add(self)
+        db.commit()
