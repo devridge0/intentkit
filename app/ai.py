@@ -48,6 +48,13 @@ def initialize_agent(aid):
 
         agentkit = CdpAgentkitWrapper(**values)
 
+        # save the wallet after first create
+        if not agent.cdp_wallet_data:
+            agent.cdp_wallet_data = agentkit.export_wallet()
+            db.add(agent)
+            db.commit()
+
+
         # Initialize CDP Agentkit Toolkit and get tools.
         cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
         tools.extend(cdp_toolkit.get_tools())
