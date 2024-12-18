@@ -3,6 +3,7 @@ from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import List, Optional
+from urllib.parse import quote_plus
 
 conn_str = None
 conn = None
@@ -19,7 +20,7 @@ def init_db(
     """Initialize the database."""
     global conn_str
     if conn_str is None:
-        conn_str = f'postgresql://{username}:{password}@{host}:{port}/{dbname}'
+        conn_str = f'postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}'
     # init sqlalchemy engine and create its tables
     global engine
     if engine is None:
