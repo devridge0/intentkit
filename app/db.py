@@ -28,16 +28,26 @@ class Agent(SQLModel, table=True):
     __tablename__ = 'agents'
 
     id: str = Field(primary_key=True)
+    # AI part
     name: Optional[str] = Field(default=None)
     model: str = Field(default='gpt-4o-mini')
-    prompt: str
-    wallet_data: str
+    prompt: Optional[str]
+    # auto thought mode
+    thought_enabled: bool
+    thought_content: Optional[str]
+    thought_minutes: Optional[int]
+    # if cdp_enabled, will load cdp skills
+    # if the cdp_skills is empty, will load all
     cdp_enabled: bool = Field(default=False)
-    cdp_skills: List[str] = Field(sa_column=Column(JSONB, nullable=True))
+    cdp_skills: Optional[List[str]] = Field(sa_column=Column(JSONB, nullable=True))
+    cdp_wallet_data: Optional[str]
+    cdp_network_id: Optional[str]
+    # if twitter_enabled, twitter_config will be checked
     twitter_enabled: bool = Field(default=False)
-    twitter_config: dict = Field(sa_column=Column(JSONB, nullable=True))
-    twitter_skills: List[str] = Field(sa_column=Column(ARRAY(String)))
-    common_skills: List[str] = Field(sa_column=Column(ARRAY(String)))
+    twitter_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
+    twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    # skills not require config
+    common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
 
     def create_or_update(self, db: Session) -> None:
         """Create the agent if not exists, otherwise update it."""

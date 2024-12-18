@@ -1,3 +1,4 @@
+import logging
 import os
 
 from cdp_langchain.agent_toolkits import CdpToolkit
@@ -26,10 +27,10 @@ def initialize_agent(aid):
         raise HTTPException(status_code=404, detail="Agent not found")
     except SQLAlchemyError as e:
         # Handle other SQLAlchemy-related errors
-        print(e)
+        logging.error(e)
         raise HTTPException(status_code=500, detail=str(e))
     # Initialize LLM.
-    llm = ChatOpenAI(model=agent.model)
+    llm = ChatOpenAI(model_name=agent.model,openai_api_key=config.openai_api_key)
 
     # Load tools
     tools: list[BaseTool] = []
@@ -39,11 +40,11 @@ def initialize_agent(aid):
         values = {
             "cdp_api_key_name": config.cdp_api_key_name,
             "cdp_api_key_private_key": config.cdp_api_key_private_key,
-            "network_id": config.network_id,
+            "network_id": getattr(agent,"cdp_network_id","base-sepolia"),
         }
-        if agent.wallet_data:
+        if agent.cdp_wallet_data:
             # If there is a persisted agentic wallet, load it and pass to the CDP Agentkit Wrapper.
-            values = {"cdp_wallet_data": agent.wallet_data}
+            values = {"cdp_wallet_data": agent.cdp_wallet_data}
 
         agentkit = CdpAgentkitWrapper(**values)
 
@@ -69,7 +70,7 @@ def initialize_agent(aid):
 
     if agent.prompt:
         prompt += agent.prompt
-    else:
+    elif agent.cdp_enabled:
         prompt += (
             "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
             "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
