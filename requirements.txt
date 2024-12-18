@@ -48,6 +48,7 @@ jsonpointer==3.0.0
 langchain==0.3.10
 langchain-core==0.3.22
 langchain-openai==0.2.11
+langchain-postgres==0.0.12
 langchain-text-splitters==0.3.2
 langgraph==0.2.56
 langgraph-checkpoint==2.0.8
@@ -55,13 +56,16 @@ langgraph-sdk==0.1.43
 langsmith==0.1.147
 msgpack==1.1.0
 multidict==6.1.0
-numpy==2.2.0
+numpy==1.26.4
 oauthlib==3.2.2
 openai==1.57.0
 orjson==3.10.12
 packaging==24.2
 parsimonious==0.10.0
+pgvector==0.2.5
 propcache==0.2.1
+psycopg==3.2.3
+psycopg-pool==3.2.4
 psycopg2==2.9.10
 py-sr25519-bindings==0.2.1
 pycparser==2.22
