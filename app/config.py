@@ -34,8 +34,11 @@ class Config:
                 "port": os.getenv("DB_PORT"),
                 "dbname": os.getenv("DB_NAME"),
             }
+        # format the db config
+        self.db['port'] = str(self.db['port'])
         if "host" not in self.db:
             raise ValueError("db config is not set")
+        self.db = {k: v for k, v in self.db.items() if k in ["username", "password", "host", "dbname", "port"]}
         # this part can be load from env or aws secrets manager
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
