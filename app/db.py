@@ -1,8 +1,11 @@
+import psycopg
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import List, Optional
 
+conn_str = None
+conn = None
 engine = None
 
 
@@ -13,16 +16,28 @@ def init_db(
         dbname: str,
         port: str = '5432'
 ) -> None:
+    """Initialize the database."""
+    global conn_str
+    if conn_str is None:
+        conn_str = f'postgresql://{username}:{password}@{host}:{port}/{dbname}'
+    # init sqlalchemy engine and create its tables
     global engine
     if engine is None:
-        engine = create_engine(f'postgresql://{username}:{password}@{host}:{port}/{dbname}')
+        engine = create_engine(conn_str)
     SQLModel.metadata.create_all(engine)
-
+    global conn
+    if conn is None:
+        conn = psycopg.connect(conn_str,autocommit=True)
 
 def get_db() -> Session:
     with Session(engine) as session:
         yield session
 
+def get_coon_str():
+    return conn_str
+
+def get_coon():
+    return conn
 
 class Agent(SQLModel, table=True):
     __tablename__ = 'agents'

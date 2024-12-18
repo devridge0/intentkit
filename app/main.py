@@ -34,14 +34,14 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.get("/{aid}/chat", response_class=PlainTextResponse)
-async def chat(
+def chat(
         request: Request,
         aid: str = Path(..., description="instance id"),
         q: str = Query(None, description="Query string"),
         db: Session = Depends(get_db)):
     # Run agent with the user's input in chat mode
     # get thread_id from request ip
-    thread_id = request.client.host
+    thread_id = f'{aid}-{request.client.host}'
     config = {"configurable": {"thread_id": thread_id}}
     logging.debug(f"thread id: {thread_id}")
     print(aid)

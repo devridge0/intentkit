@@ -1,11 +1,11 @@
 import logging
-import os
 
+from anyio.lowlevel import checkpoint
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.prebuilt import create_react_agent
 from twitter_langchain import TwitterApiWrapper, TwitterToolkit
 
@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 
 from app.config import config
-from app.db import Agent, get_db
+from app.db import Agent, get_db, get_coon
 
 def initialize_agent(aid):
     """Initialize the agent with CDP Agentkit."""
@@ -61,7 +61,8 @@ def initialize_agent(aid):
         pass
 
     # Store buffered conversation history in memory.
-    memory = MemorySaver()
+    memory = PostgresSaver(get_coon())
+    memory.setup()
 
     prompt = ""
     if agent.name:
