@@ -48,7 +48,7 @@ class Agent(SQLModel, table=True):
     model: str = Field(default='gpt-4o-mini')
     prompt: Optional[str]
     # auto thought mode
-    thought_enabled: bool
+    thought_enabled: bool = Field(default=False)
     thought_content: Optional[str]
     thought_minutes: Optional[int]
     # if cdp_enabled, will load cdp skills
@@ -70,7 +70,7 @@ class Agent(SQLModel, table=True):
         if existing_agent:
             # Update existing agent
             for field in self.model_fields:
-                if field != 'id':  # Skip the primary key
+                if field != 'id' and field != 'cdp_wallet_data':  # Skip the primary key
                     setattr(existing_agent, field, getattr(self, field))
             db.add(existing_agent)
         else:

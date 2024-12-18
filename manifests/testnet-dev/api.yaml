@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intent-api
+  namespace: testnet-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: intent-api
+  template:
+    metadata:
+      labels:
+        app: intent-api
+    spec:
+      serviceAccountName: testnet-dev
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: eks.amazonaws.com/nodegroup
+                    operator: In
+                    values:
+                      - crestal-prod-ng
+      containers:
+        - name: intent-api
+          image: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
+          imagePullPolicy: Always
+          env:
+            - name: ENV
+              value: testnet-dev
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1024Mi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intent-api
+  namespace: testnet-dev
+spec:
+  selector:
+    app: intent-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: testnet-dev
+  name: gateway-nodes
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: ai-testnet-dev
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+spec:
+  ingressClassName: alb
+  rules:
+    - host: ai.service.crestal.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: intent-api
+                port:
+                  number: 80

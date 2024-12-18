@@ -63,8 +63,13 @@ def chat(
     print("\n".join(resp))
     return "\n".join(resp)
 
-@app.post("/create", status_code=201)
+@app.post("/agents", status_code=201)
 def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     """Create a new agent, if it exists, just update it"""
+    if not all(c.islower() or c.isdigit() or c == '-' for c in agent.id):
+        raise HTTPException(status_code=400, detail="Agent ID must contain only lowercase letters, numbers, and hyphens.")
     agent.create_or_update(db)
-    return agent
+    # Get the latest agent from the database
+    latest_agent = db.exec(select(Agent).filter(Agent.id == agent.id)).one()
+    latest_agent.cdp_wallet_data = "forbidden"
+    return latest_agent
