@@ -11,8 +11,6 @@ from app.config import config
 
 logger = logging.getLogger(__name__)
 
-logger.info("Slack token: %s", config.slack_token)
-
 def send_slack_message(
     message: str,
     blocks: Optional[list] = None,

@@ -5,6 +5,7 @@ import logging
 
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+from utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,9 @@ class Config:
         self.slack_token = self.load("SLACK_TOKEN")
         logger.info(f"slack token: {self.slack_token}")
         self.slack_channel = self.load("SLACK_CHANNEL")
+        # Now we know the env, set up logging
+        setup_logging(self.env, self.debug)
+        logger.info("config loaded")
     def load(self, key):
         """Load a secret from the secrets map or env"""
         return self.secrets.get(key, os.getenv(key))
