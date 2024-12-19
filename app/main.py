@@ -1,22 +1,22 @@
 import logging
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, Path, Request, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 from sqlmodel import Session, select
+import json
 
 from app.ai import initialize_agent
 from app.config import config
 from app.db import init_db,get_db,Agent
 from app.slack import send_slack_message
+from utils.logging import setup_logging
 
 # init logger
-
-if config.env == "local":
-    # Set up logging configuration
-    logging.basicConfig()
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+setup_logging(config.env, config.debug)
 
 # Global variable to cache all agent executors
 agents = {}
@@ -51,6 +51,7 @@ def chat(
         agents[aid] = initialize_agent(aid)
     executor = agents[aid]
     resp = []
+    start = time.perf_counter()
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=q)]}, config
     ):
@@ -59,7 +60,9 @@ def chat(
         elif "tools" in chunk:
             resp.append(chunk["tools"]["messages"][0].content)
         resp.append("-------------------")
-    print("\n".join(resp))
+    end = time.perf_counter()
+    resp.append(f"Time cost: {end - start:.3f} seconds")
+    logging.info("\n".join(resp))
     send_slack_message("test:\n"+"\n".join(resp))
     return "\n".join(resp)
 
