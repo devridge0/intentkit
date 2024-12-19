@@ -73,6 +73,10 @@ def initialize_agent(aid):
     except Exception:
         pass
 
+    # log all tools
+    for tool in tools:
+        logging.info(f"[{aid}] loaded tool: {tool.name}")
+
     # Store buffered conversation history in memory.
     memory = PostgresSaver(get_coon())
     memory.setup()
