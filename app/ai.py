@@ -15,6 +15,7 @@ from fastapi import HTTPException
 
 from app.config import config
 from app.db import Agent, get_db, get_coon
+from skill.crestal import get_crestal_skill
 
 def initialize_agent(aid):
     """Initialize the agent with CDP Agentkit."""
@@ -58,6 +59,9 @@ def initialize_agent(aid):
         # Initialize CDP Agentkit Toolkit and get tools.
         cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
         tools.extend(cdp_toolkit.get_tools())
+
+        # Crestal skills
+        tools.append(get_crestal_skill("search_web3_services"))
 
     # Initialize CDP Agentkit Twitter Langchain
     try:
