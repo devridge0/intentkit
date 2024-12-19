@@ -44,7 +44,7 @@ def initialize_agent(aid):
         }
         if agent.cdp_wallet_data:
             # If there is a persisted agentic wallet, load it and pass to the CDP Agentkit Wrapper.
-            values = {"cdp_wallet_data": agent.cdp_wallet_data}
+            values["cdp_wallet_data"] = agent.cdp_wallet_data
 
         agentkit = CdpAgentkitWrapper(**values)
 
