@@ -6,12 +6,12 @@ from fastapi import FastAPI, Query, Path, Request, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 from sqlmodel import Session, select
-import json
 
 from app.ai import initialize_agent
 from app.config import config
 from app.db import init_db,get_db,Agent
 from app.slack import send_slack_message
+from app.middleware import HealthCheckFilter
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -29,6 +29,8 @@ async def lifespan(app: FastAPI):
     print("Cleaning up and shutdown...")
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(HealthCheckFilter)
 
 @app.get("/health")
 async def health_check():
