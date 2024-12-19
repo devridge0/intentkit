@@ -61,7 +61,9 @@ def initialize_agent(aid):
         tools.extend(cdp_toolkit.get_tools())
 
         # Crestal skills
-        tools.append(get_crestal_skill("search_web3_services"))
+        if agent.common_skills:
+            for skill in agent.common_skills:
+                tools.append(get_crestal_skill(skill))
 
     # Initialize CDP Agentkit Twitter Langchain
     try:
