@@ -9,6 +9,9 @@ from sqlmodel import Session, select
 from app.ai import initialize_agent
 from app.config import config
 from app.db import init_db,get_db,Agent
+from app.slack import send_slack_message
+
+# init logger
 
 if config.env == "local":
     # Set up logging configuration
@@ -44,12 +47,8 @@ def chat(
     thread_id = f'{aid}-{request.client.host}'
     config = {"configurable": {"thread_id": thread_id}}
     logging.debug(f"thread id: {thread_id}")
-    print(aid)
     if aid not in agents:
-        agent = db.exec(select(Agent).filter(Agent.id == aid)).first()
-        if agent is None:
-            raise HTTPException(status_code=404, detail="Agent not found")
-        agents[aid] = initialize_agent(agent.id)
+        agents[aid] = initialize_agent(aid)
     executor = agents[aid]
     resp = []
     for chunk in executor.stream(
@@ -61,6 +60,7 @@ def chat(
             resp.append(chunk["tools"]["messages"][0].content)
         resp.append("-------------------")
     print("\n".join(resp))
+    send_slack_message("test:\n"+"\n".join(resp))
     return "\n".join(resp)
 
 @app.post("/agents", status_code=201)

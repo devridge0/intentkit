@@ -1,9 +1,12 @@
 # app/config.py
 import json
 import os
+import logging
 
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+
+logger = logging.getLogger(__name__)
 
 def load_from_aws(name):
     client = botocore.session.get_session().create_client('secretsmanager')
@@ -40,9 +43,13 @@ class Config:
             raise ValueError("db config is not set")
         self.db = {k: v for k, v in self.db.items() if k in ["username", "password", "host", "dbname", "port"]}
         # this part can be load from env or aws secrets manager
+        self.debug = self.load("DEBUG") == 'true'
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         self.openai_api_key = self.load("OPENAI_API_KEY")
+        self.slack_token = self.load("SLACK_TOKEN")
+        logger.info(f"slack token: {self.slack_token}")
+        self.slack_channel = self.load("SLACK_CHANNEL")
     def load(self, key):
         """Load a secret from the secrets map or env"""
         return self.secrets.get(key, os.getenv(key))

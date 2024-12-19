@@ -1,9 +1,11 @@
 import psycopg
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import List, Optional
 from urllib.parse import quote_plus
+
+from app.slack import send_slack_message
 
 conn_str = None
 conn = None
@@ -77,4 +79,11 @@ class Agent(SQLModel, table=True):
         else:
             # Create new agent
             db.add(self)
+            # Count the total agents
+            total_agents = db.exec(select(func.count()).select_from(Agent)).one()
+            # Send a message to Slack
+            send_slack_message(f"New agent created: {self.id}",attachments=[{
+                "text": f"Total agents: {total_agents}",
+                "color": "good"
+            }])
         db.commit()
