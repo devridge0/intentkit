@@ -11,7 +11,6 @@ from app.ai import initialize_agent
 from app.config import config
 from app.db import init_db,get_db,Agent
 from app.slack import send_slack_message
-from app.middleware import HealthCheckFilter
 from utils.logging import JsonFormatter
 
 # init logger
@@ -39,9 +38,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.add_middleware(HealthCheckFilter)
-
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
 async def health_check():
     return {"status": "healthy"}
 
