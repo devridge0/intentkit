@@ -63,13 +63,13 @@ def chat(
     ):
         if "agent" in chunk:
             resp.append(chunk["agent"]["messages"][0].content)
+            resp.append(f"------------------- Agent time cost: {time.perf_counter() - start:.3f} seconds")
         elif "tools" in chunk:
             resp.append(chunk["tools"]["messages"][0].content)
-        resp.append("-------------------")
+            resp.append(f"------------------- Tools time cost: {time.perf_counter() - start:.3f} seconds")
     end = time.perf_counter()
-    resp.append(f"Time cost: {end - start:.3f} seconds")
+    resp.append(f"Total time cost: {end - start:.3f} seconds")
     logging.info("\n".join(resp))
-    send_slack_message("test:\n"+"\n".join(resp))
     return "\n".join(resp)
 
 @app.post("/agents", status_code=201)
