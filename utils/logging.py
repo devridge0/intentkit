@@ -3,9 +3,17 @@ Logging configuration module
 """
 import json
 import logging
+from typing import Optional, Callable
 
 class JsonFormatter(logging.Formatter):
+    def __init__(self, filter_func: Optional[Callable[[logging.LogRecord], bool]] = None):
+        super().__init__()
+        self.filter_func = filter_func
+
     def format(self, record):
+        if self.filter_func and not self.filter_func(record):
+            return ""
+            
         log_obj = {
             "timestamp": self.formatTime(record),
             "name": record.name,
