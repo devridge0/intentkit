@@ -12,11 +12,9 @@ from app.ai import initialize_agent
 from app.config import config
 from app.db import init_db,get_db,Agent
 from app.slack import send_slack_message
-from utils.logging import setup_logging
 
 # init logger
 logger = logging.getLogger(__name__)
-setup_logging(config.env, config.debug)
 
 # Global variable to cache all agent executors
 agents = {}
