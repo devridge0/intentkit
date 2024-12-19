@@ -12,9 +12,18 @@ from app.config import config
 from app.db import init_db,get_db,Agent
 from app.slack import send_slack_message
 from app.middleware import HealthCheckFilter
+from utils.logging import JsonFormatter
 
 # init logger
 logger = logging.getLogger(__name__)
+
+# Configure uvicorn access logger to use our JSON format in non-local env
+if config.env != "local" and not config.debug:
+    uvicorn_access = logging.getLogger("uvicorn.access")
+    uvicorn_access.handlers = []  # Remove default handlers
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    uvicorn_access.addHandler(handler)
 
 # Global variable to cache all agent executors
 agents = {}
