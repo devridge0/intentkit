@@ -44,6 +44,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       -
+        name: Deploy to Amazon EKS
+        run: |
+          aws eks update-kubeconfig --region us-west-1 --name crestal-production
+          kubectl version
+          kubectl set image -n testnet-dev deployment/intent-api intent-api=058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }}
+      -
         name: Post to a Slack channel
         if: ${{ success() }}
         id: slack-success
