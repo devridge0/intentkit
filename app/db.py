@@ -1,10 +1,13 @@
+import logging
 import psycopg
-from sqlalchemy import Column, String, func
+from sqlalchemy import Column, String, func, Table, MetaData, text
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import List, Optional
 from urllib.parse import quote_plus
+import os
 
+from app.db_mig import safe_migrate
 from app.slack import send_slack_message
 
 conn_str = None
@@ -19,19 +22,30 @@ def init_db(
         dbname: str,
         port: str = '5432'
 ) -> None:
-    """Initialize the database."""
+    """Initialize the database and handle schema updates.
+    
+    Args:
+        host: Database host
+        username: Database username
+        password: Database password
+        dbname: Database name
+        port: Database port (default: 5432)
+    """
     global conn_str
     if conn_str is None:
         conn_str = f'postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}'
-    # init sqlalchemy engine and create its tables
+    
+    # Initialize SQLAlchemy engine
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-    SQLModel.metadata.create_all(engine)
+        safe_migrate(engine)
+    
+    # Initialize psycopg connection
     global conn
     if conn is None:
         conn = psycopg.connect(conn_str,autocommit=True)
-
+    
 def get_db() -> Session:
     with Session(engine) as session:
         yield session
@@ -43,6 +57,7 @@ def get_coon():
     return conn
 
 class Agent(SQLModel, table=True):
+    """Agent model."""
     __tablename__ = 'agents'
 
     id: str = Field(primary_key=True)
@@ -64,6 +79,8 @@ class Agent(SQLModel, table=True):
     twitter_enabled: bool = Field(default=False)
     twitter_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
     twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    # crestal skills
+    crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
     common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
 
