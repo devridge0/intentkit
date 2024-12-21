@@ -39,7 +39,7 @@ def init_db(
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-        safe_migrate(engine)
+        # safe_migrate(engine)
     
     # Initialize psycopg connection
     global conn
@@ -83,6 +83,7 @@ class Agent(SQLModel, table=True):
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
     common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    slack_bot_token: Optional[str]
 
     def create_or_update(self, db: Session) -> None:
         """Create the agent if not exists, otherwise update it."""

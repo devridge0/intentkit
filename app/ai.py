@@ -1,4 +1,5 @@
 import logging
+import os
 
 from anyio.lowlevel import checkpoint
 from cdp_langchain.agent_toolkits import CdpToolkit
@@ -16,6 +17,10 @@ from fastapi import HTTPException
 from app.config import config
 from app.db import Agent, get_db, get_coon
 from skill.crestal import get_crestal_skill
+from skill_set.slack import SlackSkillSet
+
+
+logger = logging.getLogger(__name__)
 
 def initialize_agent(aid):
     """Initialize the agent with CDP Agentkit."""
@@ -28,7 +33,7 @@ def initialize_agent(aid):
         raise HTTPException(status_code=404, detail="Agent not found")
     except SQLAlchemyError as e:
         # Handle other SQLAlchemy-related errors
-        logging.error(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=str(e))
     # Initialize LLM.
     llm = ChatOpenAI(model_name=agent.model,openai_api_key=config.openai_api_key)
@@ -65,6 +70,16 @@ def initialize_agent(aid):
             for skill in agent.common_skills:
                 tools.append(get_crestal_skill(skill))
 
+        # slack test
+        if agent.slack_bot_token:
+            try:
+                from slack_sdk import WebClient
+            except ImportError:
+                raise HTTPException(status_code=500, detail="slack_sdk is not installed")
+            client = WebClient(token=agent.slack_bot_token)
+            slack_skill_set = SlackSkillSet(client=client)
+            tools.extend(slack_skill_set.get_tools())
+
     # Initialize CDP Agentkit Twitter Langchain
     try:
         wrapper = TwitterApiWrapper(**values)
@@ -75,7 +90,7 @@ def initialize_agent(aid):
 
     # log all tools
     for tool in tools:
-        logging.info(f"[{aid}] loaded tool: {tool.name}")
+        logger.info(f"[{aid}] loaded tool: {tool.name}")
 
     # Store buffered conversation history in memory.
     memory = PostgresSaver(get_coon())
