@@ -3,7 +3,7 @@ import psycopg
 from sqlalchemy import Column, String, func, Table, MetaData, text
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
-from typing import List, Optional
+from typing import List, Dict, Any, Optional
 from urllib.parse import quote_plus
 import os
 
@@ -83,7 +83,8 @@ class Agent(SQLModel, table=True):
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
     common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
-    slack_bot_token: Optional[str]
+    # skill set
+    skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(sa_column=Column(JSONB, nullable=True))
 
     def create_or_update(self, db: Session) -> None:
         """Create the agent if not exists, otherwise update it."""
@@ -92,7 +93,8 @@ class Agent(SQLModel, table=True):
             # Update existing agent
             for field in self.model_fields:
                 if field != 'id' and field != 'cdp_wallet_data':  # Skip the primary key
-                    setattr(existing_agent, field, getattr(self, field))
+                    if getattr(self, field) is not None:
+                        setattr(existing_agent, field, getattr(self, field))
             db.add(existing_agent)
         else:
             # Create new agent

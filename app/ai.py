@@ -17,7 +17,8 @@ from fastapi import HTTPException
 from app.config import config
 from app.db import Agent, get_db, get_coon
 from skill.crestal import get_crestal_skill
-from skill_set.slack import SlackSkillSet
+from skill.common import get_common_skill
+from skill_set import get_skill_set
 
 
 logger = logging.getLogger(__name__)
@@ -51,34 +52,30 @@ def initialize_agent(aid):
         if agent.cdp_wallet_data:
             # If there is a persisted agentic wallet, load it and pass to the CDP Agentkit Wrapper.
             values["cdp_wallet_data"] = agent.cdp_wallet_data
-
         agentkit = CdpAgentkitWrapper(**values)
-
         # save the wallet after first create
         if not agent.cdp_wallet_data:
             agent.cdp_wallet_data = agentkit.export_wallet()
             db.add(agent)
             db.commit()
-
-
         # Initialize CDP Agentkit Toolkit and get tools.
         cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
         tools.extend(cdp_toolkit.get_tools())
+    
+    # Crestal skills
+    if agent.crestal_skills:
+        for skill in agent.crestal_skills:
+            tools.append(get_crestal_skill(skill))
 
-        # Crestal skills
-        if agent.common_skills:
-            for skill in agent.common_skills:
-                tools.append(get_crestal_skill(skill))
+    # Common skills
+    if agent.common_skills:
+        for skill in agent.common_skills:
+            tools.append(get_common_skill(skill))
 
-        # slack test
-        if agent.slack_bot_token:
-            try:
-                from slack_sdk import WebClient
-            except ImportError:
-                raise HTTPException(status_code=500, detail="slack_sdk is not installed")
-            client = WebClient(token=agent.slack_bot_token)
-            slack_skill_set = SlackSkillSet(client=client)
-            tools.extend(slack_skill_set.get_tools())
+    # Skill sets
+    if agent.skill_sets:
+        for skill_set, opts in agent.skill_sets.items():
+            tools.extend(get_skill_set(skill_set, opts))
 
     # Initialize CDP Agentkit Twitter Langchain
     try:
@@ -87,6 +84,9 @@ def initialize_agent(aid):
         tools.extend(toolkit.get_tools())
     except Exception:
         pass
+
+    # filter the duplicate tools
+    tools = list({tool.name: tool for tool in tools}.values())
 
     # log all tools
     for tool in tools:
