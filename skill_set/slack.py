@@ -120,7 +120,6 @@ class SlackSkillSet(BaseToolkit):
 
     def get_tools(self) -> List[BaseTool]:
         """Get the tools in the toolkit."""
-        logger.info(self.client)
         return [
             CrestalSlackGetChannel(client=self.client),
             CrestalSlackGetMessage(client=self.client),
