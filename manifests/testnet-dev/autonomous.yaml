@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intent-autonomous
+  namespace: testnet-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: intent-autonomous
+  template:
+    metadata:
+      labels:
+        app: intent-autonomous
+    spec:
+      serviceAccountName: testnet-dev
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: eks.amazonaws.com/nodegroup
+                    operator: In
+                    values:
+                      - crestal-prod-ng
+      containers:
+        - name: intent-autonomous
+          image: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
+          imagePullPolicy: Always
+          args: ["python", "-m", "app.autonomous"]
+          env:
+            - name: ENV
+              value: testnet-dev
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1024Mi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"

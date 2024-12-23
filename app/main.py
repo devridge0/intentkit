@@ -7,7 +7,7 @@ from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 from sqlmodel import Session, select
 
-from app.ai import initialize_agent
+from app.ai import initialize_agent, execute_agent
 from app.config import config
 from app.db import init_db, get_db, Agent, AgentQuota
 from utils.logging import JsonFormatter
@@ -65,47 +65,14 @@ def chat(
                 f"Total: {quota.message_count_total}/{quota.message_limit_total}"
             ),
         )
+
     # get thread_id from request ip
     thread_id = f"{aid}-{request.client.host}"
-    config = {"configurable": {"thread_id": thread_id}}
     logger.debug(f"thread id: {thread_id}")
-    # prepare response
-    resp = []
-    start = time.perf_counter()
-    last = start
-    # user input
-    resp.append(f"[ You: ]\n\n {q}\n\n-------------------\n")
-    # cold start
-    if aid not in agents:
-        agents[aid] = initialize_agent(aid)
-        resp.append(f"[ Agent cold start ... ]")
-        resp.append(
-            f"\n------------------- start Cost: {time.perf_counter() - last:.3f} seconds\n"
-        )
-        last = time.perf_counter()
-    executor = agents[aid]
-    # run
-    for chunk in executor.stream({"messages": [HumanMessage(content=q)]}, config):
-        if "agent" in chunk:
-            v = chunk["agent"]["messages"][0].content
-            if v:
-                resp.append("[ Agent: ]\n")
-                resp.append(v)
-            else:
-                resp.append("[ Agent is thinking ... ]")
-            resp.append(
-                f"\n------------------- agent Cost: {time.perf_counter() - last:.3f} seconds\n"
-            )
-            last = time.perf_counter()
-        elif "tools" in chunk:
-            resp.append("[ Skill running ... ]\n")
-            resp.append(chunk["tools"]["messages"][0].content)
-            resp.append(
-                f"\n------------------- skill Cost: {time.perf_counter() - last:.3f} seconds\n"
-            )
-            last = time.perf_counter()
-    resp.append(f"Total time cost: {time.perf_counter() - start:.3f} seconds")
-    logger.info("\n".join(resp))
+
+    # Execute agent and get response
+    resp = execute_agent(aid, q, thread_id, agents)
+
     # reduce message quota
     quota.add_message(db)
     return "\n".join(resp)
