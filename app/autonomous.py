@@ -6,16 +6,11 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlmodel import select, Session
 
-from langchain_core.messages import HumanMessage
-
-from app.ai import initialize_agent, execute_agent
+from app.ai import execute_agent
 from app.db import get_db, Agent, AgentQuota, init_db
 from app.config import config
 
 logger = logging.getLogger(__name__)
-
-# Global variable to cache all agent executors
-agents = {}
 
 
 def run_autonomous_agents():
@@ -81,7 +76,7 @@ def run_autonomous_action(aid: str, prompt: str):
     thread_id = f"{aid}-autonomous"
 
     # Execute agent and get response
-    resp = execute_agent(aid, prompt, thread_id, agents)
+    resp = execute_agent(aid, prompt, thread_id)
 
     # Log the response
     logger.info("\n".join(resp))
