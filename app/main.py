@@ -23,9 +23,6 @@ if config.env != "local" and not config.debug:
     handler.setFormatter(JsonFormatter())
     uvicorn_access.addHandler(handler)
 
-# Global variable to cache all agent executors
-agents = {}
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -71,7 +68,7 @@ def chat(
     logger.debug(f"thread id: {thread_id}")
 
     # Execute agent and get response
-    resp = execute_agent(aid, q, thread_id, agents)
+    resp = execute_agent(aid, q, thread_id)
 
     # reduce message quota
     quota.add_message(db)
@@ -91,6 +88,5 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     latest_agent = db.exec(select(Agent).filter(Agent.id == agent.id)).one()
     latest_agent.cdp_wallet_data = "forbidden"
     # TODO: change here when multiple instances deploy
-    if agent.id in agents:
-        agents[agent.id] = initialize_agent(agent.id)
+    initialize_agent(agent.id)
     return latest_agent

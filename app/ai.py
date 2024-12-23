@@ -5,6 +5,7 @@ from anyio.lowlevel import checkpoint
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
 from langchain_core.tools import BaseTool
+from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.prebuilt import create_react_agent
@@ -22,6 +23,9 @@ from skill_set import get_skill_set
 
 
 logger = logging.getLogger(__name__)
+
+# Global variable to cache all agent executors
+agents = {}
 
 
 def initialize_agent(aid):
@@ -117,7 +121,7 @@ def initialize_agent(aid):
         )
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
-    return create_react_agent(
+    agents[aid] = create_react_agent(
         llm,
         tools=tools,
         checkpointer=memory,
@@ -125,16 +129,13 @@ def initialize_agent(aid):
     )
 
 
-def execute_agent(
-    aid: str, prompt: str, thread_id: str, agents_cache: dict
-) -> list[str]:
+def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
     """Execute an agent with the given prompt and return response lines and total time.
 
     Args:
         aid: Agent ID
         prompt: Input prompt for the agent
         thread_id: Thread ID for the agent execution
-        agents_cache: Dictionary to cache agent executors
 
     Returns:
         tuple[list[str], float]: List of response lines and total execution time
@@ -148,15 +149,15 @@ def execute_agent(
     resp.append(f"[ Input: ]\n\n {prompt}\n\n-------------------\n")
 
     # cold start
-    if aid not in agents_cache:
-        agents_cache[aid] = initialize_agent(aid)
+    if aid not in agents:
+        initialize_agent(aid)
         resp.append(f"[ Agent cold start ... ]")
         resp.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )
         last = time.perf_counter()
 
-    executor = agents_cache[aid]
+    executor = agents[aid]
     # run
     for chunk in executor.stream({"messages": [HumanMessage(content=prompt)]}, config):
         if "agent" in chunk:
