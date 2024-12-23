@@ -4,6 +4,7 @@ aiosignal==1.3.1
 alembic==1.14.0
 annotated-types==0.7.0
 anyio==4.7.0
+APScheduler==3.11.0
 asn1crypto==1.5.1
 attrs==24.2.0
 aws_secretsmanager_caching==1.1.3
@@ -109,6 +110,7 @@ twitter-langchain==0.0.6
 types-requests==2.32.0.20241016
 typing-inspect==0.9.0
 typing_extensions==4.12.2
+tzlocal==5.2
 urllib3==2.2.3
 uvicorn==0.32.1
 web3==7.6.0
