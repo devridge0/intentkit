@@ -1,11 +1,12 @@
+import os
 import logging
 import psycopg
-from sqlalchemy import Column, String, func, Table, MetaData, text
+from datetime import datetime
+from sqlalchemy import Column, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import List, Dict, Any, Optional
 from urllib.parse import quote_plus
-import os
 
 from app.db_mig import safe_migrate
 from app.slack import send_slack_message
@@ -37,7 +38,7 @@ def init_db(
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-        # safe_migrate(engine)
+        safe_migrate(engine)
 
     # Initialize psycopg connection
     global conn
@@ -70,8 +71,8 @@ class Agent(SQLModel, table=True):
     prompt: Optional[str]
     # autonomous mode
     autonomous_enabled: bool = Field(default=False)
-    autonomous_prompt: Optional[str]
     autonomous_minutes: Optional[int]
+    autonomous_prompt: Optional[str]
     # if cdp_enabled, will load cdp skills
     # if the cdp_skills is empty, will load all
     cdp_enabled: bool = Field(default=False)
@@ -129,10 +130,12 @@ class AgentQuota(SQLModel, table=True):
     message_limit_monthly: int = Field(default=100)
     message_count_daily: int = Field(default=0)
     message_limit_daily: int = Field(default=10)
+    last_message_time: Optional[datetime] = Field(default=None)
     autonomous_count_total: int = Field(default=0)
     autonomous_limit_total: int = Field(default=100)
     autonomous_count_monthly: int = Field(default=0)
     autonomous_limit_monthly: int = Field(default=100)
+    last_autonomous_time: Optional[datetime] = Field(default=None)
 
     @staticmethod
     def get(id: str, db: Session) -> "AgentQuota":
@@ -154,6 +157,8 @@ class AgentQuota(SQLModel, table=True):
 
     def has_autonomous_quota(self, db: Session) -> bool:
         """Check if the agent has autonomous quota."""
+        if not self.has_message_quota(db):
+            return False
         return (
             self.autonomous_count_monthly < self.autonomous_limit_monthly
             and self.autonomous_count_total < self.autonomous_limit_total
@@ -164,12 +169,18 @@ class AgentQuota(SQLModel, table=True):
         self.message_count_monthly += 1
         self.message_count_daily += 1
         self.message_count_total += 1
+        self.last_message_time = datetime.now()
         db.add(self)
         db.commit()
 
     def add_autonomous(self, db: Session) -> None:
         """Add an autonomous message to the agent's autonomous count."""
+        self.message_count_daily += 1
+        self.message_count_monthly += 1
+        self.message_count_total += 1
         self.autonomous_count_monthly += 1
         self.autonomous_count_total += 1
+        self.last_autonomous_time = datetime.now()
+        self.last_message_time = datetime.now()
         db.add(self)
         db.commit()

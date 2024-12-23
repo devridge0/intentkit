@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown
-    print("Cleaning up and shutdown...")
+    logger.info("Cleaning up and shutdown...")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -69,6 +69,7 @@ def chat(
     thread_id = f"{aid}-{request.client.host}"
     config = {"configurable": {"thread_id": thread_id}}
     logger.debug(f"thread id: {thread_id}")
+    # prepare response
     resp = []
     start = time.perf_counter()
     last = start
