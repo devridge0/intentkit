@@ -35,14 +35,16 @@ spec:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 30
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /health
               port: 80
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 30
+            failureThreshold: 5
           resources:
             limits:
               cpu: "1"
