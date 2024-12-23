@@ -9,8 +9,7 @@ from sqlmodel import Session, select
 
 from app.ai import initialize_agent
 from app.config import config
-from app.db import init_db,get_db,Agent
-from app.slack import send_slack_message
+from app.db import init_db, get_db, Agent, AgentQuota
 from utils.logging import JsonFormatter
 
 # init logger
@@ -27,32 +26,49 @@ if config.env != "local" and not config.debug:
 # Global variable to cache all agent executors
 agents = {}
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # this will run before the API server start
+    # This part will run before the API server start
     init_db(**config.db)
-    logging.info("API server start")
+    logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown
     print("Cleaning up and shutdown...")
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/health", include_in_schema=False)
 async def health_check():
     return {"status": "healthy"}
 
+
 @app.get("/{aid}/chat", response_class=PlainTextResponse)
 def chat(
-        request: Request,
-        aid: str = Path(..., description="instance id"),
-        q: str = Query(None, description="Query string"),
-        db: Session = Depends(get_db)):
-    # Run agent with the user's input in chat mode
+    request: Request,
+    aid: str = Path(..., description="instance id"),
+    q: str = Query(None, description="Query string"),
+    db: Session = Depends(get_db),
+):
+    """Run agent with the user's input in chat mode"""
+    # check if the agent quota is exceeded
+    quota = AgentQuota.get(aid, db)
+    if not quota.has_message_quota(db):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Message quota exceeded. Please upgrade your plan. "
+                f"Daily: {quota.message_count_daily}/{quota.message_limit_daily}, "
+                f"Monthly: {quota.message_count_monthly}/{quota.message_limit_monthly}, "
+                f"Total: {quota.message_count_total}/{quota.message_limit_total}"
+            ),
+        )
     # get thread_id from request ip
-    thread_id = f'{aid}-{request.client.host}'
+    thread_id = f"{aid}-{request.client.host}"
     config = {"configurable": {"thread_id": thread_id}}
-    logging.debug(f"thread id: {thread_id}")
+    logger.debug(f"thread id: {thread_id}")
     resp = []
     start = time.perf_counter()
     last = start
@@ -62,13 +78,13 @@ def chat(
     if aid not in agents:
         agents[aid] = initialize_agent(aid)
         resp.append(f"[ Agent cold start ... ]")
-        resp.append(f"\n------------------- start Cost: {time.perf_counter() - last:.3f} seconds\n")
+        resp.append(
+            f"\n------------------- start Cost: {time.perf_counter() - last:.3f} seconds\n"
+        )
         last = time.perf_counter()
     executor = agents[aid]
     # run
-    for chunk in executor.stream(
-        {"messages": [HumanMessage(content=q)]}, config
-    ):
+    for chunk in executor.stream({"messages": [HumanMessage(content=q)]}, config):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
             if v:
@@ -76,22 +92,32 @@ def chat(
                 resp.append(v)
             else:
                 resp.append("[ Agent is thinking ... ]")
-            resp.append(f"\n------------------- agent Cost: {time.perf_counter() - last:.3f} seconds\n")
+            resp.append(
+                f"\n------------------- agent Cost: {time.perf_counter() - last:.3f} seconds\n"
+            )
             last = time.perf_counter()
         elif "tools" in chunk:
             resp.append("[ Skill running ... ]\n")
             resp.append(chunk["tools"]["messages"][0].content)
-            resp.append(f"\n------------------- skill Cost: {time.perf_counter() - last:.3f} seconds\n")
+            resp.append(
+                f"\n------------------- skill Cost: {time.perf_counter() - last:.3f} seconds\n"
+            )
             last = time.perf_counter()
     resp.append(f"Total time cost: {time.perf_counter() - start:.3f} seconds")
-    logging.info("\n".join(resp))
+    logger.info("\n".join(resp))
+    # reduce message quota
+    quota.add_message(db)
     return "\n".join(resp)
+
 
 @app.post("/agents", status_code=201)
 def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     """Create a new agent, if it exists, just update it"""
-    if not all(c.islower() or c.isdigit() or c == '-' for c in agent.id):
-        raise HTTPException(status_code=400, detail="Agent ID must contain only lowercase letters, numbers, and hyphens.")
+    if not all(c.islower() or c.isdigit() or c == "-" for c in agent.id):
+        raise HTTPException(
+            status_code=400,
+            detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
+        )
     agent.create_or_update(db)
     # Get the latest agent from the database
     latest_agent = db.exec(select(Agent).filter(Agent.id == agent.id)).one()
