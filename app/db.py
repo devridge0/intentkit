@@ -38,7 +38,7 @@ def init_db(
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-        safe_migrate(engine)
+        # safe_migrate(engine)
 
     # Initialize psycopg connection
     global conn
