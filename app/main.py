@@ -87,8 +87,9 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     # Get the latest agent from the database
     latest_agent = db.exec(select(Agent).filter(Agent.id == agent.id)).one()
     latest_agent.cdp_wallet_data = "forbidden"
-    for key in latest_agent.skill_sets:
-        latest_agent.skill_sets[key] = {}
+    if latest_agent.skill_sets is not None:
+        for key in latest_agent.skill_sets:
+            latest_agent.skill_sets[key] = {}
     # TODO: change here when multiple instances deploy
     initialize_agent(agent.id)
     return latest_agent
