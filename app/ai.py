@@ -1,6 +1,6 @@
 import logging
 import os
-
+import time
 from anyio.lowlevel import checkpoint
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
@@ -23,12 +23,13 @@ from skill_set import get_skill_set
 
 logger = logging.getLogger(__name__)
 
+
 def initialize_agent(aid):
     """Initialize the agent with CDP Agentkit."""
     db = next(get_db())
     # get the agent from the database
     try:
-        agent : Agent = db.query(Agent).filter(Agent.id == aid).one()
+        agent: Agent = db.query(Agent).filter(Agent.id == aid).one()
     except NoResultFound:
         # Handle the case where the user is not found
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -37,7 +38,7 @@ def initialize_agent(aid):
         logger.error(e)
         raise HTTPException(status_code=500, detail=str(e))
     # Initialize LLM.
-    llm = ChatOpenAI(model_name=agent.model,openai_api_key=config.openai_api_key)
+    llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
 
     # Load tools
     tools: list[BaseTool] = []
@@ -47,7 +48,7 @@ def initialize_agent(aid):
         values = {
             "cdp_api_key_name": config.cdp_api_key_name,
             "cdp_api_key_private_key": config.cdp_api_key_private_key,
-            "network_id": getattr(agent,"cdp_network_id","base-sepolia"),
+            "network_id": getattr(agent, "cdp_network_id", "base-sepolia"),
         }
         if agent.cdp_wallet_data:
             # If there is a persisted agentic wallet, load it and pass to the CDP Agentkit Wrapper.
@@ -61,7 +62,7 @@ def initialize_agent(aid):
         # Initialize CDP Agentkit Toolkit and get tools.
         cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
         tools.extend(cdp_toolkit.get_tools())
-    
+
     # Crestal skills
     if agent.crestal_skills:
         for skill in agent.crestal_skills:
@@ -100,7 +101,6 @@ def initialize_agent(aid):
     if agent.name:
         prompt = f"Your name is {agent.name}. "
 
-
     if agent.prompt:
         prompt += agent.prompt
     elif agent.cdp_enabled:
@@ -123,3 +123,61 @@ def initialize_agent(aid):
         checkpointer=memory,
         state_modifier=prompt,
     )
+
+
+def execute_agent(
+    aid: str, prompt: str, thread_id: str, agents_cache: dict
+) -> list[str]:
+    """Execute an agent with the given prompt and return response lines and total time.
+
+    Args:
+        aid: Agent ID
+        prompt: Input prompt for the agent
+        thread_id: Thread ID for the agent execution
+        agents_cache: Dictionary to cache agent executors
+
+    Returns:
+        tuple[list[str], float]: List of response lines and total execution time
+    """
+    config = {"configurable": {"thread_id": thread_id}}
+    resp = []
+    start = time.perf_counter()
+    last = start
+
+    # user input
+    resp.append(f"[ Input: ]\n\n {prompt}\n\n-------------------\n")
+
+    # cold start
+    if aid not in agents_cache:
+        agents_cache[aid] = initialize_agent(aid)
+        resp.append(f"[ Agent cold start ... ]")
+        resp.append(
+            f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
+        )
+        last = time.perf_counter()
+
+    executor = agents_cache[aid]
+    # run
+    for chunk in executor.stream({"messages": [HumanMessage(content=prompt)]}, config):
+        if "agent" in chunk:
+            v = chunk["agent"]["messages"][0].content
+            if v:
+                resp.append("[ Agent: ]\n")
+                resp.append(v)
+            else:
+                resp.append("[ Agent is thinking ... ]")
+            resp.append(
+                f"\n------------------- agent cost: {time.perf_counter() - last:.3f} seconds\n"
+            )
+            last = time.perf_counter()
+        elif "tools" in chunk:
+            resp.append("[ Skill running ... ]\n")
+            resp.append(chunk["tools"]["messages"][0].content)
+            resp.append(
+                f"\n------------------- skill cost: {time.perf_counter() - last:.3f} seconds\n"
+            )
+            last = time.perf_counter()
+
+    total_time = time.perf_counter() - start
+    resp.append(f"Total time cost: {total_time:.3f} seconds")
+    return resp
