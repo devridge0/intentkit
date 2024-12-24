@@ -2,6 +2,10 @@
 import json
 import os
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
