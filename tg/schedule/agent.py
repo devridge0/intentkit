@@ -1,7 +1,8 @@
 import asyncio
-from sqlmodel import select, Session
 
-from app.db import get_db, Agent
+from sqlmodel import Session, select
+
+from app.db import Agent, get_db
 
 
 class AgentScheduler:
