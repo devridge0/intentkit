@@ -1,7 +1,8 @@
 # app/config.py
 import json
-import os
 import logging
+import os
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -9,6 +10,7 @@ load_dotenv()
 
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+
 from utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
