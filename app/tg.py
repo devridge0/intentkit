@@ -9,10 +9,6 @@ from app.db import init_db
 from tg.bot.pool import BotPool
 from tg.schedule.agent import AgentScheduler
 
-BASE_URL = getenv("TG_BASE_URL")
-WEB_SERVER_HOST = getenv("TG_SERVER_HOST", "127.0.0.1")
-WEB_SERVER_PORT = getenv("TG_SERVER_PORT", "8081")
-TG_NEW_AGENT_POLL_INTERVAL = getenv("TG_NEW_AGENT_POLL_INTERVAL", "60")
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +27,7 @@ def run_telegram_server() -> None:
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    bot_pool = BotPool(BASE_URL)
+    bot_pool = BotPool(config.tg_base_url)
 
     bot_pool.init_god_bot()
     bot_pool.init_all_dispatchers()
@@ -39,9 +35,9 @@ def run_telegram_server() -> None:
     scheduler = AgentScheduler(bot_pool)
 
     loop = asyncio.new_event_loop()
-    loop.create_task(scheduler.start(int(TG_NEW_AGENT_POLL_INTERVAL)))
+    loop.create_task(scheduler.start(int(config.tg_new_agent_poll_interval)))
 
-    bot_pool.start(loop, WEB_SERVER_HOST, int(WEB_SERVER_PORT))
+    bot_pool.start(loop, config.tg_server_host, int(config.tg_server_port))
 
 
 if __name__ == "__main__":

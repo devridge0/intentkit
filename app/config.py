@@ -64,13 +64,18 @@ class Config:
         self.openai_api_key = self.load("OPENAI_API_KEY")
         self.slack_token = self.load("SLACK_TOKEN")
         self.slack_channel = self.load("SLACK_CHANNEL")
+        self.tg_base_url = self.load("TG_BASE_URL")
+        self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
+        self.tg_server_port = self.load("TG_SERVER_PORT", "8081")
+        self.tg_new_agent_poll_interval = self.load("TG_NEW_AGENT_POLL_INTERVAL", "60")
+
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
         logger.info("config loaded")
 
-    def load(self, key):
+    def load(self, key, default=None):
         """Load a secret from the secrets map or env"""
-        return self.secrets.get(key, os.getenv(key))
+        return self.secrets.get(key, os.getenv(key, default))
 
 
 config = Config()
