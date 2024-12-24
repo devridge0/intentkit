@@ -21,10 +21,12 @@ class AgentScheduler:
         for agent in agents:
             if agent.telegram_config["token"] not in self.bot_pool.bots:
                 new_bots.append(agent.telegram_config)
+        return new_bots
 
     async def start(self, interval):
         while True:
             print("check for new bots...")
             await asyncio.sleep(interval)
-            for new_bot in self.check_new_bots():
-                await self.bot_pool.init_new_bot(new_bot["kind"], new_bot["token"])
+            if self.check_new_bots() != None:
+                for new_bot in self.check_new_bots():
+                    await self.bot_pool.init_new_bot(new_bot["kind"], new_bot["token"])
