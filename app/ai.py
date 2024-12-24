@@ -13,26 +13,25 @@ The module uses a global cache to store initialized agents for better performanc
 import logging
 import os
 import time
+
 from anyio.lowlevel import checkpoint
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
-from langchain_core.tools import BaseTool
+from fastapi import HTTPException
 from langchain_core.messages import HumanMessage
+from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.prebuilt import create_react_agent
-from twitter_langchain import TwitterApiWrapper, TwitterToolkit
-
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
-from fastapi import HTTPException
+from twitter_langchain import TwitterApiWrapper, TwitterToolkit
 
 from app.config import config
-from app.db import Agent, get_db, get_coon
-from skill.crestal import get_crestal_skill
+from app.db import Agent, get_coon, get_db
 from skill.common import get_common_skill
+from skill.crestal import get_crestal_skill
 from skill_set import get_skill_set
-
 
 logger = logging.getLogger(__name__)
 
@@ -113,12 +112,10 @@ def initialize_agent(aid):
             tools.extend(get_skill_set(skill_set, opts))
 
     # Initialize CDP Agentkit Twitter Langchain
-    try:
-        wrapper = TwitterApiWrapper(**values)
+    if agent.twitter_enabled:
+        wrapper = TwitterApiWrapper(**agent.twitter_config)
         toolkit = TwitterToolkit.from_twitter_api_wrapper(wrapper)
         tools.extend(toolkit.get_tools())
-    except Exception:
-        pass
 
     # filter the duplicate tools
     tools = list({tool.name: tool for tool in tools}.values())
@@ -161,21 +158,21 @@ def initialize_agent(aid):
 
 def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
-    
+
     This function:
     1. Configures execution context with thread ID
     2. Initializes agent if not in cache
     3. Streams agent execution results
     4. Formats and times the execution steps
-    
+
     Args:
         aid (str): Agent ID
         prompt (str): Input prompt for the agent
         thread_id (str): Thread ID for the agent execution
-        
+
     Returns:
         list[str]: Formatted response lines including timing information
-    
+
     Example Response Lines:
         [
             "[ Input: ]\n\n user question \n\n-------------------\n",

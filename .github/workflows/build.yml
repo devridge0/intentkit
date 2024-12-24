@@ -24,12 +24,6 @@ jobs:
         with:
           cmd: echo -n "${{github.event.head_commit.message}}" | jq -Rsa . | sed -e 's/^"//' -e 's/"$//'
       -
-        name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-west-1
-          role-to-assume: arn:aws:iam::058264535500:role/GithubActions
-      -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       -

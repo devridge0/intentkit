@@ -10,7 +10,7 @@ We take the security of IntentKit seriously. If you believe you have found a sec
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to [security@crestal.ai](mailto:security@crestal.ai) with the following information:
+Instead, please report them via email to [security@crestal.network](mailto:security@crestal.network) with the following information:
 
 1. Description of the vulnerability
 2. Steps to reproduce the issue
@@ -136,5 +136,5 @@ We would like to thank the following for their contributions to our security:
 ## Contact
 
 For any questions about this security policy, please contact:
-- Email: [security@crestal.ai](mailto:security@crestal.ai)
+- Email: [security@crestal.network](mailto:security@crestal.network)
 - GitHub Security Advisories: [IntentKit Security](https://github.com/crestal/intentkit/security/advisories)

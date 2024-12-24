@@ -1,12 +1,13 @@
-import os
 import logging
-import psycopg
+import os
 from datetime import datetime
-from sqlalchemy import Column, String, func, text
-from sqlalchemy.dialects.postgresql import JSONB, ARRAY
-from sqlmodel import SQLModel, Field, Session, create_engine, select
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus
+
+import psycopg
+from sqlalchemy import Column, String, func, text
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from app.db_mig import safe_migrate
 from app.slack import send_slack_message

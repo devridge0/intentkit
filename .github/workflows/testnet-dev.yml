@@ -3,6 +3,10 @@ name: Build Docker Image and Deploy to TestnetDev
 on:
   push:
     branches: [ release/carbon/testnet-dev ]
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - '*.md'
 
 jobs:
   docker:
@@ -22,8 +26,8 @@ jobs:
         name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: us-west-1
-          role-to-assume: arn:aws:iam::058264535500:role/GithubActions
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GithubActions
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -38,16 +42,16 @@ jobs:
           build-args: |
             RELEASE=${{ github.run_number }}
           push: true
-          tags: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }},058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
+          tags: ${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }},${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:testnet-dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
       -
         name: Deploy to Amazon EKS
         run: |
-          aws eks update-kubeconfig --region us-west-1 --name crestal-production
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name crestal-production
           kubectl version
-          kubectl set image -n testnet-dev deployment/intent-api intent-api=058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }}
-          kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }}
+          kubectl set image -n testnet-dev deployment/intent-api intent-api=${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }}
+          kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }}
       -
         name: Post to a Slack channel
         if: ${{ success() }}

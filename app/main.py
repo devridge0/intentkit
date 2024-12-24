@@ -13,14 +13,14 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query, Path, Request, Depends, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
 from langchain_core.messages import HumanMessage
 from sqlmodel import Session, select
 
-from app.ai import initialize_agent, execute_agent
+from app.ai import execute_agent, initialize_agent
 from app.config import config
-from app.db import init_db, get_db, Agent, AgentQuota
+from app.db import Agent, AgentQuota, get_db, init_db
 from utils.logging import JsonFormatter
 
 # init logger
@@ -38,12 +38,12 @@ if config.env != "local" and not config.debug:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle.
-    
+
     This context manager:
     1. Initializes database connection
     2. Performs any necessary startup tasks
     3. Handles graceful shutdown
-    
+
     Args:
         app: FastAPI application instance
     """
@@ -61,7 +61,7 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/health", include_in_schema=False)
 async def health_check():
     """Check API server health.
-    
+
     Returns:
         dict: Health status
     """
@@ -76,24 +76,24 @@ def chat(
     db: Session = Depends(get_db),
 ):
     """Chat with an AI agent.
-    
+
     This endpoint:
     1. Validates agent quota
     2. Creates a thread-specific context
     3. Executes the agent with the query
     4. Updates quota usage
-    
+
     Args:
         request: FastAPI request object
         aid: Agent ID
         q: User's input query
         db: Database session
-    
+
     Returns:
         str: Formatted chat response
-        
+
     Raises:
-        HTTPException: 
+        HTTPException:
             - 404: Agent not found
             - 429: Quota exceeded
             - 500: Internal server error
@@ -118,6 +118,7 @@ def chat(
     # Execute agent and get response
     resp = execute_agent(aid, q, thread_id)
 
+    logger.info(resp)
     # reduce message quota
     quota.add_message(db)
     return "\n".join(resp)
@@ -126,22 +127,22 @@ def chat(
 @app.post("/agents", status_code=201)
 def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     """Create or update an agent.
-    
+
     This endpoint:
     1. Validates agent ID format
     2. Creates or updates agent configuration
     3. Reinitializes agent if already in cache
     4. Masks sensitive data in response
-    
+
     Args:
         agent: Agent configuration
         db: Database session
-        
+
     Returns:
         Agent: Updated agent configuration
-        
+
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400: Invalid agent ID format
             - 500: Database error
     """

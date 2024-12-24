@@ -79,19 +79,6 @@ See `example.env` for all available options.
 2. Implement the skill interface
 3. Register the skill in `skill/__init__.py`
 
-### Running Tests
-
-```bash
-# TODO: Add testing instructions
-```
-
-## Deployment
-
-The project includes Kubernetes manifests for deployment:
-
-```bash
-kubectl apply -f manifests/testnet-dev/
-```
 
 ## Contributing
 
