@@ -38,7 +38,7 @@ def init_db(
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-        # safe_migrate(engine)
+        safe_migrate(engine)
 
     # Initialize psycopg connection
     global conn
@@ -83,6 +83,10 @@ class Agent(SQLModel, table=True):
     twitter_enabled: bool = Field(default=False)
     twitter_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
     twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    # if telegram_enabled, telegram_config will be checked
+    telegram_enabled: bool = Field(default=False)
+    telegram_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
+    telegram_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
