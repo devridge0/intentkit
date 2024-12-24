@@ -1,19 +1,19 @@
-from aiohttp import web
 from aiogram import Bot, Dispatcher
+from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.client.bot import DefaultBotProperties
 from aiogram.webhook.aiohttp_server import (
     SimpleRequestHandler,
     TokenBasedRequestHandler,
     setup_application,
 )
+from aiohttp import web
 
-from tg.bot.types.router_obj import RouterObj
-from tg.bot.types.kind import Kind
 from tg.bot.kind.general.router import general_router
 from tg.bot.kind.god.router import god_router
-from tg.bot.kind.god.startup import on_startup, GOD_BOT_TOKEN, GOD_BOT_PATH
+from tg.bot.kind.god.startup import GOD_BOT_PATH, GOD_BOT_TOKEN, on_startup
+from tg.bot.types.kind import Kind
+from tg.bot.types.router_obj import RouterObj
 
 BOTS_PATH = "/webhook/bot/{kind}/{bot_token}"
 

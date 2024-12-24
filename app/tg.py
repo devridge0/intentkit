@@ -1,10 +1,11 @@
 import asyncio
 import logging
-from os import getenv
-import sys
-from app.db import init_db
-from app.config import config
 import signal
+import sys
+from os import getenv
+
+from app.config import config
+from app.db import init_db
 from tg.bot.pool import BotPool
 from tg.schedule.agent import AgentScheduler
 
