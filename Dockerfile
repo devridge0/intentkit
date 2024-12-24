@@ -18,4 +18,4 @@ ARG RELEASE
 ENV RELEASE=$RELEASE
 
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "app.entrypoints.api:app", "--host", "0.0.0.0", "--port", "80"]

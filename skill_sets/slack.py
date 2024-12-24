@@ -15,7 +15,7 @@ from langchain_core.tools.base import BaseToolkit
 from pydantic import BaseModel, ConfigDict
 from slack_sdk import WebClient
 
-from skill_set import SkillSetOptions
+from skill_sets import SkillSetOptions
 
 logger = logging.getLogger(__name__)
 

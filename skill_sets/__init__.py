@@ -3,8 +3,8 @@ from typing import Dict, List, Optional, Union
 
 from langchain_core.tools import BaseTool
 
-from skill_set.base import SkillSetOptions
-from skill_set.slack import SlackSkillSet, SlackSkillSetOptions
+from skill_sets.base import SkillSetOptions
+from skill_sets.slack import SlackSkillSet, SlackSkillSetOptions
 
 
 def get_skill_set(
