@@ -1,3 +1,15 @@
+"""AI Agent Management Module.
+
+This module provides functionality for initializing and executing AI agents. It handles:
+- Agent initialization with LangChain
+- Tool and skill management
+- Agent execution and response handling
+- Memory management with PostgreSQL
+- Integration with CDP and Twitter
+
+The module uses a global cache to store initialized agents for better performance.
+"""
+
 import logging
 import os
 import time
@@ -29,6 +41,24 @@ agents = {}
 
 
 def initialize_agent(aid):
+    """Initialize an AI agent with specified configuration and tools.
+
+    This function:
+    1. Loads agent configuration from database
+    2. Initializes LLM with specified model
+    3. Loads and configures requested tools
+    4. Sets up PostgreSQL-based memory
+    5. Creates and caches the agent
+
+    Args:
+        aid (str): Agent ID to initialize
+
+    Returns:
+        Agent: Initialized LangChain agent
+
+    Raises:
+        HTTPException: If agent not found (404) or database error (500)
+    """
     """Initialize the agent with CDP Agentkit."""
     db = next(get_db())
     # get the agent from the database
@@ -130,15 +160,29 @@ def initialize_agent(aid):
 
 
 def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
-    """Execute an agent with the given prompt and return response lines and total time.
-
+    """Execute an agent with the given prompt and return response lines.
+    
+    This function:
+    1. Configures execution context with thread ID
+    2. Initializes agent if not in cache
+    3. Streams agent execution results
+    4. Formats and times the execution steps
+    
     Args:
-        aid: Agent ID
-        prompt: Input prompt for the agent
-        thread_id: Thread ID for the agent execution
-
+        aid (str): Agent ID
+        prompt (str): Input prompt for the agent
+        thread_id (str): Thread ID for the agent execution
+        
     Returns:
-        tuple[list[str], float]: List of response lines and total execution time
+        list[str]: Formatted response lines including timing information
+    
+    Example Response Lines:
+        [
+            "[ Input: ]\n\n user question \n\n-------------------\n",
+            "[ Agent: ]\n agent response",
+            "\n------------------- agent cost: 0.123 seconds\n",
+            "Total time cost: 1.234 seconds"
+        ]
     """
     config = {"configurable": {"thread_id": thread_id}}
     resp = []

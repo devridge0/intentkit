@@ -1,3 +1,14 @@
+"""IntentKit REST API Server.
+
+This module implements the REST API for IntentKit, providing endpoints for:
+- Agent chat interactions
+- Agent creation and management
+- Health monitoring
+
+The API uses FastAPI for high performance and automatic OpenAPI documentation.
+Database connections and agent state are managed throughout the application lifecycle.
+"""
+
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -26,6 +37,16 @@ if config.env != "local" and not config.debug:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manage application lifecycle.
+    
+    This context manager:
+    1. Initializes database connection
+    2. Performs any necessary startup tasks
+    3. Handles graceful shutdown
+    
+    Args:
+        app: FastAPI application instance
+    """
     # This part will run before the API server start
     init_db(**config.db)
     logger.info("API server start")
@@ -39,6 +60,11 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/health", include_in_schema=False)
 async def health_check():
+    """Check API server health.
+    
+    Returns:
+        dict: Health status
+    """
     return {"status": "healthy"}
 
 
@@ -49,7 +75,29 @@ def chat(
     q: str = Query(None, description="Query string"),
     db: Session = Depends(get_db),
 ):
-    """Run agent with the user's input in chat mode"""
+    """Chat with an AI agent.
+    
+    This endpoint:
+    1. Validates agent quota
+    2. Creates a thread-specific context
+    3. Executes the agent with the query
+    4. Updates quota usage
+    
+    Args:
+        request: FastAPI request object
+        aid: Agent ID
+        q: User's input query
+        db: Database session
+    
+    Returns:
+        str: Formatted chat response
+        
+    Raises:
+        HTTPException: 
+            - 404: Agent not found
+            - 429: Quota exceeded
+            - 500: Internal server error
+    """
     # check if the agent quota is exceeded
     quota = AgentQuota.get(aid, db)
     if not quota.has_message_quota(db):
@@ -77,7 +125,26 @@ def chat(
 
 @app.post("/agents", status_code=201)
 def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
-    """Create a new agent, if it exists, just update it"""
+    """Create or update an agent.
+    
+    This endpoint:
+    1. Validates agent ID format
+    2. Creates or updates agent configuration
+    3. Reinitializes agent if already in cache
+    4. Masks sensitive data in response
+    
+    Args:
+        agent: Agent configuration
+        db: Database session
+        
+    Returns:
+        Agent: Updated agent configuration
+        
+    Raises:
+        HTTPException: 
+            - 400: Invalid agent ID format
+            - 500: Database error
+    """
     if not all(c.islower() or c.isdigit() or c == "-" for c in agent.id):
         raise HTTPException(
             status_code=400,
