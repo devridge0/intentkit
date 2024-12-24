@@ -2,7 +2,7 @@ name: Build Docker Image and Deploy to TestnetDev
 
 on:
   push:
-    branches: [ testnet-dev ]
+    branches: [ release/carbon/testnet-dev ]
 
 jobs:
   docker:
