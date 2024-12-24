@@ -25,12 +25,6 @@ jobs:
           aws-region: us-west-1
           role-to-assume: arn:aws:iam::058264535500:role/GithubActions
       -
-        name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: crestal
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       -
@@ -43,10 +37,8 @@ jobs:
         with:
           build-args: |
             RELEASE=${{ github.run_number }}
-            GH_CI_USER=${{ secrets.GH_CI_USER }}
-            GH_CI_TOKEN=${{ secrets.GH_CI_TOKEN }}
           push: true
-          tags: crestal/intentkit:latest,058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }},058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
+          tags: 058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:${{ github.sha }},058264535500.dkr.ecr.us-west-1.amazonaws.com/intentkit:testnet-dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
       -
