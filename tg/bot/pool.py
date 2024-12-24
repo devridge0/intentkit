@@ -9,11 +9,11 @@ from aiogram.webhook.aiohttp_server import (
     setup_application,
 )
 
-from bot.types.router_obj import RouterObj
-from bot.types.kind import Kind
-from bot.kind.general.router import general_router
-from bot.kind.god.router import god_router
-from bot.kind.god.startup import on_startup, GOD_BOT_TOKEN, GOD_BOT_PATH
+from tg.bot.types.router_obj import RouterObj
+from tg.bot.types.kind import Kind
+from tg.bot.kind.general.router import general_router
+from tg.bot.kind.god.router import god_router
+from tg.bot.kind.god.startup import on_startup, GOD_BOT_TOKEN, GOD_BOT_PATH
 
 BOTS_PATH = "/webhook/bot/{kind}/{bot_token}"
 
@@ -29,20 +29,21 @@ class BotPool:
         self.bots = {}
 
     def init_god_bot(self):
-        self.god_bot = Bot(
-            token=GOD_BOT_TOKEN,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-        )
-        storage = MemoryStorage()
-        # In order to use RedisStorage you need to use Key Builder with bot ID:
-        # storage = RedisStorage.from_url(TG_REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
-        dp = Dispatcher(storage=storage)
-        dp.include_router(god_router)
-        dp.startup.register(on_startup)
-        SimpleRequestHandler(dispatcher=dp, bot=self.god_bot).register(
-            self.app, path=GOD_BOT_PATH
-        )
-        setup_application(self.app, dp, bot=self.god_bot)
+        if GOD_BOT_TOKEN is not None:
+            self.god_bot = Bot(
+                token=GOD_BOT_TOKEN,
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            storage = MemoryStorage()
+            # In order to use RedisStorage you need to use Key Builder with bot ID:
+            # storage = RedisStorage.from_url(TG_REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
+            dp = Dispatcher(storage=storage)
+            dp.include_router(god_router)
+            dp.startup.register(on_startup)
+            SimpleRequestHandler(dispatcher=dp, bot=self.god_bot).register(
+                self.app, path=GOD_BOT_PATH
+            )
+            setup_application(self.app, dp, bot=self.god_bot)
 
     def init_all_dispatchers(self):
         for kind, b in self.routers.items():
@@ -51,11 +52,13 @@ class BotPool:
             # storage = RedisStorage.from_url(TG_REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
             b.set_dispatcher(Dispatcher(storage=storage))
             b.get_dispatcher().include_router(b.get_router())
+            print(BOTS_PATH.format(kind=kind.value, bot_token="{bot_token}"))
             TokenBasedRequestHandler(
                 dispatcher=b.get_dispatcher(),
                 default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             ).register(
-                self.app, path=BOTS_PATH.format(kind=kind, bot_token="{bot_token}")
+                self.app,
+                path=BOTS_PATH.format(kind=kind.value, bot_token="{bot_token}"),
             )
             setup_application(self.app, b.get_dispatcher())
 
