@@ -2,6 +2,7 @@
 Fork of langchain_community/agent_toolkits/slack/toolkit.py.
 We need to pass the Slack client to the tools.
 """
+
 import logging
 
 from typing import List
@@ -21,37 +22,42 @@ from skill_set import SkillSetOptions
 
 logger = logging.getLogger(__name__)
 
+
 class SlackSkillSetOptions(SkillSetOptions):
     slack_bot_token: str
 
 
-class CrestalSlackGetChannel(SlackGetChannel):
+class SelfHostedSlackGetChannel(SlackGetChannel):
     client: WebClient
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def __init__(self, client: WebClient) -> None:
         super().__init__(client=client)
 
-class CrestalSlackGetMessage(SlackGetMessage):
+
+class SelfHostedSlackGetMessage(SlackGetMessage):
     client: WebClient
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def __init__(self, client: WebClient) -> None:
         super().__init__(client=client)
 
-class CrestalSlackScheduleMessage(SlackScheduleMessage):
+
+class SelfHostedSlackScheduleMessage(SlackScheduleMessage):
     client: WebClient
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def __init__(self, client: WebClient) -> None:
         super().__init__(client=client)
 
-class CrestalSlackSendMessage(SlackSendMessage):
+
+class SelfHostedSlackSendMessage(SlackSendMessage):
     client: WebClient
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def __init__(self, client: WebClient) -> None:
         super().__init__(client=client)
+
 
 class SlackSkillSet(BaseToolkit):
     """Toolkit for interacting with Slack.
@@ -126,8 +132,8 @@ class SlackSkillSet(BaseToolkit):
         """Get the tools in the toolkit."""
         client = WebClient(token=self.options.slack_bot_token)
         return [
-            CrestalSlackGetChannel(client=client),
-            CrestalSlackGetMessage(client=client),
-            CrestalSlackScheduleMessage(client=client),
-            CrestalSlackSendMessage(client=client),
+            SelfHostedSlackGetChannel(client=client),
+            SelfHostedSlackGetMessage(client=client),
+            SelfHostedSlackScheduleMessage(client=client),
+            SelfHostedSlackSendMessage(client=client),
         ]
