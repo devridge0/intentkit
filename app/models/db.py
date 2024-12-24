@@ -1,16 +1,13 @@
-import logging
-import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus
 
 import psycopg
-from sqlalchemy import Column, String, func, text
+from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from app.db_mig import safe_migrate
-from app.slack import send_slack_message
+from utils.slack import send_slack_message
 
 conn_str = None
 conn = None

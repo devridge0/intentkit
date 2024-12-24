@@ -28,8 +28,10 @@ cd intentkit
 ```
 
 2. Set up your environment:
+Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
+You can create a virtual environment with a specified version of Python.
 ```bash
-python -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
@@ -40,13 +42,18 @@ cp example.env .env
 # Edit .env with your configuration
 ```
 
+3. Add your first Agent:
+```bash
+python -m debug.create_agent
+```
+
 4. Run the application:
 ```bash
 # Run the API server in development mode
-uvicorn app.main:app --reload
+uvicorn app.entrypoints.api:app --reload
 
 # Run the autonomous agent scheduler
-python -m app.autonomous
+python -m app.entrypoints.autonomous
 ```
 
 ## Configuration
@@ -54,8 +61,8 @@ python -m app.autonomous
 The application can be configured using environment variables or AWS Secrets Manager. Key configuration options:
 
 - `ENV`: Environment (local, or others)
-- `DB_*`: PostgreSQL Database configuration
-- `OPENAI_API_KEY`: OpenAI API key for agent interactions
+- `DB_*`: PostgreSQL Database configuration (Required)
+- `OPENAI_API_KEY`: OpenAI API key for agent interactions (Required)
 - `CDP_*`: Coinbase Developer Platform configuration (Optional)
 
 See `example.env` for all available options.
