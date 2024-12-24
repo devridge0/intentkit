@@ -16,8 +16,8 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
 from sqlmodel import Session, select
 
-from app.core.ai import execute_agent, initialize_agent
 from app.config.config import config
+from app.core.ai import execute_agent, initialize_agent
 from app.models.db import Agent, AgentQuota, get_db, init_db
 from utils.logging import JsonFormatter
 
