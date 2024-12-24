@@ -2,18 +2,25 @@
 
 IntentKit is an autonomous agent framework that enables the creation and management of AI agents with various capabilities including blockchain interactions, social media management, and custom skill integration.
 
+## Alpha Warning
+
+This project is currently in alpha stage and is not recommended for production use.
+
 ## Features
 
-- 🤖 Autonomous Agent Management
-- 🔄 Scheduled Task Execution
-- 💼 Quota Management System
-- 🔗 Blockchain Integration via CDP (Coinbase Developer Platform)
-- 🐦 Twitter Integration
+- 🤖 Multiple Agent Support
+- 🔄 Autonomous Agent Management
+- 🔗 Blockchain Integration (CDP for now, will add more)
+- 🐦 Socail Media Integration (Twitter,Telegram for now, will add more)
 - 🛠️ Extensible Skill System
-- 🔌 RESTful API Interface
+- 🔌 Extensible Plugin System
 
 ## Quick Start
 
+### Docker (Recommended)
+WIP
+
+### Local Development
 1. Clone the repository:
 ```bash
 git clone https://github.com/crestal/intentkit.git
@@ -35,8 +42,8 @@ cp example.env .env
 
 4. Run the application:
 ```bash
-# Run the API server
-python -m app.main
+# Run the API server in development mode
+uvicorn app.main:app --reload
 
 # Run the autonomous agent scheduler
 python -m app.autonomous
@@ -46,10 +53,10 @@ python -m app.autonomous
 
 The application can be configured using environment variables or AWS Secrets Manager. Key configuration options:
 
-- `ENV`: Environment (local, testnet-dev, testnet-prod)
-- `DB_*`: Database configuration
-- `CDP_*`: Coinbase Developer Platform configuration
+- `ENV`: Environment (local, or others)
+- `DB_*`: PostgreSQL Database configuration
 - `OPENAI_API_KEY`: OpenAI API key for agent interactions
+- `CDP_*`: Coinbase Developer Platform configuration (Optional)
 
 See `example.env` for all available options.
 
@@ -58,12 +65,11 @@ See `example.env` for all available options.
 - `app/`: Core application code
   - `ai.py`: Agent initialization and execution
   - `autonomous.py`: Autonomous agent scheduler
-  - `main.py`: FastAPI application
+  - `main.py`: API entrypoint
   - `db.py`: Database models and connection
-- `skill/`: Custom skill implementations
+- `skill/`: Skill implementations
 - `skill_set/`: Predefined skill set collections
 - `utils/`: Utility functions
-- `manifests/`: Kubernetes deployment manifests
 
 ## Development
 
