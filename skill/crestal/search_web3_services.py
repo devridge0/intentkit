@@ -18,7 +18,7 @@ def search_web3_services(
     try:
         response = requests.get(
             f"https://api.service.crestal.network/v1/services?keyword={keyword}",
-            timeout=10  # Add 10 second timeout
+            timeout=10,  # Add 10 second timeout
         )
         services = response.json()
         data = ""
