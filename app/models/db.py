@@ -7,8 +7,8 @@ from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from utils.slack import send_slack_message
 from app.models.db_mig import safe_migrate
+from utils.slack import send_slack_message
 
 conn_str = None
 conn = None
