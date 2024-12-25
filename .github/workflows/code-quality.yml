@@ -30,9 +30,9 @@ jobs:
         
     - name: Check formatting with Black
       run: |
-        black --check .
+        poetry run black --check .
         
     - name: Check imports with isort
       run: |
-        isort --check-only --diff .
+        poetry run isort --check-only --diff .
         
