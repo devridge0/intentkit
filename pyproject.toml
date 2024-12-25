@@ -28,3 +28,55 @@ ignore_missing_imports = true
 explicit_package_bases = true
 namespace_packages = true
 mypy_path = "."
+
+[tool.poetry]
+name = "intentkit"
+version = "0.1.0"
+description = "Intent-based AI Agent Platform"
+authors = ["Ruihua <ruihua@crestal.network>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.6"
+uvicorn = "^0.32.1"
+gunicorn = "^23.0.0"
+pydantic = "*"
+pydantic-settings = "^2.7.0"
+sqlmodel = "^0.0.22"
+sqlalchemy = "^2.0.36"
+psycopg = "^3.2.3"
+psycopg2 = "*"
+psycopg-pool = "^3.2.4"
+alembic = "^1.14.0"
+pgvector = "^0.2.5"
+langchain = "^0.3.13"
+langchain-core = "^0.3.28"
+langchain-openai = "^0.2.11"
+langchain-postgres = "^0.0.12"
+langchain-community = "^0.3.13"
+langgraph = "^0.2.56"
+langgraph-checkpoint = "^2.0.8"
+langgraph-checkpoint-postgres = "^2.0.8"
+openai = "^1.57.0"
+cdp-langchain = "^0.0.8"
+cdp-sdk = "^0.12.0"
+cdp-agentkit-core = "^0.0.6"
+twitter-langchain = "^0.0.6"
+tweepy = "^4.14.0"
+python-dotenv = "^1.0.1"
+APScheduler = "^3.11.0"
+anyio = "^4.7.0"
+slack-sdk = "^3.34.0"
+requests = "^2.32.3"
+aws-secretsmanager-caching = "^1.1.3"
+botocore = "^1.35.81"
+
+[tool.poetry.group.dev] 
+
+[tool.poetry.group.dev.dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
