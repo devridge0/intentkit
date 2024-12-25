@@ -15,7 +15,12 @@ engine = None
 
 
 def init_db(
-    host: str, username: str, password: str, dbname: str, port: str = "5432"
+    host: str,
+    username: str,
+    password: str,
+    dbname: str,
+    port: str = "5432",
+    auto_migrate: bool = True,
 ) -> None:
     """Initialize the database and handle schema updates.
 
@@ -36,7 +41,8 @@ def init_db(
     global engine
     if engine is None:
         engine = create_engine(conn_str)
-        # safe_migrate(engine)
+        if auto_migrate:
+            safe_migrate(engine)
 
     # Initialize psycopg connection
     global conn
