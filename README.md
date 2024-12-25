@@ -66,7 +66,7 @@ In terminal, curl can not auto esacpe special chars, so you can use browser to t
 ### Local Development
 1. Clone the repository:
 ```bash
-git clone https://github.com/crestal/intentkit.git
+git clone https://github.com/crestalnetwork/intentkit.git
 cd intentkit
 ```
 
