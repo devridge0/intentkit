@@ -58,6 +58,7 @@ class Config:
         if "host" not in self.db:
             raise ValueError("db config is not set")
         # this part can be load from env or aws secrets manager
+        self.db["auto_migrate"] = self.load("DB_AUTO_MIGRATE", "true") == "true"
         self.debug = self.load("DEBUG") == "true"
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
