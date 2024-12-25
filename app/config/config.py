@@ -69,9 +69,9 @@ class Config:
         setup_logging(self.env, self.debug)
         logger.info("config loaded")
 
-    def load(self, key):
+    def load(self, key, default=None):
         """Load a secret from the secrets map or env"""
-        return self.secrets.get(key, os.getenv(key))
+        return self.secrets.get(key, os.getenv(key, default))
 
 
 config = Config()
