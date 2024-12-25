@@ -11,7 +11,7 @@ This project is currently in alpha stage and is not recommended for production u
 - 🤖 Multiple Agent Support
 - 🔄 Autonomous Agent Management
 - 🔗 Blockchain Integration (CDP for now, will add more)
-- 🐦 Socail Media Integration (Twitter,Telegram for now, will add more)
+- 🐦 Social Media Integration (Twitter,Telegram for now, will add more)
 - 🛠️ Extensible Skill System
 - 🔌 Extensible Plugin System
 
@@ -72,22 +72,16 @@ cd intentkit
 
 2. Set up your environment:
 Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
-You can create a virtual environment with a specified version of Python.
+If you haven't installed `poetry`, please install it first.
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-pip install -r requirements.txt
+poetry install --with dev
+poetry shell
 ```
 
 3. Configure your environment:
 ```bash
 cp example.env .env
 # Edit .env with your configuration
-```
-
-3. Add your first Agent:
-```bash
-python -m debug.create_agent
 ```
 
 4. Run the application:
@@ -98,6 +92,8 @@ uvicorn app.entrypoints.api:app --reload
 # Run the autonomous agent scheduler
 python -m app.entrypoints.autonomous
 ```
+
+"Create Agent" and "Try it out" refer to the Docker section.
 
 ## Configuration
 
