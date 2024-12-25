@@ -18,7 +18,33 @@ This project is currently in alpha stage and is not recommended for production u
 ## Quick Start
 
 ### Docker (Recommended)
-WIP
+1. Create a new directory and navigate into it:
+```bash
+mkdir intentkit && cd intentkit
+```
+
+2. Download the required files:
+```bash
+# Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/docker-compose.yml
+
+# Download example environment file
+curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/example.env
+```
+
+3. Set up environment:
+```bash
+# Rename example.env to .env
+mv example.env .env
+
+# Edit .env file and add your configuration
+# Make sure to set OPENAI_API_KEY
+```
+
+4. Start the services:
+```bash
+docker compose up
+```
 
 ### Local Development
 1. Clone the repository:
@@ -85,7 +111,6 @@ See `example.env` for all available options.
 1. Create a new skill in the `skill/` directory
 2. Implement the skill interface
 3. Register the skill in `skill/__init__.py`
-
 
 ## Contributing
 
