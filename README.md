@@ -46,6 +46,23 @@ mv example.env .env
 docker compose up
 ```
 
+5. Create your first Agent:
+```bash
+curl -X POST http://127.0.0.1:8000/agents \
+     -H "Content-Type: application/json" \
+     -d '{
+         "id": "admin",
+         "name": "Admin",
+         "prompt": "You are an autonomous AI agent. Respond to user queries."
+     }'
+```
+
+6. Try it out:
+```bash
+curl "http://127.0.0.1:8000/agents/admin/chat?q=Hello"
+```
+In terminal, curl can not auto esacpe special chars, so you can use browser to test. Just copy the url to your browser, replace "Hello" with your words.
+
 ### Local Development
 1. Clone the repository:
 ```bash
@@ -96,12 +113,17 @@ See `example.env` for all available options.
 ## Project Structure
 
 - `app/`: Core application code
-  - `ai.py`: Agent initialization and execution
-  - `autonomous.py`: Autonomous agent scheduler
-  - `main.py`: API entrypoint
-  - `db.py`: Database models and connection
-- `skill/`: Skill implementations
-- `skill_set/`: Predefined skill set collections
+  - `core/`: Core modules
+    - `ai.py`: Agent initialization and execution
+  - `entrypoints/`: Entry points
+    - `autonomous.py`: Autonomous agent scheduler
+    - `api.py`: API entrypoint
+  - `config/`: Configuration management
+    - `config.py`: Configuration loading and validation
+  - `models/`: Database models
+    - `db.py`: Database models and connection
+- `skills/`: Skill implementations
+- `skill_sets/`: Predefined skill set collections
 - `utils/`: Utility functions
 
 ## Development
