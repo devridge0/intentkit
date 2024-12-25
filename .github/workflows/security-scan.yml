@@ -28,4 +28,4 @@ jobs:
         
     - name: Run Bandit security scan
       run: |
-        bandit -r app/ skills/ skill_sets/ utils/ -ll
+        poetry run bandit -r app/ skills/ skill_sets/ utils/ -ll
