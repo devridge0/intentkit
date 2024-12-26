@@ -31,6 +31,7 @@ def init_db(
         password: Database password
         dbname: Database name
         port: Database port (default: 5432)
+        auto_migrate: Whether to run migrations automatically (default: True)
     """
     global conn_str
     if conn_str is None:
@@ -38,10 +39,17 @@ def init_db(
             f"postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}"
         )
 
-    # Initialize SQLAlchemy engine
+    # Initialize SQLAlchemy engine with pool settings
     global engine
     if engine is None:
-        engine = create_engine(conn_str)
+        engine = create_engine(
+            conn_str,
+            pool_size=20,  # Increase pool size
+            max_overflow=30,  # Increase max overflow
+            pool_timeout=60,  # Increase timeout
+            pool_pre_ping=True,  # Enable connection health checks
+            pool_recycle=3600,  # Recycle connections after 1 hour
+        )
         if auto_migrate:
             safe_migrate(engine)
 
@@ -62,6 +70,10 @@ def get_coon_str():
 
 def get_coon():
     return conn
+
+
+def get_engine():
+    return engine
 
 
 class Agent(SQLModel, table=True):
@@ -128,18 +140,18 @@ class AgentQuota(SQLModel, table=True):
     __tablename__ = "agent_quotas"
 
     id: str = Field(primary_key=True)
-    plan: str = Field(default="free")
+    plan: str = Field(default="self-hosted")
     message_count_total: int = Field(default=0)
-    message_limit_total: int = Field(default=1000)
+    message_limit_total: int = Field(default=9999)
     message_count_monthly: int = Field(default=0)
-    message_limit_monthly: int = Field(default=100)
+    message_limit_monthly: int = Field(default=9999)
     message_count_daily: int = Field(default=0)
-    message_limit_daily: int = Field(default=10)
+    message_limit_daily: int = Field(default=9999)
     last_message_time: Optional[datetime] = Field(default=None)
     autonomous_count_total: int = Field(default=0)
-    autonomous_limit_total: int = Field(default=100)
+    autonomous_limit_total: int = Field(default=9999)
     autonomous_count_monthly: int = Field(default=0)
-    autonomous_limit_monthly: int = Field(default=100)
+    autonomous_limit_monthly: int = Field(default=9999)
     last_autonomous_time: Optional[datetime] = Field(default=None)
 
     @staticmethod
