@@ -18,9 +18,15 @@ from tg.bot.types.router_obj import RouterObj
 BOTS_PATH = "/webhook/tgbot/{kind}/{bot_token}"
 
 
+async def health_handler(request):
+    """Health check endpoint handler."""
+    return web.json_response({"status": "healthy"})
+
+
 class BotPool:
     def __init__(self, base_url):
         self.app = web.Application()
+        self.app.router.add_get("/health", health_handler)
         self.base_url = f"{base_url}{BOTS_PATH}"
         self.routers = {
             Kind.General: RouterObj(general_router),
