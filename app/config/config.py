@@ -60,10 +60,13 @@ class Config:
         # this part can be load from env or aws secrets manager
         self.db["auto_migrate"] = self.load("DB_AUTO_MIGRATE", "true") == "true"
         self.debug = self.load("DEBUG") == "true"
+        self.debug_resp = (
+            self.load("DEBUG_RESP", "false") == "true"
+        )  # Agent response with thought steps and time cost
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         self.openai_api_key = self.load("OPENAI_API_KEY")
-        self.slack_token = self.load("SLACK_TOKEN")
+        self.slack_token = self.load("SLACK_TOKEN")  # For alert purposes only
         self.slack_channel = self.load("SLACK_CHANNEL")
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
@@ -74,4 +77,4 @@ class Config:
         return self.secrets.get(key, os.getenv(key, default))
 
 
-config = Config()
+config: Config = Config()
