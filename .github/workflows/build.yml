@@ -3,10 +3,13 @@ name: Build Docker Image
 on:
   push:
     branches: [ main ]
+    tags:
+      - "v*.*.*"
     paths-ignore:
       - '.github/**'
       - 'docs/**'
       - '*.md'
+  pull_request:
 
 
 jobs:
@@ -23,6 +26,19 @@ jobs:
         uses: sergeysova/jq-action@v2
         with:
           cmd: echo -n "${{github.event.head_commit.message}}" | jq -Rsa . | sed -e 's/^"//' -e 's/"$//'
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            crestal/intentkit
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,9 +53,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            RELEASE=${{ github.run_number }}
+            RELEASE=${{ github.sha }}
           push: true
-          tags: crestal/intentkit:latest,crestal/intentkit:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       -
