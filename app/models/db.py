@@ -31,6 +31,7 @@ def init_db(
         password: Database password
         dbname: Database name
         port: Database port (default: 5432)
+        auto_migrate: Whether to run migrations automatically (default: True)
     """
     global conn_str
     if conn_str is None:
@@ -38,10 +39,17 @@ def init_db(
             f"postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}"
         )
 
-    # Initialize SQLAlchemy engine
+    # Initialize SQLAlchemy engine with pool settings
     global engine
     if engine is None:
-        engine = create_engine(conn_str)
+        engine = create_engine(
+            conn_str,
+            pool_size=20,  # Increase pool size
+            max_overflow=30,  # Increase max overflow
+            pool_timeout=60,  # Increase timeout
+            pool_pre_ping=True,  # Enable connection health checks
+            pool_recycle=3600,  # Recycle connections after 1 hour
+        )
         if auto_migrate:
             safe_migrate(engine)
 
@@ -62,6 +70,10 @@ def get_coon_str():
 
 def get_coon():
     return conn
+
+
+def get_engine():
+    return engine
 
 
 class Agent(SQLModel, table=True):
