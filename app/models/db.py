@@ -140,18 +140,18 @@ class AgentQuota(SQLModel, table=True):
     __tablename__ = "agent_quotas"
 
     id: str = Field(primary_key=True)
-    plan: str = Field(default="free")
+    plan: str = Field(default="self-hosted")
     message_count_total: int = Field(default=0)
-    message_limit_total: int = Field(default=1000)
+    message_limit_total: int = Field(default=9999)
     message_count_monthly: int = Field(default=0)
-    message_limit_monthly: int = Field(default=100)
+    message_limit_monthly: int = Field(default=9999)
     message_count_daily: int = Field(default=0)
-    message_limit_daily: int = Field(default=10)
+    message_limit_daily: int = Field(default=9999)
     last_message_time: Optional[datetime] = Field(default=None)
     autonomous_count_total: int = Field(default=0)
-    autonomous_limit_total: int = Field(default=100)
+    autonomous_limit_total: int = Field(default=9999)
     autonomous_count_monthly: int = Field(default=0)
-    autonomous_limit_monthly: int = Field(default=100)
+    autonomous_limit_monthly: int = Field(default=9999)
     last_autonomous_time: Optional[datetime] = Field(default=None)
 
     @staticmethod
