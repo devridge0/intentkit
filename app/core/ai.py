@@ -21,6 +21,7 @@ from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.prebuilt import create_react_agent
+from langgraph.graph.graph import CompiledGraph
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from twitter_langchain import TwitterApiWrapper, TwitterToolkit
@@ -34,7 +35,7 @@ from skills.crestal import get_crestal_skill
 logger = logging.getLogger(__name__)
 
 # Global variable to cache all agent executors
-agents = {}
+agents: dict[str, CompiledGraph] = {}
 
 
 def initialize_agent(aid):
@@ -179,45 +180,52 @@ def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
             "Total time cost: 1.234 seconds"
         ]
     """
-    config = {"configurable": {"thread_id": thread_id}}
+    stream_config = {"configurable": {"thread_id": thread_id}}
+    resp_debug = []
     resp = []
     start = time.perf_counter()
     last = start
 
     # user input
-    resp.append(f"[ Input: ]\n\n {prompt}\n\n-------------------\n")
+    resp_debug.append(f"[ Input: ]\n\n {prompt}\n\n-------------------\n")
 
     # cold start
     if aid not in agents:
         initialize_agent(aid)
-        resp.append(f"[ Agent cold start ... ]")
-        resp.append(
+        resp_debug.append(f"[ Agent cold start ... ]")
+        resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )
         last = time.perf_counter()
 
-    executor = agents[aid]
+    executor: CompiledGraph = agents[aid]
     # run
-    for chunk in executor.stream({"messages": [HumanMessage(content=prompt)]}, config):
+    for chunk in executor.stream(
+        {"messages": [HumanMessage(content=prompt)]}, stream_config
+    ):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
             if v:
-                resp.append("[ Agent: ]\n")
+                resp_debug.append("[ Agent: ]\n")
+                resp_debug.append(v)
                 resp.append(v)
             else:
-                resp.append("[ Agent is thinking ... ]")
-            resp.append(
+                resp_debug.append("[ Agent is thinking ... ]")
+            resp_debug.append(
                 f"\n------------------- agent cost: {time.perf_counter() - last:.3f} seconds\n"
             )
             last = time.perf_counter()
         elif "tools" in chunk:
-            resp.append("[ Skill running ... ]\n")
-            resp.append(chunk["tools"]["messages"][0].content)
-            resp.append(
+            resp_debug.append("[ Skill running ... ]\n")
+            resp_debug.append(chunk["tools"]["messages"][0].content)
+            resp_debug.append(
                 f"\n------------------- skill cost: {time.perf_counter() - last:.3f} seconds\n"
             )
             last = time.perf_counter()
 
     total_time = time.perf_counter() - start
-    resp.append(f"Total time cost: {total_time:.3f} seconds")
-    return resp
+    resp_debug.append(f"Total time cost: {total_time:.3f} seconds")
+    if config.debug_resp:
+        return resp_debug
+    else:
+        return resp
