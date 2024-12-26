@@ -10,17 +10,15 @@ Database connections and agent state are managed throughout the application life
 """
 
 import logging
-import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
-from langchain_core.messages import HumanMessage
 from sqlmodel import Session, select
 
-from app.ai import execute_agent, initialize_agent
-from app.config import config
-from app.db import Agent, AgentQuota, get_db, init_db
+from app.config.config import config
+from app.core.ai import execute_agent, initialize_agent
+from app.models.db import Agent, AgentQuota, get_db, init_db
 from utils.logging import JsonFormatter
 
 # init logger

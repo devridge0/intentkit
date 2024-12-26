@@ -11,27 +11,71 @@ This project is currently in alpha stage and is not recommended for production u
 - 🤖 Multiple Agent Support
 - 🔄 Autonomous Agent Management
 - 🔗 Blockchain Integration (CDP for now, will add more)
-- 🐦 Socail Media Integration (Twitter,Telegram for now, will add more)
+- 🐦 Social Media Integration (Twitter,Telegram for now, will add more)
 - 🛠️ Extensible Skill System
 - 🔌 Extensible Plugin System
 
 ## Quick Start
 
 ### Docker (Recommended)
-WIP
+1. Create a new directory and navigate into it:
+```bash
+mkdir intentkit && cd intentkit
+```
+
+2. Download the required files:
+```bash
+# Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/docker-compose.yml
+
+# Download example environment file
+curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/example.env
+```
+
+3. Set up environment:
+```bash
+# Rename example.env to .env
+mv example.env .env
+
+# Edit .env file and add your configuration
+# Make sure to set OPENAI_API_KEY
+```
+
+4. Start the services:
+```bash
+docker compose up
+```
+
+5. Create your first Agent:
+```bash
+curl -X POST http://127.0.0.1:8000/agents \
+     -H "Content-Type: application/json" \
+     -d '{
+         "id": "admin",
+         "name": "Admin",
+         "prompt": "You are an autonomous AI agent. Respond to user queries."
+     }'
+```
+
+6. Try it out:
+```bash
+curl "http://127.0.0.1:8000/agents/admin/chat?q=Hello"
+```
+In terminal, curl can not auto esacpe special chars, so you can use browser to test. Just copy the url to your browser, replace "Hello" with your words.
 
 ### Local Development
 1. Clone the repository:
 ```bash
-git clone https://github.com/crestal/intentkit.git
+git clone https://github.com/crestalnetwork/intentkit.git
 cd intentkit
 ```
 
 2. Set up your environment:
+Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
+If you haven't installed `poetry`, please install it first.
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-pip install -r requirements.txt
+poetry install --with dev
+poetry shell
 ```
 
 3. Configure your environment:
@@ -43,19 +87,21 @@ cp example.env .env
 4. Run the application:
 ```bash
 # Run the API server in development mode
-uvicorn app.main:app --reload
+uvicorn app.entrypoints.api:app --reload
 
 # Run the autonomous agent scheduler
-python -m app.autonomous
+python -m app.entrypoints.autonomous
 ```
+
+"Create Agent" and "Try it out" refer to the Docker section.
 
 ## Configuration
 
 The application can be configured using environment variables or AWS Secrets Manager. Key configuration options:
 
 - `ENV`: Environment (local, or others)
-- `DB_*`: PostgreSQL Database configuration
-- `OPENAI_API_KEY`: OpenAI API key for agent interactions
+- `DB_*`: PostgreSQL Database configuration (Required)
+- `OPENAI_API_KEY`: OpenAI API key for agent interactions (Required)
 - `CDP_*`: Coinbase Developer Platform configuration (Optional)
 
 See `example.env` for all available options.
@@ -63,12 +109,17 @@ See `example.env` for all available options.
 ## Project Structure
 
 - `app/`: Core application code
-  - `ai.py`: Agent initialization and execution
-  - `autonomous.py`: Autonomous agent scheduler
-  - `main.py`: API entrypoint
-  - `db.py`: Database models and connection
-- `skill/`: Skill implementations
-- `skill_set/`: Predefined skill set collections
+  - `core/`: Core modules
+    - `ai.py`: Agent initialization and execution
+  - `entrypoints/`: Entry points
+    - `autonomous.py`: Autonomous agent scheduler
+    - `api.py`: API entrypoint
+  - `config/`: Configuration management
+    - `config.py`: Configuration loading and validation
+  - `models/`: Database models
+    - `db.py`: Database models and connection
+- `skills/`: Skill implementations
+- `skill_sets/`: Predefined skill set collections
 - `utils/`: Utility functions
 
 ## Development
@@ -78,7 +129,6 @@ See `example.env` for all available options.
 1. Create a new skill in the `skill/` directory
 2. Implement the skill interface
 3. Register the skill in `skill/__init__.py`
-
 
 ## Contributing
 

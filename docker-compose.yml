@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.1
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-intentkit}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: crestal/intentkit:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENV=${ENV:-local}
+      - RELEASE=${RELEASE:-local}
+      - DB_USERNAME=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-intentkit}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
+      - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
+    ports:
+      - "8000:8000"
+    command: poetry run uvicorn app.entrypoints.api:app --host 0.0.0.0 --port 8000
+
+  autonomous:
+    image: crestal/intentkit:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENV=${ENV:-local}
+      - RELEASE=${RELEASE:-local}
+      - DB_USERNAME=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-intentkit}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
+      - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
+    command: poetry run python -m app.entrypoints.autonomous
+
+volumes:
+  postgres_data:
