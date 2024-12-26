@@ -29,11 +29,14 @@ class AgentScheduler:
             for agent in agents:
                 if agent.telegram_config["token"] not in self.bot_pool.bots:
                     new_bots.append(agent.telegram_config)
+                    logger.info("New agent with id {id} found...".format(id=agent.id))
+
             return new_bots
 
     async def start(self, interval):
+        logger.info("New agent addition tracking started...")
         while True:
-            print("check for new bots...")
+            logger.info("check for new bots...")
             await asyncio.sleep(interval)
             if self.check_new_bots() != None:
                 for new_bot in self.check_new_bots():
@@ -54,6 +57,7 @@ def run_telegram_server() -> None:
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    logger.info("Initialize bot pool...")
     bot_pool = BotPool(config.tg_base_url)
 
     bot_pool.init_god_bot()
