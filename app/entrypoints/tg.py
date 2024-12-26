@@ -6,7 +6,7 @@ import sys
 from sqlmodel import Session, select
 
 from app.config.config import config
-from app.models.db import init_db, get_engine, Agent
+from app.models.db import Agent, get_engine, init_db
 from tg.bot.pool import BotPool
 
 logger = logging.getLogger(__name__)
