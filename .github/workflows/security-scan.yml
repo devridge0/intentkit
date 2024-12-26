@@ -19,12 +19,13 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v2
+        
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install bandit
-        pip install -r requirements.txt
-
+        poetry install --with dev
+        
     - name: Run Bandit security scan
       run: |
-        bandit -r app/ skill/ skill_set/ utils/ -ll
+        poetry run bandit -r app/ skills/ skill_sets/ utils/ -ll

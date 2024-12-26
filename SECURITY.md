@@ -137,4 +137,3 @@ We would like to thank the following for their contributions to our security:
 
 For any questions about this security policy, please contact:
 - Email: [security@crestal.network](mailto:security@crestal.network)
-- GitHub Security Advisories: [IntentKit Security](https://github.com/crestal/intentkit/security/advisories)
