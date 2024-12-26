@@ -66,7 +66,7 @@ class Config:
         self.slack_token = self.load("SLACK_TOKEN")
         self.slack_channel = self.load("SLACK_CHANNEL")
         self.tg_base_url = self.load("TG_BASE_URL")
-        self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
+        self.tg_server_host = self.load("TG_SERVER_HOST", "0.0.0.0")
         self.tg_server_port = self.load("TG_SERVER_PORT", "8081")
         self.tg_new_agent_poll_interval = self.load("TG_NEW_AGENT_POLL_INTERVAL", "60")
 
