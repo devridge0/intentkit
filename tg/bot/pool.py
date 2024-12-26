@@ -15,7 +15,7 @@ from tg.bot.kind.god.startup import GOD_BOT_PATH, GOD_BOT_TOKEN, on_startup
 from tg.bot.types.kind import Kind
 from tg.bot.types.router_obj import RouterObj
 
-BOTS_PATH = "/webhook/bot/{kind}/{bot_token}"
+BOTS_PATH = "/webhook/tgbot/{kind}/{bot_token}"
 
 
 class BotPool:
