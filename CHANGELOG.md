@@ -1,5 +1,12 @@
 # Changelog
 
+## 2024-12-26
+
+### Improvements
+- Change default plan to "self-hosted" from "free", new agent now has 9999 message limit for testing
+- Add a flag "DEBUG_RESP", when set to true, the Agent will respond with thought processes and time costs
+- Better DB session management
+
 ## 2024-12-25
 
 ### Improvements
