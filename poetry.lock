@@ -3696,17 +3696,6 @@ pydantic = ">=1.10.13,<3.0.0"
 SQLAlchemy = ">=2.0.14,<2.1.0"
 
 [[package]]
-name = "standard-imghdr"
-version = "3.13.0"
-description = "Standard library imghdr redistribution. \"dead battery\"."
-optional = false
-python-versions = "*"
-files = [
-    {file = "standard_imghdr-3.13.0-py3-none-any.whl", hash = "sha256:30a1bff5465605bb496f842a6ac3cc1f2131bf3025b0da28d4877d6d4b7cc8e9"},
-    {file = "standard_imghdr-3.13.0.tar.gz", hash = "sha256:8d9c68058d882f6fc3542a8d39ef9ff94d2187dc90bd0c851e0902776b7b7a42"},
-]
-
-[[package]]
 name = "starlette"
 version = "0.41.3"
 description = "The little ASGI library that shines."
@@ -3864,24 +3853,6 @@ dev = ["coverage (>=4.4.2)", "coveralls (>=2.1.0)", "tox (>=3.21.0)"]
 docs = ["myst-parser (==0.15.2)", "readthedocs-sphinx-search (==0.1.1)", "sphinx (==4.2.0)", "sphinx-hoverxref (==0.7b1)", "sphinx-rtd-theme (==1.0.0)", "sphinx-tabs (==3.2.0)"]
 socks = ["requests[socks] (>=2.27.0,<3)"]
 test = ["vcrpy (>=1.10.3)"]
-
-[[package]]
-name = "twitter-langchain"
-version = "0.0.6"
-description = "Twitter Langchain Toolkit"
-optional = false
-python-versions = "<4.0,>=3.10"
-files = [
-    {file = "twitter_langchain-0.0.6-py3-none-any.whl", hash = "sha256:75553d3382dbfa3b40d3ab175b72003485173c87a81ac2e52406488a0258b791"},
-    {file = "twitter_langchain-0.0.6.tar.gz", hash = "sha256:f5994ad5a9f8a5f562c93956dc27cb7bc89f805e8b694f5011096d581c9d6bf1"},
-]
-
-[package.dependencies]
-cdp-agentkit-core = ">=0.0.6,<0.0.7"
-langchain = ">=0.3.7,<0.4.0"
-pydantic = ">=2.9.2,<3.0.0"
-standard-imghdr = ">=3.13.0,<4.0.0"
-tweepy = ">=4.14.0,<5.0.0"
 
 [[package]]
 name = "types-requests"
@@ -4213,4 +4184,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0318f029003293f90c8bb87f3164bff1de38dfa43bf3c1c4e565a044d041901c"
+content-hash = "6a40563b33254eff327820922d425b3c4184895474d8012123330e2d38834b9e"
