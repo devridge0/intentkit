@@ -4,6 +4,7 @@ from tweepy import Client
 
 from skills.twitter.base import TwitterBaseTool
 from skills.twitter.get_mentions import TwitterGetMentions
+from skills.twitter.get_timeline import TwitterGetTimeline
 from skills.twitter.post_tweet import TwitterPostTweet
 from skills.twitter.reply_tweet import TwitterReplyTweet
 
@@ -15,5 +16,7 @@ def get_twitter_skill(name: str, client: Client) -> TwitterBaseTool:
         return TwitterPostTweet(client=client)
     elif name == "reply_tweet":
         return TwitterReplyTweet(client=client)
+    elif name == "get_timeline":
+        return TwitterGetTimeline(client=client)
     else:
         raise ValueError(f"Unknown Twitter skill: {name}")
