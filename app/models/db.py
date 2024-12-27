@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus
 
-import psycopg
+from psycopg_pool import ConnectionPool
 from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -56,7 +56,7 @@ def init_db(
     # Initialize psycopg connection
     global conn
     if conn is None:
-        conn = psycopg.connect(conn_str, autocommit=True)
+        conn = ConnectionPool(conn_str, open=True)
 
 
 def get_db() -> Session:
