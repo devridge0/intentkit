@@ -28,7 +28,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import Session
 
 from app.config.config import config
-from app.models.db import Agent, get_coon, get_engine
+from app.models.agent import Agent
+from app.models.db import get_coon, get_engine
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
