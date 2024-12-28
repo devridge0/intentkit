@@ -12,7 +12,7 @@ from langchain_community.tools.slack.schedule_message import SlackScheduleMessag
 from langchain_community.tools.slack.send_message import SlackSendMessage
 from langchain_core.tools import BaseTool
 from langchain_core.tools.base import BaseToolkit
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
 from slack_sdk import WebClient
 
 from skill_sets import SkillSetOptions
