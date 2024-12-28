@@ -160,3 +160,45 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     # TODO: change here when multiple instances deploy
     initialize_agent(agent.id)
     return latest_agent
+
+
+@app.get("/agents")
+def get_agents(db: Session = Depends(get_db)):
+    """Get all agents with their quota information.
+
+    Args:
+        db: Database session
+
+    Returns:
+        list: List of agents with their quota information
+    """
+    # Query agents and quotas together
+    query = select(Agent.id, Agent.name, AgentQuota).join(
+        AgentQuota, Agent.id == AgentQuota.id, isouter=True
+    )
+
+    results = db.exec(query).all()
+
+    # Format the response
+    agents = []
+    for result in results:
+        agent_data = {
+            "id": result.id,
+            "name": result.name,
+            "quota": {
+                "plan": result[2].plan if result[2] else "none",
+                "message_count_total": (
+                    result[2].message_count_total if result[2] else 0
+                ),
+                "message_limit_total": (
+                    result[2].message_limit_total if result[2] else 0
+                ),
+                "last_message_time": result[2].last_message_time if result[2] else None,
+                "last_autonomous_time": (
+                    result[2].last_autonomous_time if result[2] else None
+                ),
+            },
+        }
+        agents.append(agent_data)
+
+    return agents
