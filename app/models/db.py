@@ -1,6 +1,8 @@
+from typing import Generator
 from urllib.parse import quote_plus
 
 from psycopg_pool import ConnectionPool
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
 
 from app.models.db_mig import safe_migrate
@@ -54,18 +56,18 @@ def init_db(
         conn = ConnectionPool(conn_str, open=True)
 
 
-def get_db() -> Session:
+def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
 
 
-def get_coon_str():
+def get_coon_str() -> str:
     return conn_str
 
 
-def get_coon():
+def get_coon() -> ConnectionPool:
     return conn
 
 
-def get_engine():
+def get_engine() -> Engine:
     return engine
