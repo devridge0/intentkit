@@ -18,7 +18,8 @@ from sqlmodel import Session, select
 
 from app.config.config import config
 from app.core.ai import execute_agent, initialize_agent
-from app.models.db import Agent, AgentQuota, get_db, init_db
+from app.models.agent import Agent, AgentQuota
+from app.models.db import get_db, init_db
 from utils.logging import JsonFormatter
 
 # init logger
