@@ -27,10 +27,6 @@ def init_slack(token: str, channel: str) -> None:
     Raises:
         ValueError: If token or channel is empty
     """
-    if not token:
-        raise ValueError("Slack token cannot be empty")
-    if not channel:
-        raise ValueError("Slack channel cannot be empty")
 
     global _slack_token, _slack_channel, _slack_client
     _slack_token = token
