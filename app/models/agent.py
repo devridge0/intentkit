@@ -133,3 +133,73 @@ class AgentQuota(SQLModel, table=True):
         self.last_message_time = datetime.now()
         db.add(self)
         db.commit()
+
+
+class AgentPluginData(SQLModel, table=True):
+    """Model for storing plugin-specific data for agents.
+
+    This model uses a composite primary key of (agent_id, plugin, key) to store
+    plugin-specific data for agents in a flexible way.
+
+    Attributes:
+        agent_id: ID of the agent this data belongs to
+        plugin: Name of the plugin this data is for
+        key: Key for this specific piece of data
+        data: JSON data stored for this key
+    """
+
+    __tablename__ = "agent_plugin_data"
+
+    agent_id: str = Field(primary_key=True)
+    plugin: str = Field(primary_key=True)
+    key: str = Field(primary_key=True)
+    data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
+
+    @classmethod
+    def get(
+        cls, agent_id: str, plugin: str, key: str, db: Session
+    ) -> Optional["AgentPluginData"]:
+        """Get plugin data for an agent.
+
+        Args:
+            agent_id: ID of the agent
+            plugin: Name of the plugin
+            key: Data key
+            db: Database session
+
+        Returns:
+            AgentPluginData if found, None otherwise
+        """
+        return db.exec(
+            select(cls).where(
+                cls.agent_id == agent_id,
+                cls.plugin == plugin,
+                cls.key == key,
+            )
+        ).first()
+
+    def save(self, db: Session) -> None:
+        """Save or update plugin data.
+
+        Args:
+            db: Database session
+        """
+        existing = db.exec(
+            select(AgentPluginData).where(
+                AgentPluginData.agent_id == self.agent_id,
+                AgentPluginData.plugin == self.plugin,
+                AgentPluginData.key == self.key,
+            )
+        ).first()
+
+        if existing:
+            # Update existing record
+            for field in self.model_fields:
+                if getattr(self, field) is not None:
+                    setattr(existing, field, getattr(self, field))
+            db.add(existing)
+        else:
+            # Create new record
+            db.add(self)
+
+        db.commit()
