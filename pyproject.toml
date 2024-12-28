@@ -81,6 +81,21 @@ isort = "^5.13.2"
 bandit = "^1.8.0"
 pylint = "^3.3.3"
 
+[tool.pylint]
+max-line-length = 88  # Match black's default
+disable = [
+    "C0111",  # missing-docstring
+    "C0103",  # invalid-name
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+    "R0903",  # too-few-public-methods
+    "R0913",  # too-many-arguments
+]
+good-names = ["db", "id", "q"]
+ignore = ["CVS", ".git", ".pytest_cache", "__pycache__"]
+ignore-patterns = ["test_.*?py"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

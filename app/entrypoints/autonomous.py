@@ -10,6 +10,7 @@ from app.config.config import config
 from app.core.ai import execute_agent
 from app.models.agent import Agent, AgentQuota
 from app.models.db import get_engine, init_db
+from utils.slack import init_slack
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +86,9 @@ def run_autonomous_action(aid: str, prompt: str):
 
 
 if __name__ == "__main__":
-    # Initialize database connection
+    # Initialize infrastructure
     init_db(**config.db)
+    init_slack(config.slack_token, config.slack_channel)
 
     # Initialize scheduler
     scheduler = BlockingScheduler()
