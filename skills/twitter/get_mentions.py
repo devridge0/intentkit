@@ -42,12 +42,12 @@ class TwitterGetMentions(TwitterBaseTool):
             since_id = self.prev_since_id
             if self.prev_since_id:
                 max_results = 100
-            
+
             # Always get mentions for the last day
-            start_time = (
-                datetime.now(tz=timezone.utc) - timedelta(days=1)
-            ).isoformat(timespec="milliseconds")
-            
+            start_time = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat(
+                timespec="milliseconds"
+            )
+
             mentions = self.client.get_users_mentions(
                 id=self.client.get_me()[0].id,
                 max_results=max_results,
