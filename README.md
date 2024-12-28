@@ -95,6 +95,14 @@ python -m app.entrypoints.autonomous
 
 "Create Agent" and "Try it out" refer to the Docker section.
 
+## Integrations
+
+### Twitter
+[Twitter Integration](docs/twitter.md)
+
+### Coinbase
+Work in progress
+
 ## Configuration
 
 The application can be configured using environment variables or AWS Secrets Manager. Key configuration options:
