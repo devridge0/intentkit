@@ -41,7 +41,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: ${{ toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
+                  value: ${{ github.event_name == 'pull_request' && toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
 
     - uses: actions/checkout@v3
 
