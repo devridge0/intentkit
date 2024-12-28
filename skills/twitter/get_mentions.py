@@ -1,4 +1,5 @@
 from typing import Type
+from datetime import datetime, timedelta, timezone
 
 from pydantic import BaseModel
 
@@ -21,7 +22,7 @@ class TwitterGetMentions(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    prev_timestamp: str | None = None
+    prev_since_id: str | None = None
     name: str = "twitter_get_mentions"
     description: str = "Get tweets that mention the authenticated user"
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
@@ -38,12 +39,19 @@ class TwitterGetMentions(TwitterBaseTool):
         try:
             # Get mentions using tweepy client
             max_results = 10
-            start_time = self.prev_timestamp
-            if self.prev_timestamp:
+            since_id = self.prev_since_id
+            if self.prev_since_id:
                 max_results = 100
+            
+            # Always get mentions for the last day
+            start_time = (
+                datetime.now(tz=timezone.utc) - timedelta(days=1)
+            ).isoformat(timespec="milliseconds")
+            
             mentions = self.client.get_users_mentions(
                 id=self.client.get_me()[0].id,
                 max_results=max_results,
+                since_id=since_id,
                 start_time=start_time,
                 tweet_fields=["created_at", "author_id", "text"],
             )
@@ -51,12 +59,9 @@ class TwitterGetMentions(TwitterBaseTool):
             if not mentions.data:
                 return "No mentions found."
 
-            # Update the previous timestamp, so we can use it for the next request
-            self.prev_timestamp = (
-                max(tweet.created_at for tweet in mentions.data)
-                if mentions.data
-                else None
-            )
+            # Update the previous since_id for the next request
+            if mentions.meta:
+                self.prev_since_id = mentions.meta.get("newest_id")
 
             # Format the mentions into a readable string
             result = []
