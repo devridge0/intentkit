@@ -85,6 +85,11 @@ class AgentQuota(SQLModel, table=True):
     autonomous_count_monthly: int = Field(default=0)
     autonomous_limit_monthly: int = Field(default=9999)
     last_autonomous_time: Optional[datetime] = Field(default=None)
+    twitter_count_total: int = Field(default=0)
+    twitter_limit_total: int = Field(default=9999)
+    twitter_count_daily: int = Field(default=0)
+    twitter_limit_daily: int = Field(default=9999)
+    last_twitter_time: Optional[datetime] = Field(default=None)
 
     @staticmethod
     def get(id: str, db: Session) -> "AgentQuota":
