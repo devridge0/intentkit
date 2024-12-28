@@ -1,5 +1,13 @@
 # Changelog
 
+## 2024-12-27
+
+### New Features
+- Twitter Skills
+
+### Improvements
+- CI/CD refactoring for better security
+
 ## 2024-12-26
 
 ### Improvements
