@@ -118,6 +118,15 @@ class AgentQuota(SQLModel, table=True):
             and self.autonomous_count_total < self.autonomous_limit_total
         )
 
+    def has_twitter_quota(self, db: Session) -> bool:
+        """Check if the agent has twitter quota."""
+        if not self.has_message_quota(db):
+            return False
+        return (
+            self.twitter_count_daily < self.twitter_limit_daily
+            and self.twitter_count_total < self.twitter_limit_total
+        )
+
     def add_message(self, db: Session) -> None:
         """Add a message to the agent's message count."""
         self.message_count_monthly += 1
@@ -135,6 +144,18 @@ class AgentQuota(SQLModel, table=True):
         self.autonomous_count_monthly += 1
         self.autonomous_count_total += 1
         self.last_autonomous_time = datetime.now()
+        self.last_message_time = datetime.now()
+        db.add(self)
+        db.commit()
+
+    def add_twitter(self, db: Session) -> None:
+        """Add a twitter message to the agent's twitter count."""
+        self.message_count_daily += 1
+        self.message_count_monthly += 1
+        self.message_count_total += 1
+        self.twitter_count_daily += 1
+        self.twitter_count_total += 1
+        self.last_twitter_time = datetime.now()
         self.last_message_time = datetime.now()
         db.add(self)
         db.commit()
