@@ -25,7 +25,7 @@ jobs:
         method: chat.postMessage
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           text: "Build started 👀"
           attachments:
             - color: "dbab09"
@@ -91,7 +91,7 @@ jobs:
         method: chat.update
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
           text: "Build Succeeded ✅"
           attachments:
@@ -124,7 +124,7 @@ jobs:
         method: chat.update
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
           text: "Build Failed ❌"
           attachments:

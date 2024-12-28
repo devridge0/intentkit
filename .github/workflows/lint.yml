@@ -19,7 +19,7 @@ jobs:
         method: chat.postMessage
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           text: "Check Started 👀"
           attachments:
             - color: "dbab09"
@@ -41,8 +41,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{github.event.head_commit.message}}
 
     - uses: actions/checkout@v3
 
@@ -77,7 +76,7 @@ jobs:
         method: chat.update
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
           text: "Lint Succeeded ✅"
           attachments:
@@ -98,8 +97,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{github.event.head_commit.message}}
 
     - name: Report CI Failure
       if: ${{ failure() }}
@@ -108,7 +106,7 @@ jobs:
         method: chat.update
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-          channel: 'C0786MHAL8J'
+          channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
           text: "Lint Failed ❌"
           attachments:
@@ -131,5 +129,4 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{github.event.head_commit.message}}
