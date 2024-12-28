@@ -43,8 +43,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}
      
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
@@ -106,8 +105,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}
 
     - name: Build Failure
       if: ${{ failure() }}
@@ -139,5 +137,4 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}

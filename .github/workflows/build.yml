@@ -9,8 +9,6 @@ on:
       - '.github/**'
       - 'docs/**'
       - '*.md'
-  pull_request_review:
-    types: [submitted]
 
 jobs:
   docker:
@@ -45,10 +43,9 @@ jobs:
                 - title: "Action"
                   value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                 - title: "Diff"
-                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
+                  value: ${{ github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}
 
     - name: Docker meta
       id: meta
@@ -112,10 +109,9 @@ jobs:
                 - title: "Image"
                   value: https://hub.docker.com/r/crestal/intentkit/tags
                 - title: "Diff"
-                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
+                  value: ${{  github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}
 
     - name: Build Failure
       if: ${{ failure() }}
@@ -145,7 +141,6 @@ jobs:
                 - title: "Action"
                   value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                 - title: "Diff"
-                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
+                  value: ${{ github.event.head_commit.url }}
                 - title: "Changes"
-                  value: |
-                    ${{github.event.head_commit.message}}
+                  value: ${{ toJSON(github.event.head_commit.message) }}
