@@ -3,15 +3,14 @@ import json
 import logging
 import os
 
+import botocore.session
+from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from dotenv import load_dotenv
+
+from utils.logging import setup_logging
 
 # Load environment variables from .env file
 load_dotenv()
-
-import botocore.session
-from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-
-from utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

@@ -45,23 +45,7 @@ botocore = "^1.35.81"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.10.0"
-isort = "^5.13.2"
-bandit = "^1.8.0"
-pylint = "^3.3.3"
-
-[tool.black]
-line-length = 88
-target-version = ['py39']
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 88
+ruff = "^0.8.4"
 
 [tool.mypy]
 python_version = "3.12"
