@@ -8,9 +8,34 @@ from typing import Optional
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-from app.config.config import config
-
 logger = logging.getLogger(__name__)
+
+# Global variables for Slack configuration
+_slack_token: Optional[str] = None
+_slack_channel: Optional[str] = None
+_slack_client: Optional[WebClient] = None
+
+
+def init_slack(token: str, channel: str) -> None:
+    """
+    Initialize Slack configuration.
+
+    Args:
+        token: Slack bot token
+        channel: Default Slack channel ID or name
+
+    Raises:
+        ValueError: If token or channel is empty
+    """
+    if not token:
+        raise ValueError("Slack token cannot be empty")
+    if not channel:
+        raise ValueError("Slack channel cannot be empty")
+
+    global _slack_token, _slack_channel, _slack_client
+    _slack_token = token
+    _slack_channel = channel
+    _slack_client = WebClient(token=token)
 
 
 def send_slack_message(
@@ -18,24 +43,25 @@ def send_slack_message(
     blocks: Optional[list] = None,
     attachments: Optional[list] = None,
     thread_ts: Optional[str] = None,
+    channel: Optional[str] = None,
 ):
     """
-    Send a message to a Slack channel using config values.
+    Send a message to a Slack channel.
 
     Args:
         message: The message text to send
         blocks: Optional blocks for rich message formatting (see Slack Block Kit)
         attachments: Optional attachments for the message
         thread_ts: Optional thread timestamp to reply to a thread
+        channel: Optional channel override. If not provided, uses the default channel
 
     Raises:
-        ValueError: If slack token or channel is not found in config
+        RuntimeError: If slack is not initialized
         SlackApiError: If the message fails to send
     """
-    # Get token from config
-    if not config.slack_token:
+    if not _slack_client or not _slack_channel:
         # Write the input message to the log and return
-        logger.info("Slack token not found in config")
+        logger.info("Slack not initialized")
         logger.info(message)
         if blocks:
             logger.info(blocks)
@@ -43,32 +69,16 @@ def send_slack_message(
             logger.info(attachments)
         return
 
-    # Get channel from config
-    if not config.slack_channel:
-        raise ValueError("Slack channel not found in config")
-
     try:
-        client = WebClient(token=config.slack_token)
-
-        # Prepare the message payload
-        msg_payload = {
-            "channel": config.slack_channel,
-            "text": message,
-        }
-
-        if blocks:
-            msg_payload["blocks"] = blocks
-        if attachments:
-            msg_payload["attachments"] = attachments
-        if thread_ts:
-            msg_payload["thread_ts"] = thread_ts
-
-        # Send the message
-        client.chat_postMessage(**msg_payload)
-
-        logger.info(f"Message sent successfully to channel {config.slack_channel}")
-        return
-
+        response = _slack_client.chat_postMessage(
+            channel=channel or _slack_channel,
+            text=message,
+            blocks=blocks,
+            attachments=attachments,
+            thread_ts=thread_ts,
+        )
+        logger.info(f"Message sent successfully to channel {channel or _slack_channel}")
+        return response
     except SlackApiError as e:
         error_msg = f"Failed to send Slack message: {str(e)}"
         logger.error(error_msg)
