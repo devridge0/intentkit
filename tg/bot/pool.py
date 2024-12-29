@@ -11,7 +11,7 @@ from aiogram.webhook.aiohttp_server import (
 )
 from aiohttp import web
 
-from tg.bot.kind.general.router import general_router
+from tg.bot.kind.ai_relayer.router import general_router
 from tg.bot.kind.god.router import god_router
 from tg.bot.kind.god.startup import GOD_BOT_PATH, GOD_BOT_TOKEN, on_startup
 from tg.bot.types.kind import Kind
@@ -20,6 +20,21 @@ from tg.bot.types.router_obj import RouterObj
 logger = logging.getLogger(__name__)
 
 BOTS_PATH = "/webhook/tgbot/{kind}/{bot_token}"
+
+_bots = {}
+_agent_bots = {}
+
+
+def bot_by_token(token):
+    return _bots[token]
+
+
+def bot_by_agent_id(agent_id):
+    return _agent_bots[agent_id]
+
+
+def agent_thread_id(agent_id, chat_id):
+    return f"{agent_id}-telegram-{chat_id}"
 
 
 async def health_handler(request):
@@ -33,10 +48,8 @@ class BotPool:
         self.app.router.add_get("/health", health_handler)
         self.base_url = f"{base_url}{BOTS_PATH}"
         self.routers = {
-            Kind.General: RouterObj(general_router),
+            Kind.AiRelayer: RouterObj(general_router),
         }
-
-        self.bots = {}
 
     def init_god_bot(self):
         if GOD_BOT_TOKEN is not None:
@@ -74,7 +87,7 @@ class BotPool:
             setup_application(self.app, b.get_dispatcher())
             logger.info("{kind} router initialized...".format(kind=kind))
 
-    async def init_new_bot(self, kind, token):
+    async def init_new_bot(self, agent_id, kind, token):
         bot = Bot(
             token=token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
@@ -82,7 +95,8 @@ class BotPool:
         await bot.delete_webhook(drop_pending_updates=True)
         await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
 
-        self.bots[token] = bot
+        _bots[token] = {"agent_id": agent_id, "bot": bot}
+        _agent_bots[agent_id] = {"token": token, "bot": bot}
         logger.info("Bot with token {token} initialized...".format(token=token))
 
     def start(self, asyncio_loop, host, port):
