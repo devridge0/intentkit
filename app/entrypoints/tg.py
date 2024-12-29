@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from app.config.config import config
 from app.models.db import Agent, get_engine, init_db
+from tg.bot import pool
 from tg.bot.pool import BotPool
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,8 @@ class AgentScheduler:
 
             new_bots = []
             for agent in agents:
-                if agent.telegram_config["token"] not in self.bot_pool.bots:
+                if agent.telegram_config["token"] not in pool._bots:
+                    agent.telegram_config["agent_id"] = agent.id
                     new_bots.append(agent.telegram_config)
                     logger.info("New agent with id {id} found...".format(id=agent.id))
 
@@ -40,7 +42,9 @@ class AgentScheduler:
             await asyncio.sleep(interval)
             if self.check_new_bots() != None:
                 for new_bot in self.check_new_bots():
-                    await self.bot_pool.init_new_bot(new_bot["kind"], new_bot["token"])
+                    await self.bot_pool.init_new_bot(
+                        new_bot["agent_id"], new_bot["kind"], new_bot["token"]
+                    )
 
 
 def run_telegram_server() -> None:
