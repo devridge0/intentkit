@@ -136,7 +136,9 @@ if __name__ == "__main__":
 
     # Create scheduler
     scheduler = BlockingScheduler()
-    scheduler.add_job(run_twitter_agents, "interval", minutes=1)
+    scheduler.add_job(
+        run_twitter_agents, "interval", minutes=config.twitter_endpoint_interval
+    )
 
     # Register signal handlers
     def signal_handler(signum, frame):

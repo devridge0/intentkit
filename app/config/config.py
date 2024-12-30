@@ -66,6 +66,9 @@ class Config:
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         self.openai_api_key = self.load("OPENAI_API_KEY")
+        self.twitter_endpoint_interval = int(
+            self.load("TWITTER_ENDPOINT_INTERVAL", "15")
+        )  # in minutes
         self.slack_alert_token = self.load(
             "SLACK_ALERT_TOKEN"
         )  # For alert purposes only
