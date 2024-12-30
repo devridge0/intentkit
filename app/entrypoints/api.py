@@ -21,7 +21,6 @@ from app.core.ai import execute_agent, initialize_agent
 from app.models.agent import Agent, AgentQuota
 from app.models.db import get_db, init_db
 from utils.logging import JsonFormatter
-from utils.slack import init_slack
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -50,7 +49,6 @@ async def lifespan(app: FastAPI):
     # This part will run before the API server start
     # Initialize infrastructure
     init_db(**config.db)
-    init_slack(config.slack_token, config.slack_channel)
     logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown

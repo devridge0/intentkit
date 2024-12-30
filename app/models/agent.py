@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
 
-from utils.slack import send_slack_message
+from utils.slack_alert import send_slack_message
 
 
 class Agent(SQLModel, table=True):
