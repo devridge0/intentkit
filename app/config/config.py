@@ -8,6 +8,7 @@ from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from dotenv import load_dotenv
 
 from utils.logging import setup_logging
+from utils.slack_alert import init_slack
 
 # Load environment variables from .env file
 load_dotenv()
@@ -65,11 +66,16 @@ class Config:
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         self.openai_api_key = self.load("OPENAI_API_KEY")
-        self.slack_token = self.load("SLACK_TOKEN")  # For alert purposes only
-        self.slack_channel = self.load("SLACK_CHANNEL")
+        self.slack_alert_token = self.load(
+            "SLACK_ALERT_TOKEN"
+        )  # For alert purposes only
+        self.slack_alert_channel = self.load("SLACK_ALERT_CHANNEL")
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
         logger.info("config loaded")
+        # If the slack alert token exists, init it
+        if self.slack_alert_token and self.slack_alert_channel:
+            init_slack(self.slack_alert_token, self.slack_alert_channel)
 
     def load(self, key, default=None):
         """Load a secret from the secrets map or env"""
