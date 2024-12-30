@@ -1,3 +1,5 @@
+"""crestal skills."""
+
 from langchain_core.tools import BaseTool
 
 from skills.crestal.search_web3_services import search_web3_services

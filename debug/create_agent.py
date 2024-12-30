@@ -1,7 +1,8 @@
 import logging
 
 from app.config.config import config
-from app.models.db import Agent, get_db, init_db
+from app.models.agent import Agent
+from app.models.db import get_db, init_db
 
 if config.env == "local":
     # Set up logging configuration
@@ -15,9 +16,9 @@ agent = Agent(
     name="IntentKit",
     model="gpt-4o-mini",  # This repetition could be omitted if default is intended
     prompt="",  # Confirm if an empty prompt is acceptable
-    thought_enabled=False,  # This field must be provided
-    thought_content="",  # Optional, provide if needed
-    thought_minutes=None,  # Optional, provide if needed
+    autonomous_enabled=False,  # This field must be provided
+    autonomous_content="",  # Optional, provide if needed
+    autonomous_minutes=None,  # Optional, provide if needed
     cdp_enabled=True,
     cdp_skills=[],  # Confirm if loading all skills when empty is the desired behavior
     cdp_wallet_data="",  # Assuming wallet_data was meant to be cdp_wallet_data
