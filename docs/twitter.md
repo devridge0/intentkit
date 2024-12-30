@@ -10,12 +10,14 @@ The Twitter entrypoint allows your agent to automatically respond to Twitter men
 
 ### Configuration
 
-1. Enable Twitter for your agent:
+1. Enable Twitter Entrypoint for your agent:
 ```python
 agent.twitter_enabled = True
 ```
 
 2. Configure Twitter credentials in your agent's config:
+Get your Twitter credentials from your [Twitter developer portal](https://developer.x.com/en/portal/dashboard).
+> Notice: Free accounts can only use post_tweet skill, if you want to use other skills, you need to upgrade your account.
 ```python
 agent.twitter_config = {
     "bearer_token": "your_bearer_token",
@@ -27,6 +29,7 @@ agent.twitter_config = {
 ```
 
 3. Run the Twitter entrypoint:
+If you have use the docker-compose, it already run.
 ```bash
 python -m app.entrypoints.twitter
 ```
@@ -72,35 +75,29 @@ IntentKit provides a set of Twitter-specific skills that can be added to your ag
 ### Using Twitter Skills
 
 Add Twitter skills to your agent:
-
+Just configure the skills you need in your agent's config, the credentials also required.
 ```python
-from skills.twitter import get_twitter_skill
-from tweepy import Client
-
-# Create Twitter client
-client = Client(
-    bearer_token="your_bearer_token",
-    consumer_key="your_consumer_key",
-    consumer_secret="your_consumer_secret",
-    access_token="your_access_token",
-    access_token_secret="your_access_token_secret"
-)
-
-# Add skills to your agent
-agent.add_tool(get_twitter_skill("get_mentions", client))
-agent.add_tool(get_twitter_skill("post_tweet", client))
-agent.add_tool(get_twitter_skill("reply_tweet", client))
-agent.add_tool(get_twitter_skill("get_timeline", client))
+agent.twitter_skills = ["get_mentions", "get_timeline", "post_tweet", "reply_tweet"]
+agent.twitter_config = {
+    "bearer_token": "your_bearer_token",
+    "consumer_key": "your_consumer_key",
+    "consumer_secret": "your_consumer_secret",
+    "access_token": "your_access_token",
+    "access_token_secret": "your_access_token_secret"
+}
 ```
+
 
 ## Rate Limits and Quotas
 
-IntentKit implements quota management for Twitter interactions:
+### Twitter side
 
-- Daily limits: Configurable maximum tweets per day
-- Total limits: Overall maximum tweets
-- Quota tracking: Automatically tracks and enforces limits
-- Reset periods: Daily quotas reset at UTC midnight
+[Rate Limits](https://developer.x.com/en/docs/x-api/rate-limits)
+
+### IntentKit
+IntentKit can help you manage Twitter API rate limits and quotas.
+
+This feature is not released yet
 
 ## Best Practices
 

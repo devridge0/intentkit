@@ -98,9 +98,13 @@ def initialize_agent(aid):
             # Initialize CDP Agentkit Toolkit and get tools.
             cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
             tools.extend(cdp_toolkit.get_tools())
-        # Twitter skills
 
-        if agent.twitter_skills and agent.twitter_enabled and agent.twitter_config:
+        # Twitter skills
+        if (
+            agent.twitter_skills
+            and len(agent.twitter_skills) > 0
+            and agent.twitter_config
+        ):
             twitter_client = tweepy.Client(**agent.twitter_config)
             for skill in agent.twitter_skills:
                 tools.append(get_twitter_skill(skill, twitter_client))
