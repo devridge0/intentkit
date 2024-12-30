@@ -28,9 +28,11 @@ class Agent(SQLModel, table=True):
     cdp_skills: Optional[List[str]] = Field(sa_column=Column(JSONB, nullable=True))
     cdp_wallet_data: Optional[str]
     cdp_network_id: Optional[str]
-    # if twitter_enabled, twitter_config will be checked
+    # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_enabled: bool = Field(default=False)
     twitter_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
+    # twitter skills require config, but not require twitter_enabled flag.
+    # As long as twitter_skills is not empty, the corresponding skills will be loaded.
     twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
