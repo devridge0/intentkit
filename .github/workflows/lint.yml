@@ -1,20 +1,18 @@
-name: Build Docker Image and Deploy to TestnetDev
+name: Lint
 
 on:
   push:
-    branches: [ release/carbon/testnet-dev ]
-    paths-ignore:
-      - '.github/**'
-      - 'docs/**'
-      - '*.md'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  docker:
-    runs-on: ubuntu-latest
+  security-scan:
     permissions:
       contents: read
+    runs-on: ubuntu-latest
     steps:
-    - name: Build Start
+    - name: Report CI Start
       id: ci_start
       uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d
       with:
@@ -22,7 +20,7 @@ jobs:
         token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
           channel: ${{ secrets.SLACK_CHANNEL }}
-          text: "Build started 👀"
+          text: "Check Started 👀"
           attachments:
             - color: "dbab09"
               fields:
@@ -41,41 +39,29 @@ jobs:
                 - title: "Action"
                   value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                 - title: "Diff"
-                  value: ${{ github.event.head_commit.url }}
+                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: ${{ toJSON(github.event.head_commit.message) }}
-     
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+                  value: ${{ github.event_name == 'pull_request' && toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
+
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        aws-region: ${{ secrets.AWS_REGION }}
-        role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GithubActions
-     
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5
-     
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076
-     
-    - name: Build and push
-      uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
-      with:
-        build-args: |
-          RELEASE=${{ github.sha }}
-        push: true
-        tags: ${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }},${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:testnet-dev
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-     
-    - name: Deploy to Amazon EKS
+        python-version: "3.12"
+
+    - name: Install poetry
+      uses: abatilo/actions-poetry@e78f54a89cb052fff327414dd9ff010b5d2b4dbd
+        
+    - name: Install dependencies
       run: |
-        aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name crestal-production
-        kubectl version
-        kubectl set image -n testnet-dev deployment/intent-api intent-api=${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }}
-        kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }}
-     
-    - name: Build Success
+        poetry install --with dev
+        
+    - name: Ruff Check
+      run: |
+        poetry run ruff check
+
+    - name: Report CI Success
       if: ${{ success() }}
       uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d
       with:
@@ -84,7 +70,7 @@ jobs:
         payload: |
           channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
-          text: "Build Succeeded ✅"
+          text: "Lint Succeeded ✅"
           attachments:
             - color: "28a745"
               fields:
@@ -100,14 +86,12 @@ jobs:
                 - title: "Author"
                   short: true
                   value: ${{ github.actor }}
-                - title: "Image"
-                  value: ${{ secrets.AWS_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/intentkit:${{ github.sha }}
                 - title: "Diff"
-                  value: ${{ github.event.head_commit.url }}
+                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: ${{ toJSON(github.event.head_commit.message) }}
+                  value: ${{ toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
 
-    - name: Build Failure
+    - name: Report CI Failure
       if: ${{ failure() }}
       uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d
       with:
@@ -116,7 +100,7 @@ jobs:
         payload: |
           channel: ${{ secrets.SLACK_CHANNEL }}
           ts: "${{ steps.ci_start.outputs.ts }}"
-          text: "Build Failed ❌"
+          text: "Lint Failed ❌"
           attachments:
             - color: "dc3545"
               fields:
@@ -135,6 +119,6 @@ jobs:
                 - title: "Action"
                   value: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
                 - title: "Diff"
-                  value: ${{ github.event.head_commit.url }}
+                  value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: ${{ toJSON(github.event.head_commit.message) }}
+                  value: ${{ toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
