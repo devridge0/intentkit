@@ -1,7 +1,7 @@
 """Database migration utilities."""
 
 import logging
-from typing import Any, Type
+from typing import Type
 
 from sqlalchemy import Column, MetaData, inspect, text
 from sqlmodel import SQLModel

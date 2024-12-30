@@ -196,7 +196,7 @@ def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
     # cold start
     if aid not in agents:
         initialize_agent(aid)
-        resp_debug.append(f"[ Agent cold start ... ]")
+        resp_debug.append("[ Agent cold start ... ]")
         resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )

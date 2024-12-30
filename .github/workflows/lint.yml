@@ -41,7 +41,7 @@ jobs:
                 - title: "Diff"
                   value: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}
                 - title: "Changes"
-                  value: ${{ toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
+                  value: ${{ github.event_name == 'pull_request' && toJson(github.event.pull_request.title) || toJSON(github.event.head_commit.message) }}
 
     - uses: actions/checkout@v3
 
@@ -57,17 +57,9 @@ jobs:
       run: |
         poetry install --with dev
         
-    - name: Check formatting with Black
+    - name: Ruff Check
       run: |
-        poetry run black --check .
-        
-    - name: Check imports with isort
-      run: |
-        poetry run isort --check-only --diff .
-        
-    - name: Run Bandit security scan
-      run: |
-        poetry run bandit -r app/ skills/ skill_sets/ utils/ -ll
+        poetry run ruff check
 
     - name: Report CI Success
       if: ${{ success() }}

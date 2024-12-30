@@ -9,7 +9,7 @@ from pydantic import Field
 def search_web3_services(
     keyword: Annotated[
         str, Field(description="The keyword of the web3 service to search, e.g. `rpc`")
-    ]
+    ],
 ) -> str:
     """This tool will search for web3 services from crestal.network .
     It takes the keyword of the web3 service as input.

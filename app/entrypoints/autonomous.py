@@ -85,7 +85,7 @@ def run_autonomous_action(aid: str, prompt: str):
 
 
 if __name__ == "__main__":
-    # Initialize database connection
+    # Initialize infrastructure
     init_db(**config.db)
 
     # Initialize scheduler

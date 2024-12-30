@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
 
-from utils.slack import send_slack_message
+from utils.slack_alert import send_slack_message
 
 
 class Agent(SQLModel, table=True):
@@ -85,6 +85,11 @@ class AgentQuota(SQLModel, table=True):
     autonomous_count_monthly: int = Field(default=0)
     autonomous_limit_monthly: int = Field(default=9999)
     last_autonomous_time: Optional[datetime] = Field(default=None)
+    twitter_count_total: int = Field(default=0)
+    twitter_limit_total: int = Field(default=9999)
+    twitter_count_daily: int = Field(default=0)
+    twitter_limit_daily: int = Field(default=9999)
+    last_twitter_time: Optional[datetime] = Field(default=None)
 
     @staticmethod
     def get(id: str, db: Session) -> "AgentQuota":
@@ -113,6 +118,15 @@ class AgentQuota(SQLModel, table=True):
             and self.autonomous_count_total < self.autonomous_limit_total
         )
 
+    def has_twitter_quota(self, db: Session) -> bool:
+        """Check if the agent has twitter quota."""
+        if not self.has_message_quota(db):
+            return False
+        return (
+            self.twitter_count_daily < self.twitter_limit_daily
+            and self.twitter_count_total < self.twitter_limit_total
+        )
+
     def add_message(self, db: Session) -> None:
         """Add a message to the agent's message count."""
         self.message_count_monthly += 1
@@ -132,4 +146,86 @@ class AgentQuota(SQLModel, table=True):
         self.last_autonomous_time = datetime.now()
         self.last_message_time = datetime.now()
         db.add(self)
+        db.commit()
+
+    def add_twitter(self, db: Session) -> None:
+        """Add a twitter message to the agent's twitter count."""
+        self.message_count_daily += 1
+        self.message_count_monthly += 1
+        self.message_count_total += 1
+        self.twitter_count_daily += 1
+        self.twitter_count_total += 1
+        self.last_twitter_time = datetime.now()
+        self.last_message_time = datetime.now()
+        db.add(self)
+        db.commit()
+
+
+class AgentPluginData(SQLModel, table=True):
+    """Model for storing plugin-specific data for agents.
+
+    This model uses a composite primary key of (agent_id, plugin, key) to store
+    plugin-specific data for agents in a flexible way.
+
+    Attributes:
+        agent_id: ID of the agent this data belongs to
+        plugin: Name of the plugin this data is for
+        key: Key for this specific piece of data
+        data: JSON data stored for this key
+    """
+
+    __tablename__ = "agent_plugin_data"
+
+    agent_id: str = Field(primary_key=True)
+    plugin: str = Field(primary_key=True)
+    key: str = Field(primary_key=True)
+    data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
+
+    @classmethod
+    def get(
+        cls, agent_id: str, plugin: str, key: str, db: Session
+    ) -> Optional["AgentPluginData"]:
+        """Get plugin data for an agent.
+
+        Args:
+            agent_id: ID of the agent
+            plugin: Name of the plugin
+            key: Data key
+            db: Database session
+
+        Returns:
+            AgentPluginData if found, None otherwise
+        """
+        return db.exec(
+            select(cls).where(
+                cls.agent_id == agent_id,
+                cls.plugin == plugin,
+                cls.key == key,
+            )
+        ).first()
+
+    def save(self, db: Session) -> None:
+        """Save or update plugin data.
+
+        Args:
+            db: Database session
+        """
+        existing = db.exec(
+            select(AgentPluginData).where(
+                AgentPluginData.agent_id == self.agent_id,
+                AgentPluginData.plugin == self.plugin,
+                AgentPluginData.key == self.key,
+            )
+        ).first()
+
+        if existing:
+            # Update existing record
+            for field in self.model_fields:
+                if getattr(self, field) is not None:
+                    setattr(existing, field, getattr(self, field))
+            db.add(existing)
+        else:
+            # Create new record
+            db.add(self)
+
         db.commit()
