@@ -2,11 +2,12 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message
+from aiogram.types import Message, ContentType
 
 from app.core.ai import execute_agent
 from tg.bot import pool
 from tg.bot.filter.chat_type import GroupOnlyFilter
+from tg.bot.filter.content_type import TextOnlyFilter
 
 general_router = Router()
 
@@ -20,7 +21,7 @@ class GeneralForm(StatesGroup):
 ## group commands and messages
 
 
-@general_router.message(GroupOnlyFilter(), CommandStart())
+@general_router.message(GroupOnlyFilter(), TextOnlyFilter(), CommandStart())
 async def gp_command_start(message: Message):
     if message.from_user.is_bot:
         return
@@ -31,7 +32,7 @@ async def gp_command_start(message: Message):
     )
 
 
-@general_router.message(GroupOnlyFilter())
+@general_router.message(GroupOnlyFilter(), TextOnlyFilter())
 async def gp_process_message(message: Message) -> None:
     if message.from_user.is_bot:
         return
@@ -53,7 +54,7 @@ async def gp_process_message(message: Message) -> None:
 ## direct commands and messages
 
 
-@general_router.message(CommandStart())
+@general_router.message(CommandStart(), TextOnlyFilter())
 async def command_start(message: Message, state: FSMContext) -> None:
     if message.from_user.is_bot:
         return
@@ -64,7 +65,9 @@ async def command_start(message: Message, state: FSMContext) -> None:
     )
 
 
-@general_router.message()
+@general_router.message(
+    TextOnlyFilter(),
+)
 async def process_message(message: Message, state: FSMContext) -> None:
     if message.from_user.is_bot:
         return
