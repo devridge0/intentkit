@@ -9,7 +9,6 @@ on:
       - '.github/**'
       - 'docs/**'
       - '*.md'
-  pull_request:
 
 jobs:
   docker:
