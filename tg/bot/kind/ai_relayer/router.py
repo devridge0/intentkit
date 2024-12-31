@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, ContentType
+from aiogram.types import Message
 
 from app.core.ai import execute_agent
 from tg.bot import pool

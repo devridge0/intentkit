@@ -23,7 +23,7 @@ class AgentScheduler:
             # Get all telegram agents
             agents = db.exec(
                 select(Agent).where(
-                    Agent.telegram_enabled == True,
+                    Agent.telegram_enabled,
                 )
             ).all()
 
@@ -41,7 +41,7 @@ class AgentScheduler:
         while True:
             logger.info("check for new bots...")
             await asyncio.sleep(interval)
-            if self.check_new_bots() != None:
+            if self.check_new_bots() is not None:
                 for new_bot in self.check_new_bots():
                     await self.bot_pool.init_new_bot(
                         new_bot["agent_id"], new_bot["kind"], new_bot["token"]
