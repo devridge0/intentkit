@@ -26,6 +26,9 @@ agent = Agent(
     twitter_enabled=False,
     twitter_config={},  # Ensure this dict structure aligns with expected config format
     twitter_skills=[],  # Confirm if no specific Twitter skills are to be enabled
+    telegram_enabled=False,
+    telegram_config={},  # Ensure this dict structure aligns with expected config format
+    telegram_skills=[],  # Confirm if no specific Telegram skills are to be enabled
     common_skills=[],  # Confirm if no common skills are to be added initially
 )
 
