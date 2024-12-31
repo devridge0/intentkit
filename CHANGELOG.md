@@ -1,5 +1,15 @@
 # Changelog
 
+## 2024-12-31
+
+### New Features
+- Telegram Entrypoint
+
+## 2024-12-30
+
+### Improvements
+- Twitter Integration Enchancement
+
 ## 2024-12-28
 
 ### New Features
