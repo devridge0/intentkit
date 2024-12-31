@@ -34,6 +34,11 @@ class Agent(SQLModel, table=True):
     # twitter skills require config, but not require twitter_enabled flag.
     # As long as twitter_skills is not empty, the corresponding skills will be loaded.
     twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    telegram_enabled: bool = Field(default=False)
+    telegram_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
+    # twitter skills require config, but not require twitter_enabled flag.
+    # As long as twitter_skills is not empty, the corresponding skills will be loaded.
+    telegram_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config

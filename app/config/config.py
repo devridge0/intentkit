@@ -66,6 +66,12 @@ class Config:
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         self.openai_api_key = self.load("OPENAI_API_KEY")
+        self.slack_token = self.load("SLACK_TOKEN")
+        self.slack_channel = self.load("SLACK_CHANNEL")
+        self.tg_base_url = self.load("TG_BASE_URL")
+        self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
+        self.tg_server_port = self.load("TG_SERVER_PORT", "8081")
+        self.tg_new_agent_poll_interval = self.load("TG_NEW_AGENT_POLL_INTERVAL", "60")
         self.twitter_endpoint_interval = int(
             self.load("TWITTER_ENDPOINT_INTERVAL", "15")
         )  # in minutes
