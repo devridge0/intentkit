@@ -88,16 +88,22 @@ class BotPool:
             logger.info("{kind} router initialized...".format(kind=kind))
 
     async def init_new_bot(self, agent_id, kind, token):
-        bot = Bot(
-            token=token,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-        )
-        await bot.delete_webhook(drop_pending_updates=True)
-        await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
+        try:
+            bot = Bot(
+                token=token,
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            await bot.delete_webhook(drop_pending_updates=True)
+            await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
 
-        _bots[token] = {"agent_id": agent_id, "bot": bot}
-        _agent_bots[agent_id] = {"token": token, "bot": bot}
-        logger.info("Bot with token {token} initialized...".format(token=token))
+            _bots[token] = {"agent_id": agent_id, "bot": bot}
+            _agent_bots[agent_id] = {"token": token, "bot": bot}
+            logger.info("Bot with token {token} initialized...".format(token=token))
+
+        except Exception as e:
+            logger.error(
+                "failed to init new bot for agent {agent_id}.".format(agent_id=agent_id)
+            )
 
     def start(self, asyncio_loop, host, port):
         web.run_app(self.app, loop=asyncio_loop, host=host, port=port)
