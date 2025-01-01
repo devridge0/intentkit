@@ -26,11 +26,11 @@ _agent_bots = {}
 
 
 def bot_by_token(token):
-    return _bots[token]
+    return _bots.get(token)
 
 
 def bot_by_agent_id(agent_id):
-    return _agent_bots[agent_id]
+    return _agent_bots.get(agent_id)
 
 
 def agent_thread_id(agent_id, chat_id):
