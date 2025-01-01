@@ -6,8 +6,8 @@ import sys
 from sqlmodel import Session, select
 
 from app.config.config import config
-from app.models.db import get_engine, init_db
 from app.models.agent import Agent
+from app.models.db import get_engine, init_db
 from tg.bot import pool
 from tg.bot.pool import BotPool
 
@@ -18,7 +18,7 @@ class AgentScheduler:
     def __init__(self, bot_pool):
         self.bot_pool = bot_pool
 
-    def check_new_bots(self):
+    def sync_bots(self):
         with Session(get_engine()) as db:
             # Get all telegram agents
             agents = db.exec(
@@ -28,23 +28,35 @@ class AgentScheduler:
             ).all()
 
             new_bots = []
+            changed_token_bots = []
             for agent in agents:
-                if agent.telegram_config["token"] not in pool._bots:
-                    agent.telegram_config["agent_id"] = agent.id
-                    new_bots.append(agent.telegram_config)
-                    logger.info("New agent with id {id} found...".format(id=agent.id))
+                token = agent.telegram_config["token"]
+                cfg = agent.telegram_config
+                cfg["agent_id"] = agent.id
 
-            return new_bots
+                if agent.id not in pool._agent_bots:
+                    new_bots.append(cfg)
+                    logger.info("New agent with id {id} found...".format(id=agent.id))
+                elif token not in pool._bots:
+                    changed_token_bots.append(cfg)
+
+            return new_bots, changed_token_bots
 
     async def start(self, interval):
         logger.info("New agent addition tracking started...")
         while True:
-            logger.info("check for new bots...")
+            logger.info("sync bots...")
             await asyncio.sleep(interval)
-            if self.check_new_bots() is not None:
-                for new_bot in self.check_new_bots():
+            new_bots, changed_token_bots = self.sync_bots()
+            if new_bots is not None:
+                for new_bot in new_bots:
                     await self.bot_pool.init_new_bot(
                         new_bot["agent_id"], new_bot["kind"], new_bot["token"]
+                    )
+            if changed_token_bots is not None:
+                for changed_bot in changed_token_bots:
+                    await self.bot_pool.change_bot_token(
+                        changed_bot["agent_id"], changed_bot["token"]
                     )
 
 

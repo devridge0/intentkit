@@ -1,5 +1,5 @@
-import logging
 import inspect
+import logging
 
 from aiogram import Router
 from aiogram.filters import CommandStart
@@ -130,7 +130,7 @@ async def process_message(message: Message, state: FSMContext) -> None:
         return
 
     try:
-        agent_id = cached_bot["agenst_id"]
+        agent_id = cached_bot["agent_id"]
         thread_id = pool.agent_thread_id(agent_id, message.chat.id)
         response = execute_agent(agent_id, message.text, thread_id)
         await message.answer(
