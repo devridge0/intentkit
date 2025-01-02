@@ -5,9 +5,11 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import (SimpleRequestHandler,
-                                            TokenBasedRequestHandler,
-                                            setup_application)
+from aiogram.webhook.aiohttp_server import (
+    SimpleRequestHandler,
+    TokenBasedRequestHandler,
+    setup_application,
+)
 from aiohttp import web
 
 from tg.bot.kind.ai_relayer.router import general_router
@@ -99,7 +101,7 @@ class BotPool:
             _agent_bots[agent_id] = {"token": token, "kind": kind, "bot": bot}
             logger.info("Bot with token {token} initialized...".format(token=token))
 
-        except Exception as e:
+        except Exception:
             logger.error(
                 "failed to init new bot for agent {agent_id}.".format(agent_id=agent_id)
             )
@@ -136,7 +138,7 @@ class BotPool:
             )
         except aiohttp.ClientError:
             pass
-        except Exception as e:
+        except Exception:
             logger.error(
                 "failed to change bot token for agent {agent_id}.".format(
                     agent_id=agent_id
