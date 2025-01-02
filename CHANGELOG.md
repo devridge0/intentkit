@@ -1,5 +1,18 @@
 # Changelog
 
+## 2025-01-02
+
+### New Features
+- System Prompt, It will affect all agents in a deployment.
+
+### Improvements
+- Share agent memory between all public entrypoints
+
+## 2025-01-01
+
+### Bug Fixes
+- Fix Telegram group bug
+
 ## 2024-12-31
 
 ### New Features
