@@ -45,7 +45,7 @@ async def gp_command_start(message: Message):
         await message.answer(
             text=f"🤖 Hi Everybody, {group_title}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
         )
-    except Exception as e:
+    except Exception:
         logger.warning(
             "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
                 func=cur_func_name,
@@ -82,7 +82,7 @@ async def gp_process_message(message: Message) -> None:
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
                 "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
                     func=cur_func_name(),
@@ -105,7 +105,7 @@ async def command_start(message: Message, state: FSMContext) -> None:
         await message.answer(
             text=f"🤖 Hi, {first_name}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
         )
-    except Exception as e:
+    except Exception:
         logger.warning(
             "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
                 func=cur_func_name(),
@@ -137,7 +137,7 @@ async def process_message(message: Message, state: FSMContext) -> None:
             text="\n".join(response),
             reply_to_message_id=message.message_id,
         )
-    except Exception as e:
+    except Exception:
         logger.warning(
             "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
                 func=cur_func_name(),
