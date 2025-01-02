@@ -4,6 +4,7 @@ from urllib.parse import quote_plus
 from psycopg_pool import ConnectionPool
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
+from langgraph.checkpoint.postgres import PostgresSaver
 
 from app.models.db_mig import safe_migrate
 
@@ -54,6 +55,13 @@ def init_db(
     global conn
     if conn is None:
         conn = ConnectionPool(conn_str, open=True)
+        if auto_migrate:
+            # Check and create PostgresSaver tables
+            one_time_coon = conn.getconn()
+            one_time_coon.autocommit = True
+            memory = PostgresSaver(one_time_coon)
+            memory.setup()
+            conn.putconn(one_time_coon)
 
 
 def get_db() -> Generator[Session, None, None]:
