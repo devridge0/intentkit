@@ -76,6 +76,8 @@ def run_autonomous_action(aid: str, prompt: str):
     logger.info(f"[{aid}] autonomous action started...")
     # get thread_id from request ip
     thread_id = f"{aid}-autonomous"
+    if config.autonomous_memory_public:
+        thread_id = f"{aid}-public"
 
     # Execute agent and get response
     resp = execute_agent(aid, prompt, thread_id)
