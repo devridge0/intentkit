@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Column, String, func
+from sqlalchemy import Column, String, func, Identity, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
 
@@ -14,6 +14,9 @@ class Agent(SQLModel, table=True):
     __tablename__ = "agents"
 
     id: str = Field(primary_key=True)
+    number: int = Field(
+        sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False)
+    )
     # AI part
     name: Optional[str] = Field(default=None)
     model: str = Field(default="gpt-4o-mini")
@@ -46,6 +49,20 @@ class Agent(SQLModel, table=True):
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         sa_column=Column(JSONB, nullable=True)
+    )
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+        nullable=False,
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": lambda: datetime.now(timezone.utc),
+        },
+        nullable=False,
     )
 
     def create_or_update(self, db: Session) -> None:
@@ -97,6 +114,20 @@ class AgentQuota(SQLModel, table=True):
     twitter_count_daily: int = Field(default=0)
     twitter_limit_daily: int = Field(default=9999)
     last_twitter_time: Optional[datetime] = Field(default=None)
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+        nullable=False,
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": lambda: datetime.now(timezone.utc),
+        },
+        nullable=False,
+    )
 
     @staticmethod
     def get(id: str, db: Session) -> "AgentQuota":
@@ -187,6 +218,20 @@ class AgentPluginData(SQLModel, table=True):
     plugin: str = Field(primary_key=True)
     key: str = Field(primary_key=True)
     data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+        nullable=False,
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": lambda: datetime.now(timezone.utc),
+        },
+        nullable=False,
+    )
 
     @classmethod
     def get(
