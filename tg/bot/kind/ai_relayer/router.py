@@ -2,8 +2,7 @@ import inspect
 import logging
 
 from aiogram import Router
-from aiogram.filters import CommandStart, Command
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
 from app.core.ai import execute_agent

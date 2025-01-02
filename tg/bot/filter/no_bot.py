@@ -1,6 +1,5 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
-from tg.bot import pool
 
 
 class NoBotFilter(BaseFilter):
@@ -8,4 +7,4 @@ class NoBotFilter(BaseFilter):
         pass
 
     async def __call__(self, message: Message) -> bool:
-        return message.from_user.is_bot == False
+        return not message.from_user.is_bot

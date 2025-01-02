@@ -5,11 +5,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import (
-    SimpleRequestHandler,
-    TokenBasedRequestHandler,
-    setup_application,
-)
+from aiogram.webhook.aiohttp_server import (SimpleRequestHandler,
+                                            TokenBasedRequestHandler,
+                                            setup_application)
 from aiohttp import web
 
 from tg.bot.kind.ai_relayer.router import general_router
@@ -188,7 +186,7 @@ class BotPool:
             logger.error(f"failed to stop the bot for agent {agent.id}: {e}")
 
     async def modify_config(self, agent):
-        if agent.telegram_enabled == False:
+        if not agent.telegram_enabled:
             await self.stop_bot(agent)
             return
 
