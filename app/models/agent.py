@@ -50,6 +50,7 @@ class Agent(SQLModel, table=True):
     )
     # last modification timestamp
     last_modified: int = Field(default=0)
+    ai_thread_public: bool = Field(default=False)
 
     def create_or_update(self, db: Session) -> None:
         """Create the agent if not exists, otherwise update it."""
