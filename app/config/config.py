@@ -79,11 +79,13 @@ class Config:
         # self.autonomous_entrypoint_interval = int(
         #     self.load("AUTONOMOUS_ENTRYPOINT_INTERVAL", "1")
         # )
+        self.autonomous_memory_public = self.load("AUTONOMOUS_MEMORY_PUBLIC", "true")
         # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")
         self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
         self.tg_server_port = self.load("TG_SERVER_PORT", "8081")
         self.tg_new_agent_poll_interval = self.load("TG_NEW_AGENT_POLL_INTERVAL", "60")
+        self.tg_group_memory_public = self.load("TG_GROUP_MEMORY_PUBLIC", "true")
         # Twitter
         self.twitter_entrypoint_interval = int(
             self.load("TWITTER_ENTRYPOINT_INTERVAL", "15")

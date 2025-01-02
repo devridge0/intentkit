@@ -76,7 +76,9 @@ async def gp_process_message(message: Message) -> None:
 
         try:
             agent_id = cached_bot["agent_id"]
-            thread_id = pool.agent_thread_id(agent_id, message.chat.id)
+            # TODO: use config to control if group memory is public
+            # thread_id = pool.agent_thread_id(agent_id, message.chat.id)
+            thread_id = f"{agent_id}-public"
             response = execute_agent(agent_id, message.text, thread_id)
             await message.answer(
                 text="\n".join(response),
@@ -93,8 +95,6 @@ async def gp_process_message(message: Message) -> None:
 
 
 ## direct commands and messages
-
-
 @general_router.message(CommandStart(), TextOnlyFilter())
 async def command_start(message: Message, state: FSMContext) -> None:
     if message.from_user.is_bot:
