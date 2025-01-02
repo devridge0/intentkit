@@ -135,7 +135,7 @@ def initialize_agent(aid):
         memory = PostgresSaver(get_coon())
         memory.setup()
 
-        prompt = ""
+        prompt = config.system_prompt + "\n\n"
         if agent.name:
             prompt = f"Your name is {agent.name}. "
 

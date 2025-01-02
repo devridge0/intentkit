@@ -74,6 +74,11 @@ class Config:
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
+        self.system_prompt = self.load("SYSTEM_PROMPT")
+        # Autonomous
+        # self.autonomous_entrypoint_interval = int(
+        #     self.load("AUTONOMOUS_ENTRYPOINT_INTERVAL", "1")
+        # )
         # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")
         self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
