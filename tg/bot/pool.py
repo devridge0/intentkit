@@ -1,5 +1,6 @@
 import logging
 
+import aiohttp
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -26,11 +27,11 @@ _agent_bots = {}
 
 
 def bot_by_token(token):
-    return _bots[token]
+    return _bots.get(token)
 
 
 def bot_by_agent_id(agent_id):
-    return _agent_bots[agent_id]
+    return _agent_bots.get(agent_id)
 
 
 def agent_thread_id(agent_id, chat_id):
@@ -88,16 +89,61 @@ class BotPool:
             logger.info("{kind} router initialized...".format(kind=kind))
 
     async def init_new_bot(self, agent_id, kind, token):
-        bot = Bot(
-            token=token,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-        )
-        await bot.delete_webhook(drop_pending_updates=True)
-        await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
+        try:
+            bot = Bot(
+                token=token,
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            await bot.delete_webhook(drop_pending_updates=True)
+            await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
 
-        _bots[token] = {"agent_id": agent_id, "bot": bot}
-        _agent_bots[agent_id] = {"token": token, "bot": bot}
-        logger.info("Bot with token {token} initialized...".format(token=token))
+            _bots[token] = {"agent_id": agent_id, "kind": kind, "bot": bot}
+            _agent_bots[agent_id] = {"token": token, "kind": kind, "bot": bot}
+            logger.info("Bot with token {token} initialized...".format(token=token))
+
+        except Exception:
+            logger.error(
+                "failed to init new bot for agent {agent_id}.".format(agent_id=agent_id)
+            )
+
+    async def change_bot_token(self, agent_id, new_token):
+        try:
+            old_cached_bot = bot_by_agent_id(agent_id)
+            kind = old_cached_bot["kind"]
+
+            old_bot = Bot(
+                token=old_cached_bot["token"],
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            await old_bot.session.close()
+            await old_bot.delete_webhook(drop_pending_updates=True)
+
+            new_bot = Bot(
+                token=new_token,
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            await new_bot.set_webhook(
+                self.base_url.format(kind=kind, bot_token=new_token)
+            )
+
+            del _bots[old_cached_bot["token"]]
+            _bots[new_token] = {"agent_id": agent_id, "kind": kind, "bot": new_bot}
+            _agent_bots[agent_id] = {"token": new_token, "kind": kind, "bot": new_bot}
+            logger.info(
+                "bot for agent {agent_id} with token {token} changed to {new_token}...".format(
+                    agent_id=agent_id,
+                    token=old_cached_bot["token"],
+                    new_token=new_token,
+                ),
+            )
+        except aiohttp.ClientError:
+            pass
+        except Exception:
+            logger.error(
+                "failed to change bot token for agent {agent_id}.".format(
+                    agent_id=agent_id
+                )
+            )
 
     def start(self, asyncio_loop, host, port):
         web.run_app(self.app, loop=asyncio_loop, host=host, port=port)
