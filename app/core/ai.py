@@ -135,10 +135,11 @@ def initialize_agent(aid):
         memory = PostgresSaver(get_coon())
         memory.setup()
 
-        prompt = config.system_prompt + "\n\n"
+        prompt = ""
+        if config.system_prompt:
+            prompt += config.system_prompt + "\n\n"
         if agent.name:
-            prompt = f"Your name is {agent.name}. "
-
+            prompt += f"Your name is {agent.name}.\n\n"
         if agent.prompt:
             prompt += agent.prompt
         elif agent.cdp_enabled:
