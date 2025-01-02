@@ -36,7 +36,9 @@ def bot_by_agent_id(agent_id):
         return bot_by_token(agent["token"])
 
 
-def agent_thread_id(agent_id, chat_id):
+def agent_thread_id(agent_id, is_public, chat_id):
+    if is_public:
+        return f"{agent_id}-telegram-public"
     return f"{agent_id}-telegram-{chat_id}"
 
 
@@ -103,7 +105,12 @@ class BotPool:
                 self.base_url.format(kind=cfg["kind"], bot_token=token)
             )
 
-            _bots[token] = {"agent_id": agent.id, "cfg": cfg, "bot": bot}
+            _bots[token] = {
+                "agent_id": agent.id,
+                "is_public": agent.ai_thread_public,
+                "cfg": cfg,
+                "bot": bot,
+            }
             _agent_bots[agent.id] = {
                 "token": token,
                 "last_modified": agent.last_modified,
@@ -142,6 +149,7 @@ class BotPool:
             del _bots[old_cached_bot["cfg"]["token"]]
             _bots[new_token] = {
                 "agent_id": agent.id,
+                "is_public": agent.ai_thread_public,
                 "cfg": agent.telegram_config,
                 "bot": new_bot,
             }
