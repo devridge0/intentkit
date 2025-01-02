@@ -1,7 +1,7 @@
 """Database migration utilities."""
 
 import logging
-from typing import Type
+from typing import Type, Callable
 
 from sqlalchemy import Column, MetaData, inspect, text
 from sqlmodel import SQLModel
@@ -23,20 +23,22 @@ def add_column_if_not_exists(engine, table_name: str, column: Column) -> None:
             column_def = f"{column.name} {column.type.compile(engine.dialect)}"
 
             # Add NOT NULL if column is not nullable
-            if not column.nullable:
-                column_def += " NOT NULL"
+            # When adding a column to an existing table, not null will always encounter an error
+            # if not column.nullable:
+            #     column_def += " NOT NULL"
 
             # Add DEFAULT if specified
             if column.default is not None:
                 if hasattr(column.default, "arg"):
                     default_value = column.default.arg
-                    if isinstance(default_value, bool):
-                        default_value = str(default_value).lower()
-                    elif isinstance(default_value, str):
-                        default_value = f"'{default_value}'"
-                    elif isinstance(default_value, (list, dict)):
-                        default_value = "'{}'"
-                    column_def += f" DEFAULT {default_value}"
+                    if not isinstance(default_value, Callable):
+                        if isinstance(default_value, bool):
+                            default_value = str(default_value).lower()
+                        elif isinstance(default_value, str):
+                            default_value = f"'{default_value}'"
+                        elif isinstance(default_value, (list, dict)):
+                            default_value = "'{}'"
+                        column_def += f" DEFAULT {default_value}"
 
             # Execute ALTER TABLE
             conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_def}"))
