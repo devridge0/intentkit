@@ -1,5 +1,5 @@
 from aiogram.filters import BaseFilter
-from aiogram.types import Message, ContentType
+from aiogram.types import ContentType, Message
 
 
 class ContentTypeFilter(BaseFilter):
