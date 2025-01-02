@@ -18,46 +18,38 @@ class AgentScheduler:
     def __init__(self, bot_pool):
         self.bot_pool = bot_pool
 
-    def sync_bots(self):
+    async def sync(self):
         with Session(get_engine()) as db:
             # Get all telegram agents
-            agents = db.exec(
-                select(Agent).where(
-                    Agent.telegram_enabled,
-                )
-            ).all()
+            agents = db.exec(select(Agent)).all()
 
-            new_bots = []
-            changed_token_bots = []
+            new_agents = []
+            token_changed_agents = []
+            modified_agents = []
             for agent in agents:
                 token = agent.telegram_config["token"]
-                cfg = agent.telegram_config
-                cfg["agent_id"] = agent.id
 
                 if agent.id not in pool._agent_bots:
-                    new_bots.append(cfg)
-                    logger.info("New agent with id {id} found...".format(id=agent.id))
-                elif token not in pool._bots:
-                    changed_token_bots.append(cfg)
+                    if agent.telegram_enabled:
+                        new_agents.append(agent)
+                        logger.info(f"New agent with id {agent.id} found...")
+                        await self.bot_pool.init_new_bot(agent)
+                else:
+                    cached_agent = pool._agent_bots[agent.id]
+                    if cached_agent["last_modified"] != agent.last_modified:
+                        if token not in pool._bots:
+                            await self.bot_pool.change_bot_token(agent)
+                        else:
+                            await self.bot_pool.modify_config(agent)
 
-            return new_bots, changed_token_bots
+            return new_agents, token_changed_agents, modified_agents
 
     async def start(self, interval):
         logger.info("New agent addition tracking started...")
         while True:
-            logger.info("sync bots...")
+            logger.info("sync agents...")
             await asyncio.sleep(interval)
-            new_bots, changed_token_bots = self.sync_bots()
-            if new_bots is not None:
-                for new_bot in new_bots:
-                    await self.bot_pool.init_new_bot(
-                        new_bot["agent_id"], new_bot["kind"], new_bot["token"]
-                    )
-            if changed_token_bots is not None:
-                for changed_bot in changed_token_bots:
-                    await self.bot_pool.change_bot_token(
-                        changed_bot["agent_id"], changed_bot["token"]
-                    )
+            await self.sync()
 
 
 def run_telegram_server() -> None:

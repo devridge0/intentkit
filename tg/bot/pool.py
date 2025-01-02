@@ -31,7 +31,9 @@ def bot_by_token(token):
 
 
 def bot_by_agent_id(agent_id):
-    return _agent_bots.get(agent_id)
+    agent = _agent_bots.get(agent_id)
+    if agent is not None:
+        return bot_by_token(agent["token"])
 
 
 def agent_thread_id(agent_id, chat_id):
@@ -86,33 +88,44 @@ class BotPool:
                 path=BOTS_PATH.format(kind=kind.value, bot_token="{bot_token}"),
             )
             setup_application(self.app, b.get_dispatcher())
-            logger.info("{kind} router initialized...".format(kind=kind))
+            logger.info(f"{kind} router initialized...")
 
-    async def init_new_bot(self, agent_id, kind, token):
+    async def init_new_bot(self, agent):
         try:
+            cfg = agent.telegram_config
+            token = cfg["token"]
             bot = Bot(
                 token=token,
                 default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             )
             await bot.delete_webhook(drop_pending_updates=True)
-            await bot.set_webhook(self.base_url.format(kind=kind, bot_token=token))
-
-            _bots[token] = {"agent_id": agent_id, "kind": kind, "bot": bot}
-            _agent_bots[agent_id] = {"token": token, "kind": kind, "bot": bot}
-            logger.info("Bot with token {token} initialized...".format(token=token))
-
-        except Exception:
-            logger.error(
-                "failed to init new bot for agent {agent_id}.".format(agent_id=agent_id)
+            await bot.set_webhook(
+                self.base_url.format(kind=cfg["kind"], bot_token=token)
             )
 
-    async def change_bot_token(self, agent_id, new_token):
+            _bots[token] = {"agent_id": agent.id, "cfg": cfg, "bot": bot}
+            _agent_bots[agent.id] = {
+                "token": token,
+                "last_modified": agent.last_modified,
+            }
+            logger.info(f"Bot with token {token} initialized...")
+
+        except Exception as e:
+            logger.error(
+                "failed to init new bot for agent {agent_id}: {err}".format(
+                    agent_id=agent.id, err=e
+                )
+            )
+
+    async def change_bot_token(self, agent):
         try:
-            old_cached_bot = bot_by_agent_id(agent_id)
-            kind = old_cached_bot["kind"]
+            old_cached_bot = bot_by_agent_id(agent.id)
+            kind = old_cached_bot["cfg"]["kind"]
+
+            new_token = agent.telegram_config["token"]
 
             old_bot = Bot(
-                token=old_cached_bot["token"],
+                token=old_cached_bot["cfg"]["token"],
                 default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             )
             await old_bot.session.close()
@@ -126,23 +139,66 @@ class BotPool:
                 self.base_url.format(kind=kind, bot_token=new_token)
             )
 
-            del _bots[old_cached_bot["token"]]
-            _bots[new_token] = {"agent_id": agent_id, "kind": kind, "bot": new_bot}
-            _agent_bots[agent_id] = {"token": new_token, "kind": kind, "bot": new_bot}
+            del _bots[old_cached_bot["cfg"]["token"]]
+            _bots[new_token] = {
+                "agent_id": agent.id,
+                "cfg": agent.telegram_config,
+                "bot": new_bot,
+            }
+            _agent_bots[agent.id] = {
+                "token": agent.telegram_config["token"],
+                "last_modified": agent.last_modified,
+            }
             logger.info(
                 "bot for agent {agent_id} with token {token} changed to {new_token}...".format(
-                    agent_id=agent_id,
-                    token=old_cached_bot["token"],
+                    agent_id=agent.id,
+                    token=old_cached_bot["cfg"]["token"],
                     new_token=new_token,
                 ),
             )
         except aiohttp.ClientError:
             pass
-        except Exception:
+        except Exception as e:
+            logger.error(f"failed to change bot token for agent {agent.id}: {str(e)}")
+
+    async def stop_bot(self, agent):
+        try:
+            token = agent.telegram_config["token"]
+            bot = Bot(
+                token=token,
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+            )
+            await bot.session.close()
+            await bot.delete_webhook(drop_pending_updates=True)
+
+            del _agent_bots[agent.id]
+            del _bots[token]
+
+            logger.info(f"Bot with token {token} for agent {agent.id} stopped...")
+
+        except Exception as e:
+            logger.error(f"failed to stop the bot for agent {agent.id}: {e}")
+
+    async def modify_config(self, agent):
+        if agent.telegram_enabled == False:
+            await self.stop_bot(agent)
+            return
+
+        try:
+            old_cached_bot = bot_by_agent_id(agent.id)
+            _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
+            _agent_bots[old_cached_bot["agent_id"]][
+                "last_modified"
+            ] = agent.last_modified
+            if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
+                await self.stop_bot(agent)
+                await self.init_new_bot(agent)
+            logger.info(
+                f"configurations of the bot with token {agent.telegram_config["token"]} for agent {agent.id} updated..."
+            )
+        except Exception as e:
             logger.error(
-                "failed to change bot token for agent {agent_id}.".format(
-                    agent_id=agent_id
-                )
+                f"failed to change the configs of the bot for agent {agent.id}: {str(e)}"
             )
 
     def start(self, asyncio_loop, host, port):
