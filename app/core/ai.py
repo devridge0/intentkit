@@ -133,7 +133,6 @@ def initialize_agent(aid):
 
         # Store buffered conversation history in memory.
         memory = PostgresSaver(get_coon())
-        memory.setup()
 
         prompt = ""
         if config.system_prompt:
