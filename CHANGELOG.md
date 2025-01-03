@@ -1,5 +1,33 @@
 # Changelog
 
+## 2025-01-02
+
+### New Features
+- System Prompt, It will affect all agents in a deployment.
+- Nation number in Agent model
+
+### Improvements
+- Share agent memory between all public entrypoints
+- Auto timestamp in db model
+
+### Bug Fixes
+- Fix bug in db create from scratch
+
+## 2025-01-01
+
+### Bug Fixes
+- Fix Telegram group bug
+
+## 2024-12-31
+
+### New Features
+- Telegram Entrypoint
+
+## 2024-12-30
+
+### Improvements
+- Twitter Integration Enchancement
+
 ## 2024-12-28
 
 ### New Features
