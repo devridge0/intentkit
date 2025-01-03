@@ -50,6 +50,7 @@ class Agent(SQLModel, table=True):
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         sa_column=Column(JSONB, nullable=True)
     )
+    # auto timestamp
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),

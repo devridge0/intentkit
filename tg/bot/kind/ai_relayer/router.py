@@ -2,15 +2,15 @@ import inspect
 import logging
 
 from aiogram import Router
-from aiogram.filters import CommandStart
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
 from app.core.ai import execute_agent
 from tg.bot import pool
 from tg.bot.filter.chat_type import GroupOnlyFilter
 from tg.bot.filter.content_type import TextOnlyFilter
+from tg.bot.filter.id import WhitelistedChatIDsFilter
+from tg.bot.filter.no_bot import NoBotFilter
 
 logger = logging.getLogger(__name__)
 
@@ -26,40 +26,42 @@ def cur_mod_name():
 general_router = Router()
 
 
-class GeneralForm(StatesGroup):
-    name = State()
-    like_bots = State()
-    language = State()
+@general_router.message(Command("chat_id"), NoBotFilter(), TextOnlyFilter())
+async def command_chat_id(message: Message) -> None:
+    try:
+        await message.answer(text=str(message.chat.id))
+    except Exception as e:
+        logger.warning(
+            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
+        )
 
 
 ## group commands and messages
 
 
-@general_router.message(GroupOnlyFilter(), TextOnlyFilter(), CommandStart())
+@general_router.message(
+    CommandStart(),
+    NoBotFilter(),
+    WhitelistedChatIDsFilter(),
+    GroupOnlyFilter(),
+    TextOnlyFilter(),
+)
 async def gp_command_start(message: Message):
-    if message.from_user.is_bot:
-        return
-
     try:
         group_title = message.from_user.first_name
         await message.answer(
             text=f"🤖 Hi Everybody, {group_title}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
         )
-    except Exception:
+    except Exception as e:
         logger.warning(
-            "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
-                func=cur_func_name,
-                agent_id=pool.bot_by_token(message.bot.token).get("agent_id"),
-                token=message.bot.token,
-            )
+            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
         )
 
 
-@general_router.message(GroupOnlyFilter(), TextOnlyFilter())
+@general_router.message(
+    WhitelistedChatIDsFilter(), NoBotFilter(), GroupOnlyFilter(), TextOnlyFilter()
+)
 async def gp_process_message(message: Message) -> None:
-    if message.from_user.is_bot:
-        return
-
     bot = await message.bot.get_me()
     if (
         message.reply_to_message
@@ -67,81 +69,64 @@ async def gp_process_message(message: Message) -> None:
     ) or bot.username in message.text:
         cached_bot = pool.bot_by_token(message.bot.token)
         if cached_bot is None:
-            logger.warning(
-                "bot with token {token} not found in cache.".format(
-                    token=message.bot.token
-                )
-            )
+            logger.warning(f"bot with token {message.bot.token} not found in cache.")
             return
 
         try:
             agent_id = cached_bot["agent_id"]
-            # TODO: use config to control if group memory is public
-            # thread_id = pool.agent_thread_id(agent_id, message.chat.id)
-            thread_id = f"{agent_id}-public"
+            thread_id = pool.agent_thread_id(
+                agent_id, cached_bot["is_public"], message.chat.id
+            )
             response = execute_agent(agent_id, message.text, thread_id)
             await message.answer(
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
             )
-        except Exception:
+        except Exception as e:
             logger.warning(
-                "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
-                    func=cur_func_name(),
-                    agent_id=cached_bot.get("agent_id"),
-                    token=message.bot.token,
-                )
+                f"error processing in function:{cur_func_name()}, for agent:{cached_bot["agent_id"]} token:{message.bot.token}, err={str(e)}"
             )
 
 
 ## direct commands and messages
-@general_router.message(CommandStart(), TextOnlyFilter())
-async def command_start(message: Message, state: FSMContext) -> None:
-    if message.from_user.is_bot:
-        return
 
+
+@general_router.message(
+    CommandStart(), NoBotFilter(), WhitelistedChatIDsFilter(), TextOnlyFilter()
+)
+async def command_start(message: Message) -> None:
     try:
         first_name = message.from_user.first_name
         await message.answer(
             text=f"🤖 Hi, {first_name}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
         )
-    except Exception:
+    except Exception as e:
         logger.warning(
-            "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
-                func=cur_func_name(),
-                agent_id=pool.bot_by_token(message.bot.token).get("agent_id"),
-                token=message.bot.token,
-            )
+            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
         )
 
 
 @general_router.message(
     TextOnlyFilter(),
+    NoBotFilter(),
+    WhitelistedChatIDsFilter(),
 )
-async def process_message(message: Message, state: FSMContext) -> None:
-    if message.from_user.is_bot:
-        return
-
+async def process_message(message: Message) -> None:
     cached_bot = pool.bot_by_token(message.bot.token)
     if cached_bot is None:
-        logger.warning(
-            "bot with token {token} not found in cache.".format(token=message.bot.token)
-        )
+        logger.warning(f"bot with token {message.bot.token} not found in cache.")
         return
 
     try:
         agent_id = cached_bot["agent_id"]
-        thread_id = pool.agent_thread_id(agent_id, message.chat.id)
+        # only group memory can be public, dm always private
+        thread_id = pool.agent_thread_id(agent_id, False, message.chat.id)
         response = execute_agent(agent_id, message.text, thread_id)
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,
         )
-    except Exception:
+    except Exception as e:
         logger.warning(
-            "error processing in function:{func}, for agent:{agent_id} token:{token}".format(
-                func=cur_func_name(),
-                agent_id=cached_bot.get("agent_id"),
-                token=message.bot.token,
-            )
+            f"error processing in function:{cur_func_name()}, for agent:{cached_bot["agent_id"]} token:{message.bot.token} err:{str(e)}"
         )
