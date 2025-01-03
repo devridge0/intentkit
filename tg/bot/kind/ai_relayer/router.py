@@ -32,7 +32,7 @@ async def command_chat_id(message: Message) -> None:
         await message.answer(text=str(message.chat.id))
     except Exception as e:
         logger.warning(
-            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
+            f"error processing in function:{cur_func_name()}, token:{message.bot.token} err: {str(e)}"
         )
 
 
@@ -54,7 +54,7 @@ async def gp_command_start(message: Message):
         )
     except Exception as e:
         logger.warning(
-            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
+            f"error processing in function:{cur_func_name()}, token:{message.bot.token} err: {str(e)}"
         )
 
 
@@ -67,24 +67,25 @@ async def gp_process_message(message: Message) -> None:
         message.reply_to_message
         and message.reply_to_message.from_user.id == message.bot.id
     ) or bot.username in message.text:
-        cached_bot = pool.bot_by_token(message.bot.token)
-        if cached_bot is None:
+        cached_bot_item = pool.bot_by_token(message.bot.token)
+        if cached_bot_item is None:
             logger.warning(f"bot with token {message.bot.token} not found in cache.")
             return
 
         try:
-            agent_id = cached_bot["agent_id"]
             thread_id = pool.agent_thread_id(
-                agent_id, cached_bot["is_public"], message.chat.id
+                cached_bot_item.agent_id,
+                cached_bot_item.is_public_memory,
+                message.chat.id,
             )
-            response = execute_agent(agent_id, message.text, thread_id)
+            response = execute_agent(cached_bot_item.agent_id, message.text, thread_id)
             await message.answer(
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
             logger.warning(
-                f"error processing in function:{cur_func_name()}, for agent:{cached_bot["agent_id"]} token:{message.bot.token}, err={str(e)}"
+                f"error processing in function:{cur_func_name()}, token:{message.bot.token}, err={str(e)}"
             )
 
 
@@ -102,7 +103,7 @@ async def command_start(message: Message) -> None:
         )
     except Exception as e:
         logger.warning(
-            f"error processing in function:{cur_func_name()}, for agent:{pool.bot_by_token(message.bot.token)["agent_id"]} token:{message.bot.token} err: {str(e)}"
+            f"error processing in function:{cur_func_name()}, token:{message.bot.token} err: {str(e)}"
         )
 
 
@@ -112,21 +113,22 @@ async def command_start(message: Message) -> None:
     WhitelistedChatIDsFilter(),
 )
 async def process_message(message: Message) -> None:
-    cached_bot = pool.bot_by_token(message.bot.token)
-    if cached_bot is None:
+    cached_bot_item = pool.bot_by_token(message.bot.token)
+    if cached_bot_item is None:
         logger.warning(f"bot with token {message.bot.token} not found in cache.")
         return
 
     try:
-        agent_id = cached_bot["agent_id"]
         # only group memory can be public, dm always private
-        thread_id = pool.agent_thread_id(agent_id, False, message.chat.id)
-        response = execute_agent(agent_id, message.text, thread_id)
+        thread_id = pool.agent_thread_id(
+            cached_bot_item.agent_id, False, message.chat.id
+        )
+        response = execute_agent(cached_bot_item.agent_id, message.text, thread_id)
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
         logger.warning(
-            f"error processing in function:{cur_func_name()}, for agent:{cached_bot["agent_id"]} token:{message.bot.token} err:{str(e)}"
+            f"error processing in function:{cur_func_name()}, token:{message.bot.token} err:{str(e)}"
         )
