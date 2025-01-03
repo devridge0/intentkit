@@ -23,31 +23,22 @@ class AgentScheduler:
             # Get all telegram agents
             agents = db.exec(select(Agent)).all()
 
-            new_agents = []
-            token_changed_agents = []
-            modified_agents = []
             for agent in agents:
-                token = agent.telegram_config["token"]
-
                 if agent.id not in pool._agent_bots:
                     if (
                         agent.telegram_enabled
                         and agent.telegram_config
                         and agent.telegram_config["token"]
                     ):
-                        token_changed_agents.append(agent)
-                        new_agents.append(agent)
                         logger.info(f"New agent with id {agent.id} found...")
                         await self.bot_pool.init_new_bot(agent)
                 else:
                     cached_agent = pool._agent_bots[agent.id]
-                    if cached_agent["updated_at"] != agent.updated_at:
-                        if token not in pool._bots:
+                    if cached_agent.updated_at != agent.updated_at:
+                        if agent.telegram_config.get("token") not in pool._bots:
                             await self.bot_pool.change_bot_token(agent)
                         else:
                             await self.bot_pool.modify_config(agent)
-
-            return new_agents, token_changed_agents, modified_agents
 
     async def start(self, interval):
         logger.info("New agent addition tracking started...")

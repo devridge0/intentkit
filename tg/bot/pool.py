@@ -5,16 +5,17 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import (
-    SimpleRequestHandler,
-    TokenBasedRequestHandler,
-    setup_application,
-)
+from aiogram.webhook.aiohttp_server import (SimpleRequestHandler,
+                                            TokenBasedRequestHandler,
+                                            setup_application)
 from aiohttp import web
 
+from app.models.agent import Agent
 from tg.bot.kind.ai_relayer.router import general_router
 from tg.bot.kind.god.router import god_router
 from tg.bot.kind.god.startup import GOD_BOT_PATH, GOD_BOT_TOKEN, on_startup
+from tg.bot.types.agent import BotPoolAgentItem
+from tg.bot.types.bot import BotPoolItem
 from tg.bot.types.kind import Kind
 from tg.bot.types.router_obj import RouterObj
 
@@ -26,14 +27,20 @@ _bots = {}
 _agent_bots = {}
 
 
-def bot_by_token(token):
+def bot_by_token(token) -> BotPoolItem:
     return _bots.get(token)
 
 
-def bot_by_agent_id(agent_id):
-    agent = _agent_bots.get(agent_id)
-    if agent is not None:
-        return bot_by_token(agent["token"])
+def set_cache_bot(bot: BotPoolItem):
+    _bots[bot.token] = bot
+
+
+def agent_by_id(agent_id) -> BotPoolAgentItem:
+    return _agent_bots.get(agent_id)
+
+
+def set_cache_agent(agent: BotPoolAgentItem):
+    _agent_bots[agent.id] = agent
 
 
 def agent_thread_id(agent_id, group_memory_public, chat_id):
@@ -58,21 +65,24 @@ class BotPool:
 
     def init_god_bot(self):
         if GOD_BOT_TOKEN is not None:
-            logger.info("Initialize god bot...")
-            self.god_bot = Bot(
-                token=GOD_BOT_TOKEN,
-                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-            )
-            storage = MemoryStorage()
-            # In order to use RedisStorage you need to use Key Builder with bot ID:
-            # storage = RedisStorage.from_url(TG_REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
-            dp = Dispatcher(storage=storage)
-            dp.include_router(god_router)
-            dp.startup.register(on_startup)
-            SimpleRequestHandler(dispatcher=dp, bot=self.god_bot).register(
-                self.app, path=GOD_BOT_PATH
-            )
-            setup_application(self.app, dp, bot=self.god_bot)
+            try:
+                logger.info("Initialize god bot...")
+                self.god_bot = Bot(
+                    token=GOD_BOT_TOKEN,
+                    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+                )
+                storage = MemoryStorage()
+                # In order to use RedisStorage you need to use Key Builder with bot ID:
+                # storage = RedisStorage.from_url(TG_REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
+                dp = Dispatcher(storage=storage)
+                dp.include_router(god_router)
+                dp.startup.register(on_startup)
+                SimpleRequestHandler(dispatcher=dp, bot=self.god_bot).register(
+                    self.app, path=GOD_BOT_PATH
+                )
+                setup_application(self.app, dp, bot=self.god_bot)
+            except Exception as e:
+                logger.error(f"failed to init god bot: {e}")
 
     def init_all_dispatchers(self):
         logger.info("Initialize all dispatchers...")
@@ -92,97 +102,96 @@ class BotPool:
             setup_application(self.app, b.get_dispatcher())
             logger.info(f"{kind} router initialized...")
 
-    async def init_new_bot(self, agent):
+    async def init_new_bot(self, agent: Agent):
         try:
-            cfg = agent.telegram_config
-            token = cfg["token"]
-            bot = Bot(
-                token=token,
-                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-            )
-            await bot.delete_webhook(drop_pending_updates=True)
-            await bot.set_webhook(
-                self.base_url.format(kind=cfg["kind"], bot_token=token)
+            bot_item = BotPoolItem(agent)
+            agent_item = BotPoolAgentItem(agent)
+
+            await bot_item.bot.delete_webhook(drop_pending_updates=True)
+            await bot_item.bot.set_webhook(
+                self.base_url.format(kind=bot_item.kind, bot_token=bot_item.token)
             )
 
-            _bots[token] = {
-                "agent_id": agent.id,
-                "group_memory_public": cfg.get("group_memory_public", True),
-                "cfg": cfg,
-                "bot": bot,
-            }
-            _agent_bots[agent.id] = {
-                "token": token,
-                "updated_at": agent.updated_at,
-            }
-            logger.info(f"Bot with token {token} initialized...")
+            set_cache_bot(bot_item)
+            set_cache_agent(agent_item)
 
+            logger.info(
+                f"bot for agent {agent.id} with token {bot_item.token} initialized..."
+            )
+
+        except ValueError as e:
+            logger.warning(
+                f"bot for agent {agent.id} did not started because of invalid data. err: {e}"
+            )
         except Exception as e:
-            logger.error(
-                "failed to init new bot for agent {agent_id}: {err}".format(
-                    agent_id=agent.id, err=e
-                )
-            )
+            logger.error(f"failed to init new bot for agent {agent.id}: {e}")
 
-    async def change_bot_token(self, agent):
+    async def change_bot_token(self, agent: Agent):
         try:
-            old_cached_bot = bot_by_agent_id(agent.id)
-            kind = old_cached_bot["cfg"]["kind"]
+            new_bot_item = BotPoolItem(agent)
+            new_agent_item = BotPoolAgentItem(agent)
 
-            new_token = agent.telegram_config["token"]
+            old_agent_item = agent_by_id(agent.id)
+            old_cached_bot_item = bot_by_token(old_agent_item.bot_token)
 
-            old_bot = Bot(
-                token=old_cached_bot["cfg"]["token"],
-                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-            )
+            if old_cached_bot_item is not None and old_cached_bot_item.bot is not None:
+                old_bot = old_cached_bot_item.bot
+            else:
+                old_bot = Bot(
+                    token=old_cached_bot_item.token,
+                    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+                )
+
             await old_bot.session.close()
             await old_bot.delete_webhook(drop_pending_updates=True)
 
-            new_bot = Bot(
-                token=new_token,
-                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-            )
-            await new_bot.set_webhook(
-                self.base_url.format(kind=kind, bot_token=new_token)
+            await new_bot_item.bot.delete_webhook(drop_pending_updates=True)
+            await new_bot_item.bot.set_webhook(
+                self.base_url.format(
+                    kind=new_bot_item.kind, bot_token=new_bot_item.token
+                )
             )
 
-            del _bots[old_cached_bot["cfg"]["token"]]
-            _bots[new_token] = {
-                "agent_id": agent.id,
-                "group_memory_public": agent.telegram_config.get(
-                    "group_memory_public", True
-                ),
-                "cfg": agent.telegram_config,
-                "bot": new_bot,
-            }
-            _agent_bots[agent.id] = {
-                "token": agent.telegram_config["token"],
-                "updated_at": agent.updated_at,
-            }
+            del _bots[old_cached_bot_item.token]
+            set_cache_bot(new_bot_item)
+            set_cache_agent(new_agent_item)
+
             logger.info(
-                "bot for agent {agent_id} with token {token} changed to {new_token}...".format(
-                    agent_id=agent.id,
-                    token=old_cached_bot["cfg"]["token"],
-                    new_token=new_token,
-                ),
+                f"bot for agent {agent.id} with token {old_agent_item.bot_token} changed to {new_bot_item.token}..."
+            )
+
+        except ValueError as e:
+            logger.warning(
+                f"bot for agent {agent.id} token did not changed because of invalid data. err: {e}"
             )
         except aiohttp.ClientError:
             pass
         except Exception as e:
             logger.error(f"failed to change bot token for agent {agent.id}: {str(e)}")
 
-    async def stop_bot(self, agent):
+    async def stop_bot(self, agent: Agent):
         try:
-            token = agent.telegram_config["token"]
-            bot = Bot(
-                token=token,
-                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-            )
+            token = agent.telegram_config.get("token")
+            if token is None:
+                logger.warning(
+                    f"bot for agent {agent.id} token did not stopped because of empty token"
+                )
+                return
+
+            cached_bot_item = bot_by_token(agent.telegram_config["token"])
+            if cached_bot_item is not None and cached_bot_item.bot is not None:
+                bot = cached_bot_item.bot
+            else:
+                bot = Bot(
+                    token=cached_bot_item.token,
+                    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+                )
+
             await bot.session.close()
             await bot.delete_webhook(drop_pending_updates=True)
 
-            del _agent_bots[agent.id]
             del _bots[token]
+            del _agent_bots[agent.id]
 
             logger.info(f"Bot with token {token} for agent {agent.id} stopped...")
 
@@ -195,14 +204,21 @@ class BotPool:
             return
 
         try:
-            old_cached_bot = bot_by_agent_id(agent.id)
-            _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
-            _agent_bots[old_cached_bot["agent_id"]]["updated_at"] = agent.updated_at
-            if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
+            old_agent_item = agent_by_id(agent.id)
+            old_bot_item = bot_by_token(old_agent_item.bot_token)
+            old_bot_item.update_conf(agent.telegram_config)
+            old_agent_item.updated_at = agent.updated_at
+
+            if old_bot_item.kind != agent.telegram_config.get("kind"):
                 await self.stop_bot(agent)
                 await self.init_new_bot(agent)
             logger.info(
                 f"configurations of the bot with token {agent.telegram_config["token"]} for agent {agent.id} updated..."
+            )
+
+        except ValueError as e:
+            logger.warning(
+                f"bot for agent {agent.id} config did not changed because of invalid data. err: {e}"
             )
         except Exception as e:
             logger.error(

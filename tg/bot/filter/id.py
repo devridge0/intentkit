@@ -1,7 +1,11 @@
+import logging
+
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
 from tg.bot import pool
+
+logger = logging.getLogger(__name__)
 
 
 class WhitelistedChatIDsFilter(BaseFilter):
@@ -9,12 +13,13 @@ class WhitelistedChatIDsFilter(BaseFilter):
         pass
 
     async def __call__(self, message: Message) -> bool:
-        cached_bot = pool.bot_by_token(message.bot.token)
-        if cached_bot is None:
+        try:
+            whitelist = pool.bot_by_token(message.bot.token).whitelist_chat_ids
+            if whitelist is not None and len(whitelist) > 0:
+                return message.chat.id in whitelist or str(message.chat.id) in whitelist
+
+            return True
+
+        except Exception as e:
+            logger.error(f"failed to filter whitelisted chat ids: {str(e)}")
             return False
-
-        whitelist = cached_bot["cfg"].get("whitelist_chat_ids")
-        if whitelist is not None and len(whitelist) > 0:
-            return str(message.chat.id) in whitelist
-
-        return True

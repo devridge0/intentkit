@@ -1,5 +1,9 @@
+import logging
+
 from aiogram.filters import BaseFilter
 from aiogram.types import ContentType, Message
+
+logger = logging.getLogger(__name__)
 
 
 class ContentTypeFilter(BaseFilter):
@@ -7,7 +11,11 @@ class ContentTypeFilter(BaseFilter):
         self.content_types = content_types
 
     async def __call__(self, message: Message) -> bool:
-        return message.content_type in self.content_types
+        try:
+            return message.content_type in self.content_types
+        except Exception as e:
+            logger.error(f"failed to filter content types: {str(e)}")
+            return False
 
 
 class TextOnlyFilter(ContentTypeFilter):
