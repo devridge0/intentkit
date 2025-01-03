@@ -195,9 +195,7 @@ class BotPool:
         try:
             old_cached_bot = bot_by_agent_id(agent.id)
             _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
-            _agent_bots[old_cached_bot["agent_id"]]["last_modified"] = (
-                agent.updated_at
-            )
+            _agent_bots[old_cached_bot["agent_id"]]["last_modified"] = agent.updated_at
             if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
                 await self.stop_bot(agent)
                 await self.init_new_bot(agent)
