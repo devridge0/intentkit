@@ -75,7 +75,7 @@ async def gp_process_message(message: Message) -> None:
         try:
             agent_id = cached_bot["agent_id"]
             thread_id = pool.agent_thread_id(
-                agent_id, cached_bot["is_public"], message.chat.id
+                agent_id, cached_bot["group_memory_public"], message.chat.id
             )
             response = execute_agent(agent_id, message.text, thread_id)
             await message.answer(
