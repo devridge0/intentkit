@@ -113,7 +113,7 @@ class BotPool:
             }
             _agent_bots[agent.id] = {
                 "token": token,
-                "last_modified": agent.updated_at,
+                "updated_at": agent.updated_at,
             }
             logger.info(f"Bot with token {token} initialized...")
 
@@ -155,7 +155,7 @@ class BotPool:
             }
             _agent_bots[agent.id] = {
                 "token": agent.telegram_config["token"],
-                "last_modified": agent.updated_at,
+                "updated_at": agent.updated_at,
             }
             logger.info(
                 "bot for agent {agent_id} with token {token} changed to {new_token}...".format(
@@ -195,7 +195,7 @@ class BotPool:
         try:
             old_cached_bot = bot_by_agent_id(agent.id)
             _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
-            _agent_bots[old_cached_bot["agent_id"]]["last_modified"] = agent.updated_at
+            _agent_bots[old_cached_bot["agent_id"]]["updated_at"] = agent.updated_at
             if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
                 await self.stop_bot(agent)
                 await self.init_new_bot(agent)
