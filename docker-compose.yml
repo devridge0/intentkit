@@ -53,5 +53,41 @@ services:
       - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
     command: poetry run python -m app.entrypoints.autonomous
 
+  twitter:
+    image: crestal/intentkit:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENV=${ENV:-local}
+      - RELEASE=${RELEASE:-local}
+      - DB_USERNAME=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-intentkit}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
+      - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
+    command: poetry run python -m app.entrypoints.twitter
+
+  admin:
+    image: crestal/intentkit:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENV=${ENV:-local}
+      - RELEASE=${RELEASE:-local}
+      - DB_USERNAME=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-intentkit}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
+      - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
+    command: poetry run python -m app.admin.admin
+
 volumes:
   postgres_data:

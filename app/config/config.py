@@ -26,12 +26,12 @@ def load_from_aws(name):
 
 class Config:
     def __init__(self):
-        # this part can only be load from env
+        # ==== this part can only be load from env
         self.env = os.getenv("ENV", "local")
         self.release = os.getenv("RELEASE", "local")
         secret_name = os.getenv("AWS_SECRET_NAME")
         db_secret_name = os.getenv("AWS_DB_SECRET_NAME")
-        # load from aws secrets manager
+        # ==== load from aws secrets manager
         if secret_name:
             self.secrets = load_from_aws(secret_name)
         else:
@@ -57,28 +57,45 @@ class Config:
         # validate the db config
         if "host" not in self.db:
             raise ValueError("db config is not set")
-        # this part can be load from env or aws secrets manager
+        # ==== this part can be load from env or aws secrets manager
         self.db["auto_migrate"] = self.load("DB_AUTO_MIGRATE", "true") == "true"
         self.debug = self.load("DEBUG") == "true"
         self.debug_resp = (
             self.load("DEBUG_RESP", "false") == "true"
         )  # Agent response with thought steps and time cost
+        # Admin
+        self.admin_auth_enabled = self.load("ADMIN_AUTH_ENABLED", "false") == "true"
+        self.admin_jwt_secret = self.load("ADMIN_JWT_SECRET")
+        # API
+        self.api_auth_enabled = self.load("API_AUTH_ENABLED", "false") == "true"
+        self.api_jwt_secret = self.load("API_JWT_SECRET")
+        # CDP
         self.cdp_api_key_name = self.load("CDP_API_KEY_NAME")
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
+        # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
-        self.slack_token = self.load("SLACK_TOKEN")
-        self.slack_channel = self.load("SLACK_CHANNEL")
+        self.system_prompt = self.load("SYSTEM_PROMPT")
+        # Autonomous
+        # self.autonomous_entrypoint_interval = int(
+        #     self.load("AUTONOMOUS_ENTRYPOINT_INTERVAL", "1")
+        # )
+        self.autonomous_memory_public = self.load("AUTONOMOUS_MEMORY_PUBLIC", "true")
+        # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")
         self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
         self.tg_server_port = self.load("TG_SERVER_PORT", "8081")
         self.tg_new_agent_poll_interval = self.load("TG_NEW_AGENT_POLL_INTERVAL", "60")
-        self.twitter_endpoint_interval = int(
-            self.load("TWITTER_ENDPOINT_INTERVAL", "15")
+        self.tg_group_memory_public = self.load("TG_GROUP_MEMORY_PUBLIC", "true")
+        # Twitter
+        self.twitter_entrypoint_interval = int(
+            self.load("TWITTER_ENTRYPOINT_INTERVAL", "15")
         )  # in minutes
+        # Slack Alert
         self.slack_alert_token = self.load(
             "SLACK_ALERT_TOKEN"
         )  # For alert purposes only
         self.slack_alert_channel = self.load("SLACK_ALERT_CHANNEL")
+        # ===== config loaded
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
         logger.info("config loaded")

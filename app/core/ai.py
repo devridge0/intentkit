@@ -133,12 +133,12 @@ def initialize_agent(aid):
 
         # Store buffered conversation history in memory.
         memory = PostgresSaver(get_coon())
-        memory.setup()
 
         prompt = ""
+        if config.system_prompt:
+            prompt += config.system_prompt + "\n\n"
         if agent.name:
-            prompt = f"Your name is {agent.name}. "
-
+            prompt += f"Your name is {agent.name}.\n\n"
         if agent.prompt:
             prompt += agent.prompt
         elif agent.cdp_enabled:

@@ -112,7 +112,8 @@ def run_twitter_agents():
 
                 # Process each mention
                 for mention in mentions.data:
-                    thread_id = f"{agent.id}-twitter-{mention.author_id}"
+                    # because twitter react is all public, the memory shared by all public entrypoints
+                    thread_id = f"{agent.id}-public"
                     response = execute_agent(agent.id, mention.text, thread_id)
 
                     # Reply to the tweet
@@ -137,7 +138,7 @@ if __name__ == "__main__":
     # Create scheduler
     scheduler = BlockingScheduler()
     scheduler.add_job(
-        run_twitter_agents, "interval", minutes=config.twitter_endpoint_interval
+        run_twitter_agents, "interval", minutes=config.twitter_entrypoint_interval
     )
 
     # Register signal handlers
