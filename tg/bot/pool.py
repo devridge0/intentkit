@@ -5,9 +5,11 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import (SimpleRequestHandler,
-                                            TokenBasedRequestHandler,
-                                            setup_application)
+from aiogram.webhook.aiohttp_server import (
+    SimpleRequestHandler,
+    TokenBasedRequestHandler,
+    setup_application,
+)
 from aiohttp import web
 
 from tg.bot.kind.ai_relayer.router import general_router
@@ -36,7 +38,7 @@ def bot_by_agent_id(agent_id):
 
 def agent_thread_id(agent_id, is_public, chat_id):
     if is_public:
-        return f"{agent_id}-telegram-public"
+        return f"{agent_id}-public"
     return f"{agent_id}-telegram-{chat_id}"
 
 
@@ -193,9 +195,9 @@ class BotPool:
         try:
             old_cached_bot = bot_by_agent_id(agent.id)
             _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
-            _agent_bots[old_cached_bot["agent_id"]][
-                "last_modified"
-            ] = agent.last_modified
+            _agent_bots[old_cached_bot["agent_id"]]["last_modified"] = (
+                agent.last_modified
+            )
             if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
                 await self.stop_bot(agent)
                 await self.init_new_bot(agent)
