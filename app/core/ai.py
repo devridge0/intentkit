@@ -73,10 +73,35 @@ def initialize_agent(aid):
             # Handle other SQLAlchemy-related errors
             logger.error(e)
             raise HTTPException(status_code=500, detail=str(e))
-        # Initialize LLM.
+
+        # ==== Initialize LLM.
         llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
 
-        # Load tools
+        # ==== Store buffered conversation history in memory.
+        memory = PostgresSaver(get_coon())
+
+        # ==== Set up prompt
+        prompt = ""
+        if config.system_prompt:
+            prompt += config.system_prompt + "\n\n"
+        if agent.name:
+            prompt += f"Your name is {agent.name}.\n\n"
+        if agent.prompt:
+            prompt += agent.prompt
+        elif agent.cdp_enabled:
+            prompt += (
+                "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
+                "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
+                "them from the faucet if you are on network ID 'base-sepolia'. If not, you can provide your wallet "
+                "details and request funds from the user. Before executing your first action, get the wallet details "
+                "to see what network you're on. If there is a 5XX (internal) HTTP error code, ask the user to try "
+                "again later. If someone asks you to do something you can't do with your currently available tools, "
+                "you must say so, and encourage them to implement it themselves using the CDP SDK + Agentkit, "
+                "recommend they go to docs.cdp.coinbase.com for more information. Be concise and helpful with your "
+                "responses. Refrain from restating your tools' descriptions unless it is explicitly requested."
+            )
+
+        # ==== Load skills
         tools: list[BaseTool] = []
 
         # Configure CDP Agentkit Langchain Extension.
@@ -98,6 +123,10 @@ def initialize_agent(aid):
             # Initialize CDP Agentkit Toolkit and get tools.
             cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
             tools.extend(cdp_toolkit.get_tools())
+            # add prompt
+            prompt += """\n\nWallet addresses are public information.  If someone asks for your default wallet, 
+            current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
+            you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
 
         # Twitter skills
         if (
@@ -130,29 +159,6 @@ def initialize_agent(aid):
         # log all tools
         for tool in tools:
             logger.info(f"[{aid}] loaded tool: {tool.name}")
-
-        # Store buffered conversation history in memory.
-        memory = PostgresSaver(get_coon())
-
-        prompt = ""
-        if config.system_prompt:
-            prompt += config.system_prompt + "\n\n"
-        if agent.name:
-            prompt += f"Your name is {agent.name}.\n\n"
-        if agent.prompt:
-            prompt += agent.prompt
-        elif agent.cdp_enabled:
-            prompt += (
-                "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
-                "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
-                "them from the faucet if you are on network ID 'base-sepolia'. If not, you can provide your wallet "
-                "details and request funds from the user. Before executing your first action, get the wallet details "
-                "to see what network you're on. If there is a 5XX (internal) HTTP error code, ask the user to try "
-                "again later. If someone asks you to do something you can't do with your currently available tools, "
-                "you must say so, and encourage them to implement it themselves using the CDP SDK + Agentkit, "
-                "recommend they go to docs.cdp.coinbase.com for more information. Be concise and helpful with your "
-                "responses. Refrain from restating your tools' descriptions unless it is explicitly requested."
-            )
 
         # Create ReAct Agent using the LLM and CDP Agentkit tools.
         agents[aid] = create_react_agent(
