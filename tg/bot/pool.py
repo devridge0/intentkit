@@ -107,13 +107,13 @@ class BotPool:
 
             _bots[token] = {
                 "agent_id": agent.id,
-                "is_public": agent.ai_thread_public,
+                "is_public": cfg.get("group_memory_public", True),
                 "cfg": cfg,
                 "bot": bot,
             }
             _agent_bots[agent.id] = {
                 "token": token,
-                "last_modified": agent.last_modified,
+                "last_modified": agent.updated_at,
             }
             logger.info(f"Bot with token {token} initialized...")
 
@@ -149,13 +149,13 @@ class BotPool:
             del _bots[old_cached_bot["cfg"]["token"]]
             _bots[new_token] = {
                 "agent_id": agent.id,
-                "is_public": agent.ai_thread_public,
+                "is_public": agent.telegram_config.get("group_memory_public", True),
                 "cfg": agent.telegram_config,
                 "bot": new_bot,
             }
             _agent_bots[agent.id] = {
                 "token": agent.telegram_config["token"],
-                "last_modified": agent.last_modified,
+                "last_modified": agent.updated_at,
             }
             logger.info(
                 "bot for agent {agent_id} with token {token} changed to {new_token}...".format(
@@ -196,7 +196,7 @@ class BotPool:
             old_cached_bot = bot_by_agent_id(agent.id)
             _bots[old_cached_bot["cfg"]["token"]]["cfg"] = agent.telegram_config
             _agent_bots[old_cached_bot["agent_id"]]["last_modified"] = (
-                agent.last_modified
+                agent.updated_at
             )
             if old_cached_bot["cfg"]["kind"] != agent.telegram_config["kind"]:
                 await self.stop_bot(agent)

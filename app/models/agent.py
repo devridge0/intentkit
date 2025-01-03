@@ -51,9 +51,7 @@ class Agent(SQLModel, table=True):
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         sa_column=Column(JSONB, nullable=True)
     )
-    # last modification timestamp
-    last_modified: int = Field(default=0)
-    ai_thread_public: bool = Field(default=False)
+    # auto timestamp
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
@@ -72,7 +70,6 @@ class Agent(SQLModel, table=True):
     def create_or_update(self, db: Session) -> None:
         """Create the agent if not exists, otherwise update it."""
         existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
-        self.last_modified = time.time()
         if existing_agent:
             # Update existing agent
             for field in self.model_fields:
