@@ -41,7 +41,7 @@ class AgentScheduler:
                         await self.bot_pool.init_new_bot(agent)
                 else:
                     cached_agent = pool._agent_bots[agent.id]
-                    if cached_agent["last_modified"] != agent.updated_at:
+                    if cached_agent["updated_at"] != agent.updated_at:
                         if token not in pool._bots:
                             await self.bot_pool.change_bot_token(agent)
                         else:
