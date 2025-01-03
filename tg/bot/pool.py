@@ -1,13 +1,14 @@
 import logging
 
-import aiohttp
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.webhook.aiohttp_server import (SimpleRequestHandler,
-                                            TokenBasedRequestHandler,
-                                            setup_application)
+from aiogram.webhook.aiohttp_server import (
+    SimpleRequestHandler,
+    TokenBasedRequestHandler,
+    setup_application,
+)
 from aiohttp import web
 
 from app.models.agent import Agent
@@ -64,7 +65,7 @@ class BotPool:
         }
 
     def init_god_bot(self):
-        if GOD_BOT_TOKEN is not None:
+        if GOD_BOT_TOKEN:
             try:
                 logger.info("Initialize god bot...")
                 self.god_bot = Bot(
@@ -134,7 +135,7 @@ class BotPool:
             old_agent_item = agent_by_id(agent.id)
             old_cached_bot_item = bot_by_token(old_agent_item.bot_token)
 
-            if old_cached_bot_item is not None and old_cached_bot_item.bot is not None:
+            if old_cached_bot_item and old_cached_bot_item.bot:
                 old_bot = old_cached_bot_item.bot
             else:
                 old_bot = Bot(
@@ -164,8 +165,6 @@ class BotPool:
             logger.warning(
                 f"bot for agent {agent.id} token did not changed because of invalid data. err: {e}"
             )
-        except aiohttp.ClientError:
-            pass
         except Exception as e:
             logger.error(f"failed to change bot token for agent {agent.id}: {str(e)}")
 
@@ -179,7 +178,7 @@ class BotPool:
                 return
 
             cached_bot_item = bot_by_token(agent.telegram_config["token"])
-            if cached_bot_item is not None and cached_bot_item.bot is not None:
+            if cached_bot_item and cached_bot_item.bot:
                 bot = cached_bot_item.bot
             else:
                 bot = Bot(
@@ -194,7 +193,6 @@ class BotPool:
             del _agent_bots[agent.id]
 
             logger.info(f"Bot with token {token} for agent {agent.id} stopped...")
-
         except Exception as e:
             logger.error(f"failed to stop the bot for agent {agent.id}: {e}")
 

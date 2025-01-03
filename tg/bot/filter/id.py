@@ -15,7 +15,7 @@ class WhitelistedChatIDsFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         try:
             whitelist = pool.bot_by_token(message.bot.token).whitelist_chat_ids
-            if whitelist is not None and len(whitelist) > 0:
+            if whitelist and len(whitelist) > 0:
                 return message.chat.id in whitelist or str(message.chat.id) in whitelist
 
             return True
