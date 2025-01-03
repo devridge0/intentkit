@@ -30,7 +30,12 @@ class AgentScheduler:
                 token = agent.telegram_config["token"]
 
                 if agent.id not in pool._agent_bots:
-                    if agent.telegram_enabled:
+                    if (
+                        agent.telegram_enabled
+                        and agent.telegram_config
+                        and agent.telegram_config["token"]
+                    ):
+                        token_changed_agents.append(agent)
                         new_agents.append(agent)
                         logger.info(f"New agent with id {agent.id} found...")
                         await self.bot_pool.init_new_bot(agent)
