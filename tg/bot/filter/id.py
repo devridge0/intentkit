@@ -9,9 +9,11 @@ class WhitelistedChatIDsFilter(BaseFilter):
         pass
 
     async def __call__(self, message: Message) -> bool:
-        whitelist = pool.bot_by_token(message.bot.token)["cfg"].get(
-            "whitelist_chat_ids"
-        )
+        cached_bot = pool.bot_by_token(message.bot.token)
+        if cached_bot is None:
+            return False
+
+        whitelist = cached_bot["cfg"].get("whitelist_chat_ids")
         if whitelist is not None and len(whitelist) > 0:
             return str(message.chat.id) in whitelist
 
