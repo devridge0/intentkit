@@ -1,5 +1,9 @@
+import logging
+
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
+
+logger = logging.getLogger(__name__)
 
 
 class ChatTypeFilter(BaseFilter):
@@ -7,10 +11,14 @@ class ChatTypeFilter(BaseFilter):
         self.chat_type = chat_type
 
     async def __call__(self, message: Message) -> bool:
-        if isinstance(self.chat_type, str):
-            return message.chat.type == self.chat_type
-        else:
-            return message.chat.type in self.chat_type
+        try:
+            if isinstance(self.chat_type, str):
+                return message.chat.type == self.chat_type
+            else:
+                return message.chat.type in self.chat_type
+        except Exception as e:
+            logger.error(f"failed to filter chat types: {str(e)}")
+            return False
 
 
 class GroupOnlyFilter(ChatTypeFilter):
