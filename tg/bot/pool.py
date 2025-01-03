@@ -36,8 +36,8 @@ def bot_by_agent_id(agent_id):
         return bot_by_token(agent["token"])
 
 
-def agent_thread_id(agent_id, is_public, chat_id):
-    if is_public:
+def agent_thread_id(agent_id, group_memory_public, chat_id):
+    if group_memory_public:
         return f"{agent_id}-public"
     return f"{agent_id}-telegram-{chat_id}"
 
@@ -107,7 +107,7 @@ class BotPool:
 
             _bots[token] = {
                 "agent_id": agent.id,
-                "is_public": cfg.get("group_memory_public", True),
+                "group_memory_public": cfg.get("group_memory_public", True),
                 "cfg": cfg,
                 "bot": bot,
             }
@@ -149,7 +149,9 @@ class BotPool:
             del _bots[old_cached_bot["cfg"]["token"]]
             _bots[new_token] = {
                 "agent_id": agent.id,
-                "is_public": agent.telegram_config.get("group_memory_public", True),
+                "group_memory_public": agent.telegram_config.get(
+                    "group_memory_public", True
+                ),
                 "cfg": agent.telegram_config,
                 "bot": new_bot,
             }
