@@ -5,13 +5,14 @@ from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
-from app.core.ai import execute_agent
+from app.core.client import execute_agent
 from tg.bot import pool
 from tg.bot.filter.chat_type import GroupOnlyFilter
 from tg.bot.filter.content_type import TextOnlyFilter
 from tg.bot.filter.id import WhitelistedChatIDsFilter
 from tg.bot.filter.no_bot import NoBotFilter
 from tg.utils.cleanup import remove_bot_name
+from abstracts.ai import AgentMessageInput
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,11 @@ async def gp_process_message(message: Message) -> None:
             # remove bot name tag from text
             message_text = remove_bot_name(bot.username, message.text)
 
-            response = execute_agent(cached_bot_item.agent_id, message_text, thread_id)
+            response = execute_agent(
+                cached_bot_item.agent_id,
+                AgentMessageInput(text=message_text),
+                thread_id,
+            )
             await message.answer(
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
@@ -128,7 +133,9 @@ async def process_message(message: Message) -> None:
         thread_id = pool.agent_thread_id(
             cached_bot_item.agent_id, False, message.chat.id
         )
-        response = execute_agent(cached_bot_item.agent_id, message.text, thread_id)
+        response = execute_agent(
+            cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id
+        )
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,

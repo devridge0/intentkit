@@ -34,6 +34,7 @@ from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.twitter import get_twitter_skill
+from abstracts.ai import AgentMessageInput
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ def initialize_agent(aid):
         )
 
 
-def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
+def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
     This function:
@@ -201,7 +202,9 @@ def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
     last = start
 
     # user input
-    resp_debug.append(f"[ Input: ]\n\n {prompt}\n\n-------------------\n")
+    resp_debug.append(
+        f"[ Input: ]\n\n {message.text}\n\n{'\n'.join(message.images)}\n\n-------------------\n"
+    )
 
     # cold start
     if aid not in agents:
@@ -213,9 +216,19 @@ def execute_agent(aid: str, prompt: str, thread_id: str) -> list[str]:
         last = time.perf_counter()
 
     executor: CompiledGraph = agents[aid]
+    # message
+    content = [
+        {"type": "text", "text": message.text},
+    ]
+    content.extend(
+        [
+            {"type": "image_url", "image_url": {"url": image_url}}
+            for image_url in message.images
+        ]
+    )
     # run
     for chunk in executor.stream(
-        {"messages": [HumanMessage(content=prompt)]}, stream_config
+        {"messages": [HumanMessage(content=content)]}, stream_config
     ):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content

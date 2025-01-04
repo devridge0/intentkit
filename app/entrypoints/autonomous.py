@@ -7,9 +7,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlmodel import Session, select
 
 from app.config.config import config
-from app.core.ai import execute_agent
+from app.core.client import execute_agent
 from app.models.agent import Agent, AgentQuota
 from app.models.db import get_engine, init_db
+from abstracts.ai import AgentMessageInput
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ def run_autonomous_action(aid: str, prompt: str):
         thread_id = f"{aid}-public"
 
     # Execute agent and get response
-    resp = execute_agent(aid, prompt, thread_id)
+    resp = execute_agent(aid, AgentMessageInput(text=prompt), thread_id)
 
     # Log the response
     logger.info("\n".join(resp))

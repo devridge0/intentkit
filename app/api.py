@@ -16,6 +16,7 @@ from app.config.config import config
 from app.models.db import init_db
 from app.entrypoints.web import chat_router
 from app.admin.api import admin_router
+from app.core.api import core_router
 from utils.logging import JsonFormatter
 
 # init logger
@@ -54,6 +55,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(core_router)
 
 
 @app.get("/health", include_in_schema=False)

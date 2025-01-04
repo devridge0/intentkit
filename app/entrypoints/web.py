@@ -1,5 +1,5 @@
-"""IntentKit Web API Router.
-"""
+"""IntentKit Web API Router."""
+
 import logging
 
 from fastapi import Depends, HTTPException, Path, Query, Request, APIRouter
@@ -9,6 +9,7 @@ from sqlmodel import Session
 from app.core.ai import execute_agent
 from app.models.agent import AgentQuota
 from app.models.db import get_db
+from abstracts.ai import AgentMessageInput
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ def chat(
     logger.debug(f"thread id: {thread_id}")
 
     # Execute agent and get response
-    resp = execute_agent(aid, q, thread_id)
+    resp = execute_agent(aid, AgentMessageInput(text=q), thread_id)
 
     logger.info(resp)
     # reduce message quota

@@ -54,7 +54,7 @@ def init_db(
     # Initialize psycopg connection
     global conn
     if conn is None:
-        conn = ConnectionPool(conn_str, open=True)
+        conn = ConnectionPool(conn_str, open=True, max_idle=20, max_waiting=30)
         if auto_migrate:
             # Check and create PostgresSaver tables
             one_time_coon = conn.getconn()

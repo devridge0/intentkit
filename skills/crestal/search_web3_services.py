@@ -1,6 +1,6 @@
 from typing import Annotated
 
-import requests
+import httpx
 from langchain_core.tools import tool
 from pydantic import Field
 
@@ -16,7 +16,7 @@ def search_web3_services(
     Return a message containing the web3 service search results.
     """
     try:
-        response = requests.get(
+        response = httpx.get(
             f"https://api.service.crestal.network/v1/services?keyword={keyword}",
             timeout=10,  # Add 10 second timeout
         )
