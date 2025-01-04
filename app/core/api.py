@@ -8,9 +8,8 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 
-from app.core.ai import execute_agent
 from abstracts.ai import AgentMessageInput
-
+from app.core.ai import execute_agent
 
 core_router = APIRouter(prefix="/core", tags=["core"])
 
