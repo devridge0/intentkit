@@ -5,6 +5,7 @@ from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
+from abstracts.ai import AgentMessageInput
 from app.core.client import execute_agent
 from tg.bot import pool
 from tg.bot.filter.chat_type import GroupOnlyFilter
@@ -12,7 +13,6 @@ from tg.bot.filter.content_type import TextOnlyFilter
 from tg.bot.filter.id import WhitelistedChatIDsFilter
 from tg.bot.filter.no_bot import NoBotFilter
 from tg.utils.cleanup import remove_bot_name
-from abstracts.ai import AgentMessageInput
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +133,7 @@ async def process_message(message: Message) -> None:
         thread_id = pool.agent_thread_id(
             cached_bot_item.agent_id, False, message.chat.id
         )
-        response = execute_agent(
-            cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id
-        )
+        response = execute_agent(cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id)
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,

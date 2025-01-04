@@ -1,10 +1,10 @@
 from typing import Generator
 from urllib.parse import quote_plus
 
+from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
-from langgraph.checkpoint.postgres import PostgresSaver
 
 from app.models.db_mig import safe_migrate
 

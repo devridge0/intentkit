@@ -12,11 +12,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.config.config import config
-from app.models.db import init_db
-from app.entrypoints.web import chat_router
 from app.admin.api import admin_router
+from app.admin.scheduler import start_scheduler
+from app.config.config import config
 from app.core.api import core_router
+from app.entrypoints.web import chat_router
+from app.models.db import init_db
 from utils.logging import JsonFormatter
 
 # init logger
@@ -47,9 +48,11 @@ async def lifespan(app: FastAPI):
     # Initialize infrastructure
     init_db(**config.db)
     logger.info("API server start")
+    scheduler = start_scheduler()
     yield
     # Clean up will run after the API server shutdown
     logger.info("Cleaning up and shutdown...")
+    scheduler.shutdown()
 
 
 app = FastAPI(lifespan=lifespan)

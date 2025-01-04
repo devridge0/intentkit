@@ -2,14 +2,14 @@
 
 import logging
 
-from fastapi import Depends, HTTPException, Path, Query, Request, APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
 from sqlmodel import Session
 
+from abstracts.ai import AgentMessageInput
 from app.core.ai import execute_agent
 from app.models.agent import AgentQuota
 from app.models.db import get_db
-from abstracts.ai import AgentMessageInput
 
 # init logger
 logger = logging.getLogger(__name__)

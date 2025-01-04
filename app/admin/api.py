@@ -1,5 +1,6 @@
 import logging
-from fastapi import Depends, HTTPException, APIRouter
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.core.ai import initialize_agent
