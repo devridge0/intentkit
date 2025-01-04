@@ -7,9 +7,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlmodel import Session, select
 
 from app.config.config import config
-from app.core.ai import execute_agent
+from app.core.client import execute_agent
 from app.models.agent import Agent, AgentPluginData, AgentQuota
 from app.models.db import get_engine, init_db
+from abstracts.ai import AgentMessageInput
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,9 @@ def run_twitter_agents():
                 for mention in mentions.data:
                     # because twitter react is all public, the memory shared by all public entrypoints
                     thread_id = f"{agent.id}-public"
-                    response = execute_agent(agent.id, mention.text, thread_id)
+                    response = execute_agent(
+                        agent.id, AgentMessageInput(text=mention.text), thread_id
+                    )
 
                     # Reply to the tweet
                     client.create_tweet(
