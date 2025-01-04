@@ -93,7 +93,3 @@ def run_telegram_server() -> None:
     loop.create_task(scheduler.start(int(config.tg_new_agent_poll_interval)))
 
     bot_pool.start(loop, config.tg_server_host, int(config.tg_server_port))
-
-
-if __name__ == "__main__":
-    run_telegram_server()
