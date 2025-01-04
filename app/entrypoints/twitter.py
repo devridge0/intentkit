@@ -1,17 +1,14 @@
 import logging
-import signal
-import sys
 from datetime import datetime, timedelta, timezone
 
 import tweepy
-from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlmodel import Session, select
 
 from abstracts.ai import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
 from app.models.agent import Agent, AgentPluginData, AgentQuota
-from app.models.db import get_engine, init_db
+from app.models.db import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +16,21 @@ logger = logging.getLogger(__name__)
 config.debug_resp = False
 
 
-def create_twitter_client(config: dict) -> tweepy.Client:
+def create_twitter_client(twitter_config: dict) -> tweepy.Client:
     """Create a Twitter client from config.
 
     Args:
-        config: Dictionary containing Twitter credentials
+        twitter_config: Dictionary containing Twitter credentials
 
     Returns:
         tweepy.Client instance
     """
     return tweepy.Client(
-        bearer_token=config.get("bearer_token"),
-        consumer_key=config.get("consumer_key"),
-        consumer_secret=config.get("consumer_secret"),
-        access_token=config.get("access_token"),
-        access_token_secret=config.get("access_token_secret"),
+        bearer_token=twitter_config.get("bearer_token"),
+        consumer_key=twitter_config.get("consumer_key"),
+        consumer_secret=twitter_config.get("consumer_secret"),
+        access_token=twitter_config.get("access_token"),
+        access_token_secret=twitter_config.get("access_token_secret"),
     )
 
 
@@ -133,27 +130,3 @@ def run_twitter_agents():
                     f"Error processing twitter mentions for agent {agent.id}: {str(e)}"
                 )
                 continue
-
-
-if __name__ == "__main__":
-    # Initialize infrastructure
-    init_db(**config.db)
-
-    # Create scheduler
-    scheduler = BlockingScheduler()
-    scheduler.add_job(
-        run_twitter_agents, "interval", minutes=config.twitter_entrypoint_interval
-    )
-
-    # Register signal handlers
-    def signal_handler(signum, frame):
-        scheduler.shutdown()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    try:
-        scheduler.start()
-    except (KeyboardInterrupt, SystemExit):
-        pass

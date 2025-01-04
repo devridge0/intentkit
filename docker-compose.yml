@@ -51,7 +51,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
       - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
-    command: poetry run python -m app.entrypoints.autonomous
+      - INTERNAL_BASE_URL=http://api:8000
+    command: poetry run python -m app.autonomous
 
   twitter:
     image: crestal/intentkit:latest
@@ -69,9 +70,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
       - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
-    command: poetry run python -m app.entrypoints.twitter
+      - INTERNAL_BASE_URL=http://api:8000
+    command: poetry run python -m app.twitter
 
-  admin:
+  telegram:
     image: crestal/intentkit:latest
     depends_on:
       db:
@@ -87,7 +89,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
       - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
-    command: poetry run python -m app.admin.admin
+      - INTERNAL_BASE_URL=http://api:8000
+    command: poetry run python -m app.entrypoints.telegram
 
 volumes:
   postgres_data:
