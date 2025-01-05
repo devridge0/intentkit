@@ -133,7 +133,9 @@ async def process_message(message: Message) -> None:
         thread_id = pool.agent_thread_id(
             cached_bot_item.agent_id, False, message.chat.id
         )
-        response = execute_agent(cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id)
+        response = execute_agent(
+            cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id
+        )
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,
