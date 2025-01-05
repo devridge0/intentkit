@@ -63,6 +63,8 @@ class Config:
         self.debug_resp = (
             self.load("DEBUG_RESP", "false") == "true"
         )  # Agent response with thought steps and time cost
+        # Internal
+        self.internal_base_url = self.load("INTERNAL_BASE_URL", "http://intent-api")
         # Admin
         self.admin_auth_enabled = self.load("ADMIN_AUTH_ENABLED", "false") == "true"
         self.admin_jwt_secret = self.load("ADMIN_JWT_SECRET")
