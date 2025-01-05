@@ -1,15 +1,13 @@
 import logging
-import signal
-import sys
 from datetime import datetime, timedelta
 
-from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlmodel import Session, select
 
+from abstracts.ai import AgentMessageInput
 from app.config.config import config
-from app.core.ai import execute_agent
+from app.core.client import execute_agent
 from app.models.agent import Agent, AgentQuota
-from app.models.db import get_engine, init_db
+from app.models.db import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -80,34 +78,7 @@ def run_autonomous_action(aid: str, prompt: str):
         thread_id = f"{aid}-public"
 
     # Execute agent and get response
-    resp = execute_agent(aid, prompt, thread_id)
+    resp = execute_agent(aid, AgentMessageInput(text=prompt), thread_id)
 
     # Log the response
     logger.info("\n".join(resp))
-
-
-if __name__ == "__main__":
-    # Initialize infrastructure
-    init_db(**config.db)
-
-    # Initialize scheduler
-    scheduler = BlockingScheduler()
-
-    # Add job to run every minute
-    scheduler.add_job(run_autonomous_agents, "interval", minutes=1)
-
-    # Signal handler for graceful shutdown
-    def signal_handler(signum, frame):
-        logger.info("Received termination signal. Shutting down gracefully...")
-        scheduler.shutdown()
-        sys.exit(0)
-
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    try:
-        logger.info("Starting autonomous agents scheduler...")
-        scheduler.start()
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Scheduler stopped. Exiting...")
