@@ -3,13 +3,14 @@ from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.models.agent import Agent
+from tg.utils.cleanup import clean_token_str
 
 
 class BotPoolItem:
     def __init__(self, agent: Agent):
         self._agent_id = agent.id
 
-        self._token = agent.telegram_config.get("token")
+        self._token = clean_token_str(agent.telegram_config.get("token"))
         if self._token is None:
             raise ValueError("bot token can not be empty")
 

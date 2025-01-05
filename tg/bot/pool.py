@@ -1,5 +1,5 @@
 import logging
-
+from typing import Dict
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -19,6 +19,7 @@ from tg.bot.types.agent import BotPoolAgentItem
 from tg.bot.types.bot import BotPoolItem
 from tg.bot.types.kind import Kind
 from tg.bot.types.router_obj import RouterObj
+from tg.utils.cleanup import clean_token_str
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,12 @@ class BotPool:
         try:
             new_bot_success = False
 
+            for _, v in _agent_bots.items():
+                if v.bot_token == agent.telegram_config.get("agent"):
+                    raise Exception(
+                        f"there is an existing bot for agent {agent.id} with token {v.bot_token}."
+                    )
+
             new_bot_item = BotPoolItem(agent)
             new_agent_item = BotPoolAgentItem(agent)
 
@@ -211,12 +218,20 @@ class BotPool:
                 await bot.session.close()
 
     async def modify_config(self, agent):
+        old_agent_item = agent_by_id(agent.id)
+
+        if old_agent_item.bot_token != clean_token_str(
+            agent.telegram_config.get("token")
+        ):
+            raise Exception(
+                f"illegal modification of agent configurations, the bot token for agent {agent.id} does not match existing token of the cache."
+            )
+
         if not agent.telegram_enabled:
             await self.stop_bot(agent)
             return
 
         try:
-            old_agent_item = agent_by_id(agent.id)
             old_bot_item = bot_by_token(old_agent_item.bot_token)
             old_bot_item.update_conf(agent.telegram_config)
             old_agent_item.updated_at = agent.updated_at
