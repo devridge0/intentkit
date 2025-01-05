@@ -1,19 +1,20 @@
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
+from app.config.config import config
 from app.core.ai import initialize_agent
 from app.models.agent import Agent, AgentQuota
 from app.models.db import get_db
-
-# init logger
-logger = logging.getLogger(__name__)
+from utils.middleware import create_jwt_middleware
 
 admin_router = APIRouter()
 
 
-@admin_router.post("/agents", status_code=201)
+# Create JWT middleware with admin config
+verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
+
+
+@admin_router.post("/agents", status_code=201, dependencies=[Depends(verify_jwt)])
 def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     """Create or update an agent.
 
@@ -52,8 +53,8 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     return latest_agent
 
 
-@admin_router.get("/agents")
-def get_agents(db: Session = Depends(get_db)):
+@admin_router.get("/agents", dependencies=[Depends(verify_jwt)])
+def get_agents(db: Session = Depends(get_db)) -> list:
     """Get all agents with their quota information.
 
     Args:
