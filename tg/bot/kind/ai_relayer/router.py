@@ -11,6 +11,7 @@ from tg.bot.filter.chat_type import GroupOnlyFilter
 from tg.bot.filter.content_type import TextOnlyFilter
 from tg.bot.filter.id import WhitelistedChatIDsFilter
 from tg.bot.filter.no_bot import NoBotFilter
+from tg.utils.cleanup import remove_bot_name
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,11 @@ async def gp_process_message(message: Message) -> None:
                 cached_bot_item.is_public_memory,
                 message.chat.id,
             )
-            response = execute_agent(cached_bot_item.agent_id, message.text, thread_id)
+
+            # remove bot name tag from text
+            message_text = remove_bot_name(bot.username, message.text)
+
+            response = execute_agent(cached_bot_item.agent_id, message_text, thread_id)
             await message.answer(
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
