@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
