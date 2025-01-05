@@ -1,5 +1,4 @@
 import logging
-
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -19,6 +18,7 @@ from tg.bot.types.agent import BotPoolAgentItem
 from tg.bot.types.bot import BotPoolItem
 from tg.bot.types.kind import Kind
 from tg.bot.types.router_obj import RouterObj
+from tg.utils.cleanup import clean_token_str
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +104,7 @@ class BotPool:
             logger.info(f"{kind} router initialized...")
 
     async def init_new_bot(self, agent: Agent):
+        bot_item = None
         try:
             bot_item = BotPoolItem(agent)
             agent_item = BotPoolAgentItem(agent)
@@ -126,9 +127,27 @@ class BotPool:
             )
         except Exception as e:
             logger.error(f"failed to init new bot for agent {agent.id}: {e}")
+        finally:
+            if bot_item and bot_item.bot:
+                await bot_item.bot.session.close()
 
     async def change_bot_token(self, agent: Agent):
+        if not agent.telegram_enabled:
+            old_agent_item = agent_by_id(agent.id)
+            await self.stop_bot(agent.id, old_agent_item.bot_token)
+            return
+
         try:
+            new_bot_success = False
+            old_bot_stopped = False
+            new_bot_item = None
+
+            for _, v in _agent_bots.items():
+                if v.bot_token == agent.telegram_config.get("agent"):
+                    raise Exception(
+                        f"there is an existing bot for agent {agent.id} with token {v.bot_token}."
+                    )
+
             new_bot_item = BotPoolItem(agent)
             new_agent_item = BotPoolAgentItem(agent)
 
@@ -145,6 +164,7 @@ class BotPool:
 
             await old_bot.session.close()
             await old_bot.delete_webhook(drop_pending_updates=True)
+            old_bot_stopped = True
 
             await new_bot_item.bot.delete_webhook(drop_pending_updates=True)
             await new_bot_item.bot.set_webhook(
@@ -160,24 +180,29 @@ class BotPool:
             logger.info(
                 f"bot for agent {agent.id} with token {old_agent_item.bot_token} changed to {new_bot_item.token}..."
             )
-
+            new_bot_success = True
         except ValueError as e:
             logger.warning(
                 f"bot for agent {agent.id} token did not changed because of invalid data. err: {e}"
             )
         except Exception as e:
             logger.error(f"failed to change bot token for agent {agent.id}: {str(e)}")
+        finally:
+            if old_bot_stopped and old_bot:
+                await old_bot.session.close()
+            if not new_bot_success and new_bot_item and new_bot_item.bot:
+                await new_bot_item.bot.session.close()
 
-    async def stop_bot(self, agent: Agent):
+    async def stop_bot(self, agent_id, token):
+        bot = None
         try:
-            token = agent.telegram_config.get("token")
             if token is None:
                 logger.warning(
-                    f"bot for agent {agent.id} token did not stopped because of empty token"
+                    f"bot for agent {agent_id} token did not stopped because of empty token"
                 )
                 return
 
-            cached_bot_item = bot_by_token(agent.telegram_config["token"])
+            cached_bot_item = bot_by_token(token)
             if cached_bot_item and cached_bot_item.bot:
                 bot = cached_bot_item.bot
             else:
@@ -190,28 +215,40 @@ class BotPool:
             await bot.delete_webhook(drop_pending_updates=True)
 
             del _bots[token]
-            del _agent_bots[agent.id]
+            del _agent_bots[agent_id]
 
-            logger.info(f"Bot with token {token} for agent {agent.id} stopped...")
+            logger.info(f"Bot with token {token} for agent {agent_id} stopped...")
         except Exception as e:
-            logger.error(f"failed to stop the bot for agent {agent.id}: {e}")
+            logger.error(f"failed to stop the bot for agent {agent_id}: {e}")
+        finally:
+            if bot:
+                await bot.session.close()
 
-    async def modify_config(self, agent):
+    async def modify_config(self, agent: Agent):
+        old_agent_item = agent_by_id(agent.id)
+
+        token = agent.telegram_config.get("token")
+        if old_agent_item.bot_token != clean_token_str(
+            agent.telegram_config.get("token")
+        ):
+            raise Exception(
+                f"illegal modification of agent configurations, the bot token for agent {agent.id} does not match existing token of the cache."
+            )
+
         if not agent.telegram_enabled:
-            await self.stop_bot(agent)
+            await self.stop_bot(agent.id, token)
             return
 
         try:
-            old_agent_item = agent_by_id(agent.id)
             old_bot_item = bot_by_token(old_agent_item.bot_token)
             old_bot_item.update_conf(agent.telegram_config)
             old_agent_item.updated_at = agent.updated_at
 
             if old_bot_item.kind != agent.telegram_config.get("kind"):
-                await self.stop_bot(agent)
+                await self.stop_bot(agent.id, token)
                 await self.init_new_bot(agent)
             logger.info(
-                f"configurations of the bot with token {agent.telegram_config["token"]} for agent {agent.id} updated..."
+                f"configurations of the bot with token {token} for agent {agent.id} updated..."
             )
 
         except ValueError as e:

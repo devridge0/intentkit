@@ -3,19 +3,24 @@ from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.models.agent import Agent
+from tg.bot.types.kind import is_valid_kind
+from tg.utils.cleanup import clean_token_str
 
 
 class BotPoolItem:
     def __init__(self, agent: Agent):
         self._agent_id = agent.id
 
-        self._token = agent.telegram_config.get("token")
+        self._token = clean_token_str(agent.telegram_config.get("token"))
         if self._token is None:
             raise ValueError("bot token can not be empty")
 
         self._kind = agent.telegram_config.get("kind")
         if self._kind is None:
             raise ValueError("bot kind can not be empty")
+
+        if not is_valid_kind(int(self.kind)):
+            raise ValueError("bot kind is not valid")
 
         self.update_conf(agent.telegram_config)
 

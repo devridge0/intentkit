@@ -1,9 +1,10 @@
 from app.models.agent import Agent
+from tg.utils.cleanup import clean_token_str
 
 
 class BotPoolAgentItem:
     def __init__(self, agent: Agent):
-        self._bot_token = agent.telegram_config.get("token")
+        self._bot_token = clean_token_str(agent.telegram_config.get("token"))
         if self._bot_token is None:
             raise ValueError("token can not be empty for agent item")
 
