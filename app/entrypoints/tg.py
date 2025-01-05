@@ -24,28 +24,37 @@ class AgentScheduler:
             agents = db.exec(select(Agent)).all()
 
             for agent in agents:
-                if agent.id not in pool._agent_bots:
-                    if (
-                        agent.telegram_enabled
-                        and agent.telegram_config
-                        and agent.telegram_config["token"]
-                    ):
-                        logger.info(f"New agent with id {agent.id} found...")
-                        await self.bot_pool.init_new_bot(agent)
-                else:
-                    cached_agent = pool._agent_bots[agent.id]
-                    if cached_agent.updated_at != agent.updated_at:
-                        if agent.telegram_config.get("token") not in pool._bots:
-                            await self.bot_pool.change_bot_token(agent)
-                        else:
-                            await self.bot_pool.modify_config(agent)
+                try:
+                    if agent.id not in pool._agent_bots:
+                        if (
+                            agent.telegram_enabled
+                            and agent.telegram_config
+                            and agent.telegram_config["token"]
+                        ):
+                            logger.info(f"New agent with id {agent.id} found...")
+                            await self.bot_pool.init_new_bot(agent)
+                    else:
+                        cached_agent = pool._agent_bots[agent.id]
+                        if cached_agent.updated_at != agent.updated_at:
+                            if agent.telegram_config.get("token") not in pool._bots:
+                                await self.bot_pool.change_bot_token(agent)
+                            else:
+                                await self.bot_pool.modify_config(agent)
+                except Exception as e:
+                    logger.error(
+                        f"failed to process agent {agent.id}, skipping this to the next agent: {e}"
+                    )
 
     async def start(self, interval):
         logger.info("New agent addition tracking started...")
         while True:
             logger.info("sync agents...")
+            try:
+                await self.sync()
+            except Exception as e:
+                logger.error(f"failed to sync agents: {e}")
+
             await asyncio.sleep(interval)
-            await self.sync()
 
 
 def run_telegram_server() -> None:

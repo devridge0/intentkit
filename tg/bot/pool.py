@@ -126,9 +126,14 @@ class BotPool:
             )
         except Exception as e:
             logger.error(f"failed to init new bot for agent {agent.id}: {e}")
+        finally:
+            if bot_item and bot_item.bot:
+                await bot_item.bot.session.close()
 
     async def change_bot_token(self, agent: Agent):
         try:
+            new_bot_success = False
+
             new_bot_item = BotPoolItem(agent)
             new_agent_item = BotPoolAgentItem(agent)
 
@@ -145,6 +150,7 @@ class BotPool:
 
             await old_bot.session.close()
             await old_bot.delete_webhook(drop_pending_updates=True)
+            old_bot_stopped = True
 
             await new_bot_item.bot.delete_webhook(drop_pending_updates=True)
             await new_bot_item.bot.set_webhook(
@@ -160,13 +166,18 @@ class BotPool:
             logger.info(
                 f"bot for agent {agent.id} with token {old_agent_item.bot_token} changed to {new_bot_item.token}..."
             )
-
+            new_bot_success = True
         except ValueError as e:
             logger.warning(
                 f"bot for agent {agent.id} token did not changed because of invalid data. err: {e}"
             )
         except Exception as e:
             logger.error(f"failed to change bot token for agent {agent.id}: {str(e)}")
+        finally:
+            if old_bot_stopped and old_bot:
+                await old_bot.session.close()
+            if not new_bot_success and new_bot_item and new_bot_item.bot:
+                await new_bot_item.bot.session.close()
 
     async def stop_bot(self, agent: Agent):
         try:
@@ -195,6 +206,9 @@ class BotPool:
             logger.info(f"Bot with token {token} for agent {agent.id} stopped...")
         except Exception as e:
             logger.error(f"failed to stop the bot for agent {agent.id}: {e}")
+        finally:
+            if bot:
+                await bot.session.close()
 
     async def modify_config(self, agent):
         if not agent.telegram_enabled:
