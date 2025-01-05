@@ -30,7 +30,7 @@ class AgentScheduler:
                         if (
                             agent.telegram_enabled
                             and agent.telegram_config
-                            and agent.telegram_config["token"]
+                            and agent.telegram_config.get("token")
                         ):
                             token = clean_token_str(agent.telegram_config["token"])
                             if token in pool._bots:
@@ -41,11 +41,13 @@ class AgentScheduler:
 
                             logger.info(f"New agent with id {agent.id} found...")
                             await self.bot_pool.init_new_bot(agent)
+                            await asyncio.sleep(1)
                     else:
                         cached_agent = pool._agent_bots[agent.id]
                         if cached_agent.updated_at != agent.updated_at:
                             if agent.telegram_config.get("token") not in pool._bots:
                                 await self.bot_pool.change_bot_token(agent)
+                                await asyncio.sleep(2)
                             else:
                                 await self.bot_pool.modify_config(agent)
                 except Exception as e:
