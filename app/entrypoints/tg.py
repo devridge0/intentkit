@@ -10,12 +10,13 @@ from app.models.agent import Agent
 from app.models.db import get_engine, init_db
 from tg.bot import pool
 from tg.bot.pool import BotPool
+from tg.utils.cleanup import clean_token_str
 
 logger = logging.getLogger(__name__)
 
 
 class AgentScheduler:
-    def __init__(self, bot_pool):
+    def __init__(self, bot_pool: BotPool):
         self.bot_pool = bot_pool
 
     async def sync(self):
@@ -31,6 +32,13 @@ class AgentScheduler:
                             and agent.telegram_config
                             and agent.telegram_config["token"]
                         ):
+                            token = clean_token_str(agent.telegram_config["token"])
+                            if token in pool._bots:
+                                logger.warning(
+                                    f"there is an existing bot with {token}, skipping agent {agent.id}..."
+                                )
+                                continue
+
                             logger.info(f"New agent with id {agent.id} found...")
                             await self.bot_pool.init_new_bot(agent)
                     else:
