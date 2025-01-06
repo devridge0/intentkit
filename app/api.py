@@ -23,14 +23,6 @@ from utils.logging import JsonFormatter
 # init logger
 logger = logging.getLogger(__name__)
 
-# Configure uvicorn access logger to use our JSON format in non-local env
-if config.env != "local" and not config.debug:
-    uvicorn_access = logging.getLogger("uvicorn.access")
-    uvicorn_access.handlers = []  # Remove default handlers
-    handler = logging.StreamHandler()
-    handler.setFormatter(JsonFormatter())
-    uvicorn_access.addHandler(handler)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

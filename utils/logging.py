@@ -37,6 +37,7 @@ def setup_logging(env: str, debug: bool = False):
         env: Environment name ('local', 'prod', etc.)
         debug: Debug mode flag
     """
+
     if env == "local" or debug:
         # Set up logging configuration for local/debug
         logging.basicConfig(
@@ -52,3 +53,12 @@ def setup_logging(env: str, debug: bool = False):
         handler.setFormatter(JsonFormatter())
         logging.basicConfig(level=logging.INFO, handlers=[handler])
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+        # fastapi access log
+        uvicorn_access = logging.getLogger("uvicorn.access")
+        uvicorn_access.handlers = []  # Remove default handlers
+        handler = logging.StreamHandler()
+        handler.setFormatter(JsonFormatter())
+        uvicorn_access.addHandler(handler)
+        uvicorn_access.setLevel(logging.WARNING)
+        # telegram access log
+        logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
