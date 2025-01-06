@@ -50,10 +50,8 @@ async def command_chat_id(message: Message) -> None:
 )
 async def gp_command_start(message: Message):
     try:
-        group_title = message.from_user.first_name
-        await message.answer(
-            text=f"🤖 Hi Everybody, {group_title}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
-        )
+        cached_bot_item = pool.bot_by_token(message.bot.token)
+        await message.answer(text=cached_bot_item.greeting_group)
     except Exception as e:
         logger.warning(
             f"error processing in function:{cur_func_name()}, token:{message.bot.token} err: {str(e)}"
@@ -107,10 +105,8 @@ async def gp_process_message(message: Message) -> None:
 )
 async def command_start(message: Message) -> None:
     try:
-        first_name = message.from_user.first_name
-        await message.answer(
-            text=f"🤖 Hi, {first_name}! 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
-        )
+        cached_bot_item = pool.bot_by_token(message.bot.token)
+        await message.answer(text=cached_bot_item.greeting_user)
     except Exception as e:
         logger.warning(
             f"error processing in function:{cur_func_name()}, token:{message.bot.token} err: {str(e)}"
