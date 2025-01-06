@@ -18,7 +18,6 @@ from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
 from app.models.db import init_db
-from utils.logging import JsonFormatter
 
 # init logger
 logger = logging.getLogger(__name__)
