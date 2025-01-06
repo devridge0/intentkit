@@ -90,7 +90,7 @@ services:
       - CDP_API_KEY_NAME=${CDP_API_KEY_NAME}
       - CDP_API_KEY_PRIVATE_KEY=${CDP_API_KEY_PRIVATE_KEY}
       - INTERNAL_BASE_URL=http://api:8000
-    command: poetry run python -m app.entrypoints.telegram
+    command: poetry run python -m app.telegram
 
 volumes:
   postgres_data:

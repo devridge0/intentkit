@@ -42,4 +42,4 @@ ARG RELEASE
 ENV RELEASE=$RELEASE
 
 # Command to run the application using Poetry
-CMD ["poetry", "run", "uvicorn", "app.entrypoints.api:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["poetry", "run", "uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "80"]
