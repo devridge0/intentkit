@@ -92,22 +92,26 @@ jobs:
     - name: Deploy to Amazon EKS Dev
       if: ${{ github.event_name == 'release' && github.event.action == 'prereleased' }}
       run: |
+        VERSION=${{ github.event.release.tag_name }}
+        VERSION_NO_V=${VERSION#v}
         aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_DEV_CLUSTER }}
         kubectl version
-        kubectl set image -n testnet-dev deployment/intent-api intent-api=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-dev deployment/intent-twitter intent-twitter=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-dev deployment/intent-tg intent-tg=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-dev deployment/intent-api intent-api=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-dev deployment/intent-twitter intent-twitter=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-dev deployment/intent-tg intent-tg=crestal/intentkit:${VERSION_NO_V}
      
     - name: Deploy to Amazon EKS Prod
       if: ${{ github.event_name == 'release' && github.event.action == 'released' }}
       run: |
+        VERSION=${{ github.event.release.tag_name }}
+        VERSION_NO_V=${VERSION#v}
         aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_PROD_CLUSTER }}
         kubectl version
-        kubectl set image -n testnet-prod deployment/intent-api intent-api=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-prod deployment/intent-autonomous intent-autonomous=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-prod deployment/intent-twitter intent-twitter=crestal/intentkit:${{ github.event.release.tag_name }}
-        kubectl set image -n testnet-prod deployment/intent-tg intent-tg=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-prod deployment/intent-api intent-api=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-prod deployment/intent-autonomous intent-autonomous=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-prod deployment/intent-twitter intent-twitter=crestal/intentkit:${VERSION_NO_V}
+        kubectl set image -n testnet-prod deployment/intent-tg intent-tg=crestal/intentkit:${VERSION_NO_V}
      
     - name: Build Success
       if: ${{ success() }}
