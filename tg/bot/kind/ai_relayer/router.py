@@ -5,7 +5,7 @@ from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
-from abstracts.ai import AgentMessageInput
+from abstracts.engine import AgentMessageInput
 from app.core.client import execute_agent
 from tg.bot import pool
 from tg.bot.filter.chat_type import GroupOnlyFilter
