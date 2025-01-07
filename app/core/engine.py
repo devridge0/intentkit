@@ -17,18 +17,20 @@ import tweepy
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
 from fastapi import HTTPException
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import (
+    HumanMessage,
+)
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph.graph import CompiledGraph
-from langgraph.prebuilt import create_react_agent
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import Session
 
-from abstracts.ai import AgentMessageInput
+from abstracts.engine import AgentMessageInput
 from app.config.config import config
+from app.core.graph import create_agent
 from app.models.agent import Agent
 from app.models.db import get_coon, get_engine
 from skill_sets import get_skill_set
@@ -162,15 +164,18 @@ def initialize_agent(aid):
             logger.info(f"[{aid}] loaded tool: {tool.name}")
 
         # Create ReAct Agent using the LLM and CDP Agentkit tools.
-        agents[aid] = create_react_agent(
+        agents[aid] = create_agent(
             llm,
             tools=tools,
             checkpointer=memory,
             state_modifier=prompt,
+            debug=config.debug,
         )
 
 
-def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[str]:
+def execute_agent(
+    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
     This function:
@@ -252,7 +257,7 @@ def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[
 
     total_time = time.perf_counter() - start
     resp_debug.append(f"Total time cost: {total_time:.3f} seconds")
-    if config.debug_resp:
+    if debug:
         return resp_debug
     else:
         return resp

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.config.config import config
-from app.core.ai import initialize_agent
+from app.core.engine import initialize_agent
 from app.models.agent import Agent, AgentQuota
 from app.models.db import get_db
 from utils.middleware import create_jwt_middleware

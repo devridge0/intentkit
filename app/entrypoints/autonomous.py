@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 
-from abstracts.ai import AgentMessageInput
+from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
 from app.models.agent import Agent, AgentQuota

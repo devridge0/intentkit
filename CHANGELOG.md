@@ -1,5 +1,16 @@
 # Changelog
 
+## 2025-01-07
+
+### New Features
+- Memory Management
+
+### Improvements
+- Refactor the core ai agent creation
+
+### Bug Fixes
+- Fix bug that resp debug model is not correct
+
 ## 2025-01-06
 
 ### New Features
