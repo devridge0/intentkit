@@ -5,6 +5,7 @@ from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
 
+from app.config.config import config
 from utils.slack_alert import send_slack_message
 
 
@@ -83,9 +84,43 @@ class Agent(SQLModel, table=True):
             total_agents = db.exec(select(func.count()).select_from(Agent)).one()
             # Send a message to Slack
             send_slack_message(
-                f"New agent created: {self.id}",
+                "New agent created ✅",
                 attachments=[
-                    {"text": f"Total agents: {total_agents}", "color": "good"}
+                    {
+                        "color": "good",
+                        "fields": [
+                            {"title": "ENV", "short": True, "value": config.env},
+                            {"title": "Total", "short": True, "value": total_agents},
+                            {"title": "ID", "short": True, "value": self.id},
+                            {"title": "Name", "short": True, "value": self.name},
+                            {"title": "Model", "short": True, "value": self.model},
+                            {
+                                "title": "Autonomous",
+                                "short": True,
+                                "value": str(self.autonomous_enabled),
+                            },
+                            {
+                                "title": "Twitter",
+                                "short": True,
+                                "value": str(self.twitter_enabled),
+                            },
+                            {
+                                "title": "Telegram",
+                                "short": True,
+                                "value": str(self.telegram_enabled),
+                            },
+                            {
+                                "title": "CDP Enabled",
+                                "short": True,
+                                "value": str(self.cdp_enabled),
+                            },
+                            {
+                                "title": "CDP Network",
+                                "short": True,
+                                "value": self.cdp_network_id or "Default",
+                            },
+                        ],
+                    }
                 ],
             )
         db.commit()
