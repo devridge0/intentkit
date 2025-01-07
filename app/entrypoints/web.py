@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
 from sqlmodel import Session
 
-from abstracts.ai import AgentMessageInput
-from app.core.ai import execute_agent
+from abstracts.engine import AgentMessageInput
+from app.config.config import config
+from app.core.engine import execute_agent
 from app.models.agent import AgentQuota
 from app.models.db import get_db
 
@@ -22,6 +23,7 @@ def chat(
     request: Request,
     aid: str = Path(..., description="instance id"),
     q: str = Query(None, description="Query string"),
+    debug: bool = Query(None, description="Enable debug mode"),
     db: Session = Depends(get_db),
 ):
     """Chat with an AI agent.
@@ -36,6 +38,7 @@ def chat(
         request: FastAPI request object
         aid: Agent ID
         q: User's input query
+        debug: Enable debug mode
         db: Database session
 
     Returns:
@@ -64,8 +67,10 @@ def chat(
     thread_id = f"{aid}-{request.client.host}"
     logger.debug(f"thread id: {thread_id}")
 
+    debug = debug if debug is not None else config.debug
+
     # Execute agent and get response
-    resp = execute_agent(aid, AgentMessageInput(text=q), thread_id)
+    resp = execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
 
     logger.info(resp)
     # reduce message quota
