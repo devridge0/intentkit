@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: Build Docker Image and Deploy
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - '.github/**'
       - 'docs/**'
       - '*.md'
+  release:
+    types: [ prereleased, released ]
 
 jobs:
   docker:
@@ -81,6 +83,33 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Configure AWS Credentials
+      if: ${{ github.event_name == 'release' }}
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      with:
+        aws-region: ${{ secrets.AWS_REGION }}
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GithubActions
+     
+    - name: Deploy to Amazon EKS Dev
+      if: ${{ github.event_name == 'release' && github.event.action == 'prereleased' }}
+      run: |
+        aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_DEV_CLUSTER }}
+        kubectl version
+        kubectl set image -n testnet-dev deployment/intent-api intent-api=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-dev deployment/intent-autonomous intent-autonomous=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-dev deployment/intent-twitter intent-twitter=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-dev deployment/intent-tg intent-tg=crestal/intentkit:${{ github.event.release.tag_name }}
+     
+    - name: Deploy to Amazon EKS Prod
+      if: ${{ github.event_name == 'release' && github.event.action == 'released' }}
+      run: |
+        aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_PROD_CLUSTER }}
+        kubectl version
+        kubectl set image -n testnet-prod deployment/intent-api intent-api=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-prod deployment/intent-autonomous intent-autonomous=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-prod deployment/intent-twitter intent-twitter=crestal/intentkit:${{ github.event.release.tag_name }}
+        kubectl set image -n testnet-prod deployment/intent-tg intent-tg=crestal/intentkit:${{ github.event.release.tag_name }}
+     
     - name: Build Success
       if: ${{ success() }}
       uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d

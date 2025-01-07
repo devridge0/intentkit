@@ -18,18 +18,9 @@ from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
 from app.models.db import init_db
-from utils.logging import JsonFormatter
 
 # init logger
 logger = logging.getLogger(__name__)
-
-# Configure uvicorn access logger to use our JSON format in non-local env
-if config.env != "local" and not config.debug:
-    uvicorn_access = logging.getLogger("uvicorn.access")
-    uvicorn_access.handlers = []  # Remove default handlers
-    handler = logging.StreamHandler()
-    handler.setFormatter(JsonFormatter())
-    uvicorn_access.addHandler(handler)
 
 
 @asynccontextmanager

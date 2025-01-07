@@ -1,5 +1,29 @@
 # Changelog
 
+## 2025-01-06
+
+### New Features
+- Optional JWT Authentication for admin API
+
+### Improvements
+- Refactor the core ai agent engine for better architecture
+- Telegram entrypoint greeting message
+
+### Bug Fixes
+- Fix bug that agent config update not taking effect sometimes
+
+## 2025-01-05
+
+### Improvements
+- Telegram entrypoint support regenerate token
+- Telegram entrypoint robust error handling
+
+## 2025-01-03
+
+### Improvements
+- Telegram entrypoint support dynamic enable and disable
+- Better conversation behavior about the wallet
+
 ## 2025-01-02
 
 ### New Features
