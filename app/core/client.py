@@ -5,9 +5,9 @@ This module provides client functions for core API endpoints with environment-aw
 
 import httpx
 
-from abstracts.ai import AgentMessageInput
+from abstracts.engine import AgentMessageInput
 from app.config.config import config
-from app.core.ai import execute_agent as local_execute_agent
+from app.core.engine import execute_agent as local_execute_agent
 
 
 def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[str]:
