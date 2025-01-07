@@ -173,7 +173,9 @@ def initialize_agent(aid):
         )
 
 
-def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[str]:
+def execute_agent(
+    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
     This function:
@@ -255,7 +257,7 @@ def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[
 
     total_time = time.perf_counter() - start
     resp_debug.append(f"Total time cost: {total_time:.3f} seconds")
-    if config.debug_resp:
+    if debug:
         return resp_debug
     else:
         return resp
