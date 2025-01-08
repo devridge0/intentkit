@@ -67,7 +67,7 @@ def chat(
     thread_id = f"{aid}-{request.client.host}"
     logger.debug(f"thread id: {thread_id}")
 
-    debug = debug if debug is not None else config.debug
+    debug = debug if debug is not None else config.debug_resp
 
     # Execute agent and get response
     resp = execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
