@@ -22,6 +22,7 @@ class Agent(SQLModel, table=True):
     name: Optional[str] = Field(default=None)
     model: str = Field(default="gpt-4o-mini")
     prompt: Optional[str]
+    prompt_append: Optional[str]
     # autonomous mode
     autonomous_enabled: bool = Field(default=False)
     autonomous_minutes: Optional[int]
