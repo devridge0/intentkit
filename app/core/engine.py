@@ -20,6 +20,7 @@ from fastapi import HTTPException
 from langchain_core.messages import (
     HumanMessage,
 )
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -29,6 +30,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import Session
 
 from abstracts.engine import AgentMessageInput
+from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.graph import create_agent
 from app.models.agent import Agent
@@ -163,12 +165,24 @@ def initialize_agent(aid):
         for tool in tools:
             logger.info(f"[{aid}] loaded tool: {tool.name}")
 
+        # finally, change the system prompt
+        prompt_array = [
+            ("system", prompt),
+            ("placeholder", "{messages}"),
+        ]
+        if agent.prompt_append:
+            prompt_array.append(("system", agent.prompt_append))
+        prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
+
+        def formatted_prompt(state: AgentState):
+            return prompt_temp.invoke({"messages": state["messages"]})
+
         # Create ReAct Agent using the LLM and CDP Agentkit tools.
         agents[aid] = create_agent(
             llm,
             tools=tools,
             checkpointer=memory,
-            state_modifier=prompt,
+            state_modifier=formatted_prompt,
             debug=config.debug,
         )
 
