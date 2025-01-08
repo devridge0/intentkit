@@ -203,8 +203,9 @@ def execute_agent(
 
     Args:
         aid (str): Agent ID
-        prompt (str): Input prompt for the agent
+        message (AgentMessageInput): Input message for the agent
         thread_id (str): Thread ID for the agent execution
+        debug (bool): Enable debug mode
 
     Returns:
         list[str]: Formatted response lines including timing information
@@ -265,8 +266,9 @@ def execute_agent(
         resp_debug_append = "\n===================\n\n[ system ]\n"
         resp_debug_append += agent_prompt(agent)
         snap = executor.get_state(stream_config)
-        for msg in snap.values["messages"]:
-            resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
+        if snap.values and "messages" in snap.values:
+            for msg in snap.values["messages"]:
+                resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
         resp_debug_append += "[ system ]\n"
         resp_debug_append += agent.prompt_append
     # run
