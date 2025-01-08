@@ -269,8 +269,9 @@ def execute_agent(
         if snap.values and "messages" in snap.values:
             for msg in snap.values["messages"]:
                 resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
-        resp_debug_append += "[ system ]\n"
-        resp_debug_append += agent.prompt_append
+        if agent.prompt_append:
+            resp_debug_append += "[ system ]\n"
+            resp_debug_append += agent.prompt_append
     # run
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=content)]}, stream_config
