@@ -24,6 +24,7 @@ def chat(
     aid: str = Path(..., description="instance id"),
     q: str = Query(None, description="Query string"),
     debug: bool = Query(None, description="Enable debug mode"),
+    thread: str = Query(None, description="Thread ID for conversation tracking"),
     db: Session = Depends(get_db),
 ):
     """Chat with an AI agent.
@@ -39,6 +40,7 @@ def chat(
         aid: Agent ID
         q: User's input query
         debug: Enable debug mode
+        thread: Thread ID for conversation tracking
         db: Database session
 
     Returns:
@@ -63,11 +65,13 @@ def chat(
             ),
         )
 
-    # get thread_id from request ip
-    thread_id = f"{aid}-{request.client.host}"
+    # get thread_id from query or request ip
+    thread_id = (
+        f"{aid}-{thread}" if thread is not None else f"{aid}-{request.client.host}"
+    )
     logger.debug(f"thread id: {thread_id}")
 
-    debug = debug if debug is not None else config.debug
+    debug = debug if debug is not None else config.debug_resp
 
     # Execute agent and get response
     resp = execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
