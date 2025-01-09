@@ -1,9 +1,21 @@
+from datetime import datetime
 from typing import Type
 
 from pydantic import BaseModel, Field
 from tweepy import Client
 
 from abstracts.skill import IntentKitSkill, SkillStoreABC
+
+
+class Tweet(BaseModel):
+    """Model representing a Twitter tweet."""
+
+    id: str
+    text: str
+    author_id: str
+    created_at: datetime
+    referenced_tweets: list[dict] | None = None
+    attachments: dict | None = None
 
 
 class TwitterBaseTool(IntentKitSkill):

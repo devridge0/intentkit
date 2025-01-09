@@ -3,11 +3,16 @@ from typing import Type
 
 from pydantic import BaseModel
 
-from skills.twitter.base import TwitterBaseTool
+from .base import Tweet, TwitterBaseTool
 
 
 class TwitterGetMentionsInput(BaseModel):
     """Input for TwitterGetMentions tool."""
+
+
+class TwitterGetMentionsOutput(BaseModel):
+    mentions: list[Tweet]
+    error: str | None = None
 
 
 class TwitterGetMentions(TwitterBaseTool):
@@ -26,11 +31,11 @@ class TwitterGetMentions(TwitterBaseTool):
     description: str = "Get tweets that mention the authenticated user"
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
-    def _run(self) -> str:
+    def _run(self) -> TwitterGetMentionsOutput:
         """Run the tool to get mentions.
 
         Returns:
-            str: A formatted string containing the mentions data.
+            TwitterGetMentionsOutput: A structured output containing the mentions data.
 
         Raises:
             Exception: If there's an error accessing the Twitter API.
@@ -54,33 +59,47 @@ class TwitterGetMentions(TwitterBaseTool):
                 max_results=max_results,
                 since_id=since_id,
                 start_time=start_time,
-                tweet_fields=["created_at", "author_id", "text"],
+                expansions=[
+                    "referenced_tweets.id",
+                    "attachments.media_keys",
+                ],
+                tweet_fields=[
+                    "created_at",
+                    "author_id",
+                    "text",
+                    "referenced_tweets",
+                    "attachments",
+                ],
             )
 
-            if not mentions.data:
-                return "No mentions found."
-
-            # Format the mentions into a readable string
             result = []
-            for tweet in mentions.data:
-                result.append(
-                    f"Tweet ID: {tweet.id}\n"
-                    f"Created at: {tweet.created_at}\n"
-                    f"Author ID: {tweet.author_id}\n"
-                    f"Text: {tweet.text}\n"
-                )
+            if mentions.data:
+                for tweet in mentions.data:
+                    mention = Tweet(
+                        id=str(tweet.id),
+                        text=tweet.text,
+                        author_id=str(tweet.author_id),
+                        created_at=tweet.created_at,
+                        referenced_tweets=tweet.referenced_tweets
+                        if hasattr(tweet, "referenced_tweets")
+                        else None,
+                        attachments=tweet.attachments
+                        if hasattr(tweet, "attachments")
+                        else None,
+                    )
+                    result.append(mention)
 
             # Update the previous since_id for the next request
             if mentions.meta:
                 last["since_id"] = mentions.meta.get("newest_id")
                 self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
 
-            return "\n".join(result)
+            return TwitterGetMentionsOutput(mentions=result)
 
         except Exception as e:
-            return f"Error retrieving mentions: {str(e)}"
+            return TwitterGetMentionsOutput(mentions=[], error=str(e))
 
-    async def _arun(self) -> str:
+    async def _arun(self) -> TwitterGetMentionsOutput:
         """Async implementation of the tool.
 
         This tool doesn't have a native async implementation, so we call the sync version.
