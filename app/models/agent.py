@@ -30,7 +30,7 @@ class Agent(SQLModel, table=True):
     # if cdp_enabled, will load cdp skills
     # if the cdp_skills is empty, will load all
     cdp_enabled: bool = Field(default=False)
-    cdp_skills: Optional[List[str]] = Field(sa_column=Column(JSONB, nullable=True))
+    cdp_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     cdp_wallet_data: Optional[str]
     cdp_network_id: Optional[str]
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
