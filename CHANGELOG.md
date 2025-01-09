@@ -1,5 +1,17 @@
 # Changelog
 
+## 2025-01-09
+
+### New Features
+- CDP Skills Filter in Agent, choose the skills you want only, the less skills, the better performance
+
+## 2025-01-08
+
+### New Features
+- Add `prompt_append` to Agent, it will be appended to the entire prompt as system role, it has stronger priority
+- When you use web debug mode, you can see the entire prompt sent to the AI model
+- You can use new query param `thread` to debug any conversation thread
+
 ## 2025-01-07
 
 ### New Features
