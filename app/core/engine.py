@@ -33,8 +33,9 @@ from abstracts.engine import AgentMessageInput
 from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.graph import create_agent
+from app.core.skill import SkillStore
 from app.models.agent import Agent
-from app.models.db import get_coon, get_engine
+from app.models.db import get_coon, get_engine, get_session
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
@@ -115,6 +116,9 @@ def initialize_agent(aid):
         # ==== Load skills
         tools: list[BaseTool] = []
 
+        # init skill store first
+        skill_store = SkillStore(get_session)
+
         # Configure CDP Agentkit Langchain Extension.
         if agent.cdp_enabled:
             values = {
@@ -149,7 +153,11 @@ def initialize_agent(aid):
         ):
             twitter_client = tweepy.Client(**agent.twitter_config)
             for skill in agent.twitter_skills:
-                tools.append(get_twitter_skill(skill, twitter_client))
+                try:
+                    s = get_twitter_skill(skill, twitter_client, skill_store, aid)
+                    tools.append(s)
+                except Exception as e:
+                    logger.warning(e)
 
         # Crestal skills
         if agent.crestal_skills:
@@ -192,7 +200,7 @@ def initialize_agent(aid):
             tools=tools,
             checkpointer=memory,
             state_modifier=formatted_prompt,
-            debug=config.debug,
+            debug=config.debug_checkpoint,
         )
 
 
