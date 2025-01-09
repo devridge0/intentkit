@@ -1,6 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
+from langchain_core.tools import BaseTool
+
+
+class IntentKitSkill(BaseTool):
+    """Abstract base class for IntentKit skills.
+    Will have predefined abilities.
+    """
+
+    agent_id: str
+    store: "SkillStoreABC"
+
 
 class SkillStoreABC(ABC):
     """Abstract base class for skill data storage operations.

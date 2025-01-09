@@ -22,7 +22,6 @@ class TwitterGetMentions(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    prev_since_id: str | None = None
     name: str = "twitter_get_mentions"
     description: str = "Get tweets that mention the authenticated user"
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
@@ -37,10 +36,12 @@ class TwitterGetMentions(TwitterBaseTool):
             Exception: If there's an error accessing the Twitter API.
         """
         try:
-            # Get mentions using tweepy client
+            # get since id from store
+            last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
+            last = last or {}
             max_results = 10
-            since_id = self.prev_since_id
-            if self.prev_since_id:
+            since_id = last.get("since_id")
+            if since_id:
                 max_results = 100
 
             # Always get mentions for the last day
@@ -59,10 +60,6 @@ class TwitterGetMentions(TwitterBaseTool):
             if not mentions.data:
                 return "No mentions found."
 
-            # Update the previous since_id for the next request
-            if mentions.meta:
-                self.prev_since_id = mentions.meta.get("newest_id")
-
             # Format the mentions into a readable string
             result = []
             for tweet in mentions.data:
@@ -72,6 +69,11 @@ class TwitterGetMentions(TwitterBaseTool):
                     f"Author ID: {tweet.author_id}\n"
                     f"Text: {tweet.text}\n"
                 )
+
+            # Update the previous since_id for the next request
+            if mentions.meta:
+                last["since_id"] = mentions.meta.get("newest_id")
+                self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
 
             return "\n".join(result)
 

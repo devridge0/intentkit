@@ -1,7 +1,5 @@
 from typing import Any, Callable, Dict, Optional
 
-from sqlmodel import Session
-
 from abstracts.skill import SkillStoreABC
 from app.models.skill import AgentSkillData, ThreadSkillData
 
@@ -16,7 +14,7 @@ class SkillStore(SkillStoreABC):
         get_session: A callable that returns a database session
     """
 
-    def __init__(self, get_session: Callable[[], Session]) -> None:
+    def __init__(self, get_session: Callable[[], Any]) -> None:
         self._get_session = get_session
 
     def get_agent_skill_data(

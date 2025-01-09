@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from pydantic import BaseModel
@@ -21,7 +22,6 @@ class TwitterGetTimeline(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    prev_timestamp: str | None = None
     name: str = "twitter_get_timeline"
     description: str = "Get tweets from the authenticated user's timeline"
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
@@ -36,37 +36,46 @@ class TwitterGetTimeline(TwitterBaseTool):
             Exception: If there's an error accessing the Twitter API.
         """
         try:
-            # Get timeline tweets using tweepy client
-            max_results = 100
+            # get since id from store
+            last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
+            last = last or {}
+            max_results = 10
+            since_id = last.get("since_id")
+            if since_id:
+                max_results = 100
+
+            # Always get timeline for the last day
+            start_time = datetime.now(timezone.utc) - timedelta(days=1)
+
             timeline = self.client.get_home_timeline(
                 max_results=max_results,
-                start_time=self.prev_timestamp,
+                since_id=since_id,
+                start_time=start_time,
                 tweet_fields=["created_at", "author_id", "text"],
             )
 
             if not timeline.data:
                 return "No tweets found."
 
-            # Update the previous timestamp for the next request
-            self.prev_timestamp = (
-                max(tweet.created_at for tweet in timeline.data)
-                if timeline.data
-                else None
-            )
-
-            # Format the tweets into a readable string
+            # Format the timeline tweets into a readable string
             result = []
             for tweet in timeline.data:
                 result.append(
                     f"Tweet ID: {tweet.id}\n"
+                    f"Author ID: {tweet.author_id}\n"
                     f"Created at: {tweet.created_at}\n"
                     f"Text: {tweet.text}\n"
                 )
 
+            # Update the since_id in store for the next request
+            if timeline.meta:
+                last["since_id"] = timeline.meta.get("newest_id")
+                self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
+
             return "\n".join(result)
 
         except Exception as e:
-            return f"Error retrieving timeline: {str(e)}"
+            return f"Error getting timeline: {str(e)}"
 
     async def _arun(self) -> str:
         """Async implementation of the tool.
