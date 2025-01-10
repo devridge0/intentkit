@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Generator
 from urllib.parse import quote_plus
 
@@ -67,6 +68,31 @@ def init_db(
 def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
+
+
+@contextmanager
+def get_session() -> Session:
+    """Get a database session using a context manager.
+
+    This function is designed to be used with the 'with' statement,
+    ensuring proper session cleanup.
+
+    Returns:
+        Session: A SQLModel session that will be automatically closed
+
+    Example:
+        ```python
+        with get_session() as session:
+            # use session here
+            session.query(...)
+        # session is automatically closed
+        ```
+    """
+    session = Session(engine)
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def get_coon_str() -> str:
