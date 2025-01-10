@@ -63,6 +63,9 @@ class Config:
         self.debug_resp = (
             self.load("DEBUG_RESP", "false") == "true"
         )  # Agent response with thought steps and time cost
+        self.debug_checkpoint = (
+            self.load("DEBUG_CHECKPOINT", "false") == "true"
+        )  # log with checkpoint
         # Internal
         self.internal_base_url = self.load("INTERNAL_BASE_URL", "http://intent-api")
         # Admin

@@ -1,14 +1,29 @@
+from datetime import datetime
 from typing import Type
 
-from langchain_core.tools import BaseTool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from tweepy import Client
 
+from abstracts.skill import IntentKitSkill, SkillStoreABC
 
-class TwitterBaseTool(BaseTool):
+
+class Tweet(BaseModel):
+    """Model representing a Twitter tweet."""
+
+    id: str
+    text: str
+    author_id: str
+    created_at: datetime
+    referenced_tweets: list[dict] | None = None
+    attachments: dict | None = None
+
+
+class TwitterBaseTool(IntentKitSkill):
     """Base class for Twitter tools."""
 
     client: Client
-    name: str
-    description: str
+    name: str = Field(description="The name of the tool")
+    description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
+    agent_id: str = Field(description="The ID of the agent")
+    store: SkillStoreABC = Field(description="The skill store for persisting data")

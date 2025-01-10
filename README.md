@@ -10,10 +10,10 @@ This project is currently in alpha stage and is not recommended for production u
 
 - 🤖 Multiple Agent Support
 - 🔄 Autonomous Agent Management
-- 🔗 Blockchain Integration (CDP for now, will add more)
+- 🔗 Blockchain Integration (EVM for now, will add more)
 - 🐦 Social Media Integration (Twitter,Telegram for now, will add more)
 - 🛠️ Extensible Skill System
-- 🔌 Extensible Plugin System
+- 🔌 Extensible Plugin System (WIP)
 
 ## Quick Start
 
@@ -141,6 +141,21 @@ See `example.env` for all available options.
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a pull request.
+
+### Contribute Skills
+
+If you want to add a skill collection, follow these steps:
+
+1. Create a new skill collection in the `skills/` directory
+2. Implement the skill interface
+3. Register the skill in `skill/YOUR_SKILL_COLLECTION/__init__.py`
+
+If you want to add a new skill, follow these steps:
+
+1. Create a new skill in the `skills/common/` directory
+2. Register the skill in `skills/common/__init__.py`
+
+See the [Skill Development Guide](docs/contributing/skills.md) for more information.
 
 ## License
 
