@@ -34,15 +34,17 @@ class Agent(SQLModel, table=True):
     cdp_wallet_data: Optional[str]
     cdp_network_id: Optional[str]
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
-    twitter_enabled: bool = Field(default=False)
+    twitter_enabled: bool = Field(default=False)  # TODO: to be deprecated
+    twitter_entrypoint_enabled: bool = Field(default=False)  # TODO: add for future use
     twitter_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
     # twitter skills require config, but not require twitter_enabled flag.
     # As long as twitter_skills is not empty, the corresponding skills will be loaded.
     twitter_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
-    telegram_enabled: bool = Field(default=False)
+    # if telegram_enabled, the telegram_entrypoint will be enabled, telegram_config will be checked
+    telegram_enabled: bool = Field(default=False)  # TODO: to be deprecated
+    telegram_entrypoint_enabled: bool = Field(default=False)  # TODO: add for future use
     telegram_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
-    # twitter skills require config, but not require twitter_enabled flag.
-    # As long as twitter_skills is not empty, the corresponding skills will be loaded.
+    # telegram skills not used for now
     telegram_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
