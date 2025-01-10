@@ -50,6 +50,9 @@ class Agent(SQLModel, table=True):
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
     common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    # enso skills
+    enso_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    enso_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         sa_column=Column(JSONB, nullable=True)
@@ -181,9 +184,9 @@ class AgentQuota(SQLModel, table=True):
     def has_message_quota(self, db: Session) -> bool:
         """Check if the agent has message quota."""
         return (
-            self.message_count_monthly < self.message_limit_monthly
-            and self.message_count_daily < self.message_limit_daily
-            and self.message_count_total < self.message_limit_total
+                self.message_count_monthly < self.message_limit_monthly
+                and self.message_count_daily < self.message_limit_daily
+                and self.message_count_total < self.message_limit_total
         )
 
     def has_autonomous_quota(self, db: Session) -> bool:
@@ -191,8 +194,8 @@ class AgentQuota(SQLModel, table=True):
         if not self.has_message_quota(db):
             return False
         return (
-            self.autonomous_count_monthly < self.autonomous_limit_monthly
-            and self.autonomous_count_total < self.autonomous_limit_total
+                self.autonomous_count_monthly < self.autonomous_limit_monthly
+                and self.autonomous_count_total < self.autonomous_limit_total
         )
 
     def has_twitter_quota(self, db: Session) -> bool:
@@ -200,8 +203,8 @@ class AgentQuota(SQLModel, table=True):
         if not self.has_message_quota(db):
             return False
         return (
-            self.twitter_count_daily < self.twitter_limit_daily
-            and self.twitter_count_total < self.twitter_limit_total
+                self.twitter_count_daily < self.twitter_limit_daily
+                and self.twitter_count_total < self.twitter_limit_total
         )
 
     def add_message(self, db: Session) -> None:
@@ -274,7 +277,7 @@ class AgentPluginData(SQLModel, table=True):
 
     @classmethod
     def get(
-        cls, agent_id: str, plugin: str, key: str, db: Session
+            cls, agent_id: str, plugin: str, key: str, db: Session
     ) -> Optional["AgentPluginData"]:
         """Get plugin data for an agent.
 
