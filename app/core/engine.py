@@ -39,6 +39,7 @@ from app.models.db import get_coon, get_engine, get_session
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
+from skills.enso import get_enso_skill
 from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
@@ -147,14 +148,27 @@ def initialize_agent(aid):
 
         # Twitter skills
         if (
-            agent.twitter_skills
-            and len(agent.twitter_skills) > 0
-            and agent.twitter_config
+                agent.twitter_skills
+                and len(agent.twitter_skills) > 0
+                and agent.twitter_config
         ):
             twitter_client = tweepy.Client(**agent.twitter_config)
             for skill in agent.twitter_skills:
                 try:
                     s = get_twitter_skill(skill, twitter_client, skill_store, aid)
+                    tools.append(s)
+                except Exception as e:
+                    logger.warning(e)
+
+        # Enso skills
+        if (
+                agent.enso_skills
+                and len(agent.enso_skills) > 0
+                and agent.enso_config
+        ):
+            for skill in agent.enso_skills:
+                try:
+                    s = get_enso_skill(skill, agent.enso_config.get("api_token"), skill_store, aid)
                     tools.append(s)
                 except Exception as e:
                     logger.warning(e)
@@ -205,7 +219,7 @@ def initialize_agent(aid):
 
 
 def execute_agent(
-    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+        aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
 ) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
@@ -288,7 +302,7 @@ def execute_agent(
             resp_debug_append += agent.prompt_append
     # run
     for chunk in executor.stream(
-        {"messages": [HumanMessage(content=content)]}, stream_config
+            {"messages": [HumanMessage(content=content)]}, stream_config
     ):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
