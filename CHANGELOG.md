@@ -3,7 +3,12 @@
 ## 2025-01-09
 
 ### New Features
+- Add IntentKitSkill abstract class, for now, it has a skill store interface out of the box
+- Use skill store in Twitter skills, fetch skills will store the last processed tweet ID, prevent duplicate processing
 - CDP Skills Filter in Agent, choose the skills you want only, the less skills, the better performance
+
+### Improvements
+- Add a document for skill contributors: [How to add a new skill](docs/contributing/skills.md)
 
 ## 2025-01-08
 
