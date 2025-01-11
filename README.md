@@ -15,6 +15,41 @@ This project is currently in alpha stage and is not recommended for production u
 - 🛠️ Extensible Skill System
 - 🔌 Extensible Plugin System (WIP)
 
+## Architecture
+
+```
+                                                                                                                    
+                                                                                                                    
+                                                                                                                    
+                                         Entrypoints                                                                
+                               │                             │                                                      
+                               │   Twitter/Telegram & more   │                                                      
+                               └──────────────┬──────────────┘                                                      
+                                              │                                                                     
+      Storage:  ────┐                         │                      ┌──── Skills:                                  
+                    │                         │                      │                                              
+      Agent Config  │         ┌───────────────▼────────────────┐     │  Chain Integration (EVM,solana,etc...)       
+                    │         │                                │     │                                              
+      Credentials   │         │                                │     │  Wallet Management                           
+                    │         │           The  Agent           │     │                                              
+      Personality   │         │                                │     │  On-Chain Actions                            
+                    │         │                                │     │                      More and More...        
+      Memory        │         │      Powered by LangGraph      │     │  Internet Search                             
+                    │         │                                │     │                                              
+      Skill State   │         └────────────────────────────────┘     │  Image Processing                            
+                ────┘                                                └────                                          
+                                                                                                                    
+                                                                                                                    
+                                 ┌──────────────────────────┐                                                       
+                                 │                          │                                                       
+                                 │  Agent Config & Memory   │                                                       
+                                 │                          │                                                       
+                                 └──────────────────────────┘                                                       
+                                                                                                                    
+                                                                                                                    
+                                                                                                                    
+```
+
 ## Quick Start
 
 ### Docker (Recommended)
@@ -56,6 +91,7 @@ curl -X POST http://127.0.0.1:8000/agents \
          "prompt": "You are an autonomous AI agent. Respond to user queries."
      }'
 ```
+There are many fields can control the agent behavior, we have a [helper shell](docs/create_agent.sh) to you.
 
 6. Try it out:
 ```bash
@@ -101,7 +137,7 @@ python -m app.entrypoints.autonomous
 [Twitter Integration](docs/twitter.md)
 
 ### Coinbase
-Work in progress
+[Coinbase Integration](docs/skills/cdp.md)
 
 ## Configuration
 
@@ -116,27 +152,21 @@ See `example.env` for all available options.
 
 ## Project Structure
 
+- `abstracts/`: Abstract classes and interfaces
 - `app/`: Core application code
   - `core/`: Core modules
-    - `ai.py`: Agent initialization and execution
-  - `entrypoints/`: Entry points
-    - `autonomous.py`: Autonomous agent scheduler
-    - `api.py`: API entrypoint
-  - `config/`: Configuration management
-    - `config.py`: Configuration loading and validation
+  - `entrypoints/`: Entrypoints means the way to interact with the agent
+  - `admin/`: Admin logic
+  - `config/`: Configurations
   - `models/`: Database models
-    - `db.py`: Database models and connection
+  - `api.py`: REST API server
+  - `autonomous.py`: Autonomous agent scheduler
+  - `twitter.py`: Twitter listener
+  - `telegram.py`: Telegram listener
 - `skills/`: Skill implementations
 - `skill_sets/`: Predefined skill set collections
+- `plugins/`: Reserved for Plugin implementations
 - `utils/`: Utility functions
-
-## Development
-
-### Adding New Skills
-
-1. Create a new skill in the `skill/` directory
-2. Implement the skill interface
-3. Register the skill in `skill/__init__.py`
 
 ## Contributing
 
@@ -150,7 +180,7 @@ If you want to add a skill collection, follow these steps:
 2. Implement the skill interface
 3. Register the skill in `skill/YOUR_SKILL_COLLECTION/__init__.py`
 
-If you want to add a new skill, follow these steps:
+If you want to add a simple skill, follow these steps:
 
 1. Create a new skill in the `skills/common/` directory
 2. Register the skill in `skills/common/__init__.py`
