@@ -4,52 +4,25 @@
 
 IntentKit is built with a modular architecture that separates concerns into distinct components:
 
+![Architecture](docs/arch.jpg)
 
 ## Components
 
-### 1. FastAPI REST API (`app/main.py`)
-- Handles HTTP requests for agent interactions
-- Manages agent creation and configuration
-- Implements quota management
-- Provides health check endpoints
+### Entrypoint Layer
+The entrypoint layer serves as the interface between the outside world and the Agent. It provides various integration points including Twitter and Telegram, along with autonomous execution capabilities. This layer includes adapters to handle input/output transformations, rate limiting, and modifications to ensure smooth communication between external services and the internal system.
 
-### 2. Agent Engine (`app/ai.py`)
-- Initializes and manages AI agents
-- Integrates with LangChain for agent execution
-- Handles tool integration and management
-- Manages agent state and memory
+### LangGraph Layer
+At the heart of IntentKit lies the LangGraph layer, which orchestrates the AI processing pipeline. It manages the language model interactions, prompt engineering, and tool execution flow. The layer maintains both thread-specific memory for ongoing conversations and a broader agent memory system, enabling contextual awareness and persistent knowledge across interactions.
 
-### 3. Autonomous Scheduler (`app/autonomous.py`)
-- Schedules and executes autonomous agent tasks
-- Manages periodic execution of agent actions
-- Handles graceful shutdown and error recovery
+### Processing Layer
+Skills and Memory Runtime
 
-### 4. Skills System
-- Individual skills (`skill/`)
-- Predefined skill sets (`skill_set/`)
-- Tool integrations (CDP, Twitter, etc.)
+### Storage Layer
+The storage layer provides persistent data management across the system. It maintains agent configurations, securely stores credentials, preserves agent state information, and manages the memory store. This layer ensures that all persistent data is properly organized, secured, and readily accessible when needed.
 
-### 5. Database Layer (`app/db.py`)
-- Manages agent persistence
-- Handles quota tracking
-- Stores agent configurations and state
+## The Flow
 
-## Data Flow
-
-1. **API Request Flow**
-   ```
-   Client Request → FastAPI → Agent Engine → Skills/Tools → Response
-   ```
-
-2. **Autonomous Execution Flow**
-   ```
-   Scheduler → Agent Engine → Skills/Tools → Database Update
-   ```
-
-3. **Agent Initialization Flow**
-   ```
-   Request → Load Config → Initialize LLM → Load Tools → Create Agent
-   ```
+![Flow](docs/agent.webp)
 
 ## Key Design Decisions
 
