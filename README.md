@@ -50,6 +50,8 @@ This project is currently in alpha stage and is not recommended for production u
                                                                                                                     
 ```
 
+The architecture is a simplified view, and more details can be found in the [Architecture](docs/architecture.md) section.
+
 ## Quick Start
 
 ### Docker (Recommended)
@@ -109,9 +111,11 @@ cd intentkit
 2. Set up your environment:
 Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
 If you haven't installed `poetry`, please install it first.
+We recommend manually creating a venv; otherwise, the venv created automatically by Poetry may not meet your needs.
 ```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
 poetry install --with dev
-poetry shell
 ```
 
 3. Configure your environment:
@@ -123,10 +127,10 @@ cp example.env .env
 4. Run the application:
 ```bash
 # Run the API server in development mode
-uvicorn app.entrypoints.api:app --reload
+uvicorn app.api:app --reload
 
 # Run the autonomous agent scheduler
-python -m app.entrypoints.autonomous
+python -m app.autonomous
 ```
 
 "Create Agent" and "Try it out" refer to the Docker section.
