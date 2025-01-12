@@ -1,7 +1,7 @@
-from typing import Type, List, Optional, Dict, Any
+from typing import Any, Dict, Optional, Type
 
 import httpx
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from .base import EnsoBaseTool, base_url
 
@@ -74,7 +74,7 @@ class EnsoIporShortcut(EnsoBaseTool):
 
     name: str = "enso_post_ipor_shortcut"
     description: str = "Execute a transaction shortcut via the `/api/v1/static/ipor` endpoint."
-    args_schema: BaseModel = EnsoIporShortcutInput
+    args_schema: Type[BaseModel] = EnsoIporShortcutInput
 
     def _run(self) -> EnsoIporShortcutOutput:
         """Sync implementation of the tool.

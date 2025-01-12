@@ -1,7 +1,7 @@
-from typing import Type, List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Type
 
 import httpx
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from .base import EnsoBaseTool, base_url
 
@@ -116,7 +116,7 @@ class SimplePath(BaseModel):
     name: str = Field(..., description="An example field for SimplePath.")
 
 
-class QuoteRouteInputs(BaseModel):
+class EnsoPostQuoteShortcutInput(BaseModel):
     """
     Input schema for the `/api/v1/static/shortcuts/quote` endpoint.
     """
@@ -189,7 +189,7 @@ class EnsoPostQuoteShortcut(EnsoBaseTool):
 
     name: str = "enso_post_quote_shortcut"
     description: str = "Retrieve a transaction quote using the `/api/v1/static/shortcuts/quote` endpoint."
-    args_schema: BaseModel = QuoteRouteInputs
+    args_schema: Type[BaseModel] = EnsoPostQuoteShortcutInput
 
     def _run(self) -> QuotePostRouteOutput:
         """Sync implementation of the tool.

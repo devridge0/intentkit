@@ -1,9 +1,9 @@
-from typing import Type, List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Type
 
 import httpx
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
-from .base import EnsoBaseTool, base_url
+from .base import EnsoBaseTool
 
 
 class EnsoGetRouteShortcutInput(BaseModel):
@@ -117,7 +117,7 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
 
     name: str = "enso_get_route_shortcut"
     description: str = "Retrieve route information for a specified transaction via the `/api/v1/shortcuts/route` endpoint."
-    args_schema: BaseModel = EnsoGetRouteShortcutInput
+    args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
 
     def _run(self) -> EnsoGetRouteShortcutOutput:
         """Sync implementation of the tool.
@@ -170,7 +170,7 @@ class VariableEstimates(BaseModel):
     data: Optional[Dict[str, Any]] = Field(None, description="An example field for variable estimates.")
 
 
-class RouteShortcutVariableInputs(BaseModel):
+class RouteShortcutVariableInput(BaseModel):
     """
     Input schema for the `/api/v1/shortcuts/route` endpoint.
     """
@@ -285,7 +285,7 @@ class RouteShortcutTransaction(BaseModel):
     )
 
 
-class RoutShortcutPostRouteOutput(BaseModel):
+class EnsoPostRouteShortcutOutput(BaseModel):
     success: bool = Field(..., description="Indicates whether the Quote data request was successful.")
     data: Optional[RouteShortcutTransaction] = Field(
         None, description="Detailed Quote data, including rates and other information."
@@ -300,15 +300,15 @@ class EnsoPostRouteShortcut(EnsoBaseTool):
 
     name: str = "enso_post_route_shortcut"
     description: str = "Execute a transaction route using the `/api/v1/shortcuts/route` endpoint."
-    args_schema: BaseModel = RouteShortcutVariableInputs
+    args_schema: Type[BaseModel] = RouteShortcutVariableInput
 
-    def _run(self) -> RoutShortcutPostRouteOutput:
+    def _run(self) -> EnsoPostRouteShortcutOutput:
         """Sync implementation of the tool.
 
         This tool doesn't have a native sync implementation.
         """
 
-    async def _arun(self, api_token: str, **inputs) -> RoutShortcutPostRouteOutput:
+    async def _arun(self, api_token: str, **inputs) -> EnsoPostRouteShortcutOutput:
         """
         Asynchronously execute the route shortcut.
 
@@ -317,7 +317,7 @@ class EnsoPostRouteShortcut(EnsoBaseTool):
             **inputs: Parameters matching the RouteShortcutVariableInputs schema.
 
         Returns:
-            RoutShortcutPostRouteOutput: The response representing the executed route shortcut or error details.
+            EnsoPostRouteShortcutOutput: The response representing the executed route shortcut or error details.
         """
         api_url = "https://api.yourapi.com/api/v1/shortcuts/route"  # Replace with actual API URL.
 
@@ -326,20 +326,20 @@ class EnsoPostRouteShortcut(EnsoBaseTool):
             "Authorization": f"Bearer {api_token}",
         }
 
-        payload = RouteShortcutVariableInputs(**inputs).dict()
+        payload = RouteShortcutVariableInput(**inputs).dict()
 
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(api_url, headers=headers, json=payload)
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
 
-                return RoutShortcutPostRouteOutput(success=True, data=RouteShortcutTransaction(**response.json()),
+                return EnsoPostRouteShortcutOutput(success=True, data=RouteShortcutTransaction(**response.json()),
                                                    error=None)
 
             except httpx.RequestError as request_error:
-                return RoutShortcutPostRouteOutput(success=False, data=None,
+                return EnsoPostRouteShortcutOutput(success=False, data=None,
                                                    error=f"Request error: {str(request_error)}")
             except httpx.HTTPStatusError as http_err:
-                return RoutShortcutPostRouteOutput(success=False, data=None, error=f"HTTP error: {str(http_err)}")
+                return EnsoPostRouteShortcutOutput(success=False, data=None, error=f"HTTP error: {str(http_err)}")
             except Exception as e:
-                return RoutShortcutPostRouteOutput(success=False, data=None, error=str(e))
+                return EnsoPostRouteShortcutOutput(success=False, data=None, error=str(e))

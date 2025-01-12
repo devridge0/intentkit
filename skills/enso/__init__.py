@@ -1,24 +1,29 @@
 """Enso skills."""
 
 from abstracts.skill import SkillStoreABC
-from skills.enso.base import EnsoBaseTool
 from skills.enso.actions import EnsoGetActions
+from skills.enso.base import EnsoBaseTool
+from skills.enso.bundle import EnsoShortcutBundle
+from skills.enso.ipor import EnsoIporShortcut
 from skills.enso.networks import EnsoGetNetworks
 from skills.enso.prices import EnsoGetPrices
 from skills.enso.quote import EnsoGetQuote, EnsoPostQuoteShortcut
-from skills.enso.route import EnsoPostRouteShortcut, EnsoGetRouteShortcut
+from skills.enso.route import EnsoGetRouteShortcut, EnsoPostRouteShortcut
 from skills.enso.standards import EnsoGetStandards
 from skills.enso.tokens import EnsoGetTokens
-from skills.enso.bundle import EnsoShortcutBundle
-from skills.enso.ipor import EnsoIporShortcut
-from skills.enso.wallet import EnsoGetWallet, EnsoApproveWallet, EnsoGetApprovals, EnsoGetBalances
+from skills.enso.wallet import (
+    EnsoApproveWallet,
+    EnsoGetApprovals,
+    EnsoGetBalances,
+    EnsoGetWallet,
+)
 
 
 def get_enso_skill(
         name: str, api_token: str, store: SkillStoreABC, agent_id: str
 ) -> EnsoBaseTool:
     if not api_token:
-        raise ValueError(f"Enso API token is empty")
+        raise ValueError("Enso API token is empty")
 
     if name == "get_actions":
         return EnsoGetActions(api_token=api_token, store=store, agent_id=agent_id)
