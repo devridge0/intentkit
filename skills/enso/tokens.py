@@ -45,7 +45,7 @@ class TokenResponse(BaseModel):
     meta: MetaData = Field(..., description="Metadata regarding pagination")
 
 
-class EnsoGetAPYInput(BaseModel):
+class EnsoGetTokensInput(BaseModel):
     api_token: str = Field(description="Enso API token")
     chain_id: int = Field(description="The blockchain chain ID", default=None)
     protocol_slug: str = Field(description="The protocol slug (e.g., 'aave-v2', 'compound')", default=None)
@@ -55,7 +55,7 @@ class EnsoGetAPYInput(BaseModel):
     page: int = Field(description="Page number (e.g., 1)", default=1)
 
 
-class EnsoGetAPYOutput(BaseModel):
+class EnsoGetTokensOutput(BaseModel):
     token_res: TokenResponse
     error: str | None = None
 
@@ -73,21 +73,33 @@ class EnsoGetTokens(EnsoBaseTool):
 
     name: str = "enso_get_apy"
     description: str = "Get APY from Enso"
-    args_schema: Type[BaseModel] = EnsoGetAPYInput
+    args_schema: Type[BaseModel] = EnsoGetTokensInput
 
-    def _run(self) -> EnsoGetAPYOutput:
-        """Run the tool to get APY.
+    def _run(self) -> EnsoGetTokensOutput:
+        """Sync implementation of the tool.
 
+        This tool doesn't have a native sync implementation.
+        """
+
+    async def _arun(self, api_token, protocol_slug: Optional[str] = None, token_type: Optional[str] = None,
+                    underlying_tokens: Optional[str | list[str]] = None,
+                    chain_id: Optional[int] = None,
+                    page: Optional[int] = 1) -> EnsoGetTokensOutput:
+        """Run the tool to get Tokens and APY.
+        Args:
+            api_token (str): API authorization token.
+            protocol_slug (Optional[str]): Protocol Slug to filter (e.g., 'aave-v2', 'compound').
+            token_type (Optional[str]): Type of token to filter (e.g., 'defi', 'nft').
+            underlying_tokens (str | list[str]): Underlying tokens to filter (e.g. 0xdAC17F958D2ee523a2206206994597C13D831ec7).
+            chain_id (Optional[str]): Chain ID to filter.
+            page (Optional[int]): Page number (e.g., 1)
         Returns:
-            EnsoGetAPYOutput: A structured output containing the tokens APY data.
+            EnsoGetTokensOutput: A structured output containing the tokens APY data.
 
         Raises:
             Exception: If there's an error accessing the Enso API.
         """
-
-    async def _arun(self, api_token, protocol_slug=None, token_type=None, underlying_tokens=None, chain_id=None,
-                    page=1) -> EnsoGetAPYOutput:
-        url = f"{base_url}/tokens"
+        url = f"{base_url}/api/v1/tokens"
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {api_token}",
@@ -119,6 +131,6 @@ class EnsoGetTokens(EnsoBaseTool):
                 response.raise_for_status()
                 json_dict = response.json()
                 token_response = TokenResponse(**json_dict)
-                return EnsoGetAPYOutput(token_res=token_response)
+                return EnsoGetTokensOutput(token_res=token_response)
             except Exception as e:
-                return EnsoGetAPYOutput(token_res=TokenResponse(data=[], meta=MetaData()), error=str(e))
+                return EnsoGetTokensOutput(token_res=TokenResponse(data=[], meta=MetaData()), error=str(e))

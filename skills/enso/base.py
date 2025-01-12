@@ -6,13 +6,13 @@ from tweepy import Client
 
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 
-base_url = "https://api.enso.finance/api/v1/"
+base_url = "https://api.enso.finance"
 
 
 class EnsoBaseTool(IntentKitSkill):
     """Base class for Twitter tools."""
 
-    api_token = Field(description="API token")
+    api_token: str = Field(description="API token")
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
