@@ -1,7 +1,7 @@
-from typing import Type, List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Type
 
 import httpx
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from .base import EnsoBaseTool, base_url
 
@@ -74,7 +74,7 @@ class EnsoShortcutBundle(EnsoBaseTool):
 
     name: str = "enso_post_bundle_shortcut"
     description: str = "Create a transaction bundle using the `/api/v1/shortcuts/bundle` endpoint."
-    args_schema: BaseModel = ActionToBundle
+    args_schema: Type[BaseModel] = ActionToBundle
 
     def _run(self) -> EnsoShortcutBundleOutput:
         """Sync implementation of the tool.

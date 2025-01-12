@@ -1,8 +1,6 @@
-from datetime import datetime
 from typing import Type
 
 from pydantic import BaseModel, Field
-from tweepy import Client
 
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 

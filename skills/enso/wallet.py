@@ -1,7 +1,7 @@
-from typing import Type, List, Optional
+from typing import List, Optional, Type
 
 import httpx
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from .base import EnsoBaseTool, base_url
 
