@@ -195,13 +195,13 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.7.0"
+version = "4.8.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "anyio-4.7.0-py3-none-any.whl", hash = "sha256:ea60c3723ab42ba6fff7e8ccb0488c898ec538ff4df1f1d5e642c3601d07e352"},
-    {file = "anyio-4.7.0.tar.gz", hash = "sha256:2f834749c602966b7d456a7567cafcb309f96482b5081d14ac93ccd457f9dd48"},
+    {file = "anyio-4.8.0-py3-none-any.whl", hash = "sha256:b5011f270ab5eb0abf13385f851315585cc37ef330dd88e27ec3d34d651fd47a"},
+    {file = "anyio-4.8.0.tar.gz", hash = "sha256:1d9fe889df5212298c0c0723fa20479d1b94883a2df44bd3897aa91083316f7a"},
 ]
 
 [package.dependencies]
@@ -211,7 +211,7 @@ typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 doc = ["Sphinx (>=7.4,<8.0)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx_rtd_theme"]
-test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "truststore (>=0.9.1)", "uvloop (>=0.21)"]
+test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "trustme", "truststore (>=0.9.1)", "uvloop (>=0.21)"]
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
@@ -457,13 +457,13 @@ files = [
 
 [[package]]
 name = "botocore"
-version = "1.35.93"
+version = "1.35.97"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.93-py3-none-any.whl", hash = "sha256:47f7161000af6036f806449e3de12acdd3ec11aac7f5578e43e96241413a0f8f"},
-    {file = "botocore-1.35.93.tar.gz", hash = "sha256:b8d245a01e7d64c41edcf75a42be158df57b9518a83a3dbf5c7e4b8c2bc540cc"},
+    {file = "botocore-1.35.97-py3-none-any.whl", hash = "sha256:fed4f156b1a9b8ece53738f702ba5851b8c6216b4952de326547f349cc494f14"},
+    {file = "botocore-1.35.97.tar.gz", hash = "sha256:88f2fab29192ffe2f2115d5bafbbd823ff4b6eb2774296e03ec8b5b0fe074f61"},
 ]
 
 [package.dependencies]
@@ -534,34 +534,34 @@ test = ["coverage (>=7)", "hypothesis", "pytest"]
 
 [[package]]
 name = "cdp-agentkit-core"
-version = "0.0.6"
+version = "0.0.7"
 description = "CDP Agentkit core primitives"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "cdp_agentkit_core-0.0.6-py3-none-any.whl", hash = "sha256:10c799daee5810e55980f95cf1f96402064a118e4374c2a25d20771e115dbd86"},
-    {file = "cdp_agentkit_core-0.0.6.tar.gz", hash = "sha256:ccdf8183e53ba0f64f0ceb8bf0ab90bf700af099e0ef0b54dee4b9b9841173a9"},
+    {file = "cdp_agentkit_core-0.0.7-py3-none-any.whl", hash = "sha256:988750aa17d72062c9f3b3ba833cb7a7fa0439125249dc5607f8ed9a41c48427"},
+    {file = "cdp_agentkit_core-0.0.7.tar.gz", hash = "sha256:35198d6def0fcee11ec9c38157e7811ca714520cd05ec25980f78f8650a8e0fa"},
 ]
 
 [package.dependencies]
-cdp-sdk = ">=0.12.0,<0.13.0"
+cdp-sdk = ">=0.13.0,<0.14.0"
 pydantic = ">=2.0,<3.0"
 web3 = ">=7.6.0,<8.0.0"
 
 [[package]]
 name = "cdp-langchain"
-version = "0.0.8"
+version = "0.0.9"
 description = "CDP Agentkit Langchain Extension"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "cdp_langchain-0.0.8-py3-none-any.whl", hash = "sha256:41b5fb5e4c4ea9b753fd1554d89edba5241d6aa1ce2f23ef32449edd571657b1"},
-    {file = "cdp_langchain-0.0.8.tar.gz", hash = "sha256:d0951a4cbfbc001b3ad6d92a15d560c5abad779aa50192b7485a760bf9bdd333"},
+    {file = "cdp_langchain-0.0.9-py3-none-any.whl", hash = "sha256:8a323d9d35463ef44149119068db77c771bc032dfba7b3d19bc6002361c9a23c"},
+    {file = "cdp_langchain-0.0.9.tar.gz", hash = "sha256:01241630e013bb576b6ea4a4672040f55f6ba0595ab0f0eccc70ec29ae083328"},
 ]
 
 [package.dependencies]
-cdp-agentkit-core = ">=0.0.6,<0.0.7"
-cdp-sdk = ">=0.12.0,<0.13.0"
+cdp-agentkit-core = ">=0.0.7,<0.0.8"
+cdp-sdk = ">=0.13.0,<0.14.0"
 langchain = ">=0.3.4,<0.4.0"
 langchain-openai = ">=0.2.4,<0.3.0"
 langgraph = ">=0.2.39,<0.3.0"
@@ -569,13 +569,13 @@ pydantic = ">=2.0,<3.0"
 
 [[package]]
 name = "cdp-sdk"
-version = "0.12.1"
+version = "0.13.0"
 description = "CDP Python SDK"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "cdp_sdk-0.12.1-py3-none-any.whl", hash = "sha256:5ea77f93af1279dc264131900a6242dbc8e926159fd652b0c4f50aea7afabd83"},
-    {file = "cdp_sdk-0.12.1.tar.gz", hash = "sha256:2e698c6206069bf8c95cbc444f6c927dc354fe7f9487249ba1a9ddd3ac1ca60a"},
+    {file = "cdp_sdk-0.13.0-py3-none-any.whl", hash = "sha256:14a9a39a093b85e51a2d04ec755c75104252908be08d68de31a6bc822fae5ff5"},
+    {file = "cdp_sdk-0.13.0.tar.gz", hash = "sha256:eb139335c13ec390d9b90ec9853b0e0736548b8413f718ddf40ef1cb65684fc4"},
 ]
 
 [package.dependencies]
@@ -1872,13 +1872,13 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
 
 [[package]]
 name = "langchain-core"
-version = "0.3.28"
+version = "0.3.29"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "langchain_core-0.3.28-py3-none-any.whl", hash = "sha256:a02f81ca53a8eed757133797e5a602ca80c1324bbecb0c5d86ef7bd3d6625372"},
-    {file = "langchain_core-0.3.28.tar.gz", hash = "sha256:407f7607e6b3c0ebfd6094da95d39b701e22e59966698ef126799782953e7f2c"},
+    {file = "langchain_core-0.3.29-py3-none-any.whl", hash = "sha256:817db1474871611a81105594a3e4d11704949661008e455a10e38ca9ff601a1a"},
+    {file = "langchain_core-0.3.29.tar.gz", hash = "sha256:773d6aeeb612e7ce3d996c0be403433d8c6a91e77bbb7a7461c13e15cfbe5b06"},
 ]
 
 [package.dependencies]
@@ -1975,13 +1975,13 @@ msgpack = ">=1.1.0,<2.0.0"
 
 [[package]]
 name = "langgraph-checkpoint-postgres"
-version = "2.0.9"
+version = "2.0.10"
 description = "Library with a Postgres implementation of LangGraph checkpoint saver."
 optional = false
 python-versions = "<4.0.0,>=3.9.0"
 files = [
-    {file = "langgraph_checkpoint_postgres-2.0.9-py3-none-any.whl", hash = "sha256:1ee203b03abe168b91fe97753bf759580bd63f5664017cb0893d4e8da0c4e971"},
-    {file = "langgraph_checkpoint_postgres-2.0.9.tar.gz", hash = "sha256:eb6a3ff76f4b0700c7522d90a5f3e0cd8bc878dea06768af1b181071cce075ce"},
+    {file = "langgraph_checkpoint_postgres-2.0.10-py3-none-any.whl", hash = "sha256:c913ee1785fb4822b7fde9b04918190607bd01557e516f1d58dcdfb1a2a2d9ee"},
+    {file = "langgraph_checkpoint_postgres-2.0.10.tar.gz", hash = "sha256:91e27c18acae568739b87b3239f2a7c78375067dc1a24a924c031a2b2a26d877"},
 ]
 
 [package.dependencies]
@@ -2400,13 +2400,13 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "openai"
-version = "1.59.3"
+version = "1.59.6"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.59.3-py3-none-any.whl", hash = "sha256:b041887a0d8f3e70d1fc6ffbb2bf7661c3b9a2f3e806c04bf42f572b9ac7bc37"},
-    {file = "openai-1.59.3.tar.gz", hash = "sha256:7f7fff9d8729968588edf1524e73266e8593bb6cab09298340efb755755bb66f"},
+    {file = "openai-1.59.6-py3-none-any.whl", hash = "sha256:b28ed44eee3d5ebe1a3ea045ee1b4b50fea36ecd50741aaa5ce5a5559c900cb6"},
+    {file = "openai-1.59.6.tar.gz", hash = "sha256:c7670727c2f1e4473f62fea6fa51475c8bc098c9ffb47bfb9eef5be23c747934"},
 ]
 
 [package.dependencies]
@@ -3993,4 +3993,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "654ec17b075bf29b52227f3d9cd3ff029f4f5d2fbde38111e4f032ac9469b018"
+content-hash = "305cf7b13009a89a9e658d11452c4af26b2d7121b607ed52287649de36d4a1fd"
