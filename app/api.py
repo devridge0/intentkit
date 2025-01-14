@@ -18,6 +18,7 @@ from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
 from app.models.db import init_db
+from app.services.twitter.oauth2 import router as twitter_router
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(chat_router)
 app.include_router(admin_router)
 app.include_router(core_router)
+app.include_router(twitter_router)
 
 
 @app.get("/health", include_in_schema=False)
