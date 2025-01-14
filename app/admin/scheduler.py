@@ -3,8 +3,8 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlmodel import Session, update
 
 from app.config.config import config
-from app.models.agent import AgentQuota
-from app.models.db import get_engine, init_db
+from models.agent import AgentQuota
+from models.db import get_engine, init_db
 
 
 def reset_daily_quotas():

@@ -34,8 +34,8 @@ from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.graph import create_agent
 from app.core.skill import SkillStore
-from app.models.agent import Agent
-from app.models.db import get_coon, get_engine, get_session
+from models.agent import Agent
+from models.db import get_coon, get_engine, get_session
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill

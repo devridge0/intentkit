@@ -6,7 +6,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from app.config.config import config
 from app.entrypoints.autonomous import run_autonomous_agents
-from app.models.db import init_db
+from models.db import init_db
 
 logger = logging.getLogger(__name__)
 

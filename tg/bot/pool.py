@@ -11,7 +11,7 @@ from aiogram.webhook.aiohttp_server import (
 )
 from aiohttp import web
 
-from app.models.agent import Agent
+from models.agent import Agent
 from tg.bot.kind.ai_relayer.router import general_router
 from tg.bot.kind.god.router import god_router
 from tg.bot.kind.god.startup import GOD_BOT_PATH, GOD_BOT_TOKEN, on_startup

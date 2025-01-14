@@ -7,7 +7,7 @@ from psycopg_pool import ConnectionPool
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
 
-from app.models.db_mig import safe_migrate
+from models.db_mig import safe_migrate
 
 conn_str = None
 conn = None
