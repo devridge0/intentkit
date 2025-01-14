@@ -11,7 +11,7 @@ oauth2_user_handler = tweepy.OAuth2UserHandler(
     client_id=config.twitter_oauth2_client_id,
     client_secret=config.twitter_oauth2_client_secret,
     redirect_uri=config.twitter_oauth2_redirect_uri,
-    scope=["tweet.read", "tweet.write", "users.read"],
+    scope=["tweet.read", "tweet.write", "users.read", "offline.access"],
 )
 
 print(oauth2_user_handler.get_authorization_url())
@@ -27,7 +27,8 @@ async def twitter_oauth_callback(state: str, code: str):
             )
 
         # Get access token
-        access_token = oauth2_user_handler.fetch_token(code)
+        url = f"{config.twitter_oauth2_redirect_uri}?state={state}&code={code}"
+        access_token = oauth2_user_handler.fetch_token(url)
 
         # Print tokens for debugging
         print("Access Token:", access_token)

@@ -2,7 +2,7 @@ from aiogram import Bot
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from app.models.agent import Agent
+from models.agent import Agent
 from tg.bot.types.kind import is_valid_kind
 from tg.utils.cleanup import clean_token_str
 
