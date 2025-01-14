@@ -11,6 +11,7 @@ class EnsoBaseTool(IntentKitSkill):
     """Base class for Twitter tools."""
 
     api_token: str = Field(description="API token")
+    main_tokens: list[str] = Field(description="Main supported tokens")
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]

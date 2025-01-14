@@ -50,6 +50,8 @@ class Agent(SQLModel, table=True):
     crestal_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     # skills not require config
     common_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
+    # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
+    enso_enabled: bool = Field(default=False)
     # enso skills
     enso_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     enso_config: Optional[dict] = Field(sa_column=Column(JSONB, nullable=True))

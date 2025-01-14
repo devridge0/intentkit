@@ -72,6 +72,11 @@ def agent_prompt(agent: Agent) -> str:
         prompt += """\n\nWallet addresses are public information.  If someone asks for your default wallet, 
             current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
             you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
+    if agent.enso_enabled:
+        prompt += """\n\nYou are integrated to Enso API, you are able to get the token list and their information, such
+        as APY, Protocol Slug, Symbol, Address, and underlying tokens using enso_get_tokens tool. for each thread first
+        request, you should use enso_get_tokens with no input param and get the information of the available protocol slugs, 
+        symbols, addresses and APY.\n\n"""
     return prompt
 
 
@@ -168,7 +173,9 @@ def initialize_agent(aid):
         ):
             for skill in agent.enso_skills:
                 try:
-                    s = get_enso_skill(skill, agent.enso_config.get("api_token"), skill_store, aid)
+                    s = get_enso_skill(skill, agent.enso_config.get("api_token"),
+                                       agent.enso_config.get("main_tokens", list[str]()),
+                                       skill_store, aid)
                     tools.append(s)
                 except Exception as e:
                     logger.warning(e)
