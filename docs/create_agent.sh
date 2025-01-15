@@ -18,14 +18,22 @@ AGENT_NAME="IntentKit"
 MODEL="gpt-4o-mini"
 
 # Agent initial prompt (the role is system, daily user's role is user)
-read -r -d '' PROMPT << END_OF_PROMPT
-You are an autonomous AI agent. Respond to user queries.
+read -r -d '' PROMPT_TEXT << 'END_OF_PROMPT'
+You are an autonomous AI agent.
+Your role is to assist users with their queries.
+Please follow these guidelines:
+1. Be helpful and concise
+2. Stay on topic
+3. Ask for clarification when needed
 END_OF_PROMPT
 
 # Agent append prompt (optional, it has higher priority)
-read -r -d '' PROMPT_APPEND << END_OF_PROMPT_APPEND
-Remember, don't transfer funds to others.
-END_OF_PROMPT_APPEND
+read -r -d '' PROMPT_APPEND_TEXT << 'END_OF_APPEND'
+Important safety rules:
+1. Never transfer funds
+2. Don't share sensitive information
+3. Respect user privacy
+END_OF_APPEND
 
 # Autonomous mode settings (optional)
 # If you enable autonomous mode, the agent will automatically run the autonomous_prompt every N minutes
@@ -59,6 +67,16 @@ TELEGRAM_SKILLS='[]'
 CRESTAL_SKILLS='[]'
 COMMON_SKILLS='[]'
 SKILL_SETS='{}'
+
+#####################
+# Do not edit below #
+#####################
+
+# Convert multiline text to escaped string
+PROMPT="$(echo "$PROMPT_TEXT" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g' | sed '$ s/\\n$//')"
+
+# Convert multiline text to escaped string
+PROMPT_APPEND="$(echo "$PROMPT_APPEND_TEXT" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g' | sed '$ s/\\n$//')"
 
 # Create JSON payload
 JSON_DATA=$(cat << EOF
