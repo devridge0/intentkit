@@ -34,7 +34,7 @@ class TwitterClient(TwitterABC):
 
         # Check if we have API keys in config
         if all(
-            key in config
+            key in config and config[key]
             for key in [
                 "consumer_key",
                 "consumer_secret",
@@ -126,8 +126,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me[0]:
-                return str(me[0].id)
+            if me and me.data:
+                return str(me.data.id)
         except Exception:
             pass
         return None
@@ -148,8 +148,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me[0]:
-                return me[0].username
+            if me and me.data:
+                return me.data.username
         except Exception:
             pass
         return None
@@ -170,8 +170,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me[0]:
-                return me[0].name
+            if me and me.data:
+                return me.data.name
         except Exception:
             pass
         return None

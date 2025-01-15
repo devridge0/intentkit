@@ -35,7 +35,7 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
-from app.services.twitter.oauth2 import oauth2_user_handler
+from app.services.twitter.oauth2 import get_authorization_url
 from models.agent import Agent, AgentData
 from models.db import get_coon, get_session
 from skill_sets import get_skill_set
@@ -194,7 +194,7 @@ def initialize_agent(aid):
                         )
             else:
                 logger.info(f"Twitter client needs authentication for agent {aid}")
-                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {oauth2_user_handler.get_authorization_url()}"
+                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {get_authorization_url(aid)}"
         except Exception as e:
             logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
 
@@ -222,7 +222,8 @@ def initialize_agent(aid):
 
     # finally, setup the system prompt
     prompt = agent_prompt(agent)
-    prompt += twitter_prompt
+    if twitter_prompt:
+        prompt += twitter_prompt
     prompt_array = [
         ("system", prompt),
         ("placeholder", "{messages}"),
@@ -232,6 +233,7 @@ def initialize_agent(aid):
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
     def formatted_prompt(state: AgentState):
+        logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
@@ -316,15 +318,19 @@ def execute_agent(
                 # Handle other SQLAlchemy-related errors
                 logger.error(e)
                 raise HTTPException(status_code=500, detail=str(e))
-        resp_debug_append = "\n===================\n\n[ system ]\n"
-        resp_debug_append += agent_prompt(agent)
-        snap = executor.get_state(stream_config)
-        if snap.values and "messages" in snap.values:
-            for msg in snap.values["messages"]:
-                resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
-        if agent.prompt_append:
-            resp_debug_append += "[ system ]\n"
-            resp_debug_append += agent.prompt_append
+        try:
+            resp_debug_append = "\n===================\n\n[ system ]\n"
+            resp_debug_append += agent_prompt(agent)
+            snap = executor.get_state(stream_config)
+            if snap.values and "messages" in snap.values:
+                for msg in snap.values["messages"]:
+                    resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
+            if agent.prompt_append:
+                resp_debug_append += "[ system ]\n"
+                resp_debug_append += agent.prompt_append
+        except Exception as e:
+            logger.error(e)
+            resp_debug_append = ""
     # run
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=content)]}, stream_config
