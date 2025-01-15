@@ -45,7 +45,7 @@ StateModifier = Union[
 
 
 def _get_state_modifier_runnable(
-    state_modifier: Optional[StateModifier], store: Optional[BaseStore] = None
+        state_modifier: Optional[StateModifier], store: Optional[BaseStore] = None
 ) -> Runnable:
     state_modifier_runnable: Runnable
     if state_modifier is None:
@@ -113,7 +113,7 @@ def _should_bind_tools(model: LanguageModelLike, tools: Sequence[BaseTool]) -> b
 
 
 def _validate_chat_history(
-    messages: Sequence[BaseMessage],
+        messages: Sequence[BaseMessage],
 ) -> None:
     """Validate that all tool calls in AIMessages have a corresponding ToolMessage."""
     all_tool_calls = [
@@ -135,26 +135,26 @@ def _validate_chat_history(
 
     error_message = create_error_message(
         message="Found AIMessages with tool_calls that do not have a corresponding ToolMessage. "
-        f"Here are the first few of those tool calls: {tool_calls_without_results[:3]}.\n\n"
-        "Every tool call (LLM requesting to call a tool) in the message history MUST have a corresponding ToolMessage "
-        "(result of a tool invocation to return to the LLM) - this is required by most LLM providers.",
+                f"Here are the first few of those tool calls: {tool_calls_without_results[:3]}.\n\n"
+                "Every tool call (LLM requesting to call a tool) in the message history MUST have a corresponding ToolMessage "
+                "(result of a tool invocation to return to the LLM) - this is required by most LLM providers.",
         error_code=ErrorCode.INVALID_CHAT_HISTORY,
     )
     raise ValueError(error_message)
 
 
 def create_agent(
-    model: LanguageModelLike,
-    tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
-    *,
-    state_schema: Optional[StateSchemaType] = None,
-    state_modifier: Optional[StateModifier] = None,
-    memory_manager: Optional[MemoryManager] = None,
-    checkpointer: Optional[Checkpointer] = None,
-    store: Optional[BaseStore] = None,
-    interrupt_before: Optional[list[str]] = None,
-    interrupt_after: Optional[list[str]] = None,
-    debug: bool = False,
+        model: LanguageModelLike,
+        tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
+        *,
+        state_schema: Optional[StateSchemaType] = None,
+        state_modifier: Optional[StateModifier] = None,
+        memory_manager: Optional[MemoryManager] = None,
+        checkpointer: Optional[Checkpointer] = None,
+        store: Optional[BaseStore] = None,
+        interrupt_before: Optional[list[str]] = None,
+        interrupt_after: Optional[list[str]] = None,
+        debug: bool = False,
 ) -> CompiledGraph:
     """Creates a graph that works with a chat model that utilizes tool calling.
 
@@ -234,7 +234,7 @@ def create_agent(
 
     if state_schema is not None:
         if missing_keys := {"messages", "is_last_step"} - set(
-            state_schema.__annotations__
+                state_schema.__annotations__
         ):
             raise ValueError(f"Missing required key(s) {missing_keys} in state_schema")
 
@@ -288,21 +288,21 @@ def create_agent(
             else False
         )
         if (
-            (
-                "remaining_steps" not in state
-                and state["is_last_step"]
-                and has_tool_calls
-            )
-            or (
+                (
+                        "remaining_steps" not in state
+                        and state["is_last_step"]
+                        and has_tool_calls
+                )
+                or (
                 "remaining_steps" in state
                 and state["remaining_steps"] < 1
                 and all_tools_return_direct
-            )
-            or (
+        )
+                or (
                 "remaining_steps" in state
                 and state["remaining_steps"] < 2
                 and has_tool_calls
-            )
+        )
         ):
             return {
                 "messages": [
@@ -325,21 +325,21 @@ def create_agent(
             else False
         )
         if (
-            (
-                "remaining_steps" not in state
-                and state["is_last_step"]
-                and has_tool_calls
-            )
-            or (
+                (
+                        "remaining_steps" not in state
+                        and state["is_last_step"]
+                        and has_tool_calls
+                )
+                or (
                 "remaining_steps" in state
                 and state["remaining_steps"] < 1
                 and all_tools_return_direct
-            )
-            or (
+        )
+                or (
                 "remaining_steps" in state
                 and state["remaining_steps"] < 2
                 and has_tool_calls
-            )
+        )
         ):
             return {
                 "messages": [

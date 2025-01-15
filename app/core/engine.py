@@ -39,6 +39,7 @@ from app.models.db import get_coon, get_engine, get_session
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
+from skills.enso import get_enso_skill
 from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,11 @@ def agent_prompt(agent: Agent) -> str:
         prompt += """\n\nWallet addresses are public information.  If someone asks for your default wallet, 
             current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
             you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
+    if agent.enso_enabled:
+        prompt += """\n\nYou are integrated to Enso API, you are able to get the token list and their information, such
+        as APY, Protocol Slug, Symbol, Address, and underlying tokens using enso_get_tokens tool. for each thread first
+        request, you should use enso_get_tokens with no input param and get the information of the available protocol slugs, 
+        symbols, addresses and APY.\n\n"""
     return prompt
 
 
@@ -147,14 +153,29 @@ def initialize_agent(aid):
 
         # Twitter skills
         if (
-            agent.twitter_skills
-            and len(agent.twitter_skills) > 0
-            and agent.twitter_config
+                agent.twitter_skills
+                and len(agent.twitter_skills) > 0
+                and agent.twitter_config
         ):
             twitter_client = tweepy.Client(**agent.twitter_config)
             for skill in agent.twitter_skills:
                 try:
                     s = get_twitter_skill(skill, twitter_client, skill_store, aid)
+                    tools.append(s)
+                except Exception as e:
+                    logger.warning(e)
+
+        # Enso skills
+        if (
+                agent.enso_skills
+                and len(agent.enso_skills) > 0
+                and agent.enso_config
+        ):
+            for skill in agent.enso_skills:
+                try:
+                    s = get_enso_skill(skill, agent.enso_config.get("api_token"),
+                                       agent.enso_config.get("main_tokens", list[str]()),
+                                       skill_store, aid)
                     tools.append(s)
                 except Exception as e:
                     logger.warning(e)
@@ -205,7 +226,7 @@ def initialize_agent(aid):
 
 
 def execute_agent(
-    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+        aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
 ) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
@@ -288,7 +309,7 @@ def execute_agent(
             resp_debug_append += agent.prompt_append
     # run
     for chunk in executor.stream(
-        {"messages": [HumanMessage(content=content)]}, stream_config
+            {"messages": [HumanMessage(content=content)]}, stream_config
     ):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
