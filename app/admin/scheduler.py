@@ -52,10 +52,10 @@ def start_scheduler():
         replace_existing=True,
     )
 
-    # Check for expiring tokens every minute
+    # Check for expiring tokens every 5 minutes
     scheduler.add_job(
         refresh_expiring_tokens,
-        trigger=CronTrigger(minute="*", timezone="UTC"),  # Run every minute
+        trigger=CronTrigger(minute="*/5", timezone="UTC"),  # Run every 5 minutes
         id="refresh_twitter_tokens",
         name="Refresh expiring Twitter tokens",
         replace_existing=True,
