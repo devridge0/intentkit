@@ -1,5 +1,22 @@
 # Changelog
 
+## 2025-01-15
+
+### New Features
+- Twitter OAuth 2.0 Authorization Code Flow with PKCE
+- Twitter access token auto refresh
+- AgentData table and AgentStore interface
+
+## 2025-01-14
+
+### New Features
+- ENSO Skills
+
+## 2025-01-12
+
+### Improvements
+- Better architecture doc: [Architecture](docs/architecture.md)
+
 ## 2025-01-09
 
 ### New Features
