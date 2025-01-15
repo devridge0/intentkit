@@ -1,17 +1,18 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlmodel import Session, update
+from sqlmodel import update
 
 from app.config.config import config
+from app.services.twitter.oauth2_refresh import refresh_expiring_tokens
 from models.agent import AgentQuota
-from models.db import get_engine, init_db
+from models.db import get_session, init_db
 
 
 def reset_daily_quotas():
     """Reset daily quotas for all agents at UTC 00:00.
     Resets message_count_daily and twitter_count_daily to 0.
     """
-    with Session(get_engine()) as session:
+    with get_session() as session:
         stmt = update(AgentQuota).values(message_count_daily=0, twitter_count_daily=0)
         session.exec(stmt)
         session.commit()
@@ -21,7 +22,7 @@ def reset_monthly_quotas():
     """Reset monthly quotas for all agents at the start of each month.
     Resets message_count_monthly and autonomous_count_monthly to 0.
     """
-    with Session(get_engine()) as session:
+    with get_session() as session:
         stmt = update(AgentQuota).values(
             message_count_monthly=0, autonomous_count_monthly=0
         )
@@ -48,6 +49,15 @@ def start_scheduler():
         trigger=CronTrigger(day=1, hour=0, minute=0, timezone="UTC"),
         id="reset_monthly_quotas",
         name="Reset monthly quotas",
+        replace_existing=True,
+    )
+
+    # Check for expiring tokens every minute
+    scheduler.add_job(
+        refresh_expiring_tokens,
+        trigger=CronTrigger(minute="*", timezone="UTC"),  # Run every minute
+        id="refresh_twitter_tokens",
+        name="Refresh expiring Twitter tokens",
         replace_existing=True,
     )
 
