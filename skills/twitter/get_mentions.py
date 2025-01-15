@@ -54,8 +54,21 @@ class TwitterGetMentions(TwitterBaseTool):
                 timespec="milliseconds"
             )
 
-            mentions = self.client.get_users_mentions(
-                id=self.client.get_me()[0].id,
+            client = self.twitter.get_client()
+            if not client:
+                return TwitterGetMentionsOutput(
+                    mentions=[],
+                    error="Failed to get Twitter client. Please check your authentication.",
+                )
+
+            user_id = self.twitter.get_id()
+            if not user_id:
+                return TwitterGetMentionsOutput(
+                    mentions=[], error="Failed to get Twitter user ID."
+                )
+
+            mentions = client.get_users_mentions(
+                id=user_id,
                 max_results=max_results,
                 since_id=since_id,
                 start_time=start_time,

@@ -41,10 +41,12 @@ class TwitterReplyTweet(TwitterBaseTool):
             Exception: If there's an error posting to the Twitter API.
         """
         try:
+            client = self.twitter.get_client()
+            if not client:
+                return "Failed to get Twitter client. Please check your authentication."
+
             # Post reply tweet using tweepy client
-            response = self.client.create_tweet(
-                text=text, in_reply_to_tweet_id=tweet_id
-            )
+            response = client.create_tweet(text=text, in_reply_to_tweet_id=tweet_id)
 
             if response.data:
                 reply_id = response.data["id"]
