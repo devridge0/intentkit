@@ -46,7 +46,9 @@ class TwitterReplyTweet(TwitterBaseTool):
                 return "Failed to get Twitter client. Please check your authentication."
 
             # Post reply tweet using tweepy client
-            response = client.create_tweet(text=text, in_reply_to_tweet_id=tweet_id)
+            response = client.create_tweet(
+                text=text, user_auth=self.twitter.use_key, in_reply_to_tweet_id=tweet_id
+            )
 
             if response.data:
                 reply_id = response.data["id"]

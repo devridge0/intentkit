@@ -46,7 +46,7 @@ class TwitterPostTweet(TwitterBaseTool):
                 return "Failed to get Twitter client. Please check your authentication."
 
             # Post tweet using tweepy client
-            response = client.create_tweet(text=text)
+            response = client.create_tweet(text=text, user_auth=self.twitter.use_key)
 
             if response.data:
                 tweet_id = response.data["id"]

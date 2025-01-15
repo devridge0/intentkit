@@ -60,6 +60,7 @@ class TwitterGetTimeline(TwitterBaseTool):
                 )
 
             timeline = client.get_home_timeline(
+                user_auth=self.twitter.use_key,
                 max_results=max_results,
                 since_id=since_id,
                 start_time=start_time,

@@ -68,6 +68,7 @@ class TwitterGetMentions(TwitterBaseTool):
                 )
 
             mentions = client.get_users_mentions(
+                user_auth=self.twitter.use_key,
                 id=user_id,
                 max_results=max_results,
                 since_id=since_id,
