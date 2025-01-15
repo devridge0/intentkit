@@ -155,14 +155,15 @@ See `example.env` for all available options.
 - `abstracts/`: Abstract classes and interfaces
 - `app/`: Core application code
   - `core/`: Core modules
+  - `services/`: Services
   - `entrypoints/`: Entrypoints means the way to interact with the agent
   - `admin/`: Admin logic
   - `config/`: Configurations
-  - `models/`: Database models
   - `api.py`: REST API server
   - `autonomous.py`: Autonomous agent scheduler
   - `twitter.py`: Twitter listener
   - `telegram.py`: Telegram listener
+- `models/`: Database models
 - `skills/`: Skill implementations
 - `skill_sets/`: Predefined skill set collections
 - `plugins/`: Reserved for Plugin implementations
