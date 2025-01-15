@@ -3,7 +3,8 @@ from typing import Literal, Type
 import httpx
 from pydantic import BaseModel, Field
 
-from .base import EnsoBaseTool, base_url
+from skills.enso.base import EnsoBaseTool, base_url
+
 
 # Actual Enso output types
 # class UnderlyingToken(BaseModel):
@@ -148,6 +149,10 @@ class EnsoGetTokens(EnsoBaseTool):
                         result.res.append(TokenResponseCompact(**item))
 
                 return result
+            except httpx.RequestError as req_err:
+                return EnsoGetTokensOutput(res=None, error=f"Request error: {req_err}")
+            except httpx.HTTPStatusError as http_err:
+                return EnsoGetTokensOutput(res=None, error=f"HTTP error: {http_err}")
             except Exception as e:
                 return EnsoGetTokensOutput(res=None, error=str(e))
 
