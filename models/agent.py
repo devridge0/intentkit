@@ -82,12 +82,15 @@ class Agent(SQLModel, table=True):
                     if getattr(self, field) is not None:
                         setattr(existing_agent, field, getattr(self, field))
             db.add(existing_agent)
+            db.commit()
+            db.refresh(existing_agent)
+            return existing_agent
         else:
             # Create new agent
             db.add(self)
-        db.commit()
-        db.refresh(self)
-        return self
+            db.commit()
+            db.refresh(self)
+            return self
 
 
 class AgentData(SQLModel, table=True):
