@@ -52,7 +52,14 @@ class TwitterGetTimeline(TwitterBaseTool):
             # Always get timeline for the last day
             start_time = datetime.now(timezone.utc) - timedelta(days=1)
 
-            timeline = self.client.get_home_timeline(
+            client = self.twitter.get_client()
+            if not client:
+                return TwitterGetTimelineOutput(
+                    tweets=[],
+                    error="Failed to get Twitter client. Please check your authentication.",
+                )
+
+            timeline = client.get_home_timeline(
                 max_results=max_results,
                 since_id=since_id,
                 start_time=start_time,

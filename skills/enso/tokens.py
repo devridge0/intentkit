@@ -46,7 +46,9 @@ from skills.enso.base import EnsoBaseTool, base_url
 
 class UnderlyingTokenCompact(BaseModel):
     address: str | None = Field(None, description="The address of the token")
-    type: str | None = Field(None, description="The type of the token (e.g., base token)")
+    type: str | None = Field(
+        None, description="The type of the token (e.g., base token)"
+    )
     name: str | None = Field(None, description="The name of the token")
     symbol: str | None = Field(None, description="The symbol of the token")
 
@@ -55,20 +57,33 @@ class TokenResponseCompact(BaseModel):
     name: str | None = Field(None, description="The name of the token")
     symbol: str | None = Field(None, description="The symbol of the token")
     address: str | None = Field(None, description="The address of the token")
-    primaryAddress: str | None = Field(None, description="The primary address associated with the token")
-    type: str | None = Field(None, description="The type of the token (e.g., defi, base, etc.)")
-    apy: float | None = Field(None, description="The annual percentage yield (APY) for the token")
-    underlyingTokens: list[UnderlyingTokenCompact] | None = Field(None, description="List of underlying tokens")
+    primaryAddress: str | None = Field(
+        None, description="The primary address associated with the token"
+    )
+    type: str | None = Field(
+        None, description="The type of the token (e.g., defi, base, etc.)"
+    )
+    apy: float | None = Field(
+        None, description="The annual percentage yield (APY) for the token"
+    )
+    underlyingTokens: list[UnderlyingTokenCompact] | None = Field(
+        None, description="List of underlying tokens"
+    )
 
 
 class EnsoGetTokensInput(BaseModel):
     chain_id: int | None = Field(1, description="The blockchain chain ID")
-    protocol_slug: str | None = Field(None,
-                                      description="The protocol slug (e.g., 'aave-v2', 'aave-v3', 'compound-v2')")
-    token_type: Literal["defi", "base", None] = Field(None,
-                                                      description="The type of the token (e.g., 'defi', 'base')")
-    underlying_tokens: str | list[str] | None = Field(1,
-                                                      description="Underlying tokens (e.g. 0xdAC17F958D2ee523a2206206994597C13D831ec7)")
+    protocol_slug: str | None = Field(
+        None,
+        description="The protocol slug (e.g., 'aave-v2', 'aave-v3', 'compound-v2')",
+    )
+    token_type: Literal["defi", "base", None] = Field(
+        None, description="The type of the token (e.g., 'defi', 'base')"
+    )
+    underlying_tokens: str | list[str] | None = Field(
+        1,
+        description="Underlying tokens (e.g. 0xdAC17F958D2ee523a2206206994597C13D831ec7)",
+    )
 
 
 class EnsoGetTokensOutput(BaseModel):
@@ -95,7 +110,8 @@ class EnsoGetTokens(EnsoBaseTool):
     name: str = "enso_get_tokens"
     description: str = (
         "Enso Finance Token Information Tool: Retrieves detailed token information from the Enso Finance API, "
-        "including APY, symbol, address, protocol slug, token type, and underlying tokens.")
+        "including APY, symbol, address, protocol slug, token type, and underlying tokens."
+    )
     args_schema: Type[BaseModel] = EnsoGetTokensInput
 
     def _run(self, **kwargs) -> EnsoGetTokensOutput:
@@ -117,7 +133,7 @@ class EnsoGetTokens(EnsoBaseTool):
         params = {
             # TODD: add pagination, to cover all the tokens
             "page": 1,
-            "includeMetadata": "true"
+            "includeMetadata": "true",
         }
 
         if kwargs.get("chain_id"):
