@@ -18,36 +18,32 @@ This project is currently in alpha stage and is not recommended for production u
 ## Architecture
 
 ```
-                                                                                                                    
-                                                                                                                    
-                                                                                                                    
-                                         Entrypoints                                                                
-                               │                             │                                                      
-                               │   Twitter/Telegram & more   │                                                      
-                               └──────────────┬──────────────┘                                                      
-                                              │                                                                     
-      Storage:  ────┐                         │                      ┌──── Skills:                                  
-                    │                         │                      │                                              
-      Agent Config  │         ┌───────────────▼────────────────┐     │  Chain Integration (EVM,solana,etc...)       
-                    │         │                                │     │                                              
-      Credentials   │         │                                │     │  Wallet Management                           
-                    │         │           The  Agent           │     │                                              
-      Personality   │         │                                │     │  On-Chain Actions                            
-                    │         │                                │     │                      More and More...        
-      Memory        │         │      Powered by LangGraph      │     │  Internet Search                             
-                    │         │                                │     │                                              
-      Skill State   │         └────────────────────────────────┘     │  Image Processing                            
-                ────┘                                                └────                                          
-                                                                                                                    
-                                                                                                                    
-                                 ┌──────────────────────────┐                                                       
-                                 │                          │                                                       
-                                 │  Agent Config & Memory   │                                                       
-                                 │                          │                                                       
-                                 └──────────────────────────┘                                                       
-                                                                                                                    
-                                                                                                                    
-                                                                                                                    
+                                                                                                       
+                                 Entrypoints                                                           
+                       │                             │                                                 
+                       │   Twitter/Telegram & more   │                                                 
+                       └──────────────┬──────────────┘                                                 
+                                      │                                                                
+  Storage:  ────┐                     │                      ┌──── Skills:                             
+                │                     │                      │                                         
+  Agent Config  │     ┌───────────────▼────────────────┐     │  Chain Integration (EVM,solana,etc...)  
+                │     │                                │     │                                         
+  Credentials   │     │                                │     │  Wallet Management                      
+                │     │           The  Agent           │     │                                         
+  Personality   │     │                                │     │  On-Chain Actions                       
+                │     │                                │     │                                         
+  Memory        │     │      Powered by LangGraph      │     │  Internet Search                        
+                │     │                                │     │                                         
+  Skill State   │     └────────────────────────────────┘     │  Image Processing                       
+            ────┘                                            └────                                     
+                                                                                                       
+                                                                More and More...                       
+                         ┌──────────────────────────┐                                                  
+                         │                          │                                                  
+                         │  Agent Config & Memory   │                                                  
+                         │                          │                                                  
+                         └──────────────────────────┘                                                  
+                                                                                                       
 ```
 
 The architecture is a simplified view, and more details can be found in the [Architecture](docs/architecture.md) section.

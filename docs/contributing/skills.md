@@ -4,7 +4,26 @@ This guide will help you create new skills for IntentKit. Skills are the buildin
 
 ## Overview
 
+Skill can be enabled in the Agent configuration. The Agent is aware of all the skills it possesses and will spontaneously use them at appropriate times, utilizing the output of the skills for subsequent reasoning or decision-making. The Agent can call multiple skills in a single interaction based on the needs.
+
 A skill in IntentKit is a specialized tool that inherits from `IntentKitSkill` (which extends LangChain's `BaseTool`). Each skill provides specific functionality that agents can use to interact with external services or perform specific tasks.
+
+## Where to add skills
+
+The skills are all in the `skills/` or `skill_sets/` directory. In the future, it may also be in the `skills/` or `skill_sets/` directory of the plugin root. Overall, we categorize as follows:
+* Common Skills: Skills located in the skills/common/ directory
+* First Class Skills: Skills found in other folders under skills/
+* Skill Sets: Located in the skill-sets directory
+* Plugin Skills: Located in the plugin repositories
+
+We need to choose the placement of skills so that they can be configured in the Agent settings and loaded.
+
+We can judge based on the following principles:
+1. If the basic capabilities provided by IntentKitSkill are sufficient, then it can be placed in common skills.
+2. If additional initialization steps are needed (such as initializing an SDK client) or extra configuration information is required, then it can be placed in skill sets, which support additional configuration and use of that configuration for extra initialization.
+3. If new Python dependencies need to be introduced, then they should be placed in a plugin.
+4. First Class Skills can support any customizations because they require adding an extra initialization code segment in app/core/engine, while the first three only need the skill code itself. When a skills category becomes common enough, we can promote it to First Class Skills.
+
 
 ## Basic Structure
 
