@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 
 from skills.enso.base import EnsoBaseTool, base_url
 
-
 # Actual Enso output types
 # class UnderlyingToken(BaseModel):
 #     address: str | None = Field(None, description="The address of the token")
