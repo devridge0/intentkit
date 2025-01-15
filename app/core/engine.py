@@ -35,6 +35,7 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
+from app.services.twitter.oauth2 import oauth2_user_handler
 from models.agent import Agent, AgentData
 from models.db import get_coon, get_session
 from skill_sets import get_skill_set
@@ -170,7 +171,10 @@ def initialize_agent(aid):
             except Exception as e:
                 logger.warning(e)
     # Twitter skills
-    if agent.twitter_skills and len(agent.twitter_skills) > 0 and agent.twitter_config:
+    twitter_prompt = ""
+    if agent.twitter_skills and len(agent.twitter_skills) > 0:
+        if not agent.twitter_config:
+            agent.twitter_config = {}
         try:
             twitter_client = TwitterClient(agent_store, agent.twitter_config)
             if not twitter_client.need_auth:
@@ -189,7 +193,8 @@ def initialize_agent(aid):
                             f"Failed to initialize Twitter skill {skill}: {e}"
                         )
             else:
-                logger.warning(f"Twitter client needs authentication for agent {aid}")
+                logger.info(f"Twitter client needs authentication for agent {aid}")
+                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {oauth2_user_handler.get_authorization_url()}"
         except Exception as e:
             logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
 
@@ -217,6 +222,7 @@ def initialize_agent(aid):
 
     # finally, setup the system prompt
     prompt = agent_prompt(agent)
+    prompt += twitter_prompt
     prompt_array = [
         ("system", prompt),
         ("placeholder", "{messages}"),

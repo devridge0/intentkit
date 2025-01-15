@@ -11,7 +11,17 @@ oauth2_user_handler = tweepy.OAuth2UserHandler(
     client_id=config.twitter_oauth2_client_id,
     client_secret=config.twitter_oauth2_client_secret,
     redirect_uri=config.twitter_oauth2_redirect_uri,
-    scope=["tweet.read", "tweet.write", "users.read", "offline.access"],
+    scope=[
+        "tweet.read",
+        "tweet.write",
+        "users.read",
+        "offline.access",
+        "follows.read",
+        "follows.write",
+        "like.read",
+        "like.write",
+        "media.write",
+    ],
 )
 
 print(oauth2_user_handler.get_authorization_url())
