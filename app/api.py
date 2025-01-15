@@ -17,7 +17,7 @@ from app.admin.scheduler import start_scheduler
 from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
-from app.services.twitter.oauth2 import router as twitter_router
+from app.services.twitter.oauth2_callback import router as twitter_router
 from models.db import init_db
 
 # init logger

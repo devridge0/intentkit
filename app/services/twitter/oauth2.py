@@ -1,17 +1,9 @@
 """Twitter OAuth2 authentication module."""
 
-from datetime import datetime, timezone
-
-import tweepy
-from fastapi import APIRouter, Depends, HTTPException
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
-from sqlmodel import Session, select
-from starlette.responses import JSONResponse
 
 from app.config.config import config
-from models.agent import AgentData
-from models.db import get_db
 
 
 # this class is forked from:
@@ -62,8 +54,6 @@ class OAuth2UserHandler(OAuth2Session):
         )
 
 
-router = APIRouter(prefix="/callback/auth", tags=["twitter"])
-
 # Initialize Twitter OAuth2 client
 oauth2_user_handler = OAuth2UserHandler(
     client_id=config.twitter_oauth2_client_id,
@@ -93,71 +83,3 @@ def get_authorization_url(agent_id: str) -> str:
         Authorization URL with agent_id as state parameter
     """
     return oauth2_user_handler.get_authorization_url(agent_id)
-
-
-@router.get("/twitter")
-async def twitter_oauth_callback(state: str, code: str, db: Session = Depends(get_db)):
-    """Handle Twitter OAuth2 callback.
-
-    This endpoint is called by Twitter after the user authorizes the application.
-    It exchanges the authorization code for access and refresh tokens, then stores
-    them in the database.
-
-    Args:
-        state: Agent ID from authorization request
-        code: Authorization code from Twitter
-        db: Database session from FastAPI dependency injection
-
-    Returns:
-        JSONResponse with success message
-
-    Raises:
-        HTTPException: If state/code is missing or token exchange fails
-    """
-    try:
-        if not state or not code:
-            raise HTTPException(
-                status_code=400, detail="Missing state or code parameter"
-            )
-
-        # State is the agent ID
-        agent_id = state
-
-        # Get access token
-        url = f"{config.twitter_oauth2_redirect_uri}?state={agent_id}&code={code}"
-        token = oauth2_user_handler.get_token(url)
-
-        # Get agent data from database
-        agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
-
-        # Create agent data if it doesn't exist
-        if not agent_data:
-            agent_data = AgentData(id=agent_id)
-            db.add(agent_data)
-
-        # Update token information
-        agent_data.twitter_access_token = token["access_token"]
-        agent_data.twitter_refresh_token = token["refresh_token"]
-        agent_data.twitter_access_token_expires_at = datetime.fromtimestamp(
-            token["expires_at"], tz=timezone.utc
-        )
-
-        # Get user info from Twitter
-        client = tweepy.Client(bearer_token=token["access_token"])
-        me = client.get_me(user_auth=False)
-        if me and me.data:
-            agent_data.twitter_id = str(me.data.id)
-            agent_data.twitter_username = me.data.username
-            agent_data.twitter_name = me.data.name
-
-        # Commit changes
-        db.commit()
-        db.refresh(agent_data)
-
-        return JSONResponse(
-            content={"message": "Authentication successful, you can close this window"},
-            status_code=200,
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))

@@ -11,6 +11,9 @@ class TwitterABC(ABC):
     through a Tweepy client.
     """
 
+    use_key = False
+    need_auth = True
+
     @abstractmethod
     def get_client(self) -> Optional[Client]:
         """Get a configured Tweepy client.
