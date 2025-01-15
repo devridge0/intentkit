@@ -1,10 +1,9 @@
-"""IntentKit REST API Server.
+"""API server module.
 
-This module implements the REST API for IntentKit, providing endpoints for:
-- Chat
-- Internal
-- Admin
-- Health monitoring
+This module initializes and configures the FastAPI application,
+including routers, middleware, and startup/shutdown events.
+
+The API server provides endpoints for agent execution and management.
 """
 
 import logging
@@ -36,11 +35,13 @@ async def lifespan(app: FastAPI):
     Args:
         app: FastAPI application instance
     """
-    # This part will run before the API server start
-    # Initialize infrastructure
+    # Initialize database
     init_db(**config.db)
-    logger.info("API server start")
+
+    # Start scheduler for periodic tasks
     scheduler = start_scheduler()
+
+    logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown
     logger.info("Cleaning up and shutdown...")
