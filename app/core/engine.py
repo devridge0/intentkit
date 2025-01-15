@@ -224,12 +224,16 @@ def initialize_agent(aid):
     prompt = agent_prompt(agent)
     if twitter_prompt:
         prompt += twitter_prompt
+    # Escape curly braces in the prompt
+    escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
     prompt_array = [
-        ("system", prompt),
+        ("system", escaped_prompt),
         ("placeholder", "{messages}"),
     ]
     if agent.prompt_append:
-        prompt_array.append(("system", agent.prompt_append))
+        # Escape any curly braces in prompt_append
+        escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
+        prompt_array.append(("system", escaped_append))
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
     def formatted_prompt(state: AgentState):
