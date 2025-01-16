@@ -74,16 +74,37 @@ class EnsoGetRouteShortcutInput(BaseModel):
     )
 
 
+class Transaction(BaseModel):
+    data: str = Field(None, description="Data of the transaction.")
+    to: str = Field(None, description="Ethereum address of the receiver of the transaction.")
+    from_: str = Field(None, description="Ethereum address of the sender of the transaction.")
+    value: str = Field(None, description="Amount of token to send.")
+
+
+class Route(BaseModel):
+    tokenIn: list[str] | None = Field(
+        None, description="Ethereum address of the token to swap or enter into a position from."
+    )
+    tokenOut: list[str] | None = Field(
+        None, description="Ethereum address of the token to swap or enter into a position to."
+    )
+    protocol: str | None = Field(None, description="Protocol used for finding route.")
+    action: str | None = Field(None, description="Action has been done for route (e.g. swap).")
+    internalRoutes: list[str] | None = Field(None, description="Internal routes needed for the route.")
+
+
 class RouteShortcutGetTransaction(BaseModel):
     """
     Output schema for the `/api/v1/shortcuts/route` GET endpoint.
     """
-    gas: str = Field(None, description="Gas amount for the transaction.")
-    amountOut: str | dict = Field(None, description="The calculated amountOut as an object.")
-    priceImpact: float | None = Field(None, description="Price impact in basis points, null if USD price is not found.")
-    feeAmount: list[str] = Field(None, description="An array of the fee amounts collected for each tokenIn.")
-    createdAt: int = Field(None, description="Block number when the transaction was created.")
-    route: list[dict] = Field(None, description="The route that the shortcut will use.")
+    gas: str | None = Field(None, description="Gas amount for the transaction.")
+    amountOut: str | dict | None = Field(None, description="The final calculated amountOut as an object.")
+    priceImpact: float | None = Field(None,
+                                      description="Price impact in basis points, it is null if USD price is not found.")
+    feeAmount: list[str] | None = Field(None, description="An array of the fee amounts collected for each tokenIn.")
+    createdAt: int | None = Field(None, description="Block number the transaction was created on.")
+    tx: Transaction | None = Field(None, description="The tx object to use in `ethers`.")
+    route: list[Route] | None = Field(None, description="Route that the shortcut will use.")
 
 
 class EnsoGetRouteShortcutOutput(BaseModel):
