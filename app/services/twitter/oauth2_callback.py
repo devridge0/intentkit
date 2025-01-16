@@ -10,7 +10,7 @@ from starlette.responses import JSONResponse
 from app.config.config import config
 from app.core.engine import initialize_agent
 from app.services.twitter.oauth2 import oauth2_user_handler
-from models.agent import AgentData
+from models.agent import Agent, AgentData
 from models.db import get_db
 
 router = APIRouter(prefix="/callback/auth", tags=["twitter"])
@@ -58,10 +58,15 @@ async def twitter_oauth_callback(
             )
 
         agent_id = state
+        agent = db.exec(select(Agent).where(Agent.id == agent_id)).first()
+        if not agent:
+            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+
         agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
 
         if not agent_data:
-            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+            agent_data = AgentData(id=agent_id)
+            db.add(agent_data)
 
         # Exchange code for tokens
         authorization_response = (
@@ -72,13 +77,13 @@ async def twitter_oauth_callback(
         # Store tokens in database
         agent_data.twitter_access_token = token["access_token"]
         agent_data.twitter_refresh_token = token["refresh_token"]
-        agent_data.twitter_token_expires_at = datetime.fromtimestamp(
+        agent_data.twitter_access_token_expires_at = datetime.fromtimestamp(
             token["expires_at"], tz=timezone.utc
         )
 
         # Get user info
         client = tweepy.Client(bearer_token=token["access_token"])
-        me = client.get_me()
+        me = client.get_me(user_auth=False)
 
         if me and me.data:
             agent_data.twitter_id = me.data.id

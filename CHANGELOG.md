@@ -1,5 +1,13 @@
 # Changelog
 
+## 2025-01-16
+
+### New Features
+- Twitter Follow User
+- Twitter Like Tweet
+- Twitter Retweet
+- Twitter Search Tweets
+
 ## 2025-01-15
 
 ### New Features
