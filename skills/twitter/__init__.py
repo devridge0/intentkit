@@ -4,10 +4,14 @@ from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
 from abstracts.twitter import TwitterABC
 from skills.twitter.base import TwitterBaseTool
+from skills.twitter.follow_user import TwitterFollowUser
 from skills.twitter.get_mentions import TwitterGetMentions
 from skills.twitter.get_timeline import TwitterGetTimeline
+from skills.twitter.like_tweet import TwitterLikeTweet
 from skills.twitter.post_tweet import TwitterPostTweet
 from skills.twitter.reply_tweet import TwitterReplyTweet
+from skills.twitter.retweet import TwitterRetweet
+from skills.twitter.search_tweets import TwitterSearchTweets
 
 
 def get_twitter_skill(
@@ -46,6 +50,22 @@ def get_twitter_skill(
         )
     elif name == "get_timeline":
         return TwitterGetTimeline(
+            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+        )
+    elif name == "follow_user":
+        return TwitterFollowUser(
+            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+        )
+    elif name == "like_tweet":
+        return TwitterLikeTweet(
+            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+        )
+    elif name == "retweet":
+        return TwitterRetweet(
+            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+        )
+    elif name == "search_tweets":
+        return TwitterSearchTweets(
             twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
         )
     else:

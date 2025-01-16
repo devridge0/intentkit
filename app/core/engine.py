@@ -194,7 +194,7 @@ def initialize_agent(aid):
                         )
             else:
                 logger.info(f"Twitter client needs authentication for agent {aid}")
-                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {get_authorization_url(aid)}"
+                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {get_authorization_url(aid)} \nRemember, this link will be expired. So you can only use this one, not use other links in the conversation history.\nDisplay links on separate lines, with a blank line before and after, not use markdown.\n\n"
         except Exception as e:
             logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
 
@@ -222,14 +222,14 @@ def initialize_agent(aid):
 
     # finally, setup the system prompt
     prompt = agent_prompt(agent)
-    if twitter_prompt:
-        prompt += twitter_prompt
     # Escape curly braces in the prompt
     escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
     prompt_array = [
         ("system", escaped_prompt),
         ("placeholder", "{messages}"),
     ]
+    if twitter_prompt:
+        prompt_array.append(("system", twitter_prompt))
     if agent.prompt_append:
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
