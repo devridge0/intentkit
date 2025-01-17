@@ -38,7 +38,7 @@ class EnsoGetApproveOutput(BaseModel):
     error: str | None = Field(None, description="Error message if wallet spend approve fails.")
 
 
-class EnsoGetApprove(EnsoBaseTool):
+class EnsoGetWalletApprove(EnsoBaseTool):
     """
     This tool allows to approve spending to enso router associated with a specific wallet
     and blockchain network.
@@ -134,7 +134,7 @@ class EnsoGetApprovalsOutput(BaseModel):
     error: str | None = Field(None, description="Error message if approvals retrieval fails.")
 
 
-class EnsoGetApprovals(EnsoBaseTool):
+class EnsoGetWalletApprovals(EnsoBaseTool):
     """
     This tool allows querying for first 50 token spend approvals associated with a specific wallet
     and blockchain network.
@@ -227,7 +227,7 @@ class EnsoGetBalancesOutput(BaseModel):
     error: str | None = Field(None, description="Error message if the balance retrieval fails.")
 
 
-class EnsoGetBalances(EnsoBaseTool):
+class EnsoGetWalletBalances(EnsoBaseTool):
     """
     This tool allows querying for first 20 token balances of a specific wallet
     and blockchain network.

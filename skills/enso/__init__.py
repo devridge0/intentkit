@@ -2,7 +2,11 @@
 from abstracts.skill import SkillStoreABC
 from skills.enso.base import EnsoBaseTool
 from skills.enso.tokens import EnsoGetTokens
-from skills.enso.wallet import EnsoGetApprovals, EnsoGetApprove, EnsoGetBalances
+from skills.enso.wallet import (
+    EnsoGetWalletApprovals,
+    EnsoGetWalletApprove,
+    EnsoGetWalletBalances,
+)
 
 
 def get_enso_skill(
@@ -14,11 +18,11 @@ def get_enso_skill(
     if name == "get_tokens":
         return EnsoGetTokens(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
     if name == "get_wallet_approve":
-        return EnsoGetApprove(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletApprove(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
     if name == "get_wallet_approvals":
-        return EnsoGetApprovals(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletApprovals(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
     if name == "get_wallet_balances":
-        return EnsoGetBalances(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletBalances(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
 
     else:
         raise ValueError(f"Unknown Enso skill: {name}")
