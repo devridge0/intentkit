@@ -13,7 +13,7 @@ def get_enso_skill(
 
     if name == "get_tokens":
         return EnsoGetTokens(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
-    if name == "get_route":
+    if name == "get_route_shortcut":
         return EnsoGetRouteShortcut(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
 
     else:
