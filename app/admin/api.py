@@ -46,52 +46,48 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     # Get the latest agent from create_or_update
     latest_agent = agent.create_or_update(db)
 
-    # Send Slack notification only for new agents
+    # Send Slack notification
     total_agents = db.exec(select(func.count()).select_from(Agent)).one()
-    if (
-        total_agents == 1
-        or not db.exec(select(Agent).filter(Agent.id == agent.id)).first()
-    ):
-        send_slack_message(
-            "New agent created ",
-            attachments=[
-                {
-                    "color": "good",
-                    "fields": [
-                        {"title": "ENV", "short": True, "value": config.env},
-                        {"title": "Total", "short": True, "value": total_agents},
-                        {"title": "ID", "short": True, "value": latest_agent.id},
-                        {"title": "Name", "short": True, "value": latest_agent.name},
-                        {"title": "Model", "short": True, "value": latest_agent.model},
-                        {
-                            "title": "Autonomous",
-                            "short": True,
-                            "value": str(latest_agent.autonomous_enabled),
-                        },
-                        {
-                            "title": "Twitter",
-                            "short": True,
-                            "value": str(latest_agent.twitter_enabled),
-                        },
-                        {
-                            "title": "Telegram",
-                            "short": True,
-                            "value": str(latest_agent.telegram_enabled),
-                        },
-                        {
-                            "title": "CDP Enabled",
-                            "short": True,
-                            "value": str(latest_agent.cdp_enabled),
-                        },
-                        {
-                            "title": "CDP Network",
-                            "short": True,
-                            "value": latest_agent.cdp_network_id or "Default",
-                        },
-                    ],
-                }
-            ],
-        )
+    send_slack_message(
+        "New agent created ",
+        attachments=[
+            {
+                "color": "good",
+                "fields": [
+                    {"title": "ENV", "short": True, "value": config.env},
+                    {"title": "Total", "short": True, "value": total_agents},
+                    {"title": "ID", "short": True, "value": latest_agent.id},
+                    {"title": "Name", "short": True, "value": latest_agent.name},
+                    {"title": "Model", "short": True, "value": latest_agent.model},
+                    {
+                        "title": "Autonomous",
+                        "short": True,
+                        "value": str(latest_agent.autonomous_enabled),
+                    },
+                    {
+                        "title": "Twitter",
+                        "short": True,
+                        "value": str(latest_agent.twitter_enabled),
+                    },
+                    {
+                        "title": "Telegram",
+                        "short": True,
+                        "value": str(latest_agent.telegram_enabled),
+                    },
+                    {
+                        "title": "CDP Enabled",
+                        "short": True,
+                        "value": str(latest_agent.cdp_enabled),
+                    },
+                    {
+                        "title": "CDP Network",
+                        "short": True,
+                        "value": latest_agent.cdp_network_id or "Default",
+                    },
+                ],
+            }
+        ],
+    )
 
     # Mask sensitive data in response
     latest_agent.cdp_wallet_data = "forbidden"
