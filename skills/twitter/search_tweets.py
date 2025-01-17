@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from pydantic import BaseModel, Field
@@ -71,11 +70,6 @@ class TwitterSearchTweets(TwitterBaseTool):
             last = last or {}
             since_id = last.get("since_id")
 
-            # Always get tweets for the last day
-            start_time = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat(
-                timespec="milliseconds"
-            )
-
             tweet_fields = [
                 "created_at",
                 "author_id",
@@ -87,7 +81,6 @@ class TwitterSearchTweets(TwitterBaseTool):
                 query=query,
                 user_auth=self.twitter.use_key,
                 since_id=since_id,
-                start_time=start_time,
                 expansions=[
                     "referenced_tweets.id",
                     "attachments.media_keys",
