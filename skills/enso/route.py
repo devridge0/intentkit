@@ -11,9 +11,7 @@ class EnsoGetRouteShortcutInput(BaseModel):
     fromAddress: str = Field(
         description="Ethereum address of the wallet to send the transaction from (It could be an EoA, or a Smart Wallet)."
     )
-    amountIn: list[int] = Field(
-        description="Amount of tokenIn to swap in wei."
-    )
+    amountIn: list[int] = Field(description="Amount of tokenIn to swap in wei.")
     tokenIn: list[str] = Field(
         description="Ethereum address of the token to swap or enter into a position from (For ETH, use 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)."
     )
@@ -22,89 +20,105 @@ class EnsoGetRouteShortcutInput(BaseModel):
     )
     chainId: int | None = Field(
         1,
-        description="(Optional) Chain ID of the network to execute the transaction on."
+        description="(Optional) Chain ID of the network to execute the transaction on.",
     )
     routingStrategy: Literal["router", "delegate", "ensowallet", None] = Field(
         None,
-        description="(Optional) Routing strategy to use. Options: 'ensowallet', 'router', 'delegate'."
+        description="(Optional) Routing strategy to use. Options: 'ensowallet', 'router', 'delegate'.",
     )
     receiver: str | None = Field(
-        None,
-        description="(Optional) Ethereum address of the receiver of the tokenOut."
+        None, description="(Optional) Ethereum address of the receiver of the tokenOut."
     )
     spender: str | None = Field(
-        None,
-        description="(Optional) Ethereum address of the spender of the tokenIn."
+        None, description="(Optional) Ethereum address of the spender of the tokenIn."
     )
     amountOut: list[str] | None = Field(
-        None,
-        description="(Optional) Amount of tokenOut to receive."
+        None, description="(Optional) Amount of tokenOut to receive."
     )
     minAmountOut: list[str] | None = Field(
         None,
-        description="(Optional) Minimum amount out in wei. If specified, slippage should not be specified."
+        description="(Optional) Minimum amount out in wei. If specified, slippage should not be specified.",
     )
     slippage: str | None = Field(
         None,
-        description="(Optional) Slippage in basis points (1/10000). If specified, minAmountOut should not be specified."
+        description="(Optional) Slippage in basis points (1/10000). If specified, minAmountOut should not be specified.",
     )
     fee: list[str] | None = Field(
         None,
-        description="(Optional) Fee in basis points (1/10000) for each amountIn value."
+        description="(Optional) Fee in basis points (1/10000) for each amountIn value.",
     )
     feeReceiver: str | None = Field(
         None,
-        description="(Optional) Ethereum address that will receive the collected fee if fee was provided."
+        description="(Optional) Ethereum address that will receive the collected fee if fee was provided.",
     )
     disableRFQs: bool | None = Field(
-        None,
-        description="(Optional) Exclude RFQ sources from routes."
+        None, description="(Optional) Exclude RFQ sources from routes."
     )
     ignoreAggregators: list[str] | None = Field(
-        None,
-        description="(Optional) List of swap aggregators to ignore."
+        None, description="(Optional) List of swap aggregators to ignore."
     )
     ignoreStandards: list[str] | None = Field(
-        None,
-        description="(Optional) List of standards to ignore."
+        None, description="(Optional) List of standards to ignore."
     )
     variableEstimates: dict | None = Field(
-        None,
-        description="Variable estimates for the route."
+        None, description="Variable estimates for the route."
     )
 
 
 class Transaction(BaseModel):
     data: str = Field(None, description="Data of the transaction.")
-    to: str = Field(None, description="Ethereum address of the receiver of the transaction.")
-    from_: str = Field(None, description="Ethereum address of the sender of the transaction.")
+    to: str = Field(
+        None, description="Ethereum address of the receiver of the transaction."
+    )
+    from_: str = Field(
+        None, description="Ethereum address of the sender of the transaction."
+    )
     value: str = Field(None, description="Amount of token to send.")
 
 
 class Route(BaseModel):
     tokenIn: list[str] | None = Field(
-        None, description="Ethereum address of the token to swap or enter into a position from."
+        None,
+        description="Ethereum address of the token to swap or enter into a position from.",
     )
     tokenOut: list[str] | None = Field(
-        None, description="Ethereum address of the token to swap or enter into a position to."
+        None,
+        description="Ethereum address of the token to swap or enter into a position to.",
     )
     protocol: str | None = Field(None, description="Protocol used for finding route.")
-    action: str | None = Field(None, description="Action has been done for route (e.g. swap).")
-    internalRoutes: list[str] | None = Field(None, description="Internal routes needed for the route.")
+    action: str | None = Field(
+        None, description="Action has been done for route (e.g. swap)."
+    )
+    internalRoutes: list[str] | None = Field(
+        None, description="Internal routes needed for the route."
+    )
 
 
 class RouteShortcutGetTransaction(BaseModel):
     """
     Output schema for the `/api/v1/shortcuts/route` GET endpoint.
     """
+
     gas: str | None = Field(None, description="Gas amount for the transaction.")
-    amountOut: str | dict | None = Field(None, description="The final calculated amountOut as an object.")
-    priceImpact: float | None = Field(None,
-                                      description="Price impact in basis points, it is null if USD price is not found.")
-    feeAmount: list[str] | None = Field(None, description="An array of the fee amounts collected for each tokenIn.")
-    createdAt: int | None = Field(None, description="Block number the transaction was created on.")
-    tx: Transaction | None = Field(None, description="The tx object to use in `ethers`.")
-    route: list[Route] | None = Field(None, description="Route that the shortcut will use.")
+    amountOut: str | dict | None = Field(
+        None, description="The final calculated amountOut as an object."
+    )
+    priceImpact: float | None = Field(
+        None,
+        description="Price impact in basis points, it is null if USD price is not found.",
+    )
+    feeAmount: list[str] | None = Field(
+        None, description="An array of the fee amounts collected for each tokenIn."
+    )
+    createdAt: int | None = Field(
+        None, description="Block number the transaction was created on."
+    )
+    tx: Transaction | None = Field(
+        None, description="The tx object to use in `ethers`."
+    )
+    route: list[Route] | None = Field(
+        None, description="Route that the shortcut will use."
+    )
 
 
 class EnsoGetRouteShortcutOutput(BaseModel):
@@ -128,8 +142,14 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     description: str = "This tool optimizes and performs DeFi swaps, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
 
-    def _run(self, fromAddress: str, amountIn: list[int], tokenIn: list[str], tokenOut: list[str],
-             **kwargs) -> EnsoGetRouteShortcutOutput:
+    def _run(
+        self,
+        fromAddress: str,
+        amountIn: list[int],
+        tokenIn: list[str],
+        tokenOut: list[str],
+        **kwargs,
+    ) -> EnsoGetRouteShortcutOutput:
         """
         Run the tool to get swap route information.
 
@@ -150,32 +170,56 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
         }
 
         # Prepare query parameters
-        params = EnsoGetRouteShortcutInput(fromAddress=fromAddress, amountIn=amountIn, tokenIn=tokenIn,
-                                           tokenOut=tokenOut, **kwargs)
+        params = EnsoGetRouteShortcutInput(
+            fromAddress=fromAddress,
+            amountIn=amountIn,
+            tokenIn=tokenIn,
+            tokenOut=tokenOut,
+            **kwargs,
+        )
 
         if params.fromAddress == "0xYourWalletAddress":
             raise ToolException("the ethereum from address is required")
 
         with httpx.Client() as client:
             try:
-                response = client.get(url, headers=headers, params=params.model_dump(exclude_none=True))
+                response = client.get(
+                    url, headers=headers, params=params.model_dump(exclude_none=True)
+                )
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
 
                 # Parse and return the response as a RouteShortcutGetTransaction object
-                return EnsoGetRouteShortcutOutput(res=RouteShortcutGetTransaction(**response.json()), error=None)
+                return EnsoGetRouteShortcutOutput(
+                    res=RouteShortcutGetTransaction(**response.json()), error=None
+                )
 
             except httpx.RequestError as req_err:
-                return EnsoGetRouteShortcutOutput(res=None, error=f"Request error: {req_err}")
+                return EnsoGetRouteShortcutOutput(
+                    res=None, error=f"Request error: {req_err}"
+                )
             except httpx.HTTPStatusError as http_err:
-                return EnsoGetRouteShortcutOutput(res=None, error=f"HTTP error: {http_err}")
+                return EnsoGetRouteShortcutOutput(
+                    res=None, error=f"HTTP error: {http_err}"
+                )
             except Exception as e:
                 return EnsoGetRouteShortcutOutput(res=None, error=str(e))
 
-    async def _arun(self, fromAddress: str, amountIn: list[int], tokenIn: list[str], tokenOut: list[str],
-                    **kwargs) -> EnsoGetRouteShortcutOutput:
+    async def _arun(
+        self,
+        fromAddress: str,
+        amountIn: list[int],
+        tokenIn: list[str],
+        tokenOut: list[str],
+        **kwargs,
+    ) -> EnsoGetRouteShortcutOutput:
         """Async implementation of the tool.
 
         This tool doesn't have a native async implementation, so we call the sync version.
         """
-        return self._run(fromAddress=fromAddress, amountIn=amountIn, tokenIn=tokenIn,
-                         tokenOut=tokenOut, **kwargs)
+        return self._run(
+            fromAddress=fromAddress,
+            amountIn=amountIn,
+            tokenIn=tokenIn,
+            tokenOut=tokenOut,
+            **kwargs,
+        )

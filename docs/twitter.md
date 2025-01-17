@@ -120,7 +120,7 @@ This feature is not released yet
 
 1. Social Media Manager Bot
    ```python
-   from app.models.agent import Agent
+   from models.agent import Agent
    
    # Create an agent with Twitter skills
    agent = Agent(

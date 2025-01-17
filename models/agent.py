@@ -5,9 +5,6 @@ from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
 
-from app.config.config import config
-from utils.slack_alert import send_slack_message
-
 
 class Agent(SQLModel, table=True):
     """Agent model."""
@@ -31,8 +28,8 @@ class Agent(SQLModel, table=True):
     # if the cdp_skills is empty, will load all
     cdp_enabled: bool = Field(default=False)
     cdp_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
-    cdp_wallet_data: Optional[str]
     cdp_network_id: Optional[str]
+    cdp_wallet_data: Optional[str]
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_enabled: bool = Field(default=False)  # TODO: to be deprecated
     twitter_entrypoint_enabled: bool = Field(default=False)  # TODO: add for future use
@@ -75,63 +72,57 @@ class Agent(SQLModel, table=True):
         nullable=False,
     )
 
-    def create_or_update(self, db: Session) -> None:
+    def create_or_update(self, db: Session) -> "Agent":
         """Create the agent if not exists, otherwise update it."""
         existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
         if existing_agent:
             # Update existing agent
             for field in self.model_fields:
-                if field != "id" and field != "cdp_wallet_data":  # Skip the primary key
+                if field != "id":  # Skip the primary key
                     if getattr(self, field) is not None:
                         setattr(existing_agent, field, getattr(self, field))
             db.add(existing_agent)
+            db.commit()
+            db.refresh(existing_agent)
+            return existing_agent
         else:
             # Create new agent
             db.add(self)
-            # Count the total agents
-            total_agents = db.exec(select(func.count()).select_from(Agent)).one()
-            # Send a message to Slack
-            send_slack_message(
-                "New agent created ✅",
-                attachments=[
-                    {
-                        "color": "good",
-                        "fields": [
-                            {"title": "ENV", "short": True, "value": config.env},
-                            {"title": "Total", "short": True, "value": total_agents},
-                            {"title": "ID", "short": True, "value": self.id},
-                            {"title": "Name", "short": True, "value": self.name},
-                            {"title": "Model", "short": True, "value": self.model},
-                            {
-                                "title": "Autonomous",
-                                "short": True,
-                                "value": str(self.autonomous_enabled),
-                            },
-                            {
-                                "title": "Twitter",
-                                "short": True,
-                                "value": str(self.twitter_enabled),
-                            },
-                            {
-                                "title": "Telegram",
-                                "short": True,
-                                "value": str(self.telegram_enabled),
-                            },
-                            {
-                                "title": "CDP Enabled",
-                                "short": True,
-                                "value": str(self.cdp_enabled),
-                            },
-                            {
-                                "title": "CDP Network",
-                                "short": True,
-                                "value": self.cdp_network_id or "Default",
-                            },
-                        ],
-                    }
-                ],
-            )
-        db.commit()
+            db.commit()
+            db.refresh(self)
+            return self
+
+
+class AgentData(SQLModel, table=True):
+    """Agent data model for storing additional data related to the agent."""
+
+    __tablename__ = "agent_data"
+
+    id: str = Field(primary_key=True)  # Same as Agent.id
+    cdp_wallet_data: Optional[str]
+    twitter_id: Optional[str]
+    twitter_username: Optional[str]
+    twitter_name: Optional[str]
+    twitter_access_token: Optional[str]
+    twitter_access_token_expires_at: Optional[datetime] = Field(
+        sa_type=DateTime(timezone=True)
+    )
+    twitter_refresh_token: Optional[str]
+    error_message: Optional[str]
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+        nullable=False,
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": lambda: datetime.now(timezone.utc),
+        },
+        nullable=False,
+    )
 
 
 class AgentQuota(SQLModel, table=True):
@@ -186,9 +177,9 @@ class AgentQuota(SQLModel, table=True):
     def has_message_quota(self, db: Session) -> bool:
         """Check if the agent has message quota."""
         return (
-                self.message_count_monthly < self.message_limit_monthly
-                and self.message_count_daily < self.message_limit_daily
-                and self.message_count_total < self.message_limit_total
+            self.message_count_monthly < self.message_limit_monthly
+            and self.message_count_daily < self.message_limit_daily
+            and self.message_count_total < self.message_limit_total
         )
 
     def has_autonomous_quota(self, db: Session) -> bool:
@@ -196,8 +187,8 @@ class AgentQuota(SQLModel, table=True):
         if not self.has_message_quota(db):
             return False
         return (
-                self.autonomous_count_monthly < self.autonomous_limit_monthly
-                and self.autonomous_count_total < self.autonomous_limit_total
+            self.autonomous_count_monthly < self.autonomous_limit_monthly
+            and self.autonomous_count_total < self.autonomous_limit_total
         )
 
     def has_twitter_quota(self, db: Session) -> bool:
@@ -205,8 +196,8 @@ class AgentQuota(SQLModel, table=True):
         if not self.has_message_quota(db):
             return False
         return (
-                self.twitter_count_daily < self.twitter_limit_daily
-                and self.twitter_count_total < self.twitter_limit_total
+            self.twitter_count_daily < self.twitter_limit_daily
+            and self.twitter_count_total < self.twitter_limit_total
         )
 
     def add_message(self, db: Session) -> None:
@@ -279,7 +270,7 @@ class AgentPluginData(SQLModel, table=True):
 
     @classmethod
     def get(
-            cls, agent_id: str, plugin: str, key: str, db: Session
+        cls, agent_id: str, plugin: str, key: str, db: Session
     ) -> Optional["AgentPluginData"]:
         """Get plugin data for an agent.
 

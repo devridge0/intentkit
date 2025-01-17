@@ -8,7 +8,10 @@ from .base import EnsoBaseTool, base_url
 
 class EnsoGetPricesInput(BaseModel):
     chainId: int = Field(1, description="Blockchain chain ID of the token")
-    address: str = Field("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", description="Contract address of the token")
+    address: str = Field(
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        description="Contract address of the token",
+    )
 
 
 class PriceInfo(BaseModel):
@@ -21,8 +24,12 @@ class PriceInfo(BaseModel):
 
 
 class EnsoGetPricesOutput(BaseModel):
-    res: PriceInfo | None = Field(None, description="Price information of the requested token")
-    error: str | None = Field(None, description="Error message if price retrieval fails")
+    res: PriceInfo | None = Field(
+        None, description="Price information of the requested token"
+    )
+    error: str | None = Field(
+        None, description="Error message if price retrieval fails"
+    )
 
 
 class EnsoGetPrices(EnsoBaseTool):
@@ -39,9 +46,11 @@ class EnsoGetPrices(EnsoBaseTool):
     description: str = "Retrieve the price of a token by chain ID and contract address"
     args_schema: Type[BaseModel] = EnsoGetPricesInput
 
-    def _run(self,
-             chainId: int = 1,
-             address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") -> EnsoGetPricesOutput:
+    def _run(
+        self,
+        chainId: int = 1,
+        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    ) -> EnsoGetPricesOutput:
         """
         Asynchronous function to request the token price from the API.
 
@@ -77,9 +86,11 @@ class EnsoGetPrices(EnsoBaseTool):
             except Exception as e:
                 return EnsoGetPricesOutput(res=None, error=str(e))
 
-    async def _arun(self,
-                    chainId: int = 1,
-                    address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") -> EnsoGetPricesOutput:
+    async def _arun(
+        self,
+        chainId: int = 1,
+        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    ) -> EnsoGetPricesOutput:
         """Async implementation of the tool.
 
         This tool doesn't have a native async implementation, so we call the sync version.

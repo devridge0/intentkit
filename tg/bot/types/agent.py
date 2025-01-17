@@ -1,4 +1,4 @@
-from app.models.agent import Agent
+from models.agent import Agent
 from tg.utils.cleanup import clean_token_str
 
 

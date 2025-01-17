@@ -1,8 +1,8 @@
 import logging
 
 from app.config.config import config
-from app.models.agent import Agent
-from app.models.db import get_db, init_db
+from models.agent import Agent
+from models.db import get_db, init_db
 
 if config.env == "local":
     # Set up logging configuration
