@@ -31,20 +31,27 @@ class TwitterGetTimeline(TwitterBaseTool):
     description: str = "Get tweets from the authenticated user's timeline"
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
-    def _run(self) -> TwitterGetTimelineOutput:
-        """Run the tool to get timeline tweets.
+    def _run(self, max_results: int = 10) -> TwitterGetTimelineOutput:
+        """Run the tool to get the user's timeline.
+
+        Args:
+            max_results (int, optional): Maximum number of tweets to retrieve. Defaults to 10.
 
         Returns:
-            TwitterGetTimelineOutput: A structured output containing the timeline tweets data.
+            TwitterGetTimelineOutput: A structured output containing the timeline data.
 
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
         try:
+            # Check rate limit
+            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+            if is_rate_limited:
+                return TwitterGetTimelineOutput(tweets=[], error=error)
+
             # get since id from store
             last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
             last = last or {}
-            max_results = 10
             since_id = last.get("since_id")
             if since_id:
                 max_results = 100

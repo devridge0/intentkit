@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from pydantic import BaseModel, Field
@@ -37,19 +36,28 @@ class TwitterSearchTweets(TwitterBaseTool):
     description: str = "Search for recent tweets on Twitter using a query"
     args_schema: Type[BaseModel] = TwitterSearchTweetsInput
 
-    def _run(self, query: str) -> TwitterSearchTweetsOutput:
-        """Run the tool to search for tweets.
+    def _run(
+        self, query: str, max_results: int = 10, recent_only: bool = True
+    ) -> TwitterSearchTweetsOutput:
+        """Run the tool to search tweets.
 
         Args:
-            query: The search query to find tweets.
+            query (str): The search query to use.
+            max_results (int, optional): Maximum number of results to return. Defaults to 10.
+            recent_only (bool, optional): Whether to only search recent tweets. Defaults to True.
 
         Returns:
             TwitterSearchTweetsOutput: A structured output containing the search results.
 
         Raises:
-            Exception: If there's an error accessing the Twitter API.
+            Exception: If there's an error searching via the Twitter API.
         """
         try:
+            # Check rate limit
+            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+            if is_rate_limited:
+                return TwitterSearchTweetsOutput(tweets=[], error=error)
+
             client = self.twitter.get_client()
             if not client:
                 return TwitterSearchTweetsOutput(
@@ -62,11 +70,6 @@ class TwitterSearchTweets(TwitterBaseTool):
             last = last or {}
             since_id = last.get("since_id")
 
-            # Always get tweets for the last day
-            start_time = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat(
-                timespec="milliseconds"
-            )
-
             tweet_fields = [
                 "created_at",
                 "author_id",
@@ -78,7 +81,6 @@ class TwitterSearchTweets(TwitterBaseTool):
                 query=query,
                 user_auth=self.twitter.use_key,
                 since_id=since_id,
-                start_time=start_time,
                 expansions=[
                     "referenced_tweets.id",
                     "attachments.media_keys",
