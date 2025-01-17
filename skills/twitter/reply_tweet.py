@@ -28,19 +28,24 @@ class TwitterReplyTweet(TwitterBaseTool):
     args_schema: Type[BaseModel] = TwitterReplyTweetInput
 
     def _run(self, tweet_id: str, text: str) -> str:
-        """Run the tool to post a reply tweet.
+        """Run the tool to reply to a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to reply to.
-            text (str): The text content of the reply tweet.
+            text (str): The text content of the reply.
 
         Returns:
-            str: A message indicating success or failure of the reply posting.
+            str: A message indicating success or failure of the reply action.
 
         Raises:
-            Exception: If there's an error posting to the Twitter API.
+            Exception: If there's an error replying via the Twitter API.
         """
         try:
+            # Check rate limit
+            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+            if is_rate_limited:
+                return f"Error replying to tweet: {error}"
+
             client = self.twitter.get_client()
             if not client:
                 return "Failed to get Twitter client. Please check your authentication."
