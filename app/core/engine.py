@@ -76,7 +76,8 @@ def agent_prompt(agent: Agent) -> str:
         prompt += """\n\nYou are integrated to Enso API, you are able to get the token list and their information, such
         as APY, Protocol Slug, Symbol, Address, and underlying tokens using enso_get_tokens tool. for each thread first
         request, you should use enso_get_tokens with no input param and get the information of the available protocol slugs, 
-        symbols, addresses and APY. to get wallet balances use get_wallet_balances. to get wallet approvals use get_wallet_approvals\n\n"""
+        symbols, addresses and APY. For token swap and route shortcut, you should use get_route tool. to get wallet balances 
+        use get_wallet_balances. to get wallet approvals use get_wallet_approvals.\n\n"""
     return prompt
 
 
