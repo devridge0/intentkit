@@ -6,6 +6,109 @@ from pydantic import BaseModel, Field
 from .base import EnsoBaseTool, base_url
 
 
+class EnsoGetApproveInput(BaseModel):
+    """
+    Input model for approve the wallet.
+    """
+    fromAddress: str = Field(description="Ethereum address of the wallet to send the transaction from")
+    tokenAddress: str = Field(description="ERC20 token address of the token to approve")
+    amount: int = Field(description="Amount of tokens to approve in wei")
+    chainId: int = Field(1, description="Chain ID of the blockchain network")
+    routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(None,
+                                                                                description="Routing strategy to use")
+
+
+class WalletApproveTransaction(BaseModel):
+    """
+    Represents a wallet approve transaction.
+    """
+    tx: object | None = Field(None, description="The tx object to use in `ethers`")
+    gas: str | None = Field(None, description="The gas estimate for the transaction")
+    token: str | None = Field(None, description="The token address to approve")
+    amount: str | None = Field(None, description="The amount of tokens to approve")
+    spender: str | None = Field(None, description="The spender address to approve")
+
+
+class EnsoGetApproveOutput(BaseModel):
+    """
+    Output model for approve token for the wallet.
+    """
+    res: WalletApproveTransaction | None = Field(None,
+                                                 description="Response containing the approved token transaction.")
+    error: str | None = Field(None, description="Error message if wallet spend approve fails.")
+
+
+class EnsoGetApprove(EnsoBaseTool):
+    """
+    This tool allows to approve spending to enso router associated with a specific wallet
+    and blockchain network.
+
+    Attributes:
+        name (str): Name of the tool, specifically "enso_get_wallet_approve".
+        description (str): Comprehensive description of the tool's purpose and functionality.
+        args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
+    """
+
+    name: str = "enso_get_wallet_approve"
+    description: str = "Approve enso router to use the wallet balance for swap routing."
+    args_schema: Type[BaseModel] = EnsoGetApproveInput
+
+    def _run(self, fromAddress: str, tokenAddress: str, amount: int, chainId: int = 1,
+             **kwargs) -> EnsoGetApproveOutput:
+        """
+        Run the tool to approve enso router for a wallet.
+
+        Args:
+            fromAddress (str): Ethereum address of the wallet to send the transaction from.
+            tokenAddress (str): ERC20 token address of the token to approve.
+            amount (int): Amount of tokens to approve in wei.
+            chainId (int): Chain ID of the blockchain network.
+            **kwargs: optional kwargs for the tool with args schema defined in EnsoGetApproveInput.
+
+        Returns:
+            EnsoGetApproveOutput: The list of approve transaction output or an error message.
+        """
+        url = f"{base_url}/api/v1/wallet/approve"
+
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self.api_token}",
+        }
+
+        params = EnsoGetApproveInput(fromAddress=fromAddress, tokenAddress=tokenAddress, amount=amount, chainId=chainId)
+
+        if kwargs.get("routingStrategy"):
+            params.routingStrategy = kwargs["routingStrategy"]
+
+        with httpx.Client() as client:
+            try:
+                # Send the GET request
+                response = client.get(url, headers=headers, params=params.model_dump(exclude_none=True))
+                response.raise_for_status()
+
+                # Map the response JSON into the WalletApproveTransaction model
+                json_dict = response.json()
+                res = WalletApproveTransaction(**json_dict)
+
+                # Return the parsed response
+                return EnsoGetApproveOutput(res=res, error=None)
+            except httpx.RequestError as req_err:
+                return EnsoGetApproveOutput(res=None, error=f"Request error: {req_err}")
+            except httpx.HTTPStatusError as http_err:
+                return EnsoGetApproveOutput(res=None, error=f"HTTP error: {http_err}")
+            except Exception as e:
+                # Return an error response on exceptions
+                return EnsoGetApproveOutput(res=None, error=str(e))
+
+    async def _arun(self, fromAddress: str, tokenAddress: str, amount: int, chainId: int = 1,
+                    **kwargs) -> EnsoGetApproveOutput:
+        """Async implementation of the tool.
+
+                This tool doesn't have a native async implementation, so we call the sync version.
+                """
+        return self._run(fromAddress, tokenAddress, amount, chainId, **kwargs)
+
+
 class EnsoGetApprovalsInput(BaseModel):
     """
     Input model for retrieving wallet approvals.
@@ -53,6 +156,7 @@ class EnsoGetApprovals(EnsoBaseTool):
         Args:
             fromAddress (str): Address of the wallet to query for approvals.
             chainId (int): Chain ID of the blockchain network.
+            **kwargs: optional kwargs for the tool with args schema defined in EnsoGetApprovalsInput.
 
         Returns:
             EnsoGetApprovalsOutput: The list of approvals or an error message.
