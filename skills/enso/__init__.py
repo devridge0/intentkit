@@ -1,6 +1,7 @@
 """Enso skills."""
 from abstracts.skill import SkillStoreABC
 from skills.enso.base import EnsoBaseTool
+from skills.enso.route import EnsoGetRouteShortcut
 from skills.enso.tokens import EnsoGetTokens
 from skills.enso.wallet import (
     EnsoGetWalletApprovals,
@@ -17,6 +18,8 @@ def get_enso_skill(
 
     if name == "get_tokens":
         return EnsoGetTokens(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+    if name == "get_route_shortcut":
+        return EnsoGetRouteShortcut(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
     if name == "get_wallet_approve":
         return EnsoGetWalletApprove(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
     if name == "get_wallet_approvals":
