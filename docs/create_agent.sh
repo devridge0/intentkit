@@ -39,7 +39,9 @@ END_OF_APPEND
 # If you enable autonomous mode, the agent will automatically run the autonomous_prompt every N minutes
 AUTONOMOUS_ENABLED=false
 AUTONOMOUS_MINUTES=60
-AUTONOMOUS_PROMPT="Autonomous mode prompt"
+read -r -d '' AUTONOMOUS_PROMPT_TEXT << 'END_OF_AUTONOMOUS_PROMPT'
+Check twitter for new mentions, choose the best one and reply it. If there is no mention, just have a rest, don't post anything.
+END_OF_AUTONOMOUS_PROMPT
 
 # CDP settings (optional)
 # Skill list: https://docs.cdp.coinbase.com/agentkit/docs/wallet-management
@@ -81,6 +83,9 @@ PROMPT="$(echo "$PROMPT_TEXT" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g' | s
 
 # Convert multiline text to escaped string
 PROMPT_APPEND="$(echo "$PROMPT_APPEND_TEXT" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g' | sed '$ s/\\n$//')"
+
+# Autonomous mode prompt
+AUTONOMOUS_PROMPT="$(echo "$AUTONOMOUS_PROMPT_TEXT" | awk '{printf "%s\\n", $0}' | sed 's/"/\\"/g' | sed '$ s/\\n$//')"
 
 # Create JSON payload
 JSON_DATA=$(cat << EOF
