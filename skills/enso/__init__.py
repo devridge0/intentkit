@@ -1,8 +1,8 @@
 """Enso skills."""
 from abstracts.skill import SkillStoreABC
 from skills.enso.base import EnsoBaseTool
-from skills.enso.route import EnsoGetRouteShortcut
 from skills.enso.prices import EnsoGetPrices
+from skills.enso.route import EnsoGetRouteShortcut
 from skills.enso.tokens import EnsoGetTokens
 from skills.enso.wallet import (
     EnsoGetWalletApprovals,
