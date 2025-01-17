@@ -128,7 +128,7 @@ class EnsoGetRouteShortcutOutput(BaseModel):
 
 class EnsoGetRouteShortcut(EnsoBaseTool):
     """
-    This tool finds the optimal execution path across a multitude of DeFi protocols such as liquidity pools,
+    This tool swaps the optimal execution route path across a multitude of DeFi protocols such as liquidity pools,
     lending platforms, automated market makers, yield optimizers, and more. This allows for maximized capital efficiency
     and yield optimization, taking into account return rates, gas costs, and slippage.
 
@@ -139,7 +139,7 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     """
 
     name: str = "enso_get_route_shortcut"
-    description: str = "This tool optimizes DeFi swaps, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
+    description: str = "This tool optimizes and performs DeFi swaps, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
 
     def _run(
