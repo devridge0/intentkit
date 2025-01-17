@@ -41,6 +41,14 @@ class TwitterGetMentions(TwitterBaseTool):
             Exception: If there's an error accessing the Twitter API.
         """
         try:
+            # Check rate limit
+            is_rate_limited, error = self.check_rate_limit(max_requests=1)
+            if is_rate_limited:
+                return TwitterGetMentionsOutput(
+                    mentions=[],
+                    error=error,
+                )
+
             # get since id from store
             last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
             last = last or {}
@@ -88,6 +96,7 @@ class TwitterGetMentions(TwitterBaseTool):
 
             result = []
             if mentions.data:
+                # Process and return results
                 for tweet in mentions.data:
                     mention = Tweet(
                         id=str(tweet.id),
