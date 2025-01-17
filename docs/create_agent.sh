@@ -47,16 +47,20 @@ CDP_ENABLED=false
 CDP_SKILLS='["get_wallet_details", "get_balance"]'
 CDP_NETWORK_ID="base-sepolia"
 
-# Twitter settings (optional)
-TWITTER_ENTRYPOINT_ENABLED=false
-TWITTER_CONFIG='{
-  "consumer_key": "",
-  "consumer_secret": "",
-  "access_token": "",
-  "access_token_secret": "",
-  "bearer_token": ""
+ENSO_ENABLED=false
+ENSO_CONFIG='{
+  "api_token": "",
+  "main_tokens": [
+    "USDT", "ETH"
+  ]
 }'
-TWITTER_SKILLS='["get_mentions","get_timeline","post_tweet","reply_tweet"]'
+ENSO_SKILLS='["get_tokens"]'
+
+# Twitter settings (optional)
+# If you don't need to use the twitter skills, you can remove it in TWITTER_SKILLS
+TWITTER_ENTRYPOINT_ENABLED=false
+TWITTER_CONFIG='{}'
+TWITTER_SKILLS='["get_mentions","get_timeline","post_tweet","reply_tweet","follow_user","like_tweet","retweet","search_tweets"]'
 
 # Telegram settings (optional)
 TELEGRAM_ENTRYPOINT_ENABLED=false
