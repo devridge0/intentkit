@@ -35,27 +35,34 @@ def get_expiring_tokens(db: Session, minutes_threshold: int = 10) -> list[AgentD
     ).all()
 
 
-def refresh_token(db: Session, agent: AgentData) -> bool:
+def refresh_token(db: Session, agent: AgentData):
     """Refresh Twitter OAuth2 token for an agent.
 
     Args:
         db: Database session
         agent: Agent data record containing refresh token
-
-    Returns:
-        bool: True if refresh successful, False otherwise
     """
     try:
         # Get new token using refresh token
         token = oauth2_user_handler.refresh(agent.twitter_refresh_token)
 
+        token = {} if token is None else token
+
         # Update token information
-        agent.twitter_access_token = token["access_token"]
+        if "access_token" in token:
+            agent.twitter_access_token = token["access_token"]
+        else:
+            agent.twitter_access_token = None
         if "refresh_token" in token:  # Some providers return new refresh tokens
             agent.twitter_refresh_token = token["refresh_token"]
-        agent.twitter_access_token_expires_at = datetime.fromtimestamp(
-            token["expires_at"], tz=timezone.utc
-        )
+        else:
+            agent.twitter_refresh_token = None
+        if "expires_at" in token:
+            agent.twitter_access_token_expires_at = datetime.fromtimestamp(
+                token["expires_at"], tz=timezone.utc
+            )
+        else:
+            agent.twitter_access_token_expires_at = None
 
         # Save changes
         db.add(agent)
@@ -63,10 +70,15 @@ def refresh_token(db: Session, agent: AgentData) -> bool:
         db.refresh(agent)
 
         logger.info(f"Refreshed token for agent {agent.id}")
-        return True
     except Exception as e:
         logger.error(f"Failed to refresh token for agent {agent.id}: {str(e)}")
-        return False
+        # if error, reset token
+        agent.twitter_access_token = None
+        agent.twitter_refresh_token = None
+        agent.twitter_access_token_expires_at = None
+        db.add(agent)
+        db.commit()
+        db.refresh(agent)
 
 
 def refresh_expiring_tokens():
