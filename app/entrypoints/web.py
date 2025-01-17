@@ -9,8 +9,8 @@ from sqlmodel import Session
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.engine import execute_agent
-from app.models.agent import AgentQuota
-from app.models.db import get_db
+from models.agent import AgentQuota
+from models.db import get_db
 
 # init logger
 logger = logging.getLogger(__name__)

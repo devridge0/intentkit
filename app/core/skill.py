@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, Optional
 
 from abstracts.skill import SkillStoreABC
-from app.models.skill import AgentSkillData, ThreadSkillData
+from models.skill import AgentSkillData, ThreadSkillData
 
 
 class SkillStore(SkillStoreABC):

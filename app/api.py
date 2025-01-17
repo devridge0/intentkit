@@ -1,10 +1,9 @@
-"""IntentKit REST API Server.
+"""API server module.
 
-This module implements the REST API for IntentKit, providing endpoints for:
-- Chat
-- Internal
-- Admin
-- Health monitoring
+This module initializes and configures the FastAPI application,
+including routers, middleware, and startup/shutdown events.
+
+The API server provides endpoints for agent execution and management.
 """
 
 import logging
@@ -17,7 +16,8 @@ from app.admin.scheduler import start_scheduler
 from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
-from app.models.db import init_db
+from app.services.twitter.oauth2_callback import router as twitter_router
+from models.db import init_db
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -35,11 +35,13 @@ async def lifespan(app: FastAPI):
     Args:
         app: FastAPI application instance
     """
-    # This part will run before the API server start
-    # Initialize infrastructure
+    # Initialize database
     init_db(**config.db)
-    logger.info("API server start")
+
+    # Start scheduler for periodic tasks
     scheduler = start_scheduler()
+
+    logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown
     logger.info("Cleaning up and shutdown...")
@@ -50,6 +52,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(chat_router)
 app.include_router(admin_router)
 app.include_router(core_router)
+app.include_router(twitter_router)
 
 
 @app.get("/health", include_in_schema=False)

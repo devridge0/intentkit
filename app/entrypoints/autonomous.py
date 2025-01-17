@@ -6,8 +6,8 @@ from sqlmodel import Session, select
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
-from app.models.agent import Agent, AgentQuota
-from app.models.db import get_engine
+from models.agent import Agent, AgentQuota
+from models.db import get_engine
 
 logger = logging.getLogger(__name__)
 

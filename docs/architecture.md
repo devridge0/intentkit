@@ -4,7 +4,7 @@
 
 IntentKit is built with a modular architecture that separates concerns into distinct components:
 
-![Architecture](docs/arch.jpg)
+![Architecture](arch.jpg)
 
 ## Components
 
@@ -22,7 +22,7 @@ The storage layer provides persistent data management across the system. It main
 
 ## The Flow
 
-![Flow](docs/agent.webp)
+![Flow](agent.webp)
 
 ## Key Design Decisions
 
