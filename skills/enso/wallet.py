@@ -10,18 +10,23 @@ class EnsoGetApproveInput(BaseModel):
     """
     Input model for approve the wallet.
     """
-    fromAddress: str = Field(description="Ethereum address of the wallet to send the transaction from")
+
+    fromAddress: str = Field(
+        description="Ethereum address of the wallet to send the transaction from"
+    )
     tokenAddress: str = Field(description="ERC20 token address of the token to approve")
     amount: int = Field(description="Amount of tokens to approve in wei")
     chainId: int = Field(1, description="Chain ID of the blockchain network")
-    routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(None,
-                                                                                description="Routing strategy to use")
+    routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(
+        None, description="Routing strategy to use"
+    )
 
 
 class WalletApproveTransaction(BaseModel):
     """
     Represents a wallet approve transaction.
     """
+
     tx: object | None = Field(None, description="The tx object to use in `ethers`")
     gas: str | None = Field(None, description="The gas estimate for the transaction")
     token: str | None = Field(None, description="The token address to approve")
@@ -33,9 +38,13 @@ class EnsoGetApproveOutput(BaseModel):
     """
     Output model for approve token for the wallet.
     """
-    res: WalletApproveTransaction | None = Field(None,
-                                                 description="Response containing the approved token transaction.")
-    error: str | None = Field(None, description="Error message if wallet spend approve fails.")
+
+    res: WalletApproveTransaction | None = Field(
+        None, description="Response containing the approved token transaction."
+    )
+    error: str | None = Field(
+        None, description="Error message if wallet spend approve fails."
+    )
 
 
 class EnsoGetWalletApprove(EnsoBaseTool):
@@ -53,8 +62,14 @@ class EnsoGetWalletApprove(EnsoBaseTool):
     description: str = "Approve enso router to use the wallet balance for swap routing."
     args_schema: Type[BaseModel] = EnsoGetApproveInput
 
-    def _run(self, fromAddress: str, tokenAddress: str, amount: int, chainId: int = 1,
-             **kwargs) -> EnsoGetApproveOutput:
+    def _run(
+        self,
+        fromAddress: str,
+        tokenAddress: str,
+        amount: int,
+        chainId: int = 1,
+        **kwargs,
+    ) -> EnsoGetApproveOutput:
         """
         Run the tool to approve enso router for a wallet.
 
@@ -75,7 +90,12 @@ class EnsoGetWalletApprove(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        params = EnsoGetApproveInput(fromAddress=fromAddress, tokenAddress=tokenAddress, amount=amount, chainId=chainId)
+        params = EnsoGetApproveInput(
+            fromAddress=fromAddress,
+            tokenAddress=tokenAddress,
+            amount=amount,
+            chainId=chainId,
+        )
 
         if kwargs.get("routingStrategy"):
             params.routingStrategy = kwargs["routingStrategy"]
@@ -83,7 +103,9 @@ class EnsoGetWalletApprove(EnsoBaseTool):
         with httpx.Client() as client:
             try:
                 # Send the GET request
-                response = client.get(url, headers=headers, params=params.model_dump(exclude_none=True))
+                response = client.get(
+                    url, headers=headers, params=params.model_dump(exclude_none=True)
+                )
                 response.raise_for_status()
 
                 # Map the response JSON into the WalletApproveTransaction model
@@ -100,12 +122,18 @@ class EnsoGetWalletApprove(EnsoBaseTool):
                 # Return an error response on exceptions
                 return EnsoGetApproveOutput(res=None, error=str(e))
 
-    async def _arun(self, fromAddress: str, tokenAddress: str, amount: int, chainId: int = 1,
-                    **kwargs) -> EnsoGetApproveOutput:
+    async def _arun(
+        self,
+        fromAddress: str,
+        tokenAddress: str,
+        amount: int,
+        chainId: int = 1,
+        **kwargs,
+    ) -> EnsoGetApproveOutput:
         """Async implementation of the tool.
 
-                This tool doesn't have a native async implementation, so we call the sync version.
-                """
+        This tool doesn't have a native async implementation, so we call the sync version.
+        """
         return self._run(fromAddress, tokenAddress, amount, chainId, **kwargs)
 
 
@@ -113,10 +141,14 @@ class EnsoGetApprovalsInput(BaseModel):
     """
     Input model for retrieving wallet approvals.
     """
-    fromAddress: str = Field(..., description="Address of the wallet to query approvals for")
+
+    fromAddress: str = Field(
+        ..., description="Address of the wallet to query approvals for"
+    )
     chainId: int = Field(1, description="Chain ID of the blockchain network")
-    routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(None,
-                                                                                description="Routing strategy to use")
+    routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(
+        None, description="Routing strategy to use"
+    )
 
 
 class WalletAllowance(BaseModel):
@@ -129,9 +161,13 @@ class EnsoGetApprovalsOutput(BaseModel):
     """
     Output model for retrieving wallet approvals.
     """
-    res: list[WalletAllowance] | None = Field(None,
-                                              description="Response containing the list of token approvals.")
-    error: str | None = Field(None, description="Error message if approvals retrieval fails.")
+
+    res: list[WalletAllowance] | None = Field(
+        None, description="Response containing the list of token approvals."
+    )
+    error: str | None = Field(
+        None, description="Error message if approvals retrieval fails."
+    )
 
 
 class EnsoGetWalletApprovals(EnsoBaseTool):
@@ -146,10 +182,14 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
     """
 
     name: str = "enso_get_approvals"
-    description: str = "Retrieve token spend approvals for a wallet on a specified blockchain network."
+    description: str = (
+        "Retrieve token spend approvals for a wallet on a specified blockchain network."
+    )
     args_schema: Type[BaseModel] = EnsoGetApprovalsInput
 
-    def _run(self, fromAddress: str, chainId: int = 1, **kwargs) -> EnsoGetApprovalsOutput:
+    def _run(
+        self, fromAddress: str, chainId: int = 1, **kwargs
+    ) -> EnsoGetApprovalsOutput:
         """
         Run the tool to get token approvals for a wallet.
 
@@ -176,7 +216,9 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
         with httpx.Client() as client:
             try:
                 # Send the GET request
-                response = client.get(url, headers=headers, params=params.model_dump(exclude_none=True))
+                response = client.get(
+                    url, headers=headers, params=params.model_dump(exclude_none=True)
+                )
                 response.raise_for_status()
 
                 # Map the response JSON into the ApprovalsResponse model
@@ -186,18 +228,22 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
                 # Return the parsed response
                 return EnsoGetApprovalsOutput(res=res, error=None)
             except httpx.RequestError as req_err:
-                return EnsoGetApprovalsOutput(res=None, error=f"Request error: {req_err}")
+                return EnsoGetApprovalsOutput(
+                    res=None, error=f"Request error: {req_err}"
+                )
             except httpx.HTTPStatusError as http_err:
                 return EnsoGetApprovalsOutput(res=None, error=f"HTTP error: {http_err}")
             except Exception as e:
                 # Return an error response on exceptions
                 return EnsoGetApprovalsOutput(res=None, error=str(e))
 
-    async def _arun(self, fromAddress: str, chainId: int = 1, **kwargs) -> EnsoGetApprovalsOutput:
+    async def _arun(
+        self, fromAddress: str, chainId: int = 1, **kwargs
+    ) -> EnsoGetApprovalsOutput:
         """Async implementation of the tool.
 
-                This tool doesn't have a native async implementation, so we call the sync version.
-                """
+        This tool doesn't have a native async implementation, so we call the sync version.
+        """
         return self._run(fromAddress, chainId, **kwargs)
 
 
@@ -205,10 +251,14 @@ class EnsoGetBalancesInput(BaseModel):
     """
     Input model for retrieving wallet balances.
     """
+
     chainId: int = Field(1, description="Chain ID of the blockchain network")
-    eoaAddress: str = Field(description="Address of the eoa with which to associate the ensoWallet for balances")
+    eoaAddress: str = Field(
+        description="Address of the eoa with which to associate the ensoWallet for balances"
+    )
     useEoa: bool = Field(
-        description="If true returns balances for the provided eoaAddress, instead of the associated ensoWallet")
+        description="If true returns balances for the provided eoaAddress, instead of the associated ensoWallet"
+    )
 
 
 class WalletBalance(BaseModel):
@@ -222,9 +272,13 @@ class EnsoGetBalancesOutput(BaseModel):
     """
     Output model for retrieving wallet balances.
     """
-    res: list[WalletBalance] | None = Field(None,
-                                            description="The wallet's balances along with token details.")
-    error: str | None = Field(None, description="Error message if the balance retrieval fails.")
+
+    res: list[WalletBalance] | None = Field(
+        None, description="The wallet's balances along with token details."
+    )
+    error: str | None = Field(
+        None, description="Error message if the balance retrieval fails."
+    )
 
 
 class EnsoGetWalletBalances(EnsoBaseTool):
@@ -239,10 +293,14 @@ class EnsoGetWalletBalances(EnsoBaseTool):
     """
 
     name: str = "enso_get_wallet_balances"
-    description: str = "Retrieve token balances of a wallet on a specified blockchain network."
+    description: str = (
+        "Retrieve token balances of a wallet on a specified blockchain network."
+    )
     args_schema: Type[BaseModel] = EnsoGetBalancesInput
 
-    def _run(self, eoaAddress: str, useEoa: bool, chainId: int = 1) -> EnsoGetBalancesOutput:
+    def _run(
+        self, eoaAddress: str, useEoa: bool, chainId: int = 1
+    ) -> EnsoGetBalancesOutput:
         """
         Run the tool to get token balances of a wallet.
 
@@ -260,12 +318,16 @@ class EnsoGetWalletBalances(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        params = EnsoGetBalancesInput(eoaAddress=eoaAddress, useEoa=useEoa, chainId=chainId)
+        params = EnsoGetBalancesInput(
+            eoaAddress=eoaAddress, useEoa=useEoa, chainId=chainId
+        )
 
         with httpx.Client() as client:
             try:
                 # Send the GET request
-                response = client.get(url, headers=headers, params=params.model_dump(exclude_none=True))
+                response = client.get(
+                    url, headers=headers, params=params.model_dump(exclude_none=True)
+                )
                 response.raise_for_status()
 
                 # Map the response JSON into the WalletBalance model
@@ -275,16 +337,20 @@ class EnsoGetWalletBalances(EnsoBaseTool):
                 # Return the parsed response
                 return EnsoGetBalancesOutput(res=res, error=None)
             except httpx.RequestError as req_err:
-                return EnsoGetBalancesOutput(res=None, error=f"Request error: {req_err}")
+                return EnsoGetBalancesOutput(
+                    res=None, error=f"Request error: {req_err}"
+                )
             except httpx.HTTPStatusError as http_err:
                 return EnsoGetBalancesOutput(res=None, error=f"HTTP error: {http_err}")
             except Exception as e:
                 # Return an error response on exceptions
                 return EnsoGetBalancesOutput(res=None, error=str(e))
 
-    async def _arun(self, eoaAddress: str, useEoa: bool, chainId: int = 1) -> EnsoGetBalancesOutput:
+    async def _arun(
+        self, eoaAddress: str, useEoa: bool, chainId: int = 1
+    ) -> EnsoGetBalancesOutput:
         """Async implementation of the tool.
 
-                This tool doesn't have a native async implementation, so we call the sync version.
-                """
+        This tool doesn't have a native async implementation, so we call the sync version.
+        """
         return self._run(eoaAddress, useEoa, chainId)

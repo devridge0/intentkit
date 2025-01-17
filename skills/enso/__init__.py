@@ -1,4 +1,5 @@
 """Enso skills."""
+
 from abstracts.skill import SkillStoreABC
 from skills.enso.base import EnsoBaseTool
 from skills.enso.prices import EnsoGetPrices
@@ -12,23 +13,39 @@ from skills.enso.wallet import (
 
 
 def get_enso_skill(
-        name: str, api_token: str, main_tokens: list[str], store: SkillStoreABC, agent_id: str
+    name: str,
+    api_token: str,
+    main_tokens: list[str],
+    store: SkillStoreABC,
+    agent_id: str,
 ) -> EnsoBaseTool:
     if not api_token:
         raise ValueError("Enso API token is empty")
 
     if name == "get_tokens":
-        return EnsoGetTokens(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetTokens(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
     if name == "get_route_shortcut":
-        return EnsoGetRouteShortcut(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetRouteShortcut(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
     if name == "get_wallet_approve":
-        return EnsoGetWalletApprove(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletApprove(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
     if name == "get_wallet_approvals":
-        return EnsoGetWalletApprovals(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletApprovals(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
     if name == "get_wallet_balances":
-        return EnsoGetWalletBalances(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetWalletBalances(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
     if name == "get_prices":
-        return EnsoGetPrices(api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id)
+        return EnsoGetPrices(
+            api_token=api_token, main_tokens=main_tokens, store=store, agent_id=agent_id
+        )
 
     else:
         raise ValueError(f"Unknown Enso skill: {name}")
