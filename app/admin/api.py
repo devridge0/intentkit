@@ -49,7 +49,7 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
     # Send Slack notification
     total_agents = db.exec(select(func.count()).select_from(Agent)).one()
     send_slack_message(
-        "New agent created ",
+        "Agent created or updated:",
         attachments=[
             {
                 "color": "good",
@@ -60,19 +60,9 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
                     {"title": "Name", "short": True, "value": latest_agent.name},
                     {"title": "Model", "short": True, "value": latest_agent.model},
                     {
-                        "title": "Autonomous",
+                        "title": "Enso Enabled",
                         "short": True,
-                        "value": str(latest_agent.autonomous_enabled),
-                    },
-                    {
-                        "title": "Twitter",
-                        "short": True,
-                        "value": str(latest_agent.twitter_enabled),
-                    },
-                    {
-                        "title": "Telegram",
-                        "short": True,
-                        "value": str(latest_agent.telegram_enabled),
+                        "value": str(latest_agent.enso_enabled),
                     },
                     {
                         "title": "CDP Enabled",
@@ -83,6 +73,30 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
                         "title": "CDP Network",
                         "short": True,
                         "value": latest_agent.cdp_network_id or "Default",
+                    },
+                    {
+                        "title": "Autonomous",
+                        "short": True,
+                        "value": str(latest_agent.autonomous_enabled),
+                    },
+                    {
+                        "title": "Autonomous Interval",
+                        "short": True,
+                        "value": str(latest_agent.autonomous_minutes),
+                    },
+                    {
+                        "title": "Twitter Entrypoint",
+                        "short": True,
+                        "value": str(latest_agent.twitter_entrypoint_enabled),
+                    },
+                    {
+                        "title": "Telegram Entrypoint",
+                        "short": True,
+                        "value": str(latest_agent.telegram_entrypoint_enabled),
+                    },
+                    {
+                        "title": "Twitter Skills",
+                        "value": str(latest_agent.twitter_skills),
                     },
                 ],
             }
