@@ -55,7 +55,9 @@ class TwitterSearchTweets(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+                is_rate_limited, error = self.check_rate_limit(
+                    max_requests=3, interval=15
+                )
                 if is_rate_limited:
                     return TwitterSearchTweetsOutput(tweets=[], error=error)
 
