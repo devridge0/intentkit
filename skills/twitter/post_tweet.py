@@ -41,10 +41,13 @@ class TwitterPostTweet(TwitterBaseTool):
             Exception: If there's an error posting to the Twitter API.
         """
         try:
-            # Check rate limit
-            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
-            if is_rate_limited:
-                return f"Error posting tweet: {error}"
+            # Check rate limit only when not using OAuth
+            if not self.twitter.use_key:
+                is_rate_limited, error = self.check_rate_limit(
+                    max_requests=24, interval=1440
+                )
+                if is_rate_limited:
+                    return f"Error posting tweet: {error}"
 
             client = self.twitter.get_client()
             if not client:

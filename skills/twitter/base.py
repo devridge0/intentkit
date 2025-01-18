@@ -36,9 +36,9 @@ class TwitterBaseTool(IntentKitSkill):
         rate_limit = self.store.get_agent_skill_data(
             self.agent_id, self.name, "rate_limit"
         )
-        
+
         current_time = datetime.now(tz=timezone.utc)
-        
+
         if (
             rate_limit
             and rate_limit.get("reset_time")
