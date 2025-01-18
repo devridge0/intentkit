@@ -44,7 +44,7 @@ class TwitterReplyTweet(TwitterBaseTool):
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
                 is_rate_limited, error = self.check_rate_limit(
-                    max_requests=20, interval=1440
+                    max_requests=48, interval=1440
                 )
                 if is_rate_limited:
                     return f"Error replying to tweet: {error}"
