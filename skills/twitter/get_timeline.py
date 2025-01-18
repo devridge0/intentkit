@@ -44,10 +44,11 @@ class TwitterGetTimeline(TwitterBaseTool):
             Exception: If there's an error accessing the Twitter API.
         """
         try:
-            # Check rate limit
-            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
-            if is_rate_limited:
-                return TwitterGetTimelineOutput(tweets=[], error=error)
+            # Check rate limit only when not using OAuth
+            if not self.twitter.use_key:
+                is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+                if is_rate_limited:
+                    return TwitterGetTimelineOutput(tweets=[], error=error)
 
             # get since id from store
             last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
