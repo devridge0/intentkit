@@ -46,12 +46,13 @@ class TwitterFollowUser(TwitterBaseTool):
             Exception: If there's an error accessing the Twitter API.
         """
         try:
-            # Check rate limit
-            is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
-            if is_rate_limited:
-                return TwitterFollowUserOutput(
-                    success=False, message=f"Error following user: {error}"
-                )
+            # Check rate limit only when not using OAuth
+            if not self.twitter.use_key:
+                is_rate_limited, error = self.check_rate_limit(max_requests=1, interval=15)
+                if is_rate_limited:
+                    return TwitterFollowUserOutput(
+                        success=False, message=f"Error following user: {error}"
+                    )
 
             client = self.twitter.get_client()
             if not client:
