@@ -193,9 +193,19 @@ def initialize_agent(aid):
                         logger.warning(
                             f"Failed to initialize Twitter skill {skill}: {e}"
                         )
+                twitter_prompt = (
+                    f"\n\nYour twitter id is {agent_data.twitter_id}, never reply or retweet yourself. "
+                    f"Your twitter username is {agent_data.twitter_username}. \n"
+                    f"Your twitter name is {agent_data.twitter_name}. \n"
+                )
             else:
                 logger.info(f"Twitter client needs authentication for agent {aid}")
-                twitter_prompt = f"\n\nIf user want to use any twitter skill, tell him that he need to authenticate his Twitter account to use this link: {get_authorization_url(aid)} \nRemember, this link will be expired. So you can only use this one, not use other links in the conversation history.\nDisplay links on separate lines, with a blank line before and after, not use markdown.\n\n"
+                twitter_prompt = (
+                    "\n\nWhen you need to use any twitter tool, "
+                    f"tell the person helping you to authenticate the Twitter account using this link: {get_authorization_url(aid)} \n"
+                    "Remember, the link will be expired. So you can only use this one, not use other links in the conversation history.\n"
+                    "Display links on separate lines, with a blank line before and after, not use markdown.\n\n"
+                )
         except Exception as e:
             logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
 
