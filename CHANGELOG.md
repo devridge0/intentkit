@@ -1,5 +1,24 @@
 # Changelog
 
+## 2025-01-18
+
+### Improvements
+- Twitter rate limit only affected when using OAuth
+- Better twitter rate limit numbers
+- Slack notify improvement
+
+## 2025-01-17
+
+### New Features
+- Add twitter skill rate limit
+
+### Improvements
+- Better doc/create_agent.sh
+- OAuth 2.0 refresh token failure handling
+
+### Bug Fixes
+- Fix bug in twitter search skill
+
 ## 2025-01-16
 
 ### New Features
