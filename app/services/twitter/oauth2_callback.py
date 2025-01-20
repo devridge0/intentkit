@@ -85,10 +85,10 @@ async def twitter_oauth_callback(
         client = tweepy.Client(bearer_token=token["access_token"])
         me = client.get_me(user_auth=False)
 
-        if me and me.data:
-            agent_data.twitter_id = me.data.id
-            agent_data.twitter_username = me.data.username
-            agent_data.twitter_name = me.data.name
+        if me and "data" in me:
+            agent_data.twitter_id = me.get("data").get("id")
+            agent_data.twitter_username = me.get("data").get("username")
+            agent_data.twitter_name = me.get("data").get("name")
 
         # Commit changes
         db.commit()

@@ -28,7 +28,7 @@ class TwitterClient(TwitterABC):
         """
         self._client: Optional[Client] = None
         self._agent_store = agent_store
-        self._agent_data: Optional[AgentData] = None
+        self._agent_data: Optional[AgentData] = self._agent_store.get_data()
         self.use_key = False
         self.need_auth = False
 
@@ -47,11 +47,21 @@ class TwitterClient(TwitterABC):
                 consumer_secret=config["consumer_secret"],
                 access_token=config["access_token"],
                 access_token_secret=config["access_token_secret"],
+                return_type=dict,
             )
             self.use_key = True
+            if not self._agent_data or not self._agent_data.twitter_id:
+                me = self._client.get_me(user_auth=self.use_key)
+                if me and "data" in me and "id" in me["data"]:
+                    self._agent_store.set_data(
+                        {
+                            "twitter_id": me["data"]["id"],
+                            "twitter_username": me["data"]["username"],
+                            "twitter_name": me["data"]["name"],
+                        }
+                    )
         else:
             # Try to get OAuth2 token from agent data
-            self._agent_data = self._agent_store.get_data()
             if self._agent_data and self._agent_data.twitter_access_token:
                 # Check if token is expired
                 if (
@@ -60,7 +70,8 @@ class TwitterClient(TwitterABC):
                     > datetime.now(timezone.utc)
                 ):
                     self._client = Client(
-                        bearer_token=self._agent_data.twitter_access_token
+                        bearer_token=self._agent_data.twitter_access_token,
+                        return_type=dict,
                     )
                     self.use_key = False
                 else:
@@ -126,8 +137,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me.data:
-                return str(me.data.id)
+            if me and "data" in me and "id" in me["data"]:
+                return me["data"]["id"]
         except Exception:
             pass
         return None
@@ -148,8 +159,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me.data:
-                return me.data.username
+            if me and "data" in me and "username" in me["data"]:
+                return me["data"]["username"]
         except Exception:
             pass
         return None
@@ -170,8 +181,8 @@ class TwitterClient(TwitterABC):
         try:
             # Try to get from Twitter API
             me = self._client.get_me()
-            if me and me.data:
-                return me.data.name
+            if me and "data" in me and "name" in me["data"]:
+                return me["data"]["name"]
         except Exception:
             pass
         return None
