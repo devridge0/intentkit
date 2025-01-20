@@ -3,7 +3,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from skills.twitter.base import Tweet, TwitterBaseTool
+from .base import Tweet, TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -73,55 +73,50 @@ class TwitterSearchTweets(TwitterBaseTool):
             last = last or {}
             since_id = last.get("since_id")
 
-            tweet_fields = [
-                "created_at",
-                "author_id",
-                "text",
-                "referenced_tweets",
-                "attachments",
-            ]
             tweets = client.search_recent_tweets(
                 query=query,
                 user_auth=self.twitter.use_key,
                 since_id=since_id,
+                max_results=max_results,
                 expansions=[
                     "referenced_tweets.id",
                     "attachments.media_keys",
+                    "author_id",
                 ],
-                tweet_fields=tweet_fields,
+                tweet_fields=[
+                    "created_at",
+                    "author_id",
+                    "text",
+                    "referenced_tweets",
+                    "attachments",
+                ],
+                user_fields=[
+                    "username",
+                    "name",
+                    "description",
+                    "public_metrics",
+                    "location",
+                    "connection_status",
+                ],
+                media_fields=["url"],
             )
 
-            result = []
-            if tweets.data:
-                logger.debug(tweets.data)
-                for tweet in tweets.data:
-                    tweet_obj = Tweet(
-                        id=str(tweet.id),
-                        text=tweet.text,
-                        author_id=str(tweet.author_id),
-                        created_at=tweet.created_at,
-                        referenced_tweets=tweet.referenced_tweets
-                        if hasattr(tweet, "referenced_tweets")
-                        else None,
-                        attachments=tweet.attachments
-                        if hasattr(tweet, "attachments")
-                        else None,
-                    )
-                    result.append(tweet_obj)
+            try:
+                result = self.process_tweets_response(tweets)
+            except Exception as e:
+                logger.error("Error processing search results: %s", str(e))
+                raise
 
-                # Update the since_id in store for the next request
-                if tweets.meta:
-                    last["since_id"] = tweets.meta.get("newest_id")
-                    self.store.save_agent_skill_data(
-                        self.agent_id, self.name, query, last
-                    )
+            # Update the since_id in store for the next request
+            if tweets.get("meta") and tweets.get("meta").get("newest_id"):
+                last["since_id"] = tweets["meta"]["newest_id"]
+                self.store.save_agent_skill_data(self.agent_id, self.name, query, last)
 
             return TwitterSearchTweetsOutput(tweets=result)
 
         except Exception as e:
-            return TwitterSearchTweetsOutput(
-                tweets=[], error=f"Error searching tweets: {str(e)}"
-            )
+            logger.error("Error searching tweets: %s", str(e))
+            return TwitterSearchTweetsOutput(tweets=[], error=str(e))
 
     async def _arun(self, query: str) -> TwitterSearchTweetsOutput:
         """Async implementation of the tool.

@@ -248,7 +248,7 @@ def initialize_agent(aid):
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
     def formatted_prompt(state: AgentState):
-        logger.debug(f"[{aid}] formatted prompt: {state}")
+        # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
