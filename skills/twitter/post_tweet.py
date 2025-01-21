@@ -56,8 +56,8 @@ class TwitterPostTweet(TwitterBaseTool):
             # Post tweet using tweepy client
             response = client.create_tweet(text=text, user_auth=self.twitter.use_key)
 
-            if response.data:
-                tweet_id = response.data["id"]
+            if "data" in response and "id" in response["data"]:
+                tweet_id = response["data"]["id"]
                 return f"Tweet posted successfully! Tweet ID: {tweet_id}"
             return "Failed to post tweet."
 

@@ -68,7 +68,7 @@ class TwitterFollowUser(TwitterBaseTool):
                 target_user_id=user_id, user_auth=self.twitter.use_key
             )
 
-            if response.data and response.data.get("following"):
+            if "data" in response and response["data"].get("following"):
                 return TwitterFollowUserOutput(
                     success=True, message=f"Successfully followed user {user_id}"
                 )
