@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from pydantic import BaseModel
 
 from .base import Tweet, TwitterBaseTool
+
+logger = logging.getLogger(__name__)
 
 
 class TwitterGetMentionsInput(BaseModel):
@@ -59,9 +62,7 @@ class TwitterGetMentions(TwitterBaseTool):
                 max_results = 100
 
             # Always get mentions for the last day
-            start_time = (datetime.now(tz=timezone.utc) - timedelta(days=1)).isoformat(
-                timespec="milliseconds"
-            )
+            start_time = datetime.now(tz=timezone.utc) - timedelta(days=1)
 
             client = self.twitter.get_client()
             if not client:
@@ -85,6 +86,7 @@ class TwitterGetMentions(TwitterBaseTool):
                 expansions=[
                     "referenced_tweets.id",
                     "attachments.media_keys",
+                    "author_id",
                 ],
                 tweet_fields=[
                     "created_at",
@@ -93,34 +95,32 @@ class TwitterGetMentions(TwitterBaseTool):
                     "referenced_tweets",
                     "attachments",
                 ],
+                user_fields=[
+                    "username",
+                    "name",
+                    "description",
+                    "public_metrics",
+                    "location",
+                    "connection_status",
+                ],
+                media_fields=["url"],
             )
 
-            result = []
-            if mentions.data:
-                # Process and return results
-                for tweet in mentions.data:
-                    mention = Tweet(
-                        id=str(tweet.id),
-                        text=tweet.text,
-                        author_id=str(tweet.author_id),
-                        created_at=tweet.created_at,
-                        referenced_tweets=tweet.referenced_tweets
-                        if hasattr(tweet, "referenced_tweets")
-                        else None,
-                        attachments=tweet.attachments
-                        if hasattr(tweet, "attachments")
-                        else None,
-                    )
-                    result.append(mention)
+            try:
+                result = self.process_tweets_response(mentions)
+            except Exception as e:
+                logger.error("Error processing mentions: %s", str(e))
+                raise
 
-            # Update the previous since_id for the next request
-            if mentions.meta:
-                last["since_id"] = mentions.meta.get("newest_id")
+            # Update since_id in store
+            if mentions.get("meta") and mentions["meta"].get("newest_id"):
+                last["since_id"] = mentions["meta"].get("newest_id")
                 self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
 
             return TwitterGetMentionsOutput(mentions=result)
 
         except Exception as e:
+            logger.error("Error getting mentions: %s", str(e))
             return TwitterGetMentionsOutput(mentions=[], error=str(e))
 
     async def _arun(self) -> TwitterGetMentionsOutput:

@@ -58,8 +58,8 @@ class TwitterReplyTweet(TwitterBaseTool):
                 text=text, user_auth=self.twitter.use_key, in_reply_to_tweet_id=tweet_id
             )
 
-            if response.data:
-                reply_id = response.data["id"]
+            if "data" in response and "id" in response["data"]:
+                reply_id = response["data"]["id"]
                 return f"Reply posted successfully! Reply Tweet ID: {reply_id}"
             return "Failed to post reply tweet."
 

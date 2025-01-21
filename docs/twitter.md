@@ -2,11 +2,51 @@
 
 IntentKit provides two ways to integrate with Twitter: using it as an entrypoint for your agent, or incorporating Twitter-specific skills into your agent's capabilities.
 
+## Twitter Skills
+
+IntentKit provides a set of Twitter-specific skills that can be added to your agent's toolkit. All skills are built on top of the `TwitterBaseTool` base class which handles authentication and client initialization.
+
+### Available Skills
+
+The following Twitter skills are available:
+
+- **Follow User** (`follow_user`): Follow a specified Twitter user
+- **Get Mentions** (`get_mentions`): Retrieve mentions of the authenticated user
+- **Get Timeline** (`get_timeline`): Fetch tweets from a user's timeline
+- **Like Tweet** (`like_tweet`): Like a specific tweet
+- **Post Tweet** (`post_tweet`): Post a new tweet
+- **Reply Tweet** (`reply_tweet`): Reply to a specific tweet
+- **Retweet** (`retweet`): Retweet a specific tweet
+- **Search Tweets** (`search_tweets`): Search for tweets based on query
+
+### Using Twitter Skills
+
+Add Twitter skills to your agent:
+Just configure the skills you need in your agent's config.
+```python
+agent.twitter_skills = ["get_mentions", "get_timeline", "post_tweet", "reply_tweet", "follow_user", "like_tweet", "retweet", "search_tweets"]
+```
+
+Before the first use, agent will request you to click the link to authorize the agent to access your twitter account.
+
+If you want to use your own twitter developer account, you can set it as follows:
+```python
+agent.twitter_config = {
+    "bearer_token": "your_bearer_token",
+    "consumer_key": "your_consumer_key",
+    "consumer_secret": "your_consumer_secret",
+    "access_token": "your_access_token",
+    "access_token_secret": "your_access_token_secret"
+}
+```
+
 ## Twitter as an Entrypoint
 
 Entrypoint is a type of conversational interface.
 
 The Twitter entrypoint allows your agent to automatically respond to Twitter mentions. When enabled, the agent will monitor mentions every 15 minutes and respond to them all.
+
+We suggest you only use twitter skills, not use it as an entrypoint.
 
 ### Configuration
 
@@ -43,50 +83,6 @@ The Twitter entrypoint:
 - Automatically manages API rate limits and quotas
 - Responds to mentions as threaded replies
 
-## Twitter Skills
-
-IntentKit provides a set of Twitter-specific skills that can be added to your agent's toolkit. All skills are built on top of the `TwitterBaseTool` base class which handles authentication and client initialization.
-
-### Available Skills
-
-1. `TwitterGetMentions`
-   - Retrieves mentions of the authenticated user
-   - Uses both `since_id` and `start_time` for reliable mention tracking
-   - Always looks back 24 hours for safety
-   - No additional parameters required
-
-2. `TwitterGetTimeline`
-   - Retrieves tweets from the authenticated user's timeline
-   - Tracks the last retrieved tweet using timestamp
-   - Returns formatted timeline data
-   - No additional parameters required
-
-3. `TwitterPostTweet`
-   - Posts new tweets to Twitter
-   - Parameters:
-     - `text`: Tweet content (max 280 characters)
-
-4. `TwitterReplyTweet`
-   - Posts reply tweets to existing tweets
-   - Parameters:
-     - `tweet_id`: ID of the tweet to reply to
-     - `text`: Reply content (max 280 characters)
-
-### Using Twitter Skills
-
-Add Twitter skills to your agent:
-Just configure the skills you need in your agent's config, the credentials also required.
-```python
-agent.twitter_skills = ["get_mentions", "get_timeline", "post_tweet", "reply_tweet"]
-agent.twitter_config = {
-    "bearer_token": "your_bearer_token",
-    "consumer_key": "your_consumer_key",
-    "consumer_secret": "your_consumer_secret",
-    "access_token": "your_access_token",
-    "access_token_secret": "your_access_token_secret"
-}
-```
-
 
 ## Rate Limits and Quotas
 
@@ -95,9 +91,20 @@ agent.twitter_config = {
 [Rate Limits](https://developer.x.com/en/docs/x-api/rate-limits)
 
 ### IntentKit
-IntentKit can help you manage Twitter API rate limits and quotas.
+Only when use the OAuth2.0 authentication, intentkit has a built-in rate limit:
 
-This feature is not released yet
+- post tweet: 20/day
+- reply tweet: 20/day
+- retweet: 5/15min
+- follow: 5/15min
+- like: 100/day
+- get mentions: 1/15min
+- get timeline: 5/15min
+- search: 3/15min
+
+### Yourself
+You can set the rate limit under the intentkit config in the future.
+Not released yet.
 
 ## Best Practices
 

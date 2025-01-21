@@ -63,17 +63,10 @@ class TwitterLikeTweet(TwitterBaseTool):
                     message="Failed to get Twitter client. Please check your authentication.",
                 )
 
-            # Get authenticated user's ID
-            user_id = self.twitter.get_id()
-            if not user_id:
-                return TwitterLikeTweetOutput(
-                    success=False, message="Failed to get authenticated user ID."
-                )
-
             # Like the tweet using tweepy client
             response = client.like(tweet_id=tweet_id, user_auth=self.twitter.use_key)
 
-            if response.data and response.data.get("liked"):
+            if "data" in response and "liked" in response["data"]:
                 return TwitterLikeTweetOutput(
                     success=True, message=f"Successfully liked tweet {tweet_id}"
                 )
