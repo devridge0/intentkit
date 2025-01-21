@@ -166,7 +166,7 @@ def initialize_agent(aid):
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
                     # TODO: replace it with CDP wallet.
-                    "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+                    agent.enso_config.get("from_address"),
                     skill_store,
                     aid,
                 )
