@@ -260,7 +260,7 @@ def create_agent(
 
     def default_memory_manager(state: AgentState) -> AgentState:
         messages = state["messages"]
-        logger.debug("Before memory manager: %s", messages)
+        # logger.debug("Before memory manager: %s", messages)
         if len(messages) <= 100:
             return state
         must_delete = len(messages) - 100
@@ -271,7 +271,7 @@ def create_agent(
                 messages[index] = RemoveMessage(id=message.id)
             else:
                 break
-        logger.debug("After memory manager: %s", messages)
+        # logger.debug("After memory manager: %s", messages)
         return state
 
     if memory_manager is None:

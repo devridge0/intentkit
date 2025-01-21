@@ -76,7 +76,9 @@ def chat(
     # Execute agent and get response
     resp = execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
 
-    logger.info(resp)
+    # only log if not in debug mode
+    if not config.debug_resp:
+        logger.info(resp)
     # reduce message quota
     quota.add_message(db)
     return "\n".join(resp)
