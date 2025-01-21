@@ -73,7 +73,11 @@ class TwitterRetweet(TwitterBaseTool):
             # Retweet the tweet using tweepy client
             response = client.retweet(tweet_id=tweet_id, user_auth=self.twitter.use_key)
 
-            if response.data and response.data.get("retweeted"):
+            if (
+                "data" in response
+                and "retweeted" in response["data"]
+                and response["data"]["retweeted"]
+            ):
                 return TwitterRetweetOutput(
                     success=True, message=f"Successfully retweeted tweet {tweet_id}"
                 )
