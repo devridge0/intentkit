@@ -3,7 +3,12 @@ from typing import Literal, Type
 import httpx
 from pydantic import BaseModel, Field
 
-from skills.enso.base import EnsoBaseTool, base_url, default_chain_id
+from skills.enso.base import (
+    EnsoBaseTool,
+    base_url,
+    default_chain_id,
+    default_protocol_slug,
+)
 
 # Actual Enso output types
 # class UnderlyingToken(BaseModel):
@@ -73,12 +78,12 @@ class TokenResponseCompact(BaseModel):
 
 
 class EnsoGetTokensInput(BaseModel):
-    chainId: int | None = Field(
+    chainId: int = Field(
         default_chain_id,
         description="The blockchain chain ID",
     )
-    protocolSlug: str | None = Field(
-        None,
+    protocolSlug: str = Field(
+        default_protocol_slug,
         description="The protocol slug (e.g., 'aave-v2', 'aave-v3', 'compound-v2')",
     )
     underlyingTokens: str | list[str] | None = Field(
@@ -95,7 +100,7 @@ class EnsoGetTokensInput(BaseModel):
     )
     type: Literal["defi", "base"] | None = Field(
         None,
-        description="The type of the token (e.g., 'defi', 'base')"
+        description="The type of the token (e.g., 'defi', 'base'). Note: Base Network also exists, it should not be confused with type."
     )
 
 
@@ -127,9 +132,12 @@ class EnsoGetTokens(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetTokensInput
 
-    def _run(self, **kwargs) -> EnsoGetTokensOutput:
+    def _run(self, chainId: int = default_chain_id, protocolSlug: str = default_protocol_slug,
+             **kwargs) -> EnsoGetTokensOutput:
         """Run the tool to get Tokens and APY.
         Args:
+            chainId (int): The chain id of the network.
+            protocolSlug (str): The protocol slug (e.g., 'aave-v2', 'aave-v3', 'compound-v2').
             **kwargs: kwargs for the tool with args schema defined in EnsoGetTokensInput.
         Returns:
             EnsoGetTokensOutput: A structured output containing the tokens APY data.
@@ -143,7 +151,11 @@ class EnsoGetTokens(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        params = EnsoGetTokensInput(**kwargs).model_dump(exclude_none=True)
+        params = EnsoGetTokensInput(
+            chainId=chainId,
+            protocolSlug=protocolSlug,
+            **kwargs
+        ).model_dump(exclude_none=True)
         params["page"] = 1
         params["includeMetadata"] = "true"
 
