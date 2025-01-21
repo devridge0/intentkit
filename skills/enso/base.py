@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 
 base_url = "https://api.enso.finance"
+default_chain_id = 8453
 
 
 class EnsoBaseTool(IntentKitSkill):
