@@ -4,14 +4,16 @@ import httpx
 from langchain_core.tools import ToolException
 from pydantic import BaseModel, Field
 
-from .base import EnsoBaseTool, base_url
+from .base import EnsoBaseTool, base_url, default_chain_id
 
 
 class EnsoGetRouteShortcutInput(BaseModel):
     fromAddress: str = Field(
         description="Ethereum address of the wallet to send the transaction from (It could be an EoA, or a Smart Wallet)."
     )
-    amountIn: list[int] = Field(description="Amount of tokenIn to swap in wei.")
+    amountIn: list[int] = Field(
+        description="Amount of tokenIn to swap in wei."
+    )
     tokenIn: list[str] = Field(
         description="Ethereum address of the token to swap or enter into a position from (For ETH, use 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)."
     )
@@ -19,8 +21,8 @@ class EnsoGetRouteShortcutInput(BaseModel):
         description="Ethereum address of the token to swap or enter into a position to (For ETH, use 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)."
     )
     chainId: int | None = Field(
-        1,
-        description="(Optional) Chain ID of the network to execute the transaction on.",
+        default_chain_id,
+        description="(Optional) Chain ID of the network to execute the transaction on. the default value is the chain_id extracted from networks according to tokenIn and tokenOut",
     )
     routingStrategy: Literal["router", "delegate", "ensowallet", None] = Field(
         None,
@@ -89,9 +91,9 @@ class Route(BaseModel):
     action: str | None = Field(
         None, description="Action has been done for route (e.g. swap)."
     )
-    internalRoutes: list[str] | None = Field(
-        None, description="Internal routes needed for the route."
-    )
+    # internalRoutes: list[str] | None = Field(
+    #     None, description="Internal routes needed for the route."
+    # )
 
 
 class RouteShortcutGetTransaction(BaseModel):
@@ -143,19 +145,19 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
 
     def _run(
-        self,
-        fromAddress: str,
-        amountIn: list[int],
-        tokenIn: list[str],
-        tokenOut: list[str],
-        **kwargs,
+            self,
+            fromAddress: str,
+            amountIn: list[int],
+            tokenIn: list[str],
+            tokenOut: list[str],
+            **kwargs,
     ) -> EnsoGetRouteShortcutOutput:
         """
         Run the tool to get swap route information.
 
         Args:
             fromAddress (str): Ethereum address of the wallet to send the transaction from (It could be an EoA, or a Smart Wallet).
-            amountIn (list[int]): Amount of tokenIn to swap in wei.
+            amountIn (list[int]): Amount of tokenIn to swap in wei, you should multiply user's requested value by token decimals.
             tokenIn (list[str]): Ethereum address of the token to swap or enter into a position from (For ETH, use 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee).
             tokenOut (list[str]): Ethereum address of the token to swap or enter into a position to (For ETH, use 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee).
             **kwargs: kwargs optional arguments for the tool with args schema defined in EnsoGetTokensInput.
@@ -205,12 +207,12 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
                 return EnsoGetRouteShortcutOutput(res=None, error=str(e))
 
     async def _arun(
-        self,
-        fromAddress: str,
-        amountIn: list[int],
-        tokenIn: list[str],
-        tokenOut: list[str],
-        **kwargs,
+            self,
+            fromAddress: str,
+            amountIn: list[int],
+            tokenIn: list[str],
+            tokenOut: list[str],
+            **kwargs,
     ) -> EnsoGetRouteShortcutOutput:
         """Async implementation of the tool.
 
