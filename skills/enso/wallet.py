@@ -16,7 +16,9 @@ class EnsoGetApproveInput(BaseModel):
     )
     tokenAddress: str = Field(description="ERC20 token address of the token to approve")
     amount: int = Field(description="Amount of tokens to approve in wei")
-    chainId: int = Field(default_chain_id, description="Chain ID of the blockchain network")
+    chainId: int = Field(
+        default_chain_id, description="Chain ID of the blockchain network"
+    )
     routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(
         None, description="Routing strategy to use"
     )
@@ -63,12 +65,12 @@ class EnsoGetWalletApprove(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetApproveInput
 
     def _run(
-            self,
-            fromAddress: str,
-            tokenAddress: str,
-            amount: int,
-            chainId: int = default_chain_id,
-            **kwargs,
+        self,
+        fromAddress: str,
+        tokenAddress: str,
+        amount: int,
+        chainId: int = default_chain_id,
+        **kwargs,
     ) -> EnsoGetApproveOutput:
         """
         Run the tool to approve enso router for a wallet.
@@ -123,12 +125,12 @@ class EnsoGetWalletApprove(EnsoBaseTool):
                 return EnsoGetApproveOutput(res=None, error=str(e))
 
     async def _arun(
-            self,
-            fromAddress: str,
-            tokenAddress: str,
-            amount: int,
-            chainId: int = default_chain_id,
-            **kwargs,
+        self,
+        fromAddress: str,
+        tokenAddress: str,
+        amount: int,
+        chainId: int = default_chain_id,
+        **kwargs,
     ) -> EnsoGetApproveOutput:
         """Async implementation of the tool.
 
@@ -145,7 +147,9 @@ class EnsoGetApprovalsInput(BaseModel):
     fromAddress: str = Field(
         ..., description="Address of the wallet to query approvals for"
     )
-    chainId: int = Field(default_chain_id, description="Chain ID of the blockchain network")
+    chainId: int = Field(
+        default_chain_id, description="Chain ID of the blockchain network"
+    )
     routingStrategy: Literal["ensowallet", "router", "delegate"] | None = Field(
         None, description="Routing strategy to use"
     )
@@ -188,7 +192,7 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetApprovalsInput
 
     def _run(
-            self, fromAddress: str, chainId: int = default_chain_id, **kwargs
+        self, fromAddress: str, chainId: int = default_chain_id, **kwargs
     ) -> EnsoGetApprovalsOutput:
         """
         Run the tool to get token approvals for a wallet.
@@ -238,7 +242,7 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
                 return EnsoGetApprovalsOutput(res=None, error=str(e))
 
     async def _arun(
-            self, fromAddress: str, chainId: int = default_chain_id, **kwargs
+        self, fromAddress: str, chainId: int = default_chain_id, **kwargs
     ) -> EnsoGetApprovalsOutput:
         """Async implementation of the tool.
 
@@ -252,7 +256,9 @@ class EnsoGetBalancesInput(BaseModel):
     Input model for retrieving wallet balances.
     """
 
-    chainId: int = Field(default_chain_id, description="Chain ID of the blockchain network")
+    chainId: int = Field(
+        default_chain_id, description="Chain ID of the blockchain network"
+    )
     eoaAddress: str = Field(
         description="Address of the eoa with which to associate the ensoWallet for balances"
     )
@@ -299,7 +305,7 @@ class EnsoGetWalletBalances(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetBalancesInput
 
     def _run(
-            self, eoaAddress: str, useEoa: bool, chainId: int = default_chain_id
+        self, eoaAddress: str, useEoa: bool, chainId: int = default_chain_id
     ) -> EnsoGetBalancesOutput:
         """
         Run the tool to get token balances of a wallet.
@@ -347,7 +353,7 @@ class EnsoGetWalletBalances(EnsoBaseTool):
                 return EnsoGetBalancesOutput(res=None, error=str(e))
 
     async def _arun(
-            self, eoaAddress: str, useEoa: bool, chainId: int = default_chain_id
+        self, eoaAddress: str, useEoa: bool, chainId: int = default_chain_id
     ) -> EnsoGetBalancesOutput:
         """Async implementation of the tool.
 
