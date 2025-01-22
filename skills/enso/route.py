@@ -1,7 +1,10 @@
-from typing import Type
+from typing import Tuple, Type
 
 import httpx
+from langchain.tools.base import ToolException
 from pydantic import BaseModel, Field
+
+from utils.random import generate_tx_confirm_string
 
 from .base import EnsoBaseTool, base_url, default_chain_id
 
@@ -93,11 +96,14 @@ class Route(BaseModel):
     # )
 
 
-class RouteShortcutGetTransaction(BaseModel):
+class EnsoGetRouteShortcutOutput(BaseModel):
     """
     Output schema for the `/api/v1/shortcuts/route` GET endpoint.
     """
 
+    txRef: str = Field(
+        description="The reference code is the unique identifier for the transaction call data.",
+    )
     gas: str | None = Field(None, description="Gas amount for the transaction.")
     amountOut: str | dict | None = Field(
         None, description="The final calculated amountOut as an object."
@@ -109,20 +115,29 @@ class RouteShortcutGetTransaction(BaseModel):
     feeAmount: list[str] | None = Field(
         None, description="An array of the fee amounts collected for each tokenIn."
     )
-    createdAt: int | None = Field(
-        None, description="Block number the transaction was created on."
-    )
-    tx: Transaction | None = Field(
-        None, description="The tx object to use in `ethers`."
-    )
-    route: list[Route] | None = Field(
-        None, description="Route that the shortcut will use."
-    )
+    # createdAt: int | None = Field(
+    #     None, description="Block number the transaction was created on."
+    # )
+    # route: list[Route] | None = Field(
+    #     None, description="Route that the shortcut will use."
+    # )
+
+    def __str__(self):
+        """
+        Returns the summary attribute as a string.
+        """
+        return f"tx reference: {self.txRef}, amount out: {self.amountOut}, price impact: {self.priceImpact}, gas: {self.gas}, fee amount: {self.feeAmount}, "
 
 
-class EnsoGetRouteShortcutOutput(BaseModel):
-    res: RouteShortcutGetTransaction | None = None
-    error: str | None = None
+class EnsoGetRouteShortcutArtifact(BaseModel):
+    """
+    Artifact model for the EnsoGetRouteShortcut tool.
+    """
+
+    txRef: str = Field(
+        description="This will be used by the other tools to broadcast the transaction."
+    )
+    tx: Transaction = Field(description="The tx object to use in `ethers`.")
 
 
 class EnsoGetRouteShortcut(EnsoBaseTool):
@@ -132,7 +147,8 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     and yield optimization, taking into account return rates, gas costs, and slippage.
 
     IMPORTANT: For each request, the required input parameters should be extracted from user's message, do not fill it
-    from your memory, and you should include the network name in the response.
+    from your memory, and you should include the network name in the response. the confirmation_code should be shown
+    to the users if the API call gets successful response.
 
     Deposit means to supply the underlying token to its parent token. (e.g. deposit USDC to receive aBasUSDC).
 
@@ -143,16 +159,19 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     """
 
     name: str = "enso_get_route_shortcut"
-    description: str = "This tool optimizes and performs DeFi swap, deposit, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
+    description: str = (
+        "This tool optimizes and performs DeFi swap, deposit, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
+    )
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
+    response_format: str = "content_and_artifact"
 
     def _run(
-            self,
-            amountIn: list[int],
-            tokenIn: list[str],
-            tokenOut: list[str],
-            chainId: int = default_chain_id,
-    ) -> EnsoGetRouteShortcutOutput:
+        self,
+        amountIn: list[int],
+        tokenIn: list[str],
+        tokenOut: list[str],
+        chainId: int = default_chain_id,
+    ) -> Tuple[EnsoGetRouteShortcutOutput, EnsoGetRouteShortcutArtifact]:
         """
         Run the tool to get swap route information.
 
@@ -183,41 +202,24 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
 
         with httpx.Client() as client:
             try:
-                response = client.get(
-                    url, headers=headers, params=params
-                )
+                response = client.get(url, headers=headers, params=params)
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
-
+                json_dict = response.json()
                 # Parse and return the response as a RouteShortcutGetTransaction object
-                return EnsoGetRouteShortcutOutput(
-                    res=RouteShortcutGetTransaction(**response.json()), error=None
+                tx_ref = generate_tx_confirm_string(10)
+                json_dict["txRef"] = tx_ref
+
+                return (
+                    EnsoGetRouteShortcutOutput(**json_dict),
+                    EnsoGetRouteShortcutArtifact(
+                        txRef=tx_ref,
+                        tx=Transaction(**json_dict.get("tx")),
+                    ),
                 )
 
-            except httpx.RequestError as req_err:
-                return EnsoGetRouteShortcutOutput(
-                    res=None, error=f"Request error: {req_err}"
-                )
-            except httpx.HTTPStatusError as http_err:
-                return EnsoGetRouteShortcutOutput(
-                    res=None, error=f"HTTP error: {http_err}"
-                )
+            # except httpx.RequestError as req_err:
+            #     raise ToolException("request error from Enso API") from req_err
+            # except httpx.HTTPStatusError as http_err:
+            #     raise ToolException("http error from Enso API") from http_err
             except Exception as e:
-                return EnsoGetRouteShortcutOutput(res=None, error=str(e))
-
-    async def _arun(
-            self,
-            amountIn: list[int],
-            tokenIn: list[str],
-            tokenOut: list[str],
-            chainId: int = default_chain_id,
-    ) -> EnsoGetRouteShortcutOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run(
-            amountIn=amountIn,
-            tokenIn=tokenIn,
-            tokenOut=tokenOut,
-            chainId=chainId,
-        )
+                raise ToolException(f"error from Enso API: {e}") from e
