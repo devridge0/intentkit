@@ -3,9 +3,11 @@
 # Base URL for the API
 BASE_URL="http://localhost:8000"  # Change this to your API server URL
 
-# JWT token for authentication, if you run agentkit by yourself, and not
-# enabled the admin auth, you can ignore this
-JWT_TOKEN="your-jwt-token-here"  # Change this to your actual JWT token
+# JWT token for authentication, change it to your actual JWT token. 
+# If you run agentkit by yourself, and not enabled the admin auth, 
+# you can ignore this line
+JWT_TOKEN="your-jwt-token-here"
+# Change this to your actual JWT token
 
 # Agent ID - must contain only lowercase letters, numbers, and hyphens
 AGENT_ID="my-test-agent"
@@ -49,6 +51,7 @@ CDP_ENABLED=false
 CDP_SKILLS='["get_wallet_details", "get_balance"]'
 CDP_NETWORK_ID="base-sepolia"
 
+# Enso settings (optional)
 ENSO_ENABLED=false
 ENSO_CONFIG='{
   "api_token": "",
