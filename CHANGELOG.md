@@ -1,11 +1,36 @@
 # Changelog
 
+## 2025-01-22
+
+### Features
+- If admin api enable the JWT authentication, the agent can only updated by its owner
+- Add upstream_id to Agent, when other service call admin API, can use this field to keep idempotent, or track the agent
+
+## 2025-01-21
+
+### Features
+- Enso add network skill
+
+### Improvements
+- Enso skills behavior improved
+
+## 2025-01-20
+
+### Features
+- Twitter skills now get more context, agent can know the author of the tweet, the thread of the tweet, and more.
+
+## 2025-01-19
+
+### Improvements
+- Twitter skills will not reply to your own tweets
+- Twitter docs improved
+
 ## 2025-01-18
 
 ### Improvements
 - Twitter rate limit only affected when using OAuth
 - Better twitter rate limit numbers
-- Slack notify improvement
+- Slack notify improved
 
 ## 2025-01-17
 

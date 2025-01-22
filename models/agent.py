@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
@@ -11,15 +12,28 @@ class Agent(SQLModel, table=True):
 
     __tablename__ = "agents"
 
-    id: str = Field(primary_key=True)
+    id: str = Field(
+        primary_key=True,
+        description="Agent ID, url-safe, only lowercase letters, numbers, and hyphens",
+    )
     number: int = Field(
-        sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False)
+        sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False),
+        description="Agent number, system assigned",
     )
     # AI part
-    name: Optional[str] = Field(default=None)
-    model: str = Field(default="gpt-4o-mini")
-    prompt: Optional[str]
-    prompt_append: Optional[str]
+    name: Optional[str] = Field(default=None, description="Agent name")
+    owner: Optional[str] = Field(default=None, description="Agent owner")
+    upstream_id: Optional[str] = Field(default=None, description="Upstream ID")
+    model: str = Field(
+        default="gpt-4o-mini",
+        description="https://platform.openai.com/docs/models#current-model-aliases",
+    )
+    prompt: Optional[str] = Field(default=None, description="Agent initial prompt")
+    prompt_append: Optional[str] = Field(
+        default=None,
+        description="Agent system prompt append, it is stronger than prompt",
+    )
+    temperature: float = Field(default=0.7, description="Temperature for AI")
     # autonomous mode
     autonomous_enabled: bool = Field(default=False)
     autonomous_minutes: Optional[int]
@@ -29,7 +43,7 @@ class Agent(SQLModel, table=True):
     cdp_enabled: bool = Field(default=False)
     cdp_skills: Optional[List[str]] = Field(sa_column=Column(ARRAY(String)))
     cdp_network_id: Optional[str]
-    cdp_wallet_data: Optional[str]
+    cdp_wallet_data: Optional[str]  # deprecated
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_enabled: bool = Field(default=False)  # TODO: to be deprecated
     twitter_entrypoint_enabled: bool = Field(default=False)  # TODO: add for future use
@@ -76,6 +90,22 @@ class Agent(SQLModel, table=True):
         """Create the agent if not exists, otherwise update it."""
         existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
         if existing_agent:
+            # Check owner
+            if existing_agent.owner and existing_agent.owner != self.owner:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Your JWT token does not match the agent owner",
+                )
+            # Check upstream_id
+            if (
+                existing_agent.upstream_id
+                and self.upstream_id
+                and existing_agent.upstream_id != self.upstream_id
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="upstream_id cannot be changed after creation",
+                )
             # Update existing agent
             for field in self.model_fields:
                 if field != "id":  # Skip the primary key
@@ -86,6 +116,16 @@ class Agent(SQLModel, table=True):
             db.refresh(existing_agent)
             return existing_agent
         else:
+            # Check upstream_id for idempotent
+            if self.upstream_id:
+                upstream_match = db.exec(
+                    select(Agent).where(Agent.upstream_id == self.upstream_id)
+                ).first()
+                if upstream_match:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="upstream_id already exists",
+                    )
             # Create new agent
             db.add(self)
             db.commit()
