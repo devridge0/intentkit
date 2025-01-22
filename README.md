@@ -93,7 +93,7 @@ There are many fields that can control the agent's behavior, we have provided a 
 
 6. Try it out:
 ```bash
-curl "http://127.0.0.1:8000/agents/admin/chat?q=Hello"
+curl "http://127.0.0.1:8000/admin/chat?q=Hello"
 ```
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
