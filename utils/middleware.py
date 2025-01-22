@@ -23,11 +23,15 @@ def create_jwt_middleware(enable: bool, jwt_secret: str):
 
     async def verify_jwt(
         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    ) -> bool:
-        """Verify JWT token from Authorization header."""
+    ) -> str:
+        """Verify JWT token from Authorization header and return the subject claim.
+        
+        Returns:
+            str: The subject claim from the JWT token
+        """
         logger.debug(f"verify_jwt: enable={enable}, credentials={credentials}")
         if not enable:
-            return True
+            return ""
 
         if not credentials:
             raise HTTPException(
@@ -35,8 +39,8 @@ def create_jwt_middleware(enable: bool, jwt_secret: str):
             )
 
         try:
-            jwt.decode(credentials.credentials, jwt_secret, algorithms=["HS256"])
-            return True
+            payload = jwt.decode(credentials.credentials, jwt_secret, algorithms=["HS256"])
+            return payload.get("sub", "")
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Invalid authentication token")
 

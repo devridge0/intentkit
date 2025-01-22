@@ -15,8 +15,10 @@ admin_router = APIRouter()
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
 
 
-@admin_router.post("/agents", status_code=201, dependencies=[Depends(verify_jwt)])
-def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
+@admin_router.post("/agents", status_code=201)
+def create_agent(
+    agent: Agent, subject: str = Depends(verify_jwt), db: Session = Depends(get_db)
+) -> Agent:
     """Create or update an agent.
 
     This endpoint:
@@ -42,6 +44,9 @@ def create_agent(agent: Agent, db: Session = Depends(get_db)) -> Agent:
             status_code=400,
             detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
         )
+
+    if subject:
+        agent.owner = subject
 
     # Get the latest agent from create_or_update
     latest_agent = agent.create_or_update(db)
