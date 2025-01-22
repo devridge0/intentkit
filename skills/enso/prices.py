@@ -7,7 +7,9 @@ from .base import EnsoBaseTool, base_url, default_chain_id
 
 
 class EnsoGetPricesInput(BaseModel):
-    chainId: int = Field(default_chain_id, description="Blockchain chain ID of the token")
+    chainId: int = Field(
+        default_chain_id, description="Blockchain chain ID of the token"
+    )
     address: str = Field(
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         description="Contract address of the token",
@@ -47,9 +49,9 @@ class EnsoGetPrices(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetPricesInput
 
     def _run(
-            self,
-            chainId: int = default_chain_id,
-            address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        self,
+        chainId: int = default_chain_id,
+        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     ) -> EnsoGetPricesOutput:
         """
         Asynchronous function to request the token price from the API.
@@ -87,9 +89,9 @@ class EnsoGetPrices(EnsoBaseTool):
                 return EnsoGetPricesOutput(res=None, error=str(e))
 
     async def _arun(
-            self,
-            chainId: int = default_chain_id,
-            address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        self,
+        chainId: int = default_chain_id,
+        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     ) -> EnsoGetPricesOutput:
         """Async implementation of the tool.
 

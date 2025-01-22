@@ -3,7 +3,7 @@ from sqlmodel import Session, func, select
 
 from app.config.config import config
 from app.core.engine import initialize_agent
-from models.agent import Agent, AgentQuota
+from models.agent import Agent, AgentData, AgentResponse
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
 from utils.slack_alert import send_slack_message
@@ -18,7 +18,7 @@ verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_s
 @admin_router.post("/agents", status_code=201)
 def create_agent(
     agent: Agent, subject: str = Depends(verify_jwt), db: Session = Depends(get_db)
-) -> Agent:
+) -> AgentResponse:
     """Create or update an agent.
 
     This endpoint:
@@ -32,7 +32,7 @@ def create_agent(
         db: Database session
 
     Returns:
-        Agent: Updated agent configuration
+        AgentResponse: Updated agent configuration with additional processed data
 
     Raises:
         HTTPException:
@@ -116,46 +116,66 @@ def create_agent(
 
     # TODO: change here when multiple instances deploy
     initialize_agent(agent.id)
-    return latest_agent
+
+    # Get agent data
+    agent_data = db.exec(
+        select(AgentData).where(AgentData.id == latest_agent.id)
+    ).first()
+
+    # Convert to AgentResponse
+    return AgentResponse.from_agent(latest_agent, agent_data)
 
 
 @admin_router.get("/agents", dependencies=[Depends(verify_jwt)])
-def get_agents(db: Session = Depends(get_db)) -> list:
+def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
 
     Args:
         db: Database session
 
     Returns:
-        list: List of agents with their quota information
+        list[AgentResponse]: List of agents with their quota information and additional processed data
     """
-    # Query agents and quotas together
-    query = select(Agent.id, Agent.name, AgentQuota).join(
-        AgentQuota, Agent.id == AgentQuota.id, isouter=True
-    )
+    # Query all agents first
+    agents = db.exec(select(Agent)).all()
 
-    results = db.exec(query).all()
+    # Batch get agent data
+    agent_ids = [agent.id for agent in agents]
+    agent_data_list = db.exec(
+        select(AgentData).where(AgentData.id.in_(agent_ids))
+    ).all()
+    agent_data_map = {data.id: data for data in agent_data_list}
 
-    # Format the response
-    agents = []
-    for result in results:
-        agent_data = {
-            "id": result.id,
-            "name": result.name,
-            "quota": {
-                "plan": result[2].plan if result[2] else "none",
-                "message_count_total": (
-                    result[2].message_count_total if result[2] else 0
-                ),
-                "message_limit_total": (
-                    result[2].message_limit_total if result[2] else 0
-                ),
-                "last_message_time": result[2].last_message_time if result[2] else None,
-                "last_autonomous_time": (
-                    result[2].last_autonomous_time if result[2] else None
-                ),
-            },
-        }
-        agents.append(agent_data)
+    # Convert to AgentResponse objects
+    return [
+        AgentResponse.from_agent(agent, agent_data_map.get(agent.id))
+        for agent in agents
+    ]
 
-    return agents
+
+@admin_router.get("/agents/{agent_id}", dependencies=[Depends(verify_jwt)])
+def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentResponse:
+    """Get a single agent by ID.
+
+    Args:
+        agent_id: ID of the agent to retrieve
+        db: Database session
+
+    Returns:
+        AgentResponse: Agent configuration with additional processed data
+
+    Raises:
+        HTTPException:
+            - 404: Agent not found
+    """
+    agent = db.exec(select(Agent).where(Agent.id == agent_id)).first()
+    if not agent:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Agent with id {agent_id} not found",
+        )
+
+    # Get agent data
+    agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
+
+    return AgentResponse.from_agent(agent, agent_data)
