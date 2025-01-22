@@ -16,17 +16,25 @@ class ConnectedNetwork(BaseModel):
     """
     Represents a single network connection.
     """
-    id: str | None = Field(None, description="Unique identifier of the network")
+
+    id: int | None = Field(None, description="Unique identifier of the network")
     name: str | None = Field(None, description="Name of the network")
-    isConnected: bool | None = Field(None, description="Indicates if the network is connected")
+    isConnected: bool | None = Field(
+        None, description="Indicates if the network is connected"
+    )
 
 
 class EnsoGetNetworksOutput(BaseModel):
     """
     Output model for retrieving networks.
     """
-    res: list[ConnectedNetwork] | None = Field(None, description="Response containing networks and metadata")
-    error: str | None = Field(None, description="Error message if network retrieval failed")
+
+    res: list[ConnectedNetwork] | None = Field(
+        None, description="Response containing networks and metadata"
+    )
+    error: str | None = Field(
+        None, description="Error message if network retrieval failed"
+    )
 
 
 class EnsoGetNetworks(EnsoBaseTool):
@@ -39,14 +47,8 @@ class EnsoGetNetworks(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetNetworksInput
 
     def _run(self) -> EnsoGetNetworksOutput:
-        """Sync implementation of the tool.
-
-        This tool doesn't have a native sync implementation.
         """
-
-    async def _arun(self) -> EnsoGetNetworksOutput:
-        """
-        Asynchronous function to request the list of supported networks.
+        Function to request the list of supported networks and their chain id and name.
 
         Returns:
             EnsoGetNetworksOutput: A structured output containing the network list or an error message.
@@ -58,10 +60,10 @@ class EnsoGetNetworks(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        async with httpx.AsyncClient() as client:
+        with httpx.Client() as client:
             try:
                 # Send the GET request
-                response = await client.get(url, headers=headers)
+                response = client.get(url, headers=headers)
                 response.raise_for_status()
 
                 # Parse the response JSON into the NetworkResponse model
@@ -71,3 +73,10 @@ class EnsoGetNetworks(EnsoBaseTool):
             except Exception as e:
                 # Handle any errors that occur
                 return EnsoGetNetworksOutput(res=None, error=str(e))
+
+    async def _arun(self) -> EnsoGetNetworksOutput:
+        """Async implementation of the tool.
+
+        This tool doesn't have a native async implementation, so we call the sync version.
+        """
+        return self._run()
