@@ -159,9 +159,7 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
     """
 
     name: str = "enso_get_route_shortcut"
-    description: str = (
-        "This tool optimizes and performs DeFi swap, deposit, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
-    )
+    description: str = "This tool optimizes and performs DeFi swap, deposit, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
     response_format: str = "content_and_artifact"
 

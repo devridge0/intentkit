@@ -74,7 +74,9 @@ class TokenResponseCompact(BaseModel):
     underlyingTokens: list[UnderlyingTokenCompact] | None = Field(
         None, description="List of underlying tokens"
     )
-    decimals: int | None = Field(None, description="The number of decimals for the token")
+    decimals: int | None = Field(
+        None, description="The number of decimals for the token"
+    )
 
 
 class EnsoGetTokensInput(BaseModel):
@@ -100,7 +102,7 @@ class EnsoGetTokensInput(BaseModel):
     )
     type: Literal["defi", "base"] | None = Field(
         None,
-        description="The type of the token (e.g., 'defi', 'base'). Note: Base Network also exists, it should not be confused with type."
+        description="The type of the token (e.g., 'defi', 'base'). Note: Base Network also exists, it should not be confused with type.",
     )
 
 
@@ -132,8 +134,12 @@ class EnsoGetTokens(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetTokensInput
 
-    def _run(self, chainId: int = default_chain_id, protocolSlug: str = default_protocol_slug,
-             **kwargs) -> EnsoGetTokensOutput:
+    def _run(
+        self,
+        chainId: int = default_chain_id,
+        protocolSlug: str = default_protocol_slug,
+        **kwargs,
+    ) -> EnsoGetTokensOutput:
         """Run the tool to get Tokens and APY.
         Args:
             chainId (int): The chain id of the network.
@@ -152,9 +158,7 @@ class EnsoGetTokens(EnsoBaseTool):
         }
 
         params = EnsoGetTokensInput(
-            chainId=chainId,
-            protocolSlug=protocolSlug,
-            **kwargs
+            chainId=chainId, protocolSlug=protocolSlug, **kwargs
         ).model_dump(exclude_none=True)
         params["page"] = 1
         params["includeMetadata"] = "true"

@@ -264,7 +264,7 @@ def initialize_agent(aid):
 
 
 def execute_agent(
-        aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
 ) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
@@ -350,7 +350,7 @@ def execute_agent(
             resp_debug_append = ""
     # run
     for chunk in executor.stream(
-            {"messages": [HumanMessage(content=content)]}, stream_config
+        {"messages": [HumanMessage(content=content)]}, stream_config
     ):
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
