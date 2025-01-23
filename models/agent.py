@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
@@ -53,7 +54,8 @@ class Agent(SQLModel, table=True):
         description="Whether the agent can operate autonomously without user input",
     )
     autonomous_minutes: Optional[int] = Field(
-        description="Interval in minutes between autonomous operations when enabled"
+        default=240,
+        description="Interval in minutes between autonomous operations when enabled",
     )
     autonomous_prompt: Optional[str] = Field(
         description="Special prompt used during autonomous operation mode"
@@ -150,10 +152,20 @@ class Agent(SQLModel, table=True):
 
     def create_or_update(self, db: Session) -> "Agent":
         """Create the agent if not exists, otherwise update it."""
+        # generate id if not exists
+        if not self.id:
+            self.id = XID().to_str()
+
         # input check
         self.number = None
         self.created_at = None
         self.updated_at = None
+        if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
+            raise HTTPException(
+                status_code=400,
+                detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
+            )
+
         # Check if agent exists
         existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
         if existing_agent:
