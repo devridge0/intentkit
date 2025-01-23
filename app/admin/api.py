@@ -39,12 +39,6 @@ def create_agent(
             - 400: Invalid agent ID format
             - 500: Database error
     """
-    if not all(c.islower() or c.isdigit() or c == "-" for c in agent.id):
-        raise HTTPException(
-            status_code=400,
-            detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
-        )
-
     if subject:
         agent.owner = subject
 

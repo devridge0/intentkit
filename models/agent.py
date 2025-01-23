@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
@@ -18,7 +19,7 @@ class Agent(SQLModel, table=True):
         primary_key=True,
         description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
     )
-    number: int = Field(
+    number: Optional[int] = Field(
         sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False),
         description="Auto-incrementing number assigned by the system for easy reference",
     )
@@ -31,7 +32,7 @@ class Agent(SQLModel, table=True):
     upstream_id: Optional[str] = Field(
         default=None, description="External reference ID for idempotent operations"
     )
-    model: str = Field(
+    model: Optional[str] = Field(
         default="gpt-4o-mini",
         description="AI model identifier to be used by this agent for processing requests",
     )
@@ -43,24 +44,25 @@ class Agent(SQLModel, table=True):
         default=None,
         description="Additional system prompt that overrides or extends the base prompt",
     )
-    temperature: float = Field(
+    temperature: Optional[float] = Field(
         default=0.7,
         description="AI model temperature parameter controlling response randomness (0.0-1.0)",
     )
     # autonomous mode
-    autonomous_enabled: bool = Field(
+    autonomous_enabled: Optional[bool] = Field(
         default=False,
         description="Whether the agent can operate autonomously without user input",
     )
     autonomous_minutes: Optional[int] = Field(
-        description="Interval in minutes between autonomous operations when enabled"
+        default=240,
+        description="Interval in minutes between autonomous operations when enabled",
     )
     autonomous_prompt: Optional[str] = Field(
         description="Special prompt used during autonomous operation mode"
     )
     # if cdp_enabled, will load cdp skills
     # if the cdp_skills is empty, will load all
-    cdp_enabled: bool = Field(
+    cdp_enabled: Optional[bool] = Field(
         default=False,
         description="Whether CDP (Crestal Development Platform) integration is enabled",
     )
@@ -75,10 +77,7 @@ class Agent(SQLModel, table=True):
         description="Deprecated: CDP wallet information"
     )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
-    twitter_enabled: bool = Field(
-        default=False, description="Deprecated: Whether Twitter integration is enabled"
-    )
-    twitter_entrypoint_enabled: bool = Field(
+    twitter_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Twitter"
     )
     twitter_config: Optional[dict] = Field(
@@ -92,10 +91,10 @@ class Agent(SQLModel, table=True):
         description="List of Twitter-specific skills available to this agent",
     )
     # if telegram_enabled, the telegram_entrypoint will be enabled, telegram_config will be checked
-    telegram_enabled: bool = Field(
+    telegram_enabled: Optional[bool] = Field(
         default=False, description="Deprecated: Whether Telegram integration is enabled"
     )
-    telegram_entrypoint_enabled: bool = Field(
+    telegram_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Telegram"
     )
     telegram_config: Optional[dict] = Field(
@@ -118,7 +117,7 @@ class Agent(SQLModel, table=True):
         description="List of general-purpose skills available to this agent",
     )
     # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
-    enso_enabled: bool = Field(
+    enso_enabled: Optional[bool] = Field(
         default=False, description="Whether Enso integration is enabled"
     )
     # enso skills
@@ -153,6 +152,21 @@ class Agent(SQLModel, table=True):
 
     def create_or_update(self, db: Session) -> "Agent":
         """Create the agent if not exists, otherwise update it."""
+        # generate id if not exists
+        if not self.id:
+            self.id = XID().to_str()
+
+        # input check
+        self.number = None
+        self.created_at = None
+        self.updated_at = None
+        if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
+            raise HTTPException(
+                status_code=400,
+                detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
+            )
+
+        # Check if agent exists
         existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
         if existing_agent:
             # Check owner
@@ -293,6 +307,12 @@ class AgentResponse(BaseModel):
     has_twitter_linked: bool = Field(
         description="Whether the agent has linked their Twitter account"
     )
+    linked_twitter_username: Optional[str] = Field(
+        description="The username of the linked Twitter account"
+    )
+    linked_twitter_name: Optional[str] = Field(
+        description="The name of the linked Twitter account"
+    )
     has_twitter_self_key: bool = Field(
         description="Whether the agent has self-keyed their Twitter account"
     )
@@ -327,7 +347,11 @@ class AgentResponse(BaseModel):
 
         # Process Twitter linked status
         has_twitter_linked = False
+        linked_twitter_username = None
+        linked_twitter_name = None
         if agent_data and agent_data.twitter_access_token:
+            linked_twitter_username = agent_data.twitter_username
+            linked_twitter_name = agent_data.twitter_name
             if agent_data.twitter_access_token_expires_at:
                 has_twitter_linked = (
                     agent_data.twitter_access_token_expires_at
@@ -369,6 +393,8 @@ class AgentResponse(BaseModel):
             {
                 "cdp_wallet_address": cdp_wallet_address,
                 "has_twitter_linked": has_twitter_linked,
+                "linked_twitter_username": linked_twitter_username,
+                "linked_twitter_name": linked_twitter_name,
                 "has_twitter_self_key": has_twitter_self_key,
                 "has_telegram_self_key": has_telegram_self_key,
             }
