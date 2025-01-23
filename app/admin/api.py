@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlmodel import Session, func, select
 
 from app.config.config import config
@@ -15,9 +15,11 @@ admin_router = APIRouter()
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
 
 
-@admin_router.post("/agents", status_code=201)
+@admin_router.post("/agents", tags=["Agent"], status_code=201)
 def create_agent(
-    agent: Agent, subject: str = Depends(verify_jwt), db: Session = Depends(get_db)
+    agent: Agent = Body(Agent, description="Agent configuration"),
+    subject: str = Depends(verify_jwt),
+    db: Session = Depends(get_db),
 ) -> AgentResponse:
     """Create or update an agent.
 
@@ -28,16 +30,16 @@ def create_agent(
     4. Masks sensitive data in response
 
     Args:
-        agent: Agent configuration
-        db: Database session
+      - agent: Agent configuration
+      - db: Database session
 
     Returns:
-        AgentResponse: Updated agent configuration with additional processed data
+      - AgentResponse: Updated agent configuration with additional processed data
 
     Raises:
-        HTTPException:
-            - 400: Invalid agent ID format
-            - 500: Database error
+      - HTTPException:
+          - 400: Invalid agent ID format
+          - 500: Database error
     """
     if subject:
         agent.owner = subject
@@ -120,7 +122,7 @@ def create_agent(
     return AgentResponse.from_agent(latest_agent, agent_data)
 
 
-@admin_router.get("/agents", dependencies=[Depends(verify_jwt)])
+@admin_router.get("/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)])
 def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
 
@@ -147,7 +149,9 @@ def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
     ]
 
 
-@admin_router.get("/agents/{agent_id}", dependencies=[Depends(verify_jwt)])
+@admin_router.get(
+    "/agents/{agent_id}", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+)
 def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentResponse:
     """Get a single agent by ID.
 
