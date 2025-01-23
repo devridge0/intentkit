@@ -1,5 +1,16 @@
 # Changelog
 
+## 2025-01-23
+
+### Features
+- Chat API released, you can use it to support a web UI
+
+### Improvements
+- Admin API: 
+  - When create agent, id is not required now, we will generate a random id if not provided
+  - All agent response data is improved, it has more data now
+- ENSO Skills improved
+
 ## 2025-01-22
 
 ### Features
