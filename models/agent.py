@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
+from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, Session, SQLModel, select
@@ -19,7 +20,7 @@ class Agent(SQLModel, table=True):
         primary_key=True,
         description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
     )
-    number: Optional[int] = Field(
+    number: SkipJsonSchema[int] = Field(
         sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False),
         description="Auto-incrementing number assigned by the system for easy reference",
     )
@@ -58,7 +59,7 @@ class Agent(SQLModel, table=True):
         description="Interval in minutes between autonomous operations when enabled",
     )
     autonomous_prompt: Optional[str] = Field(
-        description="Special prompt used during autonomous operation mode"
+        default=None, description="Special prompt used during autonomous operation mode"
     )
     # if cdp_enabled, will load cdp skills
     # if the cdp_skills is empty, will load all
@@ -67,26 +68,29 @@ class Agent(SQLModel, table=True):
         description="Whether CDP (Crestal Development Platform) integration is enabled",
     )
     cdp_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of CDP skills available to this agent",
     )
     cdp_network_id: Optional[str] = Field(
-        description="Network identifier for CDP integration"
+        default="base-sepolia", description="Network identifier for CDP integration"
     )
-    cdp_wallet_data: Optional[str] = Field(
-        description="Deprecated: CDP wallet information"
+    cdp_wallet_data: SkipJsonSchema[Optional[str]] = Field(
+        default=None, description="Deprecated: CDP wallet information"
     )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Twitter"
     )
     twitter_config: Optional[dict] = Field(
+        default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Twitter integration configuration settings",
     )
     # twitter skills require config, but not require twitter_enabled flag.
     # As long as twitter_skills is not empty, the corresponding skills will be loaded.
     twitter_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Twitter-specific skills available to this agent",
     )
@@ -98,21 +102,25 @@ class Agent(SQLModel, table=True):
         default=False, description="Whether the agent can receive events from Telegram"
     )
     telegram_config: Optional[dict] = Field(
+        default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Telegram integration configuration settings",
     )
     # telegram skills not used for now
     telegram_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Telegram-specific skills available to this agent",
     )
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Crestal platform-specific skills available to this agent",
     )
     # skills not require config
     common_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of general-purpose skills available to this agent",
     )
@@ -122,26 +130,29 @@ class Agent(SQLModel, table=True):
     )
     # enso skills
     enso_skills: Optional[List[str]] = Field(
+        default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Enso-specific skills available to this agent",
     )
     enso_config: Optional[dict] = Field(
+        default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Enso integration configuration settings",
     )
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
+        default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Mapping of skill set configurations for different platforms and capabilities",
     )
     # auto timestamp
-    created_at: datetime | None = Field(
+    created_at: SkipJsonSchema[datetime] | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
-    updated_at: datetime | None = Field(
+    updated_at: SkipJsonSchema[datetime] | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={
