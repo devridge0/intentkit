@@ -1202,6 +1202,84 @@ files = [
 ]
 
 [[package]]
+name = "epyxid"
+version = "0.3.3"
+description = "Python wrapper around Rust implementation of XID (Globally Unique ID Generator)"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "epyxid-0.3.3-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:74ffe781cbd1f8ce4b59492e97191ac0ce47af6b76c227430e29fc5fd57f676d"},
+    {file = "epyxid-0.3.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:92d1b52dc806964413b93c3460d36b5d44cbde9cc57633536e3692ef529fbfd2"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fbf022505aa18de53b070e0178b08b63a81f2e065ab12b5a42cb54cf3d0e4d39"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:5a9b55b91a8ff0542ed205212a406bccf714a08b99229ea6581210e406906398"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:1cd4bd27b398626c0fbb57acabc85876fa57b2f5219cb263017ca9174f124610"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:daca238d777ea67505802d7e3f71f21dfa5506931335084dcb96771465ea189f"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b3ec73d14009b35ee68ab38624da9d08da110dcd729d964ec41c506e744ef372"},
+    {file = "epyxid-0.3.3-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:6a91dcd344e88286ceeeb8645df16279eacdfb9197e1ffa995b2135c77a8915e"},
+    {file = "epyxid-0.3.3-cp310-cp310-win32.whl", hash = "sha256:a3f108b85c654bac08f2fae3bc699dc1eb2e35f5e7d8f3117e4210a81686f69f"},
+    {file = "epyxid-0.3.3-cp310-cp310-win_amd64.whl", hash = "sha256:809c7063f3990ce5ce0464def8e5d996779750a02bd8860f404861f0adbe45b1"},
+    {file = "epyxid-0.3.3-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:7c466ef01bb4fc24cebaf39af58d97af2719bd86147bc5e0935d29a9f8c1e944"},
+    {file = "epyxid-0.3.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:80a49126914bcc43c310a3901afca06b0c02962d9abb0790a03d417a5937d605"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e07f060042b4577166168f3cea3bcb090c8ab85430a021a4264e7f84efa6622a"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c161ad7b1c201c848e0d58fa3455c8c130588400806a01a862e3e0bdba893de8"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:8fe871b38de9a208326c93aae0bbe2696c8d0857de60b99c4fcbeeb7fc801d68"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:a411ca90f990c1be099def20272bcd8c62a7797c15e3dc8c361c43cb3ca48f43"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:777c6c7186de5e9fcd804571a541e5682d481a536a85292802c38e6ac06d5139"},
+    {file = "epyxid-0.3.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:9fc6af0c61fd46d48abf20afa8787b693318b277329a2e87b4d60f5536b082aa"},
+    {file = "epyxid-0.3.3-cp311-cp311-win32.whl", hash = "sha256:3273325a0084b657ac67fa2cf35502aa6b866c7ff7ccea128bfd1bfda4527eba"},
+    {file = "epyxid-0.3.3-cp311-cp311-win_amd64.whl", hash = "sha256:9b65f0e47004ce5b2cf1869ea32f2755fdeda25555925be473144b598c94b8d2"},
+    {file = "epyxid-0.3.3-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:2dbd91b3e31d6a722cb621f62300f6e75c1f67b56582a16d52193ca589e66adb"},
+    {file = "epyxid-0.3.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:87394b46a9b6a70693afd2b2448bdcea6bb4e47462d3658f177c80e64ee4307b"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:af1be68bb3ca25cd0e4f2c3fd9d42dc652d0e5dc5f80ac26bb4fb3481fc0924d"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:ed2a83f783324e2fc31639de40b253dc3dd6cbe1477ac5f46e3c3a0194da6665"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d8eebaf3cd173f4b57749081dab32b3aa7fba1ae5de455559ab143a6dd84571f"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:103ba7f38c376e4534582a24a6a71ac169c7d936d44b1ff9a73a30f72cc39919"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0d8c7044b57eb62f09eebcc33607282189df6b2312f87f8f1c654204c27c6c60"},
+    {file = "epyxid-0.3.3-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:02dc9fc6bbfea1b6f2e38e2436df66be91034ef609d53f77049714ad6f027072"},
+    {file = "epyxid-0.3.3-cp312-cp312-win32.whl", hash = "sha256:923dd761bd4615113a318c01fec02d364f574b59a45ca49ad706a50db8883161"},
+    {file = "epyxid-0.3.3-cp312-cp312-win_amd64.whl", hash = "sha256:47faf9e3acc2733155c42ff878ad054645f856c1a1f34a63c85ed91446ebfdf4"},
+    {file = "epyxid-0.3.3-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:1b67a002d22745decfbcc28c5bb101a5652b655d1532f5971cbdeb0935a54bbb"},
+    {file = "epyxid-0.3.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:d131d9999265555f6ce73142ea98dc42a1dc0d732e1c4b2e0ae798fb14739dac"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6fa6758ac94a4178db4e600b29e37c5eecd0ec31ffd85f1c035b868bf198a7b7"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:85604c081efd99d7e9efaea74d71d1247c72368e5551df3bb819877a44dff91e"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:9e1964633d17888f318db05f5434207559c463a300c6900782f567c0586e809d"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:e5c4c7e157b2ba95002ed1a9e2ae72d6d7565156bc1bbc58a31bb9b0433372e5"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:29ec69cb69d45ef643d3da0188b021291c19c6d242a17273f6d96e8a9bbd74ab"},
+    {file = "epyxid-0.3.3-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:ee02dff3574e77d5c1cc631bcb2e051b78fa207f0db209542bdc390f2ae83940"},
+    {file = "epyxid-0.3.3-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:90e3fb69966e7f7242e5310ca06c908e2e4f7424ac517553c9534f8f7cbba792"},
+    {file = "epyxid-0.3.3-cp313-cp313t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:9734a4044e3731bfb42566ffc95ec96d175c161e8bd4823671c2912066104ba7"},
+    {file = "epyxid-0.3.3-cp313-cp313t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:5bd575164d250a94c1e5708a16cc2bedc447f05d5cf4792183b3936fdde7296e"},
+    {file = "epyxid-0.3.3-cp313-cp313t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4ec5c8b0fb12200826c0a2cd934ea1928d81a87bacac82f32780aa11a64973f7"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b63d82017fc51f76313c461fa3559d10ec4843a22fb6a829222d79fec6f68d26"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:796ee9a27d987f59dc53940be327655a23585c8b9622e82aa8cd29a8af6c2662"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:17f7685c8999d789aea3e3e339025d0303fb5b67b9c867aa922b36b97190bd07"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:c84b5249f73838e9811845026b729c2788a5013a3143eadd78026f9e8a6d388e"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:144c30232010306f5ef272e30e86febb93681669f6ffbd9b6d41ef9411b9f343"},
+    {file = "epyxid-0.3.3-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:155dd5da5399b380be21f685e592cef1dcdcee9e722a0babb2463c8958b3e821"},
+    {file = "epyxid-0.3.3-cp38-cp38-win32.whl", hash = "sha256:1622dc01bbe37d0e09ba3478b4a0c3a6bea25f3e9f9e18a35704bdd11d887a90"},
+    {file = "epyxid-0.3.3-cp38-cp38-win_amd64.whl", hash = "sha256:edcd97df6fdad437c21471cfc32de7f4e0f2b9c0794ba153f652001e11ebad7d"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4782b35653c64a7372e161463ee08eb4f5777edce3f5331d87ce5097bbf9c6b5"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a60266c012e316e1faa733f59e8abd3d6076ce8f1b4f00a1688174662e2a47f9"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f1b78e8c14a9032c3864d15c41f9adeccdc5832cbc5abfd80d6ba95a01ed8f9e"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:5cb6ab126362667a1496e4c113b8c934e6b30b12be4bbcb9d9a5fc4c04481a27"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:14497d807c24e208e695552ab623ca873023528eed7a7d0ebe94433ea6fbd957"},
+    {file = "epyxid-0.3.3-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:bbc327eec9cf0903c996491aecd8825a6d2363c664993a25f930fa8b52e62e3d"},
+    {file = "epyxid-0.3.3-cp39-cp39-win32.whl", hash = "sha256:d14371a34704ee15f077f30274ef8647f7b2047bcfd8342872641eafd1a2035c"},
+    {file = "epyxid-0.3.3-cp39-cp39-win_amd64.whl", hash = "sha256:2b4c7d7bd52d35fc1baa2e47c99542ab018dbcccab4104c657d6a11a6f8fb9c9"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:896fe6f9a750043422ef21cb33f323a7b2a21115648e670ef62539f1ec189cd8"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a54b58a7f2ba7318d81e8b1038739cbc3d4eeb9ac38c6e12ed31026cf67473eb"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:405ea657c1b1bcf3cba262f36f3c12f580be14bd2f62d5b19bfc8bfb72b33722"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:3e0a17101ed5d4dfd30632cd32288aa38accaffc642135b063931aa2ff72d56f"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:14ab6bdbe00573de9fedda54a2bc1b678dc0c35cd4fbae826b57e87167efe4f5"},
+    {file = "epyxid-0.3.3-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:1be600c2cbf4f4b1e0b6a494e5c1cbc2a082dd59e0c0e661b1c7d770938b4b3e"},
+    {file = "epyxid-0.3.3-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e1f417bfef7345137c583a73f72b0f310ce4e1f38667c6c54ce3f0f6404f38fc"},
+    {file = "epyxid-0.3.3-pp39-pypy39_pp73-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:b676d7e2e92d2cc6396f284d6d31228d2405c7bb4b903de7190aac5a6a2d22f6"},
+    {file = "epyxid-0.3.3-pp39-pypy39_pp73-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:98f8dbdd876ebb77c73c358f1bc29ee0e8c728008bdef514e66a591c30e489d4"},
+    {file = "epyxid-0.3.3-pp39-pypy39_pp73-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:deba52199eba010ee2deec522c05852057b2c7cc6d21d9f5efc466a58e7d31cd"},
+    {file = "epyxid-0.3.3.tar.gz", hash = "sha256:3fbb54b96b5c1fdc1cb2484c992e450beaeb21a299ba5fbb6fcf8a2b04ee4249"},
+]
+
+[[package]]
 name = "eth-abi"
 version = "5.2.0"
 description = "eth_abi: Python utilities for working with Ethereum ABI definitions, especially encoding and decoding"
@@ -4110,4 +4188,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d135c0fd9f014000c1a1ba769cf51c30b9ba05258bd3c8eaa8a5a78bf24b16ad"
+content-hash = "255f8106a98e40f8fa5e9355fae60c80791ff7c2746c63f596db927b61cd7dc5"
