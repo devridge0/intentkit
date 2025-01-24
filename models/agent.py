@@ -330,6 +330,12 @@ class AgentResponse(BaseModel):
     has_telegram_self_key: bool = Field(
         description="Whether the agent has self-keyed their Telegram account"
     )
+    linked_telegram_username: Optional[str] = Field(
+        description="The username of the linked Telegram account"
+    )
+    linked_telegram_name: Optional[str] = Field(
+        description="The name of the linked Telegram account"
+    )
 
     @classmethod
     def from_agent(
@@ -429,6 +435,9 @@ class AgentData(SQLModel, table=True):
         sa_type=DateTime(timezone=True)
     )
     twitter_refresh_token: Optional[str]
+    telegram_id: Optional[str]
+    telegram_username: Optional[str]
+    telegram_name: Optional[str]
     error_message: Optional[str]
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
