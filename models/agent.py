@@ -330,6 +330,12 @@ class AgentResponse(BaseModel):
     has_telegram_self_key: bool = Field(
         description="Whether the agent has self-keyed their Telegram account"
     )
+    linked_telegram_username: Optional[str] = Field(
+        description="The username of the linked Telegram account"
+    )
+    linked_telegram_name: Optional[str] = Field(
+        description="The name of the linked Telegram account"
+    )
 
     @classmethod
     def from_agent(
@@ -391,6 +397,8 @@ class AgentResponse(BaseModel):
             data["twitter_config"] = twitter_config
 
         # Process Telegram self-key status and remove token
+        linked_telegram_username = None
+        linked_telegram_name = None
         telegram_config = data.get("telegram_config", {})
         has_telegram_self_key = bool(
             telegram_config and "token" in telegram_config and telegram_config["token"]
@@ -398,6 +406,9 @@ class AgentResponse(BaseModel):
         if telegram_config and "token" in telegram_config:
             telegram_config.pop("token")
             data["telegram_config"] = telegram_config
+            if agent_data:
+                linked_telegram_username = agent_data.telegram_username
+                linked_telegram_name = agent_data.telegram_name
 
         # Add processed fields to response
         data.update(
@@ -408,6 +419,8 @@ class AgentResponse(BaseModel):
                 "linked_twitter_name": linked_twitter_name,
                 "has_twitter_self_key": has_twitter_self_key,
                 "has_telegram_self_key": has_telegram_self_key,
+                "linked_telegram_username": linked_telegram_username,
+                "linked_telegram_name": linked_telegram_name,
             }
         )
 
@@ -429,6 +442,9 @@ class AgentData(SQLModel, table=True):
         sa_type=DateTime(timezone=True)
     )
     twitter_refresh_token: Optional[str]
+    telegram_id: Optional[str]
+    telegram_username: Optional[str]
+    telegram_name: Optional[str]
     error_message: Optional[str]
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
