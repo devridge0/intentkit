@@ -16,7 +16,8 @@ from app.admin.scheduler import start_scheduler
 from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router
-from app.services.twitter.oauth2_callback import router as twitter_router
+from app.services.twitter.oauth2 import router as twitter_oauth2_router
+from app.services.twitter.oauth2_callback import router as twitter_callback_router
 from models.db import init_db
 
 # init logger
@@ -52,7 +53,8 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(chat_router)
 app.include_router(admin_router)
 app.include_router(core_router)
-app.include_router(twitter_router)
+app.include_router(twitter_callback_router)
+app.include_router(twitter_oauth2_router)
 
 
 @app.get("/health", include_in_schema=False)
