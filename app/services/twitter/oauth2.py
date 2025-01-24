@@ -1,9 +1,9 @@
 """Twitter OAuth2 authentication module."""
 
-from requests.auth import HTTPBasicAuth
-from requests_oauthlib import OAuth2Session
 from fastapi import APIRouter
 from pydantic import BaseModel
+from requests.auth import HTTPBasicAuth
+from requests_oauthlib import OAuth2Session
 
 from app.config.config import config
 
@@ -87,10 +87,10 @@ router = APIRouter(tags=["Auth"])
 @router.get("/auth/twitter", response_model=TwitterAuthResponse)
 def get_twitter_auth_url(agent_id: str) -> TwitterAuthResponse:
     """Get Twitter OAuth2 authorization URL.
-    
+
     Args:
         agent_id: ID of the agent to authenticate
-        
+
     Returns:
         Object containing agent_id and authorization URL
     """
