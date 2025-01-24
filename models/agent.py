@@ -397,6 +397,8 @@ class AgentResponse(BaseModel):
             data["twitter_config"] = twitter_config
 
         # Process Telegram self-key status and remove token
+        linked_telegram_username = None
+        linked_telegram_name = None
         telegram_config = data.get("telegram_config", {})
         has_telegram_self_key = bool(
             telegram_config and "token" in telegram_config and telegram_config["token"]
@@ -404,6 +406,9 @@ class AgentResponse(BaseModel):
         if telegram_config and "token" in telegram_config:
             telegram_config.pop("token")
             data["telegram_config"] = telegram_config
+            if agent_data:
+                linked_telegram_username = agent_data.telegram_username
+                linked_telegram_name = agent_data.telegram_name
 
         # Add processed fields to response
         data.update(
@@ -414,6 +419,8 @@ class AgentResponse(BaseModel):
                 "linked_twitter_name": linked_twitter_name,
                 "has_twitter_self_key": has_twitter_self_key,
                 "has_telegram_self_key": has_telegram_self_key,
+                "linked_telegram_username": linked_telegram_username,
+                "linked_telegram_name": linked_telegram_name,
             }
         )
 
