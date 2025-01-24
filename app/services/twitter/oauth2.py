@@ -20,15 +20,16 @@ class OAuth2UserHandler(OAuth2Session):
             self.auth = HTTPBasicAuth(client_id, client_secret)
         else:
             self.auth = None
+        self.code_challenge = self._client.create_code_challenge(
+            self._client.create_code_verifier(128), "S256"
+        )
 
     def get_authorization_url(self, agent_id: str):
         """Get the authorization URL to redirect the user to"""
         authorization_url, _ = self.authorization_url(
             "https://twitter.com/i/oauth2/authorize",
             state=agent_id,
-            code_challenge=self._client.create_code_challenge(
-                self._client.create_code_verifier(128), "S256"
-            ),
+            code_challenge=self.code_challenge,
             code_challenge_method="S256",
         )
         return authorization_url
