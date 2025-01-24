@@ -112,7 +112,8 @@ class TwitterClient(TwitterABC):
             ):
                 # Create new client with fresh token
                 self._client = Client(
-                    bearer_token=self._agent_data.twitter_access_token
+                    bearer_token=self._agent_data.twitter_access_token,
+                    return_type=dict,
                 )
             else:
                 # No valid token available
