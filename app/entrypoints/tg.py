@@ -6,11 +6,11 @@ import sys
 from sqlmodel import Session, select
 
 from app.config.config import config
+from app.services.tg.bot import pool
+from app.services.tg.bot.pool import BotPool
+from app.services.tg.utils.cleanup import clean_token_str
 from models.agent import Agent
 from models.db import get_engine, init_db
-from tg.bot import pool
-from tg.bot.pool import BotPool
-from tg.utils.cleanup import clean_token_str
 
 logger = logging.getLogger(__name__)
 
