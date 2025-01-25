@@ -39,6 +39,7 @@ from app.services.twitter.oauth2 import get_authorization_url
 from models.agent import Agent, AgentData
 from models.db import get_coon, get_session
 from skill_sets import get_skill_set
+from skills.cdp import get_cdp_skill
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
@@ -128,6 +129,7 @@ def initialize_agent(aid):
     # ==== Load skills
     tools: list[BaseTool] = []
 
+    agentkit: CdpAgentkitWrapper
     # Configure CDP Agentkit Langchain Extension.
     agent_data: AgentData = agent_store.get_data()
     if agent.cdp_enabled:
@@ -157,16 +159,30 @@ def initialize_agent(aid):
             cdp_tools = [tool for tool in cdp_tools if tool.name in agent.cdp_skills]
         tools.extend(cdp_tools)
 
+        if agent.enso_enabled:
+            tools.append(
+                get_cdp_skill(
+                    "broadcast_enso_tx",
+                    agentkit.wallet,
+                    skill_store,
+                    aid,
+                )
+            )
+
     # Enso skills
-    if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
+    if (
+        agent.cdp_enabled
+        and agent.enso_skills
+        and len(agent.enso_skills) > 0
+        and agent.enso_config
+    ):
         for skill in agent.enso_skills:
             try:
                 s = get_enso_skill(
                     skill,
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
-                    # TODO: replace it with CDP wallet.
-                    agent.enso_config.get("from_address"),
+                    agentkit.wallet.addresses[0].address_id,
                     skill_store,
                     aid,
                 )
