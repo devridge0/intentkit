@@ -1,5 +1,21 @@
 # Changelog
 
+## 2025-01-25
+
+### New Features
+- DeepSeek LLM Support!
+- Enso skills now use CDP wallet
+- Add an API for frontend to link twitter account to an agent
+
+## 2025-01-24
+
+### Improvements
+- Refactor telegram services
+- Save telegram user info to db when it linked to an agent
+
+### Bug Fixes
+- Fix bug when twitter token refresh some skills will not work
+
 ## 2025-01-23
 
 ### Features
