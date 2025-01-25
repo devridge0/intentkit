@@ -5,6 +5,7 @@ from langchain.tools.base import ToolException
 from pydantic import BaseModel, Field
 
 from utils.random import generate_tx_confirm_string
+from utils.tx import EvmTx
 
 from .base import EnsoBaseTool, base_url, default_chain_id
 
@@ -104,16 +105,21 @@ class EnsoGetRouteShortcutOutput(BaseModel):
     txRef: str = Field(
         description="The reference code is the unique identifier for the transaction call data.",
     )
-    gas: str | None = Field(None, description="Gas amount for the transaction.")
+    gas: str | None = Field(
+        None,
+        description="Gas amount for the transaction.",
+    )
     amountOut: str | dict | None = Field(
-        None, description="The final calculated amountOut as an object."
+        None,
+        description="The final calculated amountOut as an object. you should multiply the string float value by tokenOut decimals.",
     )
     priceImpact: float | None = Field(
         None,
         description="Price impact in basis points, it is null if USD price is not found.",
     )
     feeAmount: list[str] | None = Field(
-        None, description="An array of the fee amounts collected for each tokenIn."
+        None,
+        description="An array of the fee amounts collected for each tokenIn.",
     )
     # createdAt: int | None = Field(
     #     None, description="Block number the transaction was created on."
@@ -126,7 +132,7 @@ class EnsoGetRouteShortcutOutput(BaseModel):
         """
         Returns the summary attribute as a string.
         """
-        return f"tx reference: {self.txRef}, amount out: {self.amountOut}, price impact: {self.priceImpact}, gas: {self.gas}, fee amount: {self.feeAmount}, "
+        return f"tx reference: {self.txRef}, amount out: {self.amountOut}, price impact: {self.priceImpact}, gas: {self.gas}, fee amount: {self.feeAmount}"
 
 
 class EnsoGetRouteShortcutArtifact(BaseModel):
@@ -137,7 +143,6 @@ class EnsoGetRouteShortcutArtifact(BaseModel):
     txRef: str = Field(
         description="This will be used by the other tools to broadcast the transaction."
     )
-    tx: Transaction = Field(description="The tx object to use in `ethers`.")
 
 
 class EnsoGetRouteShortcut(EnsoBaseTool):
@@ -207,11 +212,23 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
                 tx_ref = generate_tx_confirm_string(10)
                 json_dict["txRef"] = tx_ref
 
+                content = EnsoGetRouteShortcutOutput(**json_dict)
+
+                tx_dict = json_dict.get("tx")
+                evm_tx = EvmTx(**tx_dict)
+                evm_tx.gas = content.gas
+
+                self.store.save_agent_skill_data(
+                    self.agent_id,
+                    self.name,
+                    tx_ref,
+                    evm_tx.model_dump(exclude_none=True),
+                )
+
                 return (
-                    EnsoGetRouteShortcutOutput(**json_dict),
+                    content,
                     EnsoGetRouteShortcutArtifact(
                         txRef=tx_ref,
-                        tx=Transaction(**json_dict.get("tx")),
                     ),
                 )
 
