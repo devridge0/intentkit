@@ -121,7 +121,15 @@ def initialize_agent(aid):
         raise HTTPException(status_code=500, detail=str(e))
 
     # ==== Initialize LLM.
-    llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
+    # TODO: model name whitelist
+    if agent.model.startswith("deepseek"):
+        llm = ChatOpenAI(
+            model_name=agent.model,
+            openai_api_key=config.deepseek_api_key,
+            openai_api_base="https://api.deepseek.com",
+        )
+    else:
+        llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
 
     # ==== Store buffered conversation history in memory.
     memory = PostgresSaver(get_coon())
@@ -258,8 +266,12 @@ def initialize_agent(aid):
         ("placeholder", "{messages}"),
     ]
     if twitter_prompt:
-        prompt_array.append(("system", twitter_prompt))
-    if agent.prompt_append:
+        # deepseek only supports system prompt in the beginning
+        if agent.model.startswith("deepseek"):
+            prompt_array.insert(0, ("system", twitter_prompt))
+        else:
+            prompt_array.append(("system", twitter_prompt))
+    if agent.prompt_append and not agent.model.startswith("deepseek"):
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
         prompt_array.append(("system", escaped_append))
@@ -268,6 +280,10 @@ def initialize_agent(aid):
     def formatted_prompt(state: AgentState):
         # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
+
+    # hack for deepseek
+    if agent.model == "deepseek-reasoner":
+        tools = []
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
     agents[aid] = create_agent(
