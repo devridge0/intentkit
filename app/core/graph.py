@@ -261,6 +261,31 @@ def create_agent(
     def default_memory_manager(state: AgentState) -> AgentState:
         messages = state["messages"]
         # logger.debug("Before memory manager: %s", messages)
+
+        # Merge adjacent HumanMessages
+        i = 0
+        while i < len(messages) - 1:
+            if isinstance(messages[i], HumanMessage) and isinstance(
+                messages[i + 1], HumanMessage
+            ):
+                # Handle different content types
+                content1 = messages[i].content
+                content2 = messages[i + 1].content
+
+                # Convert to list if string
+                if isinstance(content1, str):
+                    content1 = [content1]
+                if isinstance(content2, str):
+                    content2 = [content2]
+
+                # Merge the contents
+                messages[i].content = content1 + content2
+
+                # Remove the second message
+                messages.pop(i + 1)
+            else:
+                i += 1
+
         if len(messages) <= 100:
             return state
         must_delete = len(messages) - 100
