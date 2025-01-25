@@ -79,6 +79,7 @@ class Config:
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
+        self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")
         self.system_prompt = self.load("SYSTEM_PROMPT")
         # Autonomous
         # self.autonomous_entrypoint_interval = int(
