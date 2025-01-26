@@ -1,5 +1,14 @@
 # Changelog
 
+## 2025-01-26
+
+### Improvements
+- If you open the jwt verify of admin api, it now ignore the reqest come from internal network
+- Improve the docker compose tutorial, comment the twitter and tg entrypoint service by default
+
+### Break Changes
+- The new docker-compose.yml change the service name, add "intent-" prefix to all services
+
 ## 2025-01-25
 
 ### New Features
