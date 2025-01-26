@@ -108,7 +108,11 @@ class TwitterSearchTweets(TwitterBaseTool):
             try:
                 result = self.process_tweets_response(tweets)
             except Exception as e:
-                logger.error("Error processing search results: %s", str(e))
+                logger.error(
+                    self._get_error_with_username(
+                        f"Error processing search results: {e}"
+                    )
+                )
                 raise
 
             # Update the since_id in store for the next request
@@ -119,9 +123,10 @@ class TwitterSearchTweets(TwitterBaseTool):
             return TwitterSearchTweetsOutput(tweets=result)
 
         except Exception as e:
-            logger.error("Error searching tweets: %s", str(e))
+            logger.error(self._get_error_with_username(f"Error searching tweets: {e}"))
             return TwitterSearchTweetsOutput(
-                tweets=[], error=self._get_error_with_username(str(e))
+                tweets=[],
+                error=self._get_error_with_username(f"Error searching tweets: {e}"),
             )
 
     async def _arun(self, query: str) -> TwitterSearchTweetsOutput:
