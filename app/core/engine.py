@@ -128,10 +128,18 @@ def initialize_agent(aid):
             model_name=agent.model,
             openai_api_key=config.deepseek_api_key,
             openai_api_base="https://api.deepseek.com",
+            presence_penalty=1,
+            streaming=False,
+            timeout=90,
         )
         input_token_limit = 60000
     else:
-        llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
+        llm = ChatOpenAI(
+            model_name=agent.model,
+            openai_api_key=config.openai_api_key,
+            timeout=60,
+            presence_penalty=1,
+        )
 
     # ==== Store buffered conversation history in memory.
     memory = PostgresSaver(get_coon())
