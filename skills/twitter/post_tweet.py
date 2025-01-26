@@ -51,7 +51,9 @@ class TwitterPostTweet(TwitterBaseTool):
 
             client = self.twitter.get_client()
             if not client:
-                return self._get_error_with_username("Failed to get Twitter client. Please check your authentication.")
+                return self._get_error_with_username(
+                    "Failed to get Twitter client. Please check your authentication."
+                )
 
             # Post tweet using tweepy client
             response = client.create_tweet(text=text, user_auth=self.twitter.use_key)

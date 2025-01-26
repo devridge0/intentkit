@@ -60,7 +60,9 @@ class TwitterLikeTweet(TwitterBaseTool):
             if not client:
                 return TwitterLikeTweetOutput(
                     success=False,
-                    message=self._get_error_with_username("Failed to get Twitter client. Please check your authentication.")
+                    message=self._get_error_with_username(
+                        "Failed to get Twitter client. Please check your authentication."
+                    ),
                 )
 
             # Like the tweet using tweepy client
@@ -72,13 +74,12 @@ class TwitterLikeTweet(TwitterBaseTool):
                 )
             return TwitterLikeTweetOutput(
                 success=False,
-                message=self._get_error_with_username("Failed to like tweet.")
+                message=self._get_error_with_username("Failed to like tweet."),
             )
 
         except Exception as e:
             return TwitterLikeTweetOutput(
-                success=False,
-                message=self._get_error_with_username(str(e))
+                success=False, message=self._get_error_with_username(str(e))
             )
 
     async def _arun(self, tweet_id: str) -> TwitterLikeTweetOutput:

@@ -59,13 +59,17 @@ class TwitterSearchTweets(TwitterBaseTool):
                     max_requests=3, interval=15
                 )
                 if is_rate_limited:
-                    return TwitterSearchTweetsOutput(tweets=[], error=self._get_error_with_username(error))
+                    return TwitterSearchTweetsOutput(
+                        tweets=[], error=self._get_error_with_username(error)
+                    )
 
             client = self.twitter.get_client()
             if not client:
                 return TwitterSearchTweetsOutput(
                     tweets=[],
-                    error=self._get_error_with_username("Failed to get Twitter client. Please check your authentication.")
+                    error=self._get_error_with_username(
+                        "Failed to get Twitter client. Please check your authentication."
+                    ),
                 )
 
             # Get since_id from store to avoid duplicate results
@@ -116,7 +120,9 @@ class TwitterSearchTweets(TwitterBaseTool):
 
         except Exception as e:
             logger.error("Error searching tweets: %s", str(e))
-            return TwitterSearchTweetsOutput(tweets=[], error=self._get_error_with_username(str(e)))
+            return TwitterSearchTweetsOutput(
+                tweets=[], error=self._get_error_with_username(str(e))
+            )
 
     async def _arun(self, query: str) -> TwitterSearchTweetsOutput:
         """Async implementation of the tool.
