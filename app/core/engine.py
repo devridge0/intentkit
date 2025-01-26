@@ -121,6 +121,7 @@ def initialize_agent(aid):
         raise HTTPException(status_code=500, detail=str(e))
 
     # ==== Initialize LLM.
+    input_token_limit = 120000
     # TODO: model name whitelist
     if agent.model.startswith("deepseek"):
         llm = ChatOpenAI(
@@ -128,6 +129,7 @@ def initialize_agent(aid):
             openai_api_key=config.deepseek_api_key,
             openai_api_base="https://api.deepseek.com",
         )
+        input_token_limit = 60000
     else:
         llm = ChatOpenAI(model_name=agent.model, openai_api_key=config.openai_api_key)
 
@@ -295,6 +297,7 @@ def initialize_agent(aid):
         checkpointer=memory,
         state_modifier=formatted_prompt,
         debug=config.debug_checkpoint,
+        input_token_limit=input_token_limit,
     )
 
 
@@ -370,19 +373,21 @@ def execute_agent(
                 # Handle other SQLAlchemy-related errors
                 logger.error(e)
                 raise HTTPException(status_code=500, detail=str(e))
-        try:
-            resp_debug_append = "\n===================\n\n[ system ]\n"
-            resp_debug_append += agent_prompt(agent)
-            snap = executor.get_state(stream_config)
-            if snap.values and "messages" in snap.values:
-                for msg in snap.values["messages"]:
-                    resp_debug_append += f"[ {msg.type} ]\n{msg.content}\n\n"
-            if agent.prompt_append:
-                resp_debug_append += "[ system ]\n"
-                resp_debug_append += agent.prompt_append
-        except Exception as e:
-            logger.error(e)
-            resp_debug_append = ""
+        # try:
+        #     resp_debug_append = "\n===================\n\n[ system ]\n"
+        #     resp_debug_append += agent_prompt(agent)
+        #     snap = executor.get_state(stream_config)
+        #     if snap.values and "messages" in snap.values:
+        #         for msg in snap.values["messages"]:
+        #             resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"
+        #     if agent.prompt_append:
+        #         resp_debug_append += "[ system ]\n"
+        #         resp_debug_append += agent.prompt_append
+        # except Exception as e:
+        #     logger.error(
+        #         "failed to get debug prompt: " + str(e), exc_info=True, stack_info=True
+        #     )
+        #     resp_debug_append = ""
     # run
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=content)]}, stream_config
@@ -410,7 +415,7 @@ def execute_agent(
     total_time = time.perf_counter() - start
     resp_debug.append(f"Total time cost: {total_time:.3f} seconds")
     if debug:
-        resp_debug.append(resp_debug_append)
+        # resp_debug.append(resp_debug_append)
         return resp_debug
     else:
         return resp

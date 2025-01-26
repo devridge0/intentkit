@@ -3,6 +3,7 @@
 import logging
 from typing import Callable, Literal, Optional, Sequence, Type, TypeVar, Union, cast
 
+import tiktoken
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.messages import (
     AIMessage,
@@ -143,6 +144,77 @@ def _validate_chat_history(
     raise ValueError(error_message)
 
 
+def _count_tokens(messages: Sequence[BaseMessage], model_name: str = "gpt-4") -> int:
+    """Count the number of tokens in a list of messages."""
+    try:
+        encoding = tiktoken.encoding_for_model(model_name)
+    except KeyError:
+        encoding = tiktoken.get_encoding("cl100k_base")
+
+    num_tokens = 0
+    for message in messages:
+        # Every message follows <im_start>{role/name}\n{content}<im_end>\n
+        num_tokens += 4
+        for key, value in message.dict().items():
+            if value and key in ["content", "name", "function_call", "role"]:
+                num_tokens += len(encoding.encode(str(value)))
+
+        # If there are function calls, count them too
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            for tool_call in message.tool_calls:
+                num_tokens += len(encoding.encode(str(tool_call)))
+
+    return num_tokens
+
+
+def _limit_tokens(
+    messages: list[BaseMessage], max_tokens: int = 120000
+) -> list[BaseMessage]:
+    """Limit the total number of tokens in messages by removing old messages.
+    Also merges adjacent HumanMessages as some models don't allow consecutive user messages."""
+    # First merge adjacent HumanMessages
+    i = 0
+    while i < len(messages) - 1:
+        if isinstance(messages[i], HumanMessage) and isinstance(
+            messages[i + 1], HumanMessage
+        ):
+            # Handle different content types
+            content1 = messages[i].content
+            content2 = messages[i + 1].content
+
+            # Convert to list if string
+            if isinstance(content1, str):
+                content1 = [content1]
+            if isinstance(content2, str):
+                content2 = [content2]
+
+            # Merge the contents
+            messages[i].content = content1 + content2
+
+            # Remove the second message
+            messages.pop(i + 1)
+        else:
+            i += 1
+
+    token_count = _count_tokens(messages)
+    if token_count <= max_tokens:
+        return messages
+
+    # Create a new list to store messages we want to keep
+    result = messages.copy()
+
+    # Remove non-system messages from front to back until under token limit
+    # Start from index 1 to preserve at least one message at the start
+    i = 1
+    while i < len(result) and _count_tokens(result) > max_tokens:
+        if not isinstance(result[i], SystemMessage):
+            result.pop(i)
+        else:
+            i += 1
+
+    return result
+
+
 def create_agent(
     model: LanguageModelLike,
     tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
@@ -154,6 +226,7 @@ def create_agent(
     store: Optional[BaseStore] = None,
     interrupt_before: Optional[list[str]] = None,
     interrupt_after: Optional[list[str]] = None,
+    input_token_limit: int = 120000,
     debug: bool = False,
 ) -> CompiledGraph:
     """Creates a graph that works with a chat model that utilizes tool calling.
@@ -262,30 +335,6 @@ def create_agent(
         messages = state["messages"]
         # logger.debug("Before memory manager: %s", messages)
 
-        # Merge adjacent HumanMessages
-        i = 0
-        while i < len(messages) - 1:
-            if isinstance(messages[i], HumanMessage) and isinstance(
-                messages[i + 1], HumanMessage
-            ):
-                # Handle different content types
-                content1 = messages[i].content
-                content2 = messages[i + 1].content
-
-                # Convert to list if string
-                if isinstance(content1, str):
-                    content1 = [content1]
-                if isinstance(content2, str):
-                    content2 = [content2]
-
-                # Merge the contents
-                messages[i].content = content1 + content2
-
-                # Remove the second message
-                messages.pop(i + 1)
-            else:
-                i += 1
-
         if len(messages) <= 100:
             return state
         must_delete = len(messages) - 100
@@ -305,6 +354,8 @@ def create_agent(
     # Define the function that calls the model
     def call_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
+        # Limit tokens before calling model
+        state["messages"] = _limit_tokens(state["messages"], input_token_limit)
         try:
             response = model_runnable.invoke(state, config)
         except Exception as e:
@@ -346,6 +397,8 @@ def create_agent(
 
     async def acall_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
+        # Limit tokens before calling model
+        state["messages"] = _limit_tokens(state["messages"], input_token_limit)
         try:
             response = await model_runnable.ainvoke(state, config)
         except Exception as e:
