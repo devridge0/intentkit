@@ -305,7 +305,11 @@ def create_agent(
     # Define the function that calls the model
     def call_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
-        response = model_runnable.invoke(state, config)
+        try:
+            response = model_runnable.invoke(state, config)
+        except Exception as e:
+            logger.error(f"Error in call model: {e}")
+            raise e
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
             all(call["name"] in should_return_direct for call in response.tool_calls)
@@ -342,7 +346,11 @@ def create_agent(
 
     async def acall_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
-        response = await model_runnable.ainvoke(state, config)
+        try:
+            response = await model_runnable.ainvoke(state, config)
+        except Exception as e:
+            logger.error(f"Error in async call model: {e}")
+            raise e
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
             all(call["name"] in should_return_direct for call in response.tool_calls)
