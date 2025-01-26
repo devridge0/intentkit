@@ -252,6 +252,30 @@ def _limit_tokens(
     return messages
 
 
+def _clean_history_on_error(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """Clean message history after model error, keeping only system messages and the last user message."""
+    # Keep all system messages
+    result = [msg for msg in messages if isinstance(msg, SystemMessage)]
+    
+    # Find the last user message
+    last_user_msg = None
+    for msg in reversed(messages):
+        if isinstance(msg, HumanMessage):
+            last_user_msg = msg
+            break
+    
+    if last_user_msg:
+        result.append(last_user_msg)
+    
+    logger.info(
+        f"Cleaned message history after error. "
+        f"Kept {len(result)} messages ({len([m for m in result if isinstance(m, SystemMessage)])} system, "
+        f"{1 if last_user_msg else 0} user)"
+    )
+    
+    return result
+
+
 def create_agent(
     model: LanguageModelLike,
     tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
@@ -425,6 +449,8 @@ def create_agent(
 
         except Exception as e:
             logger.error(f"Error in call model: {e}", exc_info=True)
+            # Clean message history on error
+            state["messages"] = _clean_history_on_error(state["messages"])
             raise e
 
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
@@ -469,6 +495,8 @@ def create_agent(
             response = await model_runnable.ainvoke(state, config)
         except Exception as e:
             logger.error(f"Error in async call model: {e}")
+            # Clean message history on error
+            state["messages"] = _clean_history_on_error(state["messages"])
             raise e
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
