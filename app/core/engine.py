@@ -271,10 +271,13 @@ def initialize_agent(aid):
             prompt_array.insert(0, ("system", twitter_prompt))
         else:
             prompt_array.append(("system", twitter_prompt))
-    if agent.prompt_append and not agent.model.startswith("deepseek"):
+    if agent.prompt_append:
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
-        prompt_array.append(("system", escaped_append))
+        if agent.model.startswith("deepseek"):
+            prompt_array.insert(0, ("system", escaped_append))
+        else:
+            prompt_array.append(("system", escaped_append))
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
     def formatted_prompt(state: AgentState):
