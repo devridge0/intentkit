@@ -144,36 +144,59 @@ def _validate_chat_history(
     raise ValueError(error_message)
 
 
+# Cache for tiktoken encoders
+_TIKTOKEN_CACHE = {}
+
+def _get_encoder(model_name: str = "gpt-4"):
+    """Get cached tiktoken encoder."""
+    if model_name not in _TIKTOKEN_CACHE:
+        try:
+            _TIKTOKEN_CACHE[model_name] = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            _TIKTOKEN_CACHE[model_name] = tiktoken.get_encoding("cl100k_base")
+    return _TIKTOKEN_CACHE[model_name]
+
 def _count_tokens(messages: Sequence[BaseMessage], model_name: str = "gpt-4") -> int:
     """Count the number of tokens in a list of messages."""
-    try:
-        encoding = tiktoken.encoding_for_model(model_name)
-    except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base")
-
+    encoding = _get_encoder(model_name)
+    
     num_tokens = 0
     for message in messages:
         # Every message follows <im_start>{role/name}\n{content}<im_end>\n
         num_tokens += 4
-        for key, value in message.dict().items():
-            if value and key in ["content", "name", "function_call", "role"]:
+        
+        # Count tokens for basic message attributes
+        msg_dict = message.dict()
+        for key in ["content", "name", "function_call", "role"]:
+            value = msg_dict.get(key)
+            if value:
                 num_tokens += len(encoding.encode(str(value)))
-
-        # If there are function calls, count them too
+        
+        # Count tokens for tool calls more efficiently
         if hasattr(message, "tool_calls") and message.tool_calls:
             for tool_call in message.tool_calls:
-                num_tokens += len(encoding.encode(str(tool_call)))
-
+                # Only encode essential parts of tool_call
+                if isinstance(tool_call, dict):
+                    for key in ["name", "arguments"]:
+                        if key in tool_call:
+                            num_tokens += len(encoding.encode(str(tool_call[key])))
+                else:
+                    # Handle tool_call object if it's not a dict
+                    num_tokens += len(encoding.encode(str(tool_call)))
+    
     return num_tokens
-
 
 def _limit_tokens(
     messages: list[BaseMessage], max_tokens: int = 120000
 ) -> list[BaseMessage]:
     """Limit the total number of tokens in messages by removing old messages.
     Also merges adjacent HumanMessages as some models don't allow consecutive user messages."""
+    original_count = len(messages)
+    logger.debug(f"Starting token limiting. Original message count: {original_count}")
+    
     # First merge adjacent HumanMessages
     i = 0
+    merge_count = 0
     while i < len(messages) - 1:
         if isinstance(messages[i], HumanMessage) and isinstance(
             messages[i + 1], HumanMessage
@@ -182,10 +205,10 @@ def _limit_tokens(
             content1 = messages[i].content
             content2 = messages[i + 1].content
 
-            # Convert to list if string
-            if isinstance(content1, str):
+            # Convert to list if string, more memory efficient than always converting
+            if not isinstance(content1, list):
                 content1 = [content1]
-            if isinstance(content2, str):
+            if not isinstance(content2, list):
                 content2 = [content2]
 
             # Merge the contents
@@ -193,27 +216,37 @@ def _limit_tokens(
 
             # Remove the second message
             messages.pop(i + 1)
+            merge_count += 1
         else:
             i += 1
+    
+    if merge_count > 0:
+        logger.debug(f"Merged {merge_count} adjacent human messages")
 
     token_count = _count_tokens(messages)
+    logger.debug(f"Current token count: {token_count}, max allowed: {max_tokens}")
+    
     if token_count <= max_tokens:
         return messages
-
-    # Create a new list to store messages we want to keep
-    result = messages.copy()
-
-    # Remove non-system messages from front to back until under token limit
-    # Start from index 1 to preserve at least one message at the start
+    
+    # Modify messages in-place instead of creating a copy
     i = 1
-    while i < len(result) and _count_tokens(result) > max_tokens:
-        if not isinstance(result[i], SystemMessage):
-            result.pop(i)
+    removed_count = 0
+    while i < len(messages) and _count_tokens(messages) > max_tokens:
+        if not isinstance(messages[i], SystemMessage):
+            messages.pop(i)
+            removed_count += 1
         else:
             i += 1
-
-    return result
-
+    
+    final_token_count = _count_tokens(messages)
+    logger.debug(
+        f"Token limiting complete. Removed {removed_count} messages. "
+        f"Final message count: {len(messages)}, "
+        f"Final token count: {final_token_count}"
+    )
+            
+    return messages
 
 def create_agent(
     model: LanguageModelLike,
@@ -354,13 +387,42 @@ def create_agent(
     # Define the function that calls the model
     def call_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
+        
+        # Log message state before token limiting
+        msg_count = len(state["messages"])
+        token_count = _count_tokens(state["messages"])
+        logger.debug(
+            f"Before token limiting - Messages: {msg_count}, Tokens: {token_count}"
+        )
+        
         # Limit tokens before calling model
         state["messages"] = _limit_tokens(state["messages"], input_token_limit)
+        
+        # Log state after token limiting
+        msg_count = len(state["messages"])
+        token_count = _count_tokens(state["messages"])
+        logger.debug(
+            f"After token limiting - Messages: {msg_count}, Tokens: {token_count}"
+        )
+        
         try:
+            logger.debug("Starting model invocation...")
             response = model_runnable.invoke(state, config)
+            logger.debug(f"Model invocation completed. Response type: {type(response)}")
+            
+            # Log response details
+            if isinstance(response, AIMessage):
+                has_tool_calls = bool(response.tool_calls)
+                logger.debug(f"Response is AIMessage. Has tool calls: {has_tool_calls}")
+                if has_tool_calls:
+                    logger.debug(f"Number of tool calls: {len(response.tool_calls)}")
+            else:
+                logger.debug(f"Response is not AIMessage: {type(response)}")
+                
         except Exception as e:
-            logger.error(f"Error in call model: {e}")
+            logger.error(f"Error in call model: {e}", exc_info=True)
             raise e
+            
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
             all(call["name"] in should_return_direct for call in response.tool_calls)
