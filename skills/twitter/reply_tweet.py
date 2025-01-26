@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from skills.twitter.base import TwitterBaseTool
+from skills.twitter.base import TwitterBaseTool, TwitterReplyTweetOutput
 
 
 class TwitterReplyTweetInput(BaseModel):
@@ -47,11 +47,17 @@ class TwitterReplyTweet(TwitterBaseTool):
                     max_requests=48, interval=1440
                 )
                 if is_rate_limited:
-                    return f"Error replying to tweet: {error}"
+                    return TwitterReplyTweetOutput(
+                        success=False,
+                        message=self._get_error_with_username(error)
+                    )
 
             client = self.twitter.get_client()
             if not client:
-                return "Failed to get Twitter client. Please check your authentication."
+                return TwitterReplyTweetOutput(
+                    success=False,
+                    message=self._get_error_with_username("Failed to get Twitter client. Please check your authentication.")
+                )
 
             # Post reply tweet using tweepy client
             response = client.create_tweet(
@@ -60,11 +66,20 @@ class TwitterReplyTweet(TwitterBaseTool):
 
             if "data" in response and "id" in response["data"]:
                 reply_id = response["data"]["id"]
-                return f"Reply posted successfully! Reply Tweet ID: {reply_id}"
-            return "Failed to post reply tweet."
+                return TwitterReplyTweetOutput(
+                    success=True,
+                    message=f"Reply posted successfully! Reply Tweet ID: {reply_id}"
+                )
+            return TwitterReplyTweetOutput(
+                success=False,
+                message=self._get_error_with_username("Failed to reply to tweet.")
+            )
 
         except Exception as e:
-            return f"Error posting reply tweet: {str(e)}"
+            return TwitterReplyTweetOutput(
+                success=False,
+                message=self._get_error_with_username(str(e))
+            )
 
     async def _arun(self, tweet_id: str, text: str) -> str:
         """Async implementation of the tool.
