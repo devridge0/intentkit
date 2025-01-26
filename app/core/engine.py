@@ -26,7 +26,6 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlmodel import select
 
 from abstracts.engine import AgentMessageInput
 from abstracts.graph import AgentState
@@ -369,33 +368,33 @@ def execute_agent(
         ]
     )
     # debug prompt
-    if debug:
-        # get the agent from the database
-        with get_session() as db:
-            try:
-                agent: Agent = db.exec(select(Agent).filter(Agent.id == aid)).one()
-            except NoResultFound:
-                # Handle the case where the user is not found
-                raise HTTPException(status_code=404, detail="Agent not found")
-            except SQLAlchemyError as e:
-                # Handle other SQLAlchemy-related errors
-                logger.error(e)
-                raise HTTPException(status_code=500, detail=str(e))
-        # try:
-        #     resp_debug_append = "\n===================\n\n[ system ]\n"
-        #     resp_debug_append += agent_prompt(agent)
-        #     snap = executor.get_state(stream_config)
-        #     if snap.values and "messages" in snap.values:
-        #         for msg in snap.values["messages"]:
-        #             resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"
-        #     if agent.prompt_append:
-        #         resp_debug_append += "[ system ]\n"
-        #         resp_debug_append += agent.prompt_append
-        # except Exception as e:
-        #     logger.error(
-        #         "failed to get debug prompt: " + str(e), exc_info=True, stack_info=True
-        #     )
-        #     resp_debug_append = ""
+    # if debug:
+    #     # get the agent from the database
+    #     with get_session() as db:
+    #         try:
+    #             agent: Agent = db.exec(select(Agent).filter(Agent.id == aid)).one()
+    #         except NoResultFound:
+    #             # Handle the case where the user is not found
+    #             raise HTTPException(status_code=404, detail="Agent not found")
+    #         except SQLAlchemyError as e:
+    #             # Handle other SQLAlchemy-related errors
+    #             logger.error(e)
+    #             raise HTTPException(status_code=500, detail=str(e))
+    # try:
+    #     resp_debug_append = "\n===================\n\n[ system ]\n"
+    #     resp_debug_append += agent_prompt(agent)
+    #     snap = executor.get_state(stream_config)
+    #     if snap.values and "messages" in snap.values:
+    #         for msg in snap.values["messages"]:
+    #             resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"
+    #     if agent.prompt_append:
+    #         resp_debug_append += "[ system ]\n"
+    #         resp_debug_append += agent.prompt_append
+    # except Exception as e:
+    #     logger.error(
+    #         "failed to get debug prompt: " + str(e), exc_info=True, stack_info=True
+    #     )
+    #     resp_debug_append = ""
     # run
     for chunk in executor.stream(
         {"messages": [HumanMessage(content=content)]}, stream_config

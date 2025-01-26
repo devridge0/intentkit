@@ -189,93 +189,6 @@ def _count_tokens(messages: Sequence[BaseMessage], model_name: str = "gpt-4") ->
     return num_tokens
 
 
-def _limit_tokens(
-    messages: list[BaseMessage], max_tokens: int = 120000
-) -> list[BaseMessage]:
-    """Limit the total number of tokens in messages by removing old messages.
-    Also merges adjacent HumanMessages as some models don't allow consecutive user messages."""
-    original_count = len(messages)
-    logger.debug(f"Starting token limiting. Original message count: {original_count}")
-
-    # First merge adjacent HumanMessages
-    i = 0
-    merge_count = 0
-    while i < len(messages) - 1:
-        if isinstance(messages[i], HumanMessage) and isinstance(
-            messages[i + 1], HumanMessage
-        ):
-            # Handle different content types
-            content1 = messages[i].content
-            content2 = messages[i + 1].content
-
-            # Convert to list if string, more memory efficient than always converting
-            if not isinstance(content1, list):
-                content1 = [content1]
-            if not isinstance(content2, list):
-                content2 = [content2]
-
-            # Merge the contents
-            messages[i].content = content1 + content2
-
-            # Remove the second message
-            messages.pop(i + 1)
-            merge_count += 1
-        else:
-            i += 1
-
-    if merge_count > 0:
-        logger.debug(f"Merged {merge_count} adjacent human messages")
-
-    token_count = _count_tokens(messages)
-    logger.debug(f"Current token count: {token_count}, max allowed: {max_tokens}")
-
-    if token_count <= max_tokens:
-        return messages
-
-    # Modify messages in-place instead of creating a copy
-    i = 1
-    removed_count = 0
-    while i < len(messages) and _count_tokens(messages) > max_tokens:
-        if not isinstance(messages[i], SystemMessage):
-            messages.pop(i)
-            removed_count += 1
-        else:
-            i += 1
-
-    final_token_count = _count_tokens(messages)
-    logger.info(
-        f"Token limiting complete. Removed {removed_count} messages. "
-        f"Final message count: {len(messages)}, "
-        f"Final token count: {final_token_count}"
-    )
-
-    return messages
-
-
-def _clean_history_on_error(messages: list[BaseMessage]) -> list[BaseMessage]:
-    """Clean message history after model error, keeping only system messages and the last user message."""
-    # Keep all system messages
-    result = [msg for msg in messages if isinstance(msg, SystemMessage)]
-    
-    # Find the last user message
-    last_user_msg = None
-    for msg in reversed(messages):
-        if isinstance(msg, HumanMessage):
-            last_user_msg = msg
-            break
-    
-    if last_user_msg:
-        result.append(last_user_msg)
-    
-    logger.info(
-        f"Cleaned message history after error. "
-        f"Kept {len(result)} messages ({len([m for m in result if isinstance(m, SystemMessage)])} system, "
-        f"{1 if last_user_msg else 0} user)"
-    )
-    
-    return result
-
-
 def create_agent(
     model: LanguageModelLike,
     tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
@@ -394,19 +307,40 @@ def create_agent(
 
     def default_memory_manager(state: AgentState) -> AgentState:
         messages = state["messages"]
-        # logger.debug("Before memory manager: %s", messages)
 
-        if len(messages) <= 100:
+        # If need_clear is True, mark all messages for removal
+        if "need_clear" in state and state["need_clear"]:
+            for index in range(len(messages)):
+                messages[index] = RemoveMessage(id=messages[index].id)
             return state
-        must_delete = len(messages) - 100
-        for index, message in enumerate(messages):
-            if index < must_delete:
-                messages[index] = RemoveMessage(id=message.id)
-            elif not isinstance(message, HumanMessage):
-                messages[index] = RemoveMessage(id=message.id)
-            else:
-                break
-        # logger.debug("After memory manager: %s", messages)
+
+        # Count total tokens
+        total_tokens = _count_tokens(messages)
+        token_limit = (
+            state.get("input_token_limit", 120000) // 2
+        )  # Half of the input token limit
+
+        # If over token limit, remove messages from front
+        if total_tokens > token_limit:
+            must_delete = 0
+            current_tokens = total_tokens
+            temp_messages = messages.copy()
+
+            # Calculate how many messages to delete
+            while current_tokens > token_limit and must_delete < len(temp_messages):
+                current_tokens -= _count_tokens([temp_messages[must_delete]])
+                must_delete += 1
+
+            # Ensure first remaining message is HumanMessage
+            while must_delete < len(messages) and not isinstance(
+                messages[must_delete], HumanMessage
+            ):
+                must_delete += 1
+
+            # Mark messages for removal
+            for index in range(must_delete):
+                messages[index] = RemoveMessage(id=messages[index].id)
+
         return state
 
     if memory_manager is None:
@@ -415,23 +349,6 @@ def create_agent(
     # Define the function that calls the model
     def call_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
-
-        # Log message state before token limiting
-        msg_count = len(state["messages"])
-        token_count = _count_tokens(state["messages"])
-        logger.debug(
-            f"Before token limiting - Messages: {msg_count}, Tokens: {token_count}"
-        )
-
-        # Limit tokens before calling model
-        state["messages"] = _limit_tokens(state["messages"], input_token_limit)
-
-        # Log state after token limiting
-        msg_count = len(state["messages"])
-        token_count = _count_tokens(state["messages"])
-        logger.debug(
-            f"After token limiting - Messages: {msg_count}, Tokens: {token_count}"
-        )
 
         try:
             logger.debug("Starting model invocation...")
@@ -450,8 +367,14 @@ def create_agent(
         except Exception as e:
             logger.error(f"Error in call model: {e}", exc_info=True)
             # Clean message history on error
-            state["messages"] = _clean_history_on_error(state["messages"])
-            raise e
+            return {
+                "need_clear": True,
+                "messages": [
+                    AIMessage(
+                        content=f"Sorry, something went wrong. {e}",
+                    )
+                ],
+            }
 
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
@@ -485,19 +408,24 @@ def create_agent(
                 ]
             }
         # We return a list, because this will get added to the existing list
+        logger.debug(f"Response: {response}")
         return {"messages": [response]}
 
     async def acall_model(state: AgentState, config: RunnableConfig) -> AgentState:
         _validate_chat_history(state["messages"])
-        # Limit tokens before calling model
-        state["messages"] = _limit_tokens(state["messages"], input_token_limit)
         try:
             response = await model_runnable.ainvoke(state, config)
         except Exception as e:
             logger.error(f"Error in async call model: {e}")
             # Clean message history on error
-            state["messages"] = _clean_history_on_error(state["messages"])
-            raise e
+            return {
+                "messages": [
+                    AIMessage(
+                        content=f"Sorry, something went wrong. {e}",
+                    )
+                ],
+                "need_clear": True,
+            }
         has_tool_calls = isinstance(response, AIMessage) and response.tool_calls
         all_tools_return_direct = (
             all(call["name"] in should_return_direct for call in response.tool_calls)
