@@ -53,14 +53,19 @@ class TwitterFollowUser(TwitterBaseTool):
                 )
                 if is_rate_limited:
                     return TwitterFollowUserOutput(
-                        success=False, message=self._get_error_with_username(f"Error following user: {error}")
+                        success=False,
+                        message=self._get_error_with_username(
+                            f"Error following user: {error}"
+                        ),
                     )
 
             client = self.twitter.get_client()
             if not client:
                 return TwitterFollowUserOutput(
                     success=False,
-                    message=self._get_error_with_username("Failed to get Twitter client. Please check your authentication.")
+                    message=self._get_error_with_username(
+                        "Failed to get Twitter client. Please check your authentication."
+                    ),
                 )
 
             # Follow the user using tweepy client
@@ -74,13 +79,12 @@ class TwitterFollowUser(TwitterBaseTool):
                 )
             return TwitterFollowUserOutput(
                 success=False,
-                message=self._get_error_with_username("Failed to follow user.")
+                message=self._get_error_with_username("Failed to follow user."),
             )
 
         except Exception as e:
             return TwitterFollowUserOutput(
-                success=False,
-                message=self._get_error_with_username(str(e))
+                success=False, message=self._get_error_with_username(str(e))
             )
 
     async def _arun(self, user_id: str) -> TwitterFollowUserOutput:
