@@ -1,6 +1,7 @@
 from typing import Type
 
 import httpx
+from langchain.tools.base import ToolException
 from pydantic import BaseModel, Field
 
 from .base import EnsoBaseTool, base_url
@@ -31,9 +32,6 @@ class EnsoGetNetworksOutput(BaseModel):
 
     res: list[ConnectedNetwork] | None = Field(
         None, description="Response containing networks and metadata"
-    )
-    error: str | None = Field(
-        None, description="Error message if network retrieval failed"
     )
 
 
@@ -70,13 +68,13 @@ class EnsoGetNetworks(EnsoBaseTool):
                 json_dict = response.json()
                 res = [ConnectedNetwork(**item) for item in json_dict]
                 return EnsoGetNetworksOutput(res=res)
+            except httpx.RequestError as req_err:
+                raise ToolException(
+                    f"request error from Enso API: {req_err}"
+                ) from req_err
+            except httpx.HTTPStatusError as http_err:
+                raise ToolException(
+                    f"http error from Enso API: {http_err}"
+                ) from http_err
             except Exception as e:
-                # Handle any errors that occur
-                return EnsoGetNetworksOutput(res=None, error=str(e))
-
-    async def _arun(self) -> EnsoGetNetworksOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run()
+                raise ToolException(f"error from Enso API: {e}") from e

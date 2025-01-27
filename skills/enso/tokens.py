@@ -1,6 +1,7 @@
 from typing import Literal, Type
 
 import httpx
+from langchain.tools.base import ToolException
 from pydantic import BaseModel, Field
 
 from skills.enso.base import (
@@ -108,7 +109,6 @@ class EnsoGetTokensInput(BaseModel):
 
 class EnsoGetTokensOutput(BaseModel):
     res: list[TokenResponseCompact] | None
-    error: str | None = None
 
 
 class EnsoGetTokens(EnsoBaseTool):
@@ -170,22 +170,19 @@ class EnsoGetTokens(EnsoBaseTool):
                 json_dict = response.json()
 
                 # filter the main tokens from config or the ones that have apy assigned.
-                result = EnsoGetTokensOutput(res=list[TokenResponseCompact]())
+                res = EnsoGetTokensOutput(res=list[TokenResponseCompact]())
                 for item in json_dict["data"]:
                     if item.get("apy") or (item.get("symbol") in self.main_tokens):
-                        result.res.append(TokenResponseCompact(**item))
+                        res.res.append(TokenResponseCompact(**item))
 
-                return result
+                return res
             except httpx.RequestError as req_err:
-                return EnsoGetTokensOutput(res=None, error=f"Request error: {req_err}")
+                raise ToolException(
+                    f"request error from Enso API: {req_err}"
+                ) from req_err
             except httpx.HTTPStatusError as http_err:
-                return EnsoGetTokensOutput(res=None, error=f"HTTP error: {http_err}")
+                raise ToolException(
+                    f"http error from Enso API: {http_err}"
+                ) from http_err
             except Exception as e:
-                return EnsoGetTokensOutput(res=None, error=str(e))
-
-    async def _arun(self, **kwargs) -> EnsoGetTokensOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run()
+                raise ToolException(f"error from Enso API: {e}") from e

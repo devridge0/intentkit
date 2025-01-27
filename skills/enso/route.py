@@ -4,8 +4,9 @@ import httpx
 from langchain.tools.base import ToolException
 from pydantic import BaseModel, Field
 
+from skills.enso.abi.route import ABI_ROUTE
 from utils.random import generate_tx_confirm_string
-from utils.tx import EvmTx
+from utils.tx import EvmContractWrapper, EvmTx
 
 from .base import EnsoBaseTool, base_url, default_chain_id
 
@@ -68,17 +69,6 @@ class EnsoGetRouteShortcutInput(BaseModel):
     # )
 
 
-class Transaction(BaseModel):
-    data: str = Field(None, description="Data of the transaction.")
-    to: str = Field(
-        None, description="Ethereum address of the receiver of the transaction."
-    )
-    from_: str = Field(
-        None, description="Ethereum address of the sender of the transaction."
-    )
-    value: str = Field(None, description="Amount of token to send.")
-
-
 class Route(BaseModel):
     tokenIn: list[str] | None = Field(
         None,
@@ -99,15 +89,18 @@ class Route(BaseModel):
 
 class EnsoGetRouteShortcutOutput(BaseModel):
     """
-    Output schema for the `/api/v1/shortcuts/route` GET endpoint.
+    Output content schema for the `/api/v1/shortcuts/route` GET endpoint.
     """
 
-    txRef: str = Field(
-        description="The reference code is the unique identifier for the transaction call data.",
+    routeId: str = Field(
+        description="The reference code for a found route path, should be shown to the users if the API call gets successful response."
+    )
+    network: str = Field(
+        "The network name of the transaction, according to the input chainId.",
     )
     gas: str | None = Field(
         None,
-        description="Gas amount for the transaction.",
+        description="Estimated gas amount for the transaction.",
     )
     amountOut: str | dict | None = Field(
         None,
@@ -132,22 +125,28 @@ class EnsoGetRouteShortcutOutput(BaseModel):
         """
         Returns the summary attribute as a string.
         """
-        return f"tx reference: {self.txRef}, amount out: {self.amountOut}, price impact: {self.priceImpact}, gas: {self.gas}, fee amount: {self.feeAmount}"
+        return f"route id: {self.routeId},amount out: {self.amountOut}, price impact: {self.priceImpact}, gas: {self.gas}, fee amount: {self.feeAmount}"
 
 
 class EnsoGetRouteShortcutArtifact(BaseModel):
     """
-    Artifact model for the EnsoGetRouteShortcut tool.
+    Artifact schema for the `/api/v1/shortcuts/route` GET endpoint.
     """
 
-    txRef: str = Field(
-        description="This will be used by the other tools to broadcast the transaction."
+    routeId: str = Field(
+        description="The reference code for a found route path, should be shown to the users if the API call gets successful response."
     )
+
+    def __str__(self):
+        """
+        Returns the summary attribute as a string.
+        """
+        return f"route id: {self.routeId}"
 
 
 class EnsoGetRouteShortcut(EnsoBaseTool):
     """
-    This tool deposits or swaps the optimal execution route path across a multitude of DeFi protocols such as liquidity pools,
+    This tool finds the optimal execution route path for swap or deposit across a multitude of DeFi protocols such as liquidity pools,
     lending platforms, automated market makers, yield optimizers, and more. This allows for maximized capital efficiency
     and yield optimization, taking into account return rates, gas costs, and slippage.
 
@@ -163,8 +162,9 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
         args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
     """
 
-    name: str = "enso_get_route_shortcut"
-    description: str = "This tool optimizes and performs DeFi swap, deposit, identifying the most efficient execution path across various protocols (e.g., liquidity pools, lending platforms) by considering factors like return rates, gas costs, and slippage."
+    description: str = (
+        "This tool finds the optimal execution route path for swap or deposit across a multitude of DeFi protocols such as liquidity pools, lending platforms, automated market makers, yield optimizers, and more. This allows for maximized capital efficiency and yield optimization, taking into account return rates, gas costs, and slippage."
+    )
     args_schema: Type[BaseModel] = EnsoGetRouteShortcutInput
     response_format: str = "content_and_artifact"
 
@@ -185,7 +185,7 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
             chainId (int): The chain id of the network to be used for swap, deposit and routing.
 
         Returns:
-            EnsoGetRouteShortcutOutput: The response containing route shortcut information.
+            Tuple[EnsoGetRouteShortcutOutput, EnsoGetRouteShortcutArtifact]: The response containing route shortcut information.
         """
         url = f"{base_url}/api/v1/shortcuts/route"
 
@@ -201,7 +201,7 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
             tokenOut=tokenOut,
         ).model_dump(exclude_none=True)
 
-        params["fromAddress"] = self.from_address
+        params["fromAddress"] = self.wallet.addresses[0].address_id
 
         with httpx.Client() as client:
             try:
@@ -209,32 +209,138 @@ class EnsoGetRouteShortcut(EnsoBaseTool):
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
                 json_dict = response.json()
                 # Parse and return the response as a RouteShortcutGetTransaction object
-                tx_ref = generate_tx_confirm_string(10)
-                json_dict["txRef"] = tx_ref
+                route_id = generate_tx_confirm_string(10)
+                json_dict["routeId"] = route_id
 
-                content = EnsoGetRouteShortcutOutput(**json_dict)
+                res = EnsoGetRouteShortcutOutput(**json_dict)
 
                 tx_dict = json_dict.get("tx")
                 evm_tx = EvmTx(**tx_dict)
-                evm_tx.gas = content.gas
+                evm_tx.chainId = chainId
 
                 self.store.save_agent_skill_data(
                     self.agent_id,
-                    self.name,
-                    tx_ref,
+                    "enso_route_shortcut",
+                    route_id,
                     evm_tx.model_dump(exclude_none=True),
                 )
 
-                return (
-                    content,
-                    EnsoGetRouteShortcutArtifact(
-                        txRef=tx_ref,
-                    ),
-                )
+                return (res, EnsoGetRouteShortcutArtifact(routeId=route_id))
 
-            # except httpx.RequestError as req_err:
-            #     raise ToolException("request error from Enso API") from req_err
-            # except httpx.HTTPStatusError as http_err:
-            #     raise ToolException("http error from Enso API") from http_err
+            except httpx.RequestError as req_err:
+                raise ToolException(
+                    f"request error from Enso API: {req_err}"
+                ) from req_err
+            except httpx.HTTPStatusError as http_err:
+                raise ToolException(
+                    f"http error from Enso API: {http_err}"
+                ) from http_err
             except Exception as e:
                 raise ToolException(f"error from Enso API: {e}") from e
+
+
+class EnsoBroadcastRouteShortcutInput(BaseModel):
+    """
+    Input model for broadcasting a route transaction.
+    """
+
+    routeId: str = Field(
+        description="should be filled by you according to your memory from routeId."
+    )
+
+
+class EnsoBroadcastRouteShortcutOutput(BaseModel):
+    """
+    Output model for broadcasting a transaction.
+    """
+
+
+class EnsoBroadcastRouteShortcutArtifact(BaseModel):
+    """
+    Artifact model for broadcasting a transaction.
+    """
+
+    txHash: str = Field(
+        description="The transaction hash of the broadcasted transaction."
+    )
+
+
+class EnsoBroadcastRouteShortcut(EnsoBaseTool):
+    """
+    This tool is used specifically for broadcasting a route transaction calldata to the network.
+    It should only be used when the user explicitly requests to broadcast a route transaction with routeId.
+
+    **Example Usage:**
+
+    "Broadcast the route transaction with routeId: tx-kdv32r342"
+
+    **Important:**
+    - This tool should be used with extreme caution.
+    - This tool should be run only one time for each routeId.
+    - Broadcasting a transaction with a same routeId more than once will result in fund lost.
+
+    Attributes:
+        name (str): Name of the tool, specifically "cdp_broadcast_tx".
+        description (str): Comprehensive description of the tool's purpose and functionality.
+        args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
+    """
+
+    name: str = "enso_broadcast_route_shortcut"
+    description: str = (
+        "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
+    )
+    args_schema: Type[BaseModel] = EnsoBroadcastRouteShortcutInput
+    response_format: str = "content_and_artifact"
+
+    def _run(
+        self, routeId: str
+    ) -> Tuple[EnsoBroadcastRouteShortcutOutput, EnsoBroadcastRouteShortcutArtifact]:
+        """
+        Run the tool to get swap route information.
+
+        Args:
+            routeId (str): Transaction reference code generated by EnsoGetRouteShortcut tool and will be passed by user as a confirmation.
+
+        Returns:
+            Tuple[EnsoBroadcastRouteShortcutOutput, EnsoBroadcastRouteShortcutArtifact]: The response containing route shortcut information.
+        """
+
+        try:
+            tx = self.store.get_agent_skill_data(
+                self.agent_id, "enso_route_shortcut", routeId
+            )
+
+            if not tx:
+                raise ToolException(f"transaction not found for routeId: {routeId}")
+
+            if not self.rpc_nodes.get(str(tx.chainId)):
+                raise ToolException(f"rpc node not found for chainId: {tx.chainId}")
+
+            contract = EvmContractWrapper(
+                self.rpc_nodes[str(tx.chainId)], ABI_ROUTE, tx
+            )
+
+            evm_tx = EvmTx(**tx)
+            fn, fn_args = contract.decode_function_input(evm_tx.data)
+
+            fn_args["amountIn"] = str(fn_args["amountIn"])
+
+            invocation = self.wallet.invoke_contract(
+                contract_address=evm_tx.to,
+                method=fn.fn_name,
+                abi=ABI_ROUTE,
+                args=fn_args,
+            ).wait()
+
+            return (
+                EnsoBroadcastRouteShortcutOutput(),
+                EnsoBroadcastRouteShortcutArtifact(
+                    txHash=invocation.transaction.transaction_hash
+                ),
+            )
+        except httpx.RequestError as req_err:
+            raise ToolException(f"request error from Enso API: {req_err}") from req_err
+        except httpx.HTTPStatusError as http_err:
+            raise ToolException(f"http error from Enso API: {http_err}") from http_err
+        except Exception as e:
+            raise ToolException(f"error from Enso API: {e}") from e
