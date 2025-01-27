@@ -103,6 +103,14 @@ class Config:
             "SLACK_ALERT_TOKEN"
         )  # For alert purposes only
         self.slack_alert_channel = self.load("SLACK_ALERT_CHANNEL")
+        # Sentry
+        self.sentry_dsn = self.load("SENTRY_DSN")
+        self.sentry_traces_sample_rate = float(
+            self.load("SENTRY_TRACES_SAMPLE_RATE", "0.01")
+        )
+        self.sentry_profiles_sample_rate = float(
+            self.load("SENTRY_PROFILES_SAMPLE_RATE", "0.01")
+        )
         # ===== config loaded
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
