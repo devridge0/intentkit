@@ -1,5 +1,14 @@
 # Changelog
 
+## 2025-01-27
+
+### New Features
+- Sentry Error Tracking
+
+### Improvements
+- Better short memory management, base on token count now
+- Better logs
+
 ## 2025-01-26
 
 ### Improvements
