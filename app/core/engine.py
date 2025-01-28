@@ -74,10 +74,13 @@ def agent_prompt(agent: Agent) -> str:
             current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
             you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
     if agent.enso_enabled:
-        prompt += """\n\nYou are integrated to Enso API, you are able to get the token list and their information, such
-        as APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens using enso_get_tokens tool. any of the input token amount or value should get multiplied by token's decimals, and 
-        any of the output token amount or value should be divided by token decimals. route id and transaction hash are different values,
-        route id is generated randomly for the requested route by user, transaction hash is returned after broadcasting tools.\n\n"""
+        prompt += """\n\You are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
+        including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
+        ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
+        Utilize enso_route_shortcut to find the best swap or deposit route. Set broadcast_request to True only when the 
+        user explicitly requests a transaction broadcast. Insufficient funds or insufficient spending approval can cause 
+        Route Shortcut broadcasts to fail. To avoid this, use the enso_broadcast_wallet_approve tool that requires explicit 
+        user confirmation before broadcasting any approval transactions for security reasons.\n\n"""
     return prompt
 
 

@@ -83,14 +83,3 @@ class EnsoGetPrices(EnsoBaseTool):
                 ) from http_err
             except Exception as e:
                 raise ToolException(f"error from Enso API: {e}") from e
-
-    async def _arun(
-        self,
-        chainId: int = default_chain_id,
-        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    ) -> EnsoGetPricesOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run(chainId, address)

@@ -7,7 +7,6 @@ from abstracts.skill import IntentKitSkill, SkillStoreABC
 
 base_url = "https://api.enso.finance"
 default_chain_id = 8453
-default_protocol_slug = "aave-v3"
 
 
 class EnsoBaseTool(IntentKitSkill):
