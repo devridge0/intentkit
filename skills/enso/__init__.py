@@ -73,14 +73,6 @@ def get_enso_skill(
             agent_id=agent_id,
         )
 
-    # if name == "get_route_shortcut":
-    #     return EnsoGetRouteShortcut(
-    #         api_token=api_token,
-    #         main_tokens=main_tokens,
-    #         store=store,
-    #         agent_id=agent_id,
-    #     )
-
     if name == "wallet_approve":
         if not wallet:
             raise ValueError("Wallet is empty")
