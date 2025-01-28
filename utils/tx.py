@@ -28,7 +28,6 @@ class EvmContractWrapper:
 
 
 class EvmTx(BaseModel):
-    chainId: int = Field(None, description="Chain ID of the transaction.")
     data: str = Field(None, description="Data of the transaction.")
     to: str = Field(None, description="Address of the receiver of the transaction.")
     from_: str = Field(None, description="Address of the sender of the transaction.")

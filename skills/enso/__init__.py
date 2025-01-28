@@ -6,7 +6,7 @@ from abstracts.skill import SkillStoreABC
 from skills.enso.base import EnsoBaseTool
 from skills.enso.networks import EnsoGetNetworks
 from skills.enso.prices import EnsoGetPrices
-from skills.enso.route import EnsoBroadcastRouteShortcut, EnsoGetRouteShortcut
+from skills.enso.route import EnsoRouteShortcut
 from skills.enso.tokens import EnsoGetTokens
 from skills.enso.wallet import (
     EnsoBroadcastWalletApprove,
@@ -73,13 +73,13 @@ def get_enso_skill(
             agent_id=agent_id,
         )
 
-    if name == "get_route_shortcut":
-        return EnsoGetRouteShortcut(
-            api_token=api_token,
-            main_tokens=main_tokens,
-            store=store,
-            agent_id=agent_id,
-        )
+    # if name == "get_route_shortcut":
+    #     return EnsoGetRouteShortcut(
+    #         api_token=api_token,
+    #         main_tokens=main_tokens,
+    #         store=store,
+    #         agent_id=agent_id,
+    #     )
 
     if name == "wallet_approve":
         if not wallet:
@@ -96,7 +96,7 @@ def get_enso_skill(
     if name == "broadcast_route_shortcut":
         if not wallet:
             raise ValueError("Wallet is empty")
-        return EnsoBroadcastRouteShortcut(
+        return EnsoRouteShortcut(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,

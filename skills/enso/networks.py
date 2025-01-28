@@ -66,8 +66,22 @@ class EnsoGetNetworks(EnsoBaseTool):
 
                 # Parse the response JSON into the NetworkResponse model
                 json_dict = response.json()
-                res = [ConnectedNetwork(**item) for item in json_dict]
-                return EnsoGetNetworksOutput(res=res)
+
+                networks = []
+                networks_memory = {}
+                for item in json_dict:
+                    network = ConnectedNetwork(**item)
+                    networks.append(network)
+                    networks_memory[network.id] = network.model_dump(exclude_none=True)
+
+                self.store.save_agent_skill_data(
+                    self.agent_id,
+                    "enso_get_networks",
+                    "networks",
+                    networks_memory,
+                )
+
+                return EnsoGetNetworksOutput(res=networks)
             except httpx.RequestError as req_err:
                 raise ToolException(
                     f"request error from Enso API: {req_err}"
