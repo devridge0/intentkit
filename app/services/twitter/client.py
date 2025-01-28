@@ -82,6 +82,7 @@ class TwitterClient(TwitterABC):
                         "twitter_name": me["data"]["name"],
                     }
                 )
+            self._agent_data = self._agent_store.get_data()
             logger.info(
                 f"Twitter client initialized. "
                 f"Use API key: {self.use_key}, "
