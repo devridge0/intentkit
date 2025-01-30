@@ -417,7 +417,13 @@ def execute_agent(
         return resp
 
 
-def clean_agent_memory(aid: str, thread_id: str = "", debug: bool = False):
+def clean_agent_memory(
+    aid: str,
+    thread_id: str = "",
+    clean_agent_memory: bool = False,
+    clean_skills_memory: bool = False,
+    debug: bool = False,
+):
     """Clean an agent's memory with the given prompt and return response.
 
     This function:
@@ -438,35 +444,44 @@ def clean_agent_memory(aid: str, thread_id: str = "", debug: bool = False):
     # get the agent from the database
     with get_session() as db:
         try:
-            AgentSkillData.clean_data(aid, db)
-            ThreadSkillData.clean_data(aid, thread_id, db)
+            if not clean_skills_memory and not clean_agent_memory:
+                raise HTTPException(
+                    status_code=400,
+                    detail="at least one of skills data or agent memory should be true.",
+                )
 
-            thread_id = thread_id.strip()
-            q_suffix = "%"
-            if thread_id and thread_id != "":
-                q_suffix = thread_id
+            if clean_skills_memory:
+                AgentSkillData.clean_data(aid, db)
+                ThreadSkillData.clean_data(aid, thread_id, db)
 
-            deletion_param = {"value": aid + "-" + q_suffix}
-            db.execute(
-                sqlalchemy.text(
-                    "DELETE FROM checkpoints WHERE thread_id like :value",
-                ),
-                deletion_param,
-            )
-            db.execute(
-                sqlalchemy.text(
-                    "DELETE FROM checkpoint_writes WHERE thread_id like :value",
-                ),
-                deletion_param,
-            )
-            db.execute(
-                sqlalchemy.text(
-                    "DELETE FROM checkpoint_blobs WHERE thread_id like :value",
-                ),
-                deletion_param,
-            )
+            if clean_agent_memory:
+                thread_id = thread_id.strip()
+                q_suffix = "%"
+                if thread_id and thread_id != "":
+                    q_suffix = thread_id
+
+                deletion_param = {"value": aid + "-" + q_suffix}
+                db.execute(
+                    sqlalchemy.text(
+                        "DELETE FROM checkpoints WHERE thread_id like :value",
+                    ),
+                    deletion_param,
+                )
+                db.execute(
+                    sqlalchemy.text(
+                        "DELETE FROM checkpoint_writes WHERE thread_id like :value",
+                    ),
+                    deletion_param,
+                )
+                db.execute(
+                    sqlalchemy.text(
+                        "DELETE FROM checkpoint_blobs WHERE thread_id like :value",
+                    ),
+                    deletion_param,
+                )
 
             db.commit()
+
             return "Agent data cleaned up successfully."
         except SQLAlchemyError as e:
             # Handle other SQLAlchemy-related errors
