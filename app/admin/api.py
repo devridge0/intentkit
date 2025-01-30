@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Body, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import Session, func, select
 
 from app.config.config import config
-from app.core.engine import initialize_agent
+from app.core.engine import clean_agent_memory, initialize_agent
 from models.agent import Agent, AgentData, AgentResponse
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
@@ -177,3 +180,71 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentRespon
     agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
 
     return AgentResponse.from_agent(agent, agent_data)
+
+
+class MemCleanRequest(BaseModel):
+    """Request model for agent memory cleanup endpoint.
+
+    Attributes:
+        aid (str): Agent ID to clean
+        thread_id (str): Thread ID to clean
+    """
+
+    aid: str
+    clean_agent_memory: bool
+    clean_skills_memory: bool
+    thread_id: str | None = Field("")
+
+
+@admin_router.post(
+    "/agents/clean-memory",
+    tags=["Agent"],
+    status_code=201,
+    dependencies=[Depends(verify_jwt)],
+)
+async def clean_memory(
+    request: MemCleanRequest = Body(
+        MemCleanRequest, description="Agent memory cleanup requestd"
+    ),
+    db: Session = Depends(get_db),
+) -> str:
+    """Clear an agent memory.
+
+    Args:
+        request (MemCleanRequest): The execution request containing agent ID, message, and thread ID
+
+    Returns:
+        str: Formatted response lines from agent memory cleanup
+
+    Raises:
+        HTTPException:
+            - 400: If input parameters are invalid (empty aid, thread_id, or message text)
+            - 404: If agent not found
+            - 500: For other server-side errors
+    """
+    # Validate input parameters
+    if not request.aid or not request.aid.strip():
+        raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
+
+    try:
+        agent = db.exec(select(Agent).where(Agent.id == request.agent_id)).first()
+        if not agent:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Agent with id {request.agent_id} not found",
+            )
+
+        return clean_agent_memory(
+            request.aid,
+            request.thread_id,
+            clean_agent_memory=request.clean_agent_memory,
+            clean_skills_memory=request.clean_skills_memory,
+        )
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail=f"Agent {request.aid} not found")
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
