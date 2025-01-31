@@ -191,7 +191,7 @@ def initialize_agent(aid):
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
                     agentkit.wallet if agentkit else None,
-                    agent.rpc_config,
+                    config.rpc_base_mainnet,
                     skill_store,
                     aid,
                 )
