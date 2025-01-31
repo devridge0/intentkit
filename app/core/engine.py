@@ -269,7 +269,8 @@ def initialize_agent(aid):
     if twitter_prompt:
         # deepseek only supports system prompt in the beginning
         if agent.model.startswith("deepseek"):
-            prompt_array.insert(0, ("system", twitter_prompt))
+            # prompt_array.insert(0, ("system", twitter_prompt))
+            pass
         else:
             prompt_array.append(("system", twitter_prompt))
     if agent.prompt_append:
@@ -285,8 +286,8 @@ def initialize_agent(aid):
         # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
-    # hack for deepseek
-    if agent.model == "deepseek-reasoner":
+    # hack for deepseek, it doesn't support tools
+    if agent.model.startswith("deepseek"):
         tools = []
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
