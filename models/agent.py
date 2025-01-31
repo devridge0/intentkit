@@ -47,7 +47,15 @@ class Agent(SQLModel, table=True):
     )
     temperature: Optional[float] = Field(
         default=0.7,
-        description="AI model temperature parameter controlling response randomness (0.0-1.0)",
+        description="AI model temperature parameter controlling response randomness (0.0~1.0)",
+    )
+    frequency_penalty: Optional[float] = Field(
+        default=0.0,
+        description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+    )
+    presence_penalty: Optional[float] = Field(
+        default=0.0,
+        description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
     )
     # autonomous mode
     autonomous_enabled: Optional[bool] = Field(

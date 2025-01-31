@@ -130,8 +130,9 @@ def initialize_agent(aid):
             model_name=agent.model,
             openai_api_key=config.deepseek_api_key,
             openai_api_base="https://api.deepseek.com",
-            presence_penalty=1,
-            streaming=False,
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
             timeout=90,
         )
         input_token_limit = 60000
@@ -139,8 +140,10 @@ def initialize_agent(aid):
         llm = ChatOpenAI(
             model_name=agent.model,
             openai_api_key=config.openai_api_key,
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
             timeout=60,
-            presence_penalty=1,
         )
 
     # ==== Store buffered conversation history in memory.
@@ -266,7 +269,8 @@ def initialize_agent(aid):
     if twitter_prompt:
         # deepseek only supports system prompt in the beginning
         if agent.model.startswith("deepseek"):
-            prompt_array.insert(0, ("system", twitter_prompt))
+            # prompt_array.insert(0, ("system", twitter_prompt))
+            pass
         else:
             prompt_array.append(("system", twitter_prompt))
     if agent.prompt_append:
@@ -282,8 +286,8 @@ def initialize_agent(aid):
         # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
-    # hack for deepseek
-    if agent.model == "deepseek-reasoner":
+    # hack for deepseek, it doesn't support tools
+    if agent.model.startswith("deepseek"):
         tools = []
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
