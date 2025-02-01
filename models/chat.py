@@ -81,6 +81,7 @@ class ChatMessageRequest(BaseModel):
 
     class Config:
         """Pydantic model configuration."""
+
         use_enum_values = True
         json_schema_extra = {
             "example": {
