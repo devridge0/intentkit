@@ -86,11 +86,6 @@ class Agent(SQLModel, table=True):
     cdp_wallet_data: SkipJsonSchema[Optional[str]] = Field(
         default=None, description="Deprecated: CDP wallet information"
     )
-    rpc_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="RPC nodes configuration for transaction broadcasting",
-    )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Twitter"

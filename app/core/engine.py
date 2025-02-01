@@ -422,7 +422,7 @@ def execute_agent(
 
 
 def clean_agent_memory(
-    aid: str,
+    agent_id: str,
     thread_id: str = "",
     clean_agent_memory: bool = False,
     clean_skills_memory: bool = False,
@@ -438,7 +438,7 @@ def clean_agent_memory(
     5. Cleans the graph checkpoint_blobs data.
 
     Args:
-        aid (str): Agent ID
+        agent_id (str): Agent ID
         thread_id (str): Thread ID for the agent memory cleanup
         debug (bool): Enable debug mode
 
@@ -455,8 +455,8 @@ def clean_agent_memory(
                 )
 
             if clean_skills_memory:
-                AgentSkillData.clean_data(aid, db)
-                ThreadSkillData.clean_data(aid, thread_id, db)
+                AgentSkillData.clean_data(agent_id, db)
+                ThreadSkillData.clean_data(agent_id, thread_id, db)
 
             if clean_agent_memory:
                 thread_id = thread_id.strip()
@@ -464,7 +464,7 @@ def clean_agent_memory(
                 if thread_id and thread_id != "":
                     q_suffix = thread_id
 
-                deletion_param = {"value": aid + "-" + q_suffix}
+                deletion_param = {"value": agent_id + "-" + q_suffix}
                 db.execute(
                     sqlalchemy.text(
                         "DELETE FROM checkpoints WHERE thread_id like :value",
