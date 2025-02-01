@@ -173,7 +173,9 @@ class ThreadSkillData(SQLModel, table=True):
     def clean_data(cls, agent_id: str, thread_id: str, db: Session):
         if thread_id and thread_id != "":
             db.exec(
-                delete(cls).where(cls.agent_id == agent_id & cls.thread_id == thread_id)
+                delete(cls).where(
+                    cls.agent_id == agent_id and cls.thread_id == thread_id
+                )
             )
         else:
             db.exec(delete(cls).where(cls.agent_id == agent_id))
