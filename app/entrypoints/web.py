@@ -24,6 +24,7 @@ from models.db import get_db
 logger = logging.getLogger(__name__)
 
 chat_router = APIRouter()
+chat_router_readonly = APIRouter()
 
 
 @chat_router.get("/{aid}/chat", tags=["Debug"], response_class=PlainTextResponse)
@@ -92,7 +93,7 @@ async def chat(
     return "\n".join(resp)
 
 
-@chat_router.get(
+@chat_router_readonly.get(
     "/agents/{aid}/chat/history", tags=["Chat"], response_model=List[ChatMessage]
 )
 async def get_chat_history(
