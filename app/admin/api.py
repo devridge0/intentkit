@@ -188,11 +188,13 @@ class MemCleanRequest(BaseModel):
     """Request model for agent memory cleanup endpoint.
 
     Attributes:
-        aid (str): Agent ID to clean
+        agent_id (str): Agent ID to clean
         thread_id (str): Thread ID to clean
+        clean_skills_memory (bool): To clean the skills data.
+        clean_agent_memory (bool): To clean the agent memory.
     """
 
-    aid: str
+    agent_id: str
     clean_agent_memory: bool
     clean_skills_memory: bool
     thread_id: str | None = Field("")
@@ -220,30 +222,32 @@ async def clean_memory(
 
     Raises:
         HTTPException:
-            - 400: If input parameters are invalid (empty aid, thread_id, or message text)
+            - 400: If input parameters are invalid (empty agent_id, thread_id, or message text)
             - 404: If agent not found
             - 500: For other server-side errors
     """
     # Validate input parameters
-    if not request.aid or not request.aid.strip():
+    if not request.agent_id or not request.agent_id.strip():
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
 
     try:
-        agent = db.exec(select(Agent).where(Agent.id == request.aid)).first()
+        agent = db.exec(select(Agent).where(Agent.id == request.agent_id)).first()
         if not agent:
             raise HTTPException(
                 status_code=404,
-                detail=f"Agent with id {request.aid} not found",
+                detail=f"Agent with id {request.agent_id} not found",
             )
 
         return clean_agent_memory(
-            request.aid,
+            request.agent_id,
             request.thread_id,
             clean_agent_memory=request.clean_agent_memory,
             clean_skills_memory=request.clean_skills_memory,
         )
     except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Agent {request.aid} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Agent {request.agent_id} not found"
+        )
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except ValueError as e:
