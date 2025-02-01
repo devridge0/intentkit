@@ -11,8 +11,8 @@ from models.db import get_db
 from utils.middleware import create_jwt_middleware
 from utils.slack_alert import send_slack_message
 
+admin_router_readonly = APIRouter()
 admin_router = APIRouter()
-
 
 # Create JWT middleware with admin config
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
@@ -125,7 +125,9 @@ async def create_agent(
     return AgentResponse.from_agent(latest_agent, agent_data)
 
 
-@admin_router.get("/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)])
+@admin_router_readonly.get(
+    "/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+)
 async def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
 
@@ -152,7 +154,7 @@ async def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
     ]
 
 
-@admin_router.get(
+@admin_router_readonly.get(
     "/agents/{agent_id}", tags=["Agent"], dependencies=[Depends(verify_jwt)]
 )
 async def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentResponse:
@@ -227,11 +229,11 @@ async def clean_memory(
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
 
     try:
-        agent = db.exec(select(Agent).where(Agent.id == request.agent_id)).first()
+        agent = db.exec(select(Agent).where(Agent.id == request.aid)).first()
         if not agent:
             raise HTTPException(
                 status_code=404,
-                detail=f"Agent with id {request.agent_id} not found",
+                detail=f"Agent with id {request.aid} not found",
             )
 
         return clean_agent_memory(
