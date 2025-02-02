@@ -35,7 +35,7 @@ class TwitterGetMentions(TwitterBaseTool):
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
     def _run(self) -> TwitterGetMentionsOutput:
-        """Run the tool to get mentions.
+        """Run the get mentions tool.
 
         Returns:
             TwitterGetMentionsOutput: A structured output containing the mentions data.
@@ -43,18 +43,29 @@ class TwitterGetMentions(TwitterBaseTool):
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
-        try:
-            # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(max_requests=1)
-                if is_rate_limited:
-                    return TwitterGetMentionsOutput(
-                        mentions=[],
-                        error=error,
-                    )
+        raise NotImplementedError("Use _arun instead")
 
+    async def _arun(self) -> TwitterGetMentionsOutput:
+        """Run the get mentions tool.
+
+        Returns:
+            TwitterGetMentionsOutput: A structured output containing the mentions data.
+
+        Raises:
+            Exception: If there's an error accessing the Twitter API.
+        """
+        is_rate_limited, error_msg = await self.check_rate_limit()
+        if is_rate_limited:
+            return TwitterGetMentionsOutput(
+                mentions=[],
+                error=error_msg,
+            )
+
+        try:
             # get since id from store
-            last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
+            last = await self.skill_store.get_agent_skill_data(
+                self.agent_id, self.name, "last"
+            )
             last = last or {}
             max_results = 10
             since_id = last.get("since_id")
@@ -73,7 +84,7 @@ class TwitterGetMentions(TwitterBaseTool):
                     ),
                 )
 
-            user_id = self.twitter.get_id()
+            user_id = self.twitter.self_id()
             if not user_id:
                 return TwitterGetMentionsOutput(
                     mentions=[],
@@ -82,7 +93,7 @@ class TwitterGetMentions(TwitterBaseTool):
                     ),
                 )
 
-            mentions = client.get_users_mentions(
+            mentions = await client.get_users_mentions(
                 user_auth=self.twitter.use_key,
                 id=user_id,
                 max_results=max_results,
@@ -120,7 +131,9 @@ class TwitterGetMentions(TwitterBaseTool):
             # Update since_id in store
             if mentions.get("meta") and mentions["meta"].get("newest_id"):
                 last["since_id"] = mentions["meta"].get("newest_id")
-                self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
+                await self.skill_store.save_agent_skill_data(
+                    self.agent_id, self.name, "last", last
+                )
 
             return TwitterGetMentionsOutput(mentions=result)
 
@@ -129,10 +142,3 @@ class TwitterGetMentions(TwitterBaseTool):
             return TwitterGetMentionsOutput(
                 mentions=[], error=self._get_error_with_username(str(e))
             )
-
-    async def _arun(self) -> TwitterGetMentionsOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run()

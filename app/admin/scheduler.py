@@ -1,4 +1,8 @@
-from apscheduler.schedulers.background import BackgroundScheduler
+"""Scheduler for periodic tasks."""
+
+import asyncio
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlmodel import update
 
@@ -8,31 +12,31 @@ from models.agent import AgentQuota
 from models.db import get_session, init_db
 
 
-def reset_daily_quotas():
+async def reset_daily_quotas():
     """Reset daily quotas for all agents at UTC 00:00.
     Resets message_count_daily and twitter_count_daily to 0.
     """
-    with get_session() as session:
+    async with get_session() as session:
         stmt = update(AgentQuota).values(message_count_daily=0, twitter_count_daily=0)
-        session.exec(stmt)
-        session.commit()
+        await session.exec(stmt)
+        await session.commit()
 
 
-def reset_monthly_quotas():
+async def reset_monthly_quotas():
     """Reset monthly quotas for all agents at the start of each month.
     Resets message_count_monthly and autonomous_count_monthly to 0.
     """
-    with get_session() as session:
+    async with get_session() as session:
         stmt = update(AgentQuota).values(
             message_count_monthly=0, autonomous_count_monthly=0
         )
-        session.exec(stmt)
-        session.commit()
+        await session.exec(stmt)
+        await session.commit()
 
 
 def start_scheduler():
     """Start the APScheduler to run quota reset jobs."""
-    scheduler = BackgroundScheduler()
+    scheduler = AsyncIOScheduler()
 
     # Reset daily quotas at UTC 00:00
     scheduler.add_job(
@@ -71,8 +75,7 @@ if __name__ == "__main__":
 
     scheduler = start_scheduler()
     try:
-        # Keep the script running
-        while True:
-            pass
+        # Keep the script running with asyncio event loop
+        asyncio.get_event_loop().run_forever()
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()

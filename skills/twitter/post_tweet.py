@@ -28,8 +28,8 @@ class TwitterPostTweet(TwitterBaseTool):
     description: str = "Post a new tweet to Twitter"
     args_schema: Type[BaseModel] = TwitterPostTweetInput
 
-    def _run(self, text: str) -> str:
-        """Run the tool to post a tweet.
+    async def _arun(self, text: str) -> str:
+        """Async implementation of the tool to post a tweet.
 
         Args:
             text (str): The text content of the tweet to post.
@@ -43,7 +43,7 @@ class TwitterPostTweet(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=24, interval=1440
                 )
                 if is_rate_limited:
@@ -56,7 +56,9 @@ class TwitterPostTweet(TwitterBaseTool):
                 )
 
             # Post tweet using tweepy client
-            response = client.create_tweet(text=text, user_auth=self.twitter.use_key)
+            response = await client.create_tweet(
+                text=text, user_auth=self.twitter.use_key
+            )
 
             if "data" in response and "id" in response["data"]:
                 tweet_id = response["data"]["id"]
@@ -66,9 +68,11 @@ class TwitterPostTweet(TwitterBaseTool):
         except Exception as e:
             return self._get_error_with_username(str(e))
 
-    async def _arun(self, text: str) -> str:
-        """Async implementation of the tool.
+    def _run(self, text: str) -> str:
+        """Sync implementation of the tool.
 
-        This tool doesn't have a native async implementation, so we call the sync version.
+        This method is deprecated since we now have native async implementation in _arun.
         """
-        return self._run(text=text)
+        raise NotImplementedError(
+            "Use _arun instead, which is the async implementation"
+        )

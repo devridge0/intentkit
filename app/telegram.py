@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import sentry_sdk
@@ -17,4 +18,4 @@ if config.sentry_dsn:
     )
 
 if __name__ == "__main__":
-    run_telegram_server()
+    asyncio.run(run_telegram_server())

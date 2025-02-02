@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import tweepy
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.config.config import config
@@ -23,7 +23,7 @@ async def _background_task(agent_id: str):
         agent_id: ID of the agent to initialize
     """
     # Add any post-processing work here
-    initialize_agent(agent_id)
+    await initialize_agent(agent_id)
 
 
 @router.get("/twitter")
@@ -31,7 +31,7 @@ async def twitter_oauth_callback(
     state: str,
     code: str,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Handle Twitter OAuth2 callback.
 
@@ -51,22 +51,20 @@ async def twitter_oauth_callback(
     Raises:
         HTTPException: If state/code is missing or token exchange fails
     """
-    try:
-        if not state or not code:
-            raise HTTPException(
-                status_code=400, detail="Missing state or code parameter"
-            )
+    if not state or not code:
+        raise HTTPException(status_code=400, detail="Missing state or code parameter")
 
+    try:
         agent_id = state
-        agent = db.exec(select(Agent).where(Agent.id == agent_id)).first()
+        agent = await db.get(Agent, agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
 
-        agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
+        agent_data = await db.get(AgentData, agent_id)
 
         if not agent_data:
             agent_data = AgentData(id=agent_id)
-            db.add(agent_data)
+            await db.add(agent_data)
 
         # Exchange code for tokens
         authorization_response = (
@@ -91,8 +89,8 @@ async def twitter_oauth_callback(
             agent_data.twitter_name = me.get("data").get("name")
 
         # Commit changes
-        db.commit()
-        db.refresh(agent_data)
+        await db.commit()
+        await db.refresh(agent_data)
 
         # Schedule agent initialization as a background task
         background_tasks.add_task(_background_task, agent_id)
@@ -101,6 +99,9 @@ async def twitter_oauth_callback(
             content={"message": "Authentication successful, you can close this window"},
             status_code=200,
         )
-
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions to preserve their status codes
+        raise http_exc
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # For unexpected errors, use 500 status code
+        raise HTTPException(status_code=500, detail=str(e))

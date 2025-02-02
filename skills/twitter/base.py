@@ -19,7 +19,9 @@ class TwitterBaseTool(IntentKitSkill):
     agent_store: AgentStoreABC = Field(
         description="The agent store for persisting data"
     )
-    store: SkillStoreABC = Field(description="The skill store for persisting data")
+    skill_store: SkillStoreABC = Field(
+        description="The skill store for persisting data"
+    )
 
     def _get_error_with_username(self, error_msg: str) -> str:
         """Get error message with username if available.
@@ -30,12 +32,12 @@ class TwitterBaseTool(IntentKitSkill):
         Returns:
             Error message with username if available.
         """
-        username = self.twitter.get_username()
+        username = self.twitter.self_username()
         if username:
             return f"Error for Twitter user @{username}: {error_msg}"
         return error_msg
 
-    def check_rate_limit(
+    async def check_rate_limit(
         self, max_requests: int = 1, interval: int = 15
     ) -> tuple[bool, str | None]:
         """Check if the rate limit has been exceeded.
@@ -47,7 +49,7 @@ class TwitterBaseTool(IntentKitSkill):
         Returns:
             tuple[bool, str | None]: (is_rate_limited, error_message)
         """
-        rate_limit = self.store.get_agent_skill_data(
+        rate_limit = await self.skill_store.get_agent_skill_data(
             self.agent_id, self.name, "rate_limit"
         )
 
@@ -63,7 +65,7 @@ class TwitterBaseTool(IntentKitSkill):
                 return True, "Rate limit exceeded"
             else:
                 rate_limit["count"] += 1
-                self.store.save_agent_skill_data(
+                await self.skill_store.save_agent_skill_data(
                     self.agent_id, self.name, "rate_limit", rate_limit
                 )
                 return False, None
@@ -73,7 +75,7 @@ class TwitterBaseTool(IntentKitSkill):
             "count": 1,
             "reset_time": (current_time + timedelta(minutes=interval)).isoformat(),
         }
-        self.store.save_agent_skill_data(
+        await self.skill_store.save_agent_skill_data(
             self.agent_id, self.name, "rate_limit", new_rate_limit
         )
         return False, None

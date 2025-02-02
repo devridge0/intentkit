@@ -3,7 +3,8 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.services.twitter.oauth2 import oauth2_user_handler
 from models.agent import AgentData
@@ -12,7 +13,9 @@ from models.db import get_session
 logger = logging.getLogger(__name__)
 
 
-def get_expiring_tokens(db: Session, minutes_threshold: int = 10) -> list[AgentData]:
+async def get_expiring_tokens(
+    db: AsyncSession, minutes_threshold: int = 10
+) -> list[AgentData]:
     """Get all agents with tokens expiring within the specified threshold.
 
     Args:
@@ -26,16 +29,17 @@ def get_expiring_tokens(db: Session, minutes_threshold: int = 10) -> list[AgentD
         minutes=minutes_threshold
     )
 
-    return db.exec(
+    result = await db.exec(
         select(AgentData).where(
             AgentData.twitter_access_token.is_not(None),
             AgentData.twitter_refresh_token.is_not(None),
             AgentData.twitter_access_token_expires_at <= expiration_threshold,
         )
-    ).all()
+    )
+    return result.all()
 
 
-def refresh_token(db: Session, agent: AgentData):
+async def refresh_token(db: AsyncSession, agent: AgentData):
     """Refresh Twitter OAuth2 token for an agent.
 
     Args:
@@ -49,45 +53,37 @@ def refresh_token(db: Session, agent: AgentData):
         token = {} if token is None else token
 
         # Update token information
-        if "access_token" in token:
-            agent.twitter_access_token = token["access_token"]
-        else:
-            agent.twitter_access_token = None
-        if "refresh_token" in token:  # Some providers return new refresh tokens
-            agent.twitter_refresh_token = token["refresh_token"]
-        else:
-            agent.twitter_refresh_token = None
+        agent.twitter_access_token = token.get("access_token")
+        agent.twitter_refresh_token = token.get("refresh_token")
         if "expires_at" in token:
             agent.twitter_access_token_expires_at = datetime.fromtimestamp(
-                token["expires_at"], tz=timezone.utc
+                token["expires_at"], timezone.utc
             )
-        else:
-            agent.twitter_access_token_expires_at = None
 
-        # Save changes
         db.add(agent)
-        db.commit()
-        db.refresh(agent)
+        await db.commit()
 
-        logger.info(f"Refreshed token for agent {agent.id}")
+        logger.info(
+            f"Successfully refreshed Twitter token for agent {agent.id}, "
+            f"expires at {agent.twitter_access_token_expires_at}"
+        )
     except Exception as e:
-        logger.error(f"Failed to refresh token for agent {agent.id}: {str(e)}")
+        logger.error(f"Failed to refresh Twitter token for agent {agent.id}: {str(e)}")
         # if error, reset token
         agent.twitter_access_token = None
         agent.twitter_refresh_token = None
         agent.twitter_access_token_expires_at = None
         db.add(agent)
-        db.commit()
-        db.refresh(agent)
+        await db.commit()
 
 
-def refresh_expiring_tokens():
+async def refresh_expiring_tokens():
     """Refresh all tokens that are about to expire.
 
     This function is designed to be called by the scheduler every minute.
     It will check for tokens expiring in the next 5 minutes and refresh them.
     """
-    with get_session() as session:
-        expiring_tokens = get_expiring_tokens(session)
-        for agent in expiring_tokens:
-            refresh_token(session, agent)
+    async with get_session() as session:
+        agents = await get_expiring_tokens(session)
+        for agent in agents:
+            await refresh_token(session, agent)

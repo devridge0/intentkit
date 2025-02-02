@@ -23,7 +23,7 @@ class AgentStoreABC(ABC):
         self.agent_id = agent_id
 
     @abstractmethod
-    def get_config(self) -> Optional[Agent]:
+    async def get_config(self) -> Optional[Agent]:
         """Get agent configuration.
 
         Returns:
@@ -32,7 +32,7 @@ class AgentStoreABC(ABC):
         pass
 
     @abstractmethod
-    def get_data(self) -> Optional[AgentData]:
+    async def get_data(self) -> Optional[AgentData]:
         """Get additional agent data.
 
         Returns:
@@ -41,7 +41,7 @@ class AgentStoreABC(ABC):
         pass
 
     @abstractmethod
-    def set_data(self, data: Dict) -> None:
+    async def set_data(self, data: Dict) -> None:
         """Update agent data.
 
         Args:
@@ -50,7 +50,7 @@ class AgentStoreABC(ABC):
         pass
 
     @abstractmethod
-    def get_quota(self) -> Optional[AgentQuota]:
+    async def get_quota(self) -> Optional[AgentQuota]:
         """Get agent quota information.
 
         Returns:
