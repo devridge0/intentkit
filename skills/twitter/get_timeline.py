@@ -92,7 +92,7 @@ class TwitterGetTimeline(TwitterBaseTool):
                     ),
                 )
 
-            user_id = self.twitter.self_id()
+            user_id = self.twitter.self_id
             if not user_id:
                 return TwitterGetTimelineOutput(
                     tweets=[],

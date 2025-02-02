@@ -32,7 +32,7 @@ class TwitterBaseTool(IntentKitSkill):
         Returns:
             Error message with username if available.
         """
-        username = self.twitter.self_username()
+        username = self.twitter.self_username
         if username:
             return f"Error for Twitter user @{username}: {error_msg}"
         return error_msg
