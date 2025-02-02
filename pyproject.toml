@@ -13,7 +13,7 @@ gunicorn = "^23.0.0"
 pydantic = "*"
 pydantic-settings = "^2.7.1"
 sqlmodel = "^0.0.22"
-sqlalchemy = "^2.0.36"
+sqlalchemy = {version = "^2.0.37", extras = ["asyncio"]}
 psycopg = "^3.2.3"
 psycopg2 = "*"
 psycopg-pool = "^3.2.4"
@@ -31,7 +31,7 @@ openai = "^1.59.6"
 cdp-langchain = "^0.0.13"
 cdp-sdk = "^0.15.0"
 cdp-agentkit-core = "^0.0.11"
-tweepy = "^4.15.0"
+tweepy = {version = "^4.15.0", extras = ["async"]}
 python-dotenv = "^1.0.1"
 APScheduler = "^3.11.0"
 anyio = "^4.8.0"
@@ -43,6 +43,7 @@ aiogram = "^3.17.0"
 epyxid = "^0.3.3"
 sentry-sdk = {version = "^2.20.0", extras = ["fastapi"]}
 uvicorn = {version = "^0.34.0", extras = ["standard"]}
+asyncpg = "^0.30.0"
 
 [tool.poetry.group.dev] 
 optional = true

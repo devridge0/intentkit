@@ -1,9 +1,10 @@
+import asyncio
 import logging
 import signal
 import sys
 
 import sentry_sdk
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config.config import config
 from app.entrypoints.autonomous import run_autonomous_agents
@@ -21,27 +22,35 @@ if config.sentry_dsn:
     )
 
 if __name__ == "__main__":
-    # Initialize infrastructure
-    init_db(**config.db)
 
-    # Initialize scheduler
-    scheduler = BlockingScheduler()
+    async def main():
+        # Initialize database
+        await init_db(**config.db)
 
-    # Add job to run every minute
-    scheduler.add_job(run_autonomous_agents, "interval", minutes=1)
+        # Initialize scheduler
+        scheduler = AsyncIOScheduler()
 
-    # Signal handler for graceful shutdown
-    def signal_handler(signum, frame):
-        logger.info("Received termination signal. Shutting down gracefully...")
-        scheduler.shutdown()
-        sys.exit(0)
+        # Add job to run every minute
+        scheduler.add_job(run_autonomous_agents, "interval", minutes=1)
 
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+        # Signal handler for graceful shutdown
+        def signal_handler(signum, frame):
+            logger.info("Received termination signal. Shutting down gracefully...")
+            scheduler.shutdown()
+            sys.exit(0)
 
-    try:
-        logger.info("Starting autonomous agents scheduler...")
-        scheduler.start()
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Scheduler stopped. Exiting...")
+        # Register signal handlers
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        try:
+            logger.info("Starting autonomous agents scheduler...")
+            scheduler.start()
+            # Keep the main thread running
+            while True:
+                await asyncio.sleep(1)
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("Scheduler stopped. Exiting...")
+
+    # Run the async main function
+    asyncio.run(main())

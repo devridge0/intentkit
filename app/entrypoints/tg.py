@@ -3,14 +3,14 @@ import logging
 import signal
 import sys
 
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app.config.config import config
 from app.services.tg.bot import pool
 from app.services.tg.bot.pool import BotPool, bot_by_token
 from app.services.tg.utils.cleanup import clean_token_str
 from models.agent import Agent, AgentData
-from models.db import get_engine, init_db
+from models.db import get_session, init_db
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,10 @@ class AgentScheduler:
         self.bot_pool = bot_pool
 
     async def sync(self):
-        with Session(get_engine()) as db:
+        async with get_session() as db:
             # Get all telegram agents
-            agents = db.exec(select(Agent)).all()
+            result = await db.exec(select(Agent))
+            agents = result.all()
 
             for agent in agents:
                 try:
@@ -47,9 +48,10 @@ class AgentScheduler:
                                 continue
                             bot_info = await bot.bot.get_me()
                             # after bot init, refresh its info to agent data
-                            agent_data = db.exec(
+                            result = await db.exec(
                                 select(AgentData).where(AgentData.id == agent.id)
-                            ).first()
+                            )
+                            agent_data = result.first()
                             if not agent_data:
                                 agent_data = AgentData(id=agent.id)
                             agent_data.telegram_id = bot_info.id
@@ -60,7 +62,7 @@ class AgentScheduler:
                                     f"{bot_info.first_name} {bot_info.last_name}"
                                 )
                             db.add(agent_data)
-                            db.commit()
+                            await db.commit()
                     else:
                         cached_agent = pool._agent_bots[agent.id]
                         if cached_agent.updated_at != agent.updated_at:
@@ -86,9 +88,9 @@ class AgentScheduler:
             await asyncio.sleep(interval)
 
 
-def run_telegram_server() -> None:
+async def run_telegram_server() -> None:
     # Initialize database connection
-    init_db(**config.db)
+    await init_db(**config.db)
 
     # Signal handler for graceful shutdown
     def signal_handler(signum, frame):
@@ -108,7 +110,17 @@ def run_telegram_server() -> None:
 
     scheduler = AgentScheduler(bot_pool)
 
-    loop = asyncio.new_event_loop()
-    loop.create_task(scheduler.start(int(config.tg_new_agent_poll_interval)))
+    # Start the scheduler
+    asyncio.create_task(scheduler.start(int(config.tg_new_agent_poll_interval)))
 
-    bot_pool.start(loop, config.tg_server_host, int(config.tg_server_port))
+    # Start the bot pool
+    await bot_pool.start(
+        asyncio.get_running_loop(), config.tg_server_host, int(config.tg_server_port)
+    )
+
+    # Keep the server running
+    try:
+        while True:
+            await asyncio.sleep(3600)  # Sleep for an hour
+    except asyncio.CancelledError:
+        logging.info("Server shutdown initiated")

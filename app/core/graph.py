@@ -190,6 +190,7 @@ def _count_tokens(messages: Sequence[BaseMessage], model_name: str = "gpt-4") ->
 
 
 def create_agent(
+    aid: str,
     model: LanguageModelLike,
     tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
     *,
@@ -412,11 +413,12 @@ def create_agent(
         return {"messages": [response]}
 
     async def acall_model(state: AgentState, config: RunnableConfig) -> AgentState:
+        logger.debug(f"[{aid}] Async calling model")
         _validate_chat_history(state["messages"])
         try:
             response = await model_runnable.ainvoke(state, config)
         except Exception as e:
-            logger.error(f"Error in async call model: {e}")
+            logger.error(f"[{aid}] Error in async call model: {e}")
             # Clean message history on error
             return {
                 "messages": [

@@ -14,8 +14,8 @@ class TwitterFollowUserInput(BaseModel):
 class TwitterFollowUserOutput(BaseModel):
     """Output for TwitterFollowUser tool."""
 
-    success: bool
-    message: str
+    followed: bool
+    error: str = Field(default=None)
 
 
 class TwitterFollowUser(TwitterBaseTool):
@@ -45,51 +45,55 @@ class TwitterFollowUser(TwitterBaseTool):
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(self, user_id: str) -> TwitterFollowUserOutput:
+        """Run the tool to follow a user.
+
+        Args:
+            user_id (str): The ID of the user to follow.
+
+        Returns:
+            TwitterFollowUserOutput: A structured output containing the result of the follow action.
+
+        Raises:
+            Exception: If there's an error accessing the Twitter API.
+        """
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=5, interval=15
                 )
                 if is_rate_limited:
                     return TwitterFollowUserOutput(
-                        success=False,
-                        message=self._get_error_with_username(
-                            f"Error following user: {error}"
-                        ),
+                        followed=False,
+                        error=self._get_error_with_username(error),
                     )
 
             client = self.twitter.get_client()
             if not client:
                 return TwitterFollowUserOutput(
-                    success=False,
-                    message=self._get_error_with_username(
+                    followed=False,
+                    error=self._get_error_with_username(
                         "Failed to get Twitter client. Please check your authentication."
                     ),
                 )
 
             # Follow the user using tweepy client
-            response = client.follow_user(
+            response = await client.follow_user(
                 target_user_id=user_id, user_auth=self.twitter.use_key
             )
 
-            if "data" in response and response["data"].get("following"):
+            if response.data and response.data.get("following"):
+                return TwitterFollowUserOutput(followed=True)
+            else:
                 return TwitterFollowUserOutput(
-                    success=True, message=f"Successfully followed user {user_id}"
+                    followed=False,
+                    error=self._get_error_with_username("Failed to follow user"),
                 )
-            return TwitterFollowUserOutput(
-                success=False,
-                message=self._get_error_with_username("Failed to follow user."),
-            )
 
         except Exception as e:
             return TwitterFollowUserOutput(
-                success=False, message=self._get_error_with_username(str(e))
+                followed=False, error=self._get_error_with_username(str(e))
             )
-
-    async def _arun(self, user_id: str) -> TwitterFollowUserOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run(user_id=user_id)

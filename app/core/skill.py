@@ -1,6 +1,7 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 from abstracts.skill import SkillStoreABC
+from models.db import get_session
 from models.skill import AgentSkillData, ThreadSkillData
 
 
@@ -11,13 +12,10 @@ class SkillStore(SkillStoreABC):
     skill-related data for both agents and threads using SQLModel-based storage.
 
     Args:
-        get_session: A callable that returns a database session
+        get_session: A callable that returns an async database session
     """
 
-    def __init__(self, get_session: Callable[[], Any]) -> None:
-        self._get_session = get_session
-
-    def get_agent_skill_data(
+    async def get_agent_skill_data(
         self, agent_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for an agent.
@@ -30,10 +28,10 @@ class SkillStore(SkillStoreABC):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        with self._get_session() as session:
-            return AgentSkillData.get(agent_id, skill, key, session)
+        async with get_session() as session:
+            return await AgentSkillData.get(agent_id, skill, key, session)
 
-    def save_agent_skill_data(
+    async def save_agent_skill_data(
         self, agent_id: str, skill: str, key: str, data: Dict[str, Any]
     ) -> None:
         """Save or update skill data for an agent.
@@ -44,17 +42,17 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        with self._get_session() as session:
+        async with get_session() as session:
             skill_data = AgentSkillData(
                 agent_id=agent_id,
                 skill=skill,
                 key=key,
                 data=data,
             )
-            skill_data.save(session)
-            session.commit()
+            await skill_data.save(session)
+            await session.commit()
 
-    def get_thread_skill_data(
+    async def get_thread_skill_data(
         self, thread_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for a thread.
@@ -67,10 +65,10 @@ class SkillStore(SkillStoreABC):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        with self._get_session() as session:
-            return ThreadSkillData.get(thread_id, skill, key, session)
+        async with get_session() as session:
+            return await ThreadSkillData.get(thread_id, skill, key, session)
 
-    def save_thread_skill_data(
+    async def save_thread_skill_data(
         self,
         thread_id: str,
         agent_id: str,
@@ -87,7 +85,7 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        with self._get_session() as session:
+        async with get_session() as session:
             skill_data = ThreadSkillData(
                 thread_id=thread_id,
                 agent_id=agent_id,
@@ -95,5 +93,5 @@ class SkillStore(SkillStoreABC):
                 key=key,
                 data=data,
             )
-            skill_data.save(session)
-            session.commit()
+            await skill_data.save(session)
+            await session.commit()

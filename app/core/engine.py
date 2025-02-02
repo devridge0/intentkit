@@ -23,7 +23,7 @@ from langchain_core.messages import (
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -36,7 +36,7 @@ from app.core.graph import create_agent
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
 from models.agent import Agent, AgentData
-from models.db import get_coon, get_session
+from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skill_sets import get_skill_set
 from skills.common import get_common_skill
@@ -75,7 +75,7 @@ def agent_prompt(agent: Agent) -> str:
             current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
             you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
     if agent.enso_enabled:
-        prompt += """\n\You are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
+        prompt += """\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
         including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
         ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
         Utilize enso_route_shortcut to find the best swap or deposit route. Set broadcast_request to True only when the 
@@ -85,7 +85,7 @@ def agent_prompt(agent: Agent) -> str:
     return prompt
 
 
-def initialize_agent(aid):
+async def initialize_agent(aid):
     """Initialize an AI agent with specified configuration and tools.
 
     This function:
@@ -106,13 +106,13 @@ def initialize_agent(aid):
     """
     """Initialize the agent with CDP Agentkit."""
     # init skill store first
-    skill_store = SkillStore(get_session)
+    skill_store = SkillStore()
     # init agent store
-    agent_store = AgentStore(aid, get_session)
+    agent_store = AgentStore(aid)
 
     # get the agent from the database
     try:
-        agent: Agent = agent_store.get_config()
+        agent: Agent = await agent_store.get_config()
     except NoResultFound:
         # Handle the case where the user is not found
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -132,7 +132,7 @@ def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=90,
+            timeout=180,
         )
         input_token_limit = 60000
     else:
@@ -142,18 +142,18 @@ def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=60,
+            timeout=180,
         )
 
     # ==== Store buffered conversation history in memory.
-    memory = PostgresSaver(get_coon())
+    memory = AsyncPostgresSaver(get_pool())
 
     # ==== Load skills
     tools: list[BaseTool] = []
 
     agentkit: CdpAgentkitWrapper
     # Configure CDP Agentkit Langchain Extension.
-    agent_data: AgentData = agent_store.get_data()
+    agent_data: AgentData = await agent_store.get_data()
     if agent.cdp_enabled:
         values = {
             "cdp_api_key_name": config.cdp_api_key_name,
@@ -168,7 +168,7 @@ def initialize_agent(aid):
         agentkit = CdpAgentkitWrapper(**values)
         # save the wallet after first create
         if not agent_data or not agent_data.cdp_wallet_data:
-            agent_store.set_data(
+            await agent_store.set_data(
                 {
                     "cdp_wallet_data": agentkit.export_wallet(),
                 }
@@ -204,6 +204,7 @@ def initialize_agent(aid):
             agent.twitter_config = {}
         try:
             twitter_client = TwitterClient(agent_store, agent.twitter_config)
+            await twitter_client.initialize()
             if not twitter_client.need_auth:
                 for skill in agent.twitter_skills:
                     try:
@@ -285,6 +286,7 @@ def initialize_agent(aid):
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
     agents[aid] = create_agent(
+        aid,
         llm,
         tools=tools,
         checkpointer=memory,
@@ -294,7 +296,7 @@ def initialize_agent(aid):
     )
 
 
-def execute_agent(
+async def execute_agent(
     aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
 ) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
@@ -335,7 +337,7 @@ def execute_agent(
 
     # cold start
     if aid not in agents:
-        initialize_agent(aid)
+        await initialize_agent(aid)
         resp_debug.append("[ Agent cold start ... ]")
         resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
@@ -382,7 +384,7 @@ def execute_agent(
     #     )
     #     resp_debug_append = ""
     # run
-    for chunk in executor.stream(
+    async for chunk in executor.astream(
         {"messages": [HumanMessage(content=content)]}, stream_config
     ):
         if "agent" in chunk:
