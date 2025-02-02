@@ -35,7 +35,6 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
-from app.services.twitter.oauth2 import get_authorization_url
 from models.agent import Agent, AgentData
 from models.db import get_coon, get_session
 from models.skill import AgentSkillData, ThreadSkillData
@@ -227,12 +226,6 @@ def initialize_agent(aid):
                 )
             else:
                 logger.info(f"Twitter client needs authentication for agent {aid}")
-                twitter_prompt = (
-                    "\n\nWhen you need to use any twitter tool, "
-                    f"tell the person helping you to authenticate the Twitter account using this link: {get_authorization_url(aid)} \n"
-                    "Remember, the link will be expired. So you can only use this one, not use other links in the conversation history.\n"
-                    "Display links on separate lines, with a blank line before and after, not use markdown.\n\n"
-                )
         except Exception as e:
             logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
 
