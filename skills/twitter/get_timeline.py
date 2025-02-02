@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from pydantic import BaseModel
@@ -46,27 +45,43 @@ class TwitterGetTimeline(TwitterBaseTool):
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(self, max_results: int = 10) -> TwitterGetTimelineOutput:
+        """Run the tool to get the user's timeline.
+
+        Args:
+            max_results (int, optional): Maximum number of tweets to retrieve. Defaults to 10.
+
+        Returns:
+            TwitterGetTimelineOutput: A structured output containing the timeline data.
+
+        Raises:
+            Exception: If there's an error accessing the Twitter API.
+        """
         try:
             # Ensure max_results is an integer
             max_results = int(max_results)
 
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=5, interval=15
                 )
                 if is_rate_limited:
-                    return TwitterGetTimelineOutput(tweets=[], error=error)
+                    return TwitterGetTimelineOutput(
+                        tweets=[],
+                        error=self._get_error_with_username(error),
+                    )
 
             # get since id from store
-            last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
+            last = await self.skill_store.get_agent_skill_data(
+                self.agent_id, self.name, "last"
+            )
             last = last or {}
             since_id = last.get("since_id")
             if since_id:
                 max_results = 100
-
-            # Always get timeline for the last day
-            start_time = datetime.now(timezone.utc) - timedelta(days=1)
 
             client = self.twitter.get_client()
             if not client:
@@ -77,11 +92,20 @@ class TwitterGetTimeline(TwitterBaseTool):
                     ),
                 )
 
-            timeline = client.get_home_timeline(
+            user_id = self.twitter.self_id()
+            if not user_id:
+                return TwitterGetTimelineOutput(
+                    tweets=[],
+                    error=self._get_error_with_username(
+                        "Failed to get Twitter user ID."
+                    ),
+                )
+
+            timeline = await client.get_users_tweets(
                 user_auth=self.twitter.use_key,
+                id=user_id,
                 max_results=max_results,
                 since_id=since_id,
-                start_time=start_time,
                 expansions=[
                     "referenced_tweets.id",
                     "attachments.media_keys",
@@ -105,18 +129,14 @@ class TwitterGetTimeline(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            logger.debug(timeline)
-
-            try:
-                result = self.process_tweets_response(timeline)
-            except Exception as e:
-                logger.error("Error processing timeline: %s", str(e))
-                raise
+            result = self.process_tweets_response(timeline)
 
             # Update the since_id in store for the next request
             if timeline.get("meta") and timeline["meta"].get("newest_id"):
                 last["since_id"] = timeline["meta"]["newest_id"]
-                self.store.save_agent_skill_data(self.agent_id, self.name, "last", last)
+                await self.skill_store.save_agent_skill_data(
+                    self.agent_id, self.name, "last", last
+                )
 
             return TwitterGetTimelineOutput(tweets=result)
 
@@ -125,10 +145,3 @@ class TwitterGetTimeline(TwitterBaseTool):
             return TwitterGetTimelineOutput(
                 tweets=[], error=self._get_error_with_username(str(e))
             )
-
-    async def _arun(self) -> TwitterGetTimelineOutput:
-        """Async implementation of the tool.
-
-        This tool doesn't have a native async implementation, so we call the sync version.
-        """
-        return self._run()

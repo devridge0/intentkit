@@ -3,7 +3,8 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy import Column, DateTime, delete, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field, Session, SQLModel, select
+from sqlmodel import Field, SQLModel, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class AgentSkillData(SQLModel, table=True):
@@ -41,9 +42,9 @@ class AgentSkillData(SQLModel, table=True):
     )
 
     @classmethod
-    def get(
-        cls, agent_id: str, skill: str, key: str, db: Session
-    ) -> Optional[Dict[str, Any]]:
+    async def get(
+        cls, agent_id: str, skill: str, key: str, db: AsyncSession
+    ) -> Optional[dict]:
         """Get skill data for an agent.
 
         Args:
@@ -55,26 +56,30 @@ class AgentSkillData(SQLModel, table=True):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        result = db.exec(
-            select(cls).where(
-                cls.agent_id == agent_id,
-                cls.skill == skill,
-                cls.key == key,
+        result = (
+            await db.exec(
+                select(cls).where(
+                    cls.agent_id == agent_id,
+                    cls.skill == skill,
+                    cls.key == key,
+                )
             )
         ).first()
         return result.data if result else None
 
-    def save(self, db: Session) -> None:
+    async def save(self, db: AsyncSession) -> None:
         """Save or update skill data.
 
         Args:
             db: Database session
         """
-        existing = db.exec(
-            select(self.__class__).where(
-                self.__class__.agent_id == self.agent_id,
-                self.__class__.skill == self.skill,
-                self.__class__.key == self.key,
+        existing = (
+            await db.exec(
+                select(self.__class__).where(
+                    self.__class__.agent_id == self.agent_id,
+                    self.__class__.skill == self.skill,
+                    self.__class__.key == self.key,
+                )
             )
         ).first()
         if existing:
@@ -84,8 +89,8 @@ class AgentSkillData(SQLModel, table=True):
             db.add(self)
 
     @classmethod
-    def clean_data(cls, agent_id: str, db: Session):
-        db.exec(delete(cls).where(cls.agent_id == agent_id))
+    async def clean_data(cls, agent_id: str, db: AsyncSession):
+        await db.exec(delete(cls).where(cls.agent_id == agent_id))
 
 
 class ThreadSkillData(SQLModel, table=True):
@@ -126,9 +131,9 @@ class ThreadSkillData(SQLModel, table=True):
     )
 
     @classmethod
-    def get(
-        cls, thread_id: str, skill: str, key: str, db: Session
-    ) -> Optional[Dict[str, Any]]:
+    async def get(
+        cls, thread_id: str, skill: str, key: str, db: AsyncSession
+    ) -> Optional[dict]:
         """Get skill data for a thread.
 
         Args:
@@ -140,26 +145,30 @@ class ThreadSkillData(SQLModel, table=True):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        result = db.exec(
-            select(cls).where(
-                cls.thread_id == thread_id,
-                cls.skill == skill,
-                cls.key == key,
+        result = (
+            await db.exec(
+                select(cls).where(
+                    cls.thread_id == thread_id,
+                    cls.skill == skill,
+                    cls.key == key,
+                )
             )
         ).first()
         return result.data if result else None
 
-    def save(self, db: Session) -> None:
+    async def save(self, db: AsyncSession) -> None:
         """Save or update skill data.
 
         Args:
             db: Database session
         """
-        existing = db.exec(
-            select(self.__class__).where(
-                self.__class__.thread_id == self.thread_id,
-                self.__class__.skill == self.skill,
-                self.__class__.key == self.key,
+        existing = (
+            await db.exec(
+                select(self.__class__).where(
+                    self.__class__.thread_id == self.thread_id,
+                    self.__class__.skill == self.skill,
+                    self.__class__.key == self.key,
+                )
             )
         ).first()
         if existing:
@@ -170,12 +179,12 @@ class ThreadSkillData(SQLModel, table=True):
             db.add(self)
 
     @classmethod
-    def clean_data(cls, agent_id: str, thread_id: str, db: Session):
+    async def clean_data(cls, agent_id: str, thread_id: str, db: AsyncSession):
         if thread_id and thread_id != "":
-            db.exec(
+            await db.exec(
                 delete(cls).where(
-                    cls.agent_id == agent_id and cls.thread_id == thread_id
+                    (cls.agent_id == agent_id) & (cls.thread_id == thread_id)
                 )
             )
         else:
-            db.exec(delete(cls).where(cls.agent_id == agent_id))
+            await db.exec(delete(cls).where(cls.agent_id == agent_id))

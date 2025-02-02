@@ -27,8 +27,8 @@ class TwitterReplyTweet(TwitterBaseTool):
     description: str = "Reply to an existing tweet on Twitter"
     args_schema: Type[BaseModel] = TwitterReplyTweetInput
 
-    def _run(self, tweet_id: str, text: str) -> str:
-        """Run the tool to reply to a tweet.
+    async def _arun(self, tweet_id: str, text: str) -> str:
+        """Async implementation of the tool to reply to a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to reply to.
@@ -43,7 +43,7 @@ class TwitterReplyTweet(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=48, interval=1440
                 )
                 if is_rate_limited:
@@ -58,7 +58,7 @@ class TwitterReplyTweet(TwitterBaseTool):
                 )
 
             # Post reply tweet using tweepy client
-            response = client.create_tweet(
+            response = await client.create_tweet(
                 text=text, user_auth=self.twitter.use_key, in_reply_to_tweet_id=tweet_id
             )
 
@@ -70,9 +70,11 @@ class TwitterReplyTweet(TwitterBaseTool):
         except Exception as e:
             return self._get_error_with_username(f"Error posting reply tweet: {str(e)}")
 
-    async def _arun(self, tweet_id: str, text: str) -> str:
-        """Async implementation of the tool.
+    def _run(self, tweet_id: str, text: str) -> str:
+        """Sync implementation of the tool.
 
-        This tool doesn't have a native async implementation, so we call the sync version.
+        This method is deprecated since we now have native async implementation in _arun.
         """
-        return self._run(tweet_id=tweet_id, text=text)
+        raise NotImplementedError(
+            "Use _arun instead, which is the async implementation"
+        )

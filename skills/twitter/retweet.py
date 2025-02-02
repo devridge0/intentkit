@@ -33,8 +33,8 @@ class TwitterRetweet(TwitterBaseTool):
     description: str = "Retweet a tweet on Twitter"
     args_schema: Type[BaseModel] = TwitterRetweetInput
 
-    def _run(self, tweet_id: str) -> TwitterRetweetOutput:
-        """Run the tool to retweet a tweet.
+    async def _arun(self, tweet_id: str) -> TwitterRetweetOutput:
+        """Async implementation of the tool to retweet a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to retweet.
@@ -48,7 +48,7 @@ class TwitterRetweet(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=5, interval=15
                 )
                 if is_rate_limited:
@@ -66,14 +66,16 @@ class TwitterRetweet(TwitterBaseTool):
                 )
 
             # Get authenticated user's ID
-            user_id = self.twitter.get_id()
+            user_id = self.twitter.self_id
             if not user_id:
                 return TwitterRetweetOutput(
                     success=False, message="Failed to get authenticated user ID."
                 )
 
             # Retweet the tweet using tweepy client
-            response = client.retweet(tweet_id=tweet_id, user_auth=self.twitter.use_key)
+            response = await client.retweet(
+                tweet_id=tweet_id, user_auth=self.twitter.use_key
+            )
 
             if (
                 "data" in response
@@ -93,9 +95,11 @@ class TwitterRetweet(TwitterBaseTool):
                 success=False, message=self._get_error_with_username(str(e))
             )
 
-    async def _arun(self, tweet_id: str) -> TwitterRetweetOutput:
-        """Async implementation of the tool.
+    def _run(self, tweet_id: str) -> TwitterRetweetOutput:
+        """Sync implementation of the tool.
 
-        This tool doesn't have a native async implementation, so we call the sync version.
+        This method is deprecated since we now have native async implementation in _arun.
         """
-        return self._run(tweet_id=tweet_id)
+        raise NotImplementedError(
+            "Use _arun instead, which is the async implementation"
+        )

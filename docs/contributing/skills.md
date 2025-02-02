@@ -90,34 +90,34 @@ Skills have access to persistent storage through `self.store`, which implements 
 
 ```python
 # Store agent-specific data
-self.store.save_agent_skill_data(
-    self.agent_id,  # automatically provided
-    self.name,      # your skill name
-    "key_name",     # custom key for your data
-    {"data": "value"}  # any JSON-serializable data
+self.skill_store.save_agent_skill_data(
+   self.agent_id,  # automatically provided
+   self.name,  # your skill name
+   "key_name",  # custom key for your data
+   {"data": "value"}  # any JSON-serializable data
 )
 
 # Retrieve agent-specific data
-data = self.store.get_agent_skill_data(
-    self.agent_id,
-    self.name,
-    "key_name"
+data = await self.skill_store.get_agent_skill_data(
+   self.agent_id,
+   self.name,
+   "key_name"
 )
 
 # Store thread-specific data
-self.store.save_thread_skill_data(
-    thread_id,      # provided in context
-    self.agent_id,
-    self.name,
-    "key_name",
-    {"data": "value"}
+await self.skill_store.save_thread_skill_data(
+   thread_id,  # provided in context
+   self.agent_id,
+   self.name,
+   "key_name",
+   {"data": "value"}
 )
 
 # Retrieve thread-specific data
-data = self.store.get_thread_skill_data(
-    thread_id,
-    self.name,
-    "key_name"
+data = await self.skill_store.get_thread_skill_data(
+   thread_id,
+   self.name,
+   "key_name"
 )
 ```
 

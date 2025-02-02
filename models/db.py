@@ -1,20 +1,19 @@
-from contextlib import contextmanager
-from typing import Generator
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 from urllib.parse import quote_plus
 
-from langgraph.checkpoint.postgres import PostgresSaver
-from psycopg_pool import ConnectionPool
-from sqlalchemy.engine import Engine
-from sqlmodel import Session, create_engine
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg_pool import AsyncConnectionPool
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.db_mig import safe_migrate
 
-conn_str = None
-conn = None
 engine = None
+_pool = None
 
 
-def init_db(
+async def init_db(
     host: str,
     username: str,
     password: str,
@@ -32,17 +31,19 @@ def init_db(
         port: Database port (default: 5432)
         auto_migrate: Whether to run migrations automatically (default: True)
     """
-    global conn_str
-    if conn_str is None:
-        conn_str = (
-            f"postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}"
+    global engine, _pool
+    # Initialize psycopg pool if not already initialized
+    if _pool is None:
+        _pool = AsyncConnectionPool(
+            conninfo=f"postgresql://{username}:{quote_plus(password)}@{host}:{port}/{dbname}",
+            min_size=3,
+            max_size=20,
+            timeout=60,
         )
-
     # Initialize SQLAlchemy engine with pool settings
-    global engine
     if engine is None:
-        engine = create_engine(
-            conn_str,
+        engine = create_async_engine(
+            f"postgresql+asyncpg://{username}:{quote_plus(password)}@{host}:{port}/{dbname}",
             pool_size=20,  # Increase pool size
             max_overflow=30,  # Increase max overflow
             pool_timeout=60,  # Increase timeout
@@ -50,58 +51,57 @@ def init_db(
             pool_recycle=3600,  # Recycle connections after 1 hour
         )
         if auto_migrate:
-            safe_migrate(engine)
-
-    # Initialize psycopg connection
-    global conn
-    if conn is None:
-        conn = ConnectionPool(conn_str, open=True, max_idle=20, max_waiting=30)
-        if auto_migrate:
-            # Check and create PostgresSaver tables
-            one_time_coon = conn.getconn()
-            one_time_coon.autocommit = True
-            memory = PostgresSaver(one_time_coon)
-            memory.setup()
-            conn.putconn(one_time_coon)
+            await safe_migrate(engine)
+            async with _pool.connection() as conn:
+                saver = AsyncPostgresSaver(conn)
+                await saver.setup()
 
 
-def get_db() -> Generator[Session, None, None]:
-    with Session(engine) as session:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSession(engine) as session:
         yield session
 
 
-@contextmanager
-def get_session() -> Session:
-    """Get a database session using a context manager.
+@asynccontextmanager
+async def get_session() -> AsyncSession:
+    """Get a database session using an async context manager.
 
-    This function is designed to be used with the 'with' statement,
+    This function is designed to be used with the 'async with' statement,
     ensuring proper session cleanup.
 
     Returns:
-        Session: A SQLModel session that will be automatically closed
+        AsyncSession: A SQLModel async session that will be automatically closed
 
     Example:
         ```python
-        with get_session() as session:
+        async with get_session() as session:
             # use session here
             session.query(...)
         # session is automatically closed
         ```
     """
-    session = Session(engine)
+    session = AsyncSession(engine)
     try:
         yield session
     finally:
-        session.close()
+        await session.close()
 
 
-def get_coon_str() -> str:
-    return conn_str
+def get_engine() -> AsyncEngine:
+    """Get the SQLAlchemy async engine.
 
-
-def get_coon() -> ConnectionPool:
-    return conn
-
-
-def get_engine() -> Engine:
+    Returns:
+        AsyncEngine: The SQLAlchemy async engine
+    """
     return engine
+
+
+def get_pool() -> AsyncConnectionPool:
+    """Get the global psycopg connection pool.
+
+    Returns:
+        AsyncConnectionPool: The global psycopg connection pool
+    """
+    if _pool is None:
+        raise RuntimeError("Database pool not initialized. Call init_db first.")
+    return _pool

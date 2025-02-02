@@ -53,7 +53,7 @@ async def execute(request: ExecuteRequest) -> list[str]:
         raise HTTPException(status_code=400, detail="Message text cannot be empty")
 
     try:
-        return execute_agent(request.aid, request.message, request.thread_id)
+        return await execute_agent(request.aid, request.message, request.thread_id)
     except NoResultFound:
         raise HTTPException(status_code=404, detail=f"Agent {request.aid} not found")
     except SQLAlchemyError as e:

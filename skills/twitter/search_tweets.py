@@ -36,10 +36,10 @@ class TwitterSearchTweets(TwitterBaseTool):
     description: str = "Search for recent tweets on Twitter using a query"
     args_schema: Type[BaseModel] = TwitterSearchTweetsInput
 
-    def _run(
+    async def _arun(
         self, query: str, max_results: int = 10, recent_only: bool = True
     ) -> TwitterSearchTweetsOutput:
-        """Run the tool to search tweets.
+        """Async implementation of the tool to search tweets.
 
         Args:
             query (str): The search query to use.
@@ -55,7 +55,7 @@ class TwitterSearchTweets(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=3, interval=15
                 )
                 if is_rate_limited:
@@ -73,11 +73,13 @@ class TwitterSearchTweets(TwitterBaseTool):
                 )
 
             # Get since_id from store to avoid duplicate results
-            last = self.store.get_agent_skill_data(self.agent_id, self.name, query)
+            last = await self.skill_store.get_agent_skill_data(
+                self.agent_id, self.name, query
+            )
             last = last or {}
             since_id = last.get("since_id")
 
-            tweets = client.search_recent_tweets(
+            tweets = await client.search_recent_tweets(
                 query=query,
                 user_auth=self.twitter.use_key,
                 since_id=since_id,
@@ -118,7 +120,9 @@ class TwitterSearchTweets(TwitterBaseTool):
             # Update the since_id in store for the next request
             if tweets.get("meta") and tweets.get("meta").get("newest_id"):
                 last["since_id"] = tweets["meta"]["newest_id"]
-                self.store.save_agent_skill_data(self.agent_id, self.name, query, last)
+                await self.skill_store.save_agent_skill_data(
+                    self.agent_id, self.name, query, last
+                )
 
             return TwitterSearchTweetsOutput(tweets=result)
 
@@ -129,9 +133,11 @@ class TwitterSearchTweets(TwitterBaseTool):
                 error=self._get_error_with_username(f"Error searching tweets: {e}"),
             )
 
-    async def _arun(self, query: str) -> TwitterSearchTweetsOutput:
-        """Async implementation of the tool.
+    def _run(self, query: str) -> TwitterSearchTweetsOutput:
+        """Sync implementation of the tool.
 
-        This tool doesn't have a native async implementation, so we call the sync version.
+        This method is deprecated since we now have native async implementation in _arun.
         """
-        return self._run(query=query)
+        raise NotImplementedError(
+            "Use _arun instead, which is the async implementation"
+        )

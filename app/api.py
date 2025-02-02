@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
         app: FastAPI application instance
     """
     # Initialize database
-    init_db(**config.db)
+    await init_db(**config.db)
 
     # Start scheduler for periodic tasks
     scheduler = start_scheduler()
@@ -61,6 +61,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
 app.include_router(chat_router)
 app.include_router(chat_router_readonly)
 app.include_router(admin_router)

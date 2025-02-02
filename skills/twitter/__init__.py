@@ -38,35 +38,59 @@ def get_twitter_skill(
     """
     if name == "get_mentions":
         return TwitterGetMentions(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "post_tweet":
         return TwitterPostTweet(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "reply_tweet":
         return TwitterReplyTweet(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "get_timeline":
         return TwitterGetTimeline(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "follow_user":
         return TwitterFollowUser(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "like_tweet":
         return TwitterLikeTweet(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "retweet":
         return TwitterRetweet(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     elif name == "search_tweets":
         return TwitterSearchTweets(
-            twitter=twitter, store=store, agent_id=agent_id, agent_store=agent_store
+            twitter=twitter,
+            skill_store=store,
+            agent_id=agent_id,
+            agent_store=agent_store,
         )
     else:
         raise ValueError(f"Unknown Twitter skill: {name}")

@@ -10,7 +10,7 @@ class IntentKitSkill(BaseTool):
     """
 
     agent_id: str
-    store: "SkillStoreABC"
+    skill_store: "SkillStoreABC"
 
 
 class SkillStoreABC(ABC):
@@ -21,7 +21,7 @@ class SkillStoreABC(ABC):
     """
 
     @abstractmethod
-    def get_agent_skill_data(
+    async def get_agent_skill_data(
         self, agent_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for an agent.
@@ -37,7 +37,7 @@ class SkillStoreABC(ABC):
         pass
 
     @abstractmethod
-    def save_agent_skill_data(
+    async def save_agent_skill_data(
         self, agent_id: str, skill: str, key: str, data: Dict[str, Any]
     ) -> None:
         """Save or update skill data for an agent.
@@ -51,7 +51,7 @@ class SkillStoreABC(ABC):
         pass
 
     @abstractmethod
-    def get_thread_skill_data(
+    async def get_thread_skill_data(
         self, thread_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for a thread.
@@ -67,7 +67,7 @@ class SkillStoreABC(ABC):
         pass
 
     @abstractmethod
-    def save_thread_skill_data(
+    async def save_thread_skill_data(
         self,
         thread_id: str,
         agent_id: str,

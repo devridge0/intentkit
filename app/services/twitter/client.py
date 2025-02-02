@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from tweepy import Client
+from tweepy.asynchronous import AsyncClient
 
 from abstracts.agent import AgentStoreABC
 from abstracts.twitter import TwitterABC
@@ -29,9 +29,9 @@ class TwitterClient(TwitterABC):
             agent_store: The agent store for persisting data
             config: Configuration dictionary that may contain API keys
         """
-        self._client: Optional[Client] = None
+        self._client: Optional[AsyncClient] = None
         self._agent_store = agent_store
-        self._agent_data: Optional[AgentData] = self._agent_store.get_data()
+        self._agent_data: Optional[AgentData] = None
         self.use_key = False
         self.need_auth = False
 
@@ -45,7 +45,7 @@ class TwitterClient(TwitterABC):
                 "access_token_secret",
             ]
         ):
-            self._client = Client(
+            self._client = AsyncClient(
                 consumer_key=config["consumer_key"],
                 consumer_secret=config["consumer_secret"],
                 access_token=config["access_token"],
@@ -53,88 +53,98 @@ class TwitterClient(TwitterABC):
                 return_type=dict,
             )
             self.use_key = True
-        else:
-            # Try to get OAuth2 token from agent data
-            if self._agent_data and self._agent_data.twitter_access_token:
-                # Check if token is expired
-                if (
-                    self._agent_data.twitter_access_token_expires_at
-                    and self._agent_data.twitter_access_token_expires_at
-                    > datetime.now(timezone.utc)
-                ):
-                    self._client = Client(
-                        bearer_token=self._agent_data.twitter_access_token,
-                        return_type=dict,
-                    )
-                    self.use_key = False
-                else:
-                    self.need_auth = True
-            else:
-                self.need_auth = True
-        # Everytime we get a client, we need to refresh the user data
-        if not self.need_auth:
-            me = self._client.get_me(user_auth=self.use_key)
+            return
+
+        # Otherwise try to get OAuth2 tokens from agent data
+        self._agent_data = None
+        self.need_auth = True
+
+    async def initialize(self) -> None:
+        """Initialize the Twitter client with OAuth2 tokens if available."""
+        if self.use_key:
+            me = await self._client.get_me(user_auth=self.use_key)
             if me and "data" in me and "id" in me["data"]:
-                self._agent_store.set_data(
+                await self._agent_store.set_data(
                     {
                         "twitter_id": me["data"]["id"],
                         "twitter_username": me["data"]["username"],
                         "twitter_name": me["data"]["name"],
                     }
                 )
-            self._agent_data = self._agent_store.get_data()
+            self._agent_data = await self._agent_store.get_data()
             logger.info(
                 f"Twitter client initialized. "
                 f"Use API key: {self.use_key}, "
-                f"User ID: {self.get_id()}, "
-                f"Username: {self.get_username()}, "
-                f"Name: {self.get_name()}"
+                f"User ID: {self.self_id}, "
+                f"Username: {self.self_username}, "
+                f"Name: {self.self_name}"
             )
+            return
 
-    def get_client(self) -> Optional[Client]:
-        """Get a configured Tweepy client.
+        self._agent_data = await self._agent_store.get_data()
+        if not self._agent_data:
+            return
 
-        If using OAuth2 authentication, this method will check token expiration and
-        attempt to refresh the client with new agent data if needed.
+        if (
+            self._agent_data.twitter_access_token
+            and self._agent_data.twitter_access_token_expires_at
+        ):
+            # Check if token is expired
+            if self._agent_data.twitter_access_token_expires_at <= datetime.now(
+                tz=timezone.utc
+            ):
+                self.need_auth = True
+                return
+
+            # Initialize client with access token
+            self._client = AsyncClient(
+                bearer_token=self._agent_data.twitter_access_token,
+                return_type=dict,
+            )
+            self.need_auth = False
+
+    async def update_tokens(
+        self, access_token: str, refresh_token: str, expires_at: datetime
+    ) -> None:
+        """Update OAuth2 tokens in agent data.
+
+        Args:
+            access_token: New access token
+            refresh_token: New refresh token
+            expires_at: Token expiration timestamp
+        """
+        if not self._agent_data:
+            self._agent_data = await self._agent_store.get_data()
+            if not self._agent_data:
+                return
+
+        self._agent_data.twitter_access_token = access_token
+        self._agent_data.twitter_refresh_token = refresh_token
+        self._agent_data.twitter_access_token_expires_at = expires_at
+        await self._agent_store.set_data(self._agent_data)
+
+        # Update client with new access token
+        self._client = AsyncClient(bearer_token=access_token, return_type=dict)
+        self.need_auth = False
+
+    def get_client(self) -> Optional[AsyncClient]:
+        """Get the initialized Twitter client.
 
         Returns:
-            A configured Tweepy client if credentials are valid, None otherwise
+            Optional[AsyncClient]: The Twitter client if initialized, None otherwise
         """
-        # For API key auth, just return the client
-        if self.use_key:
-            return self._client
-
-        # For OAuth2, check token expiration
-        if (
-            self._agent_data
-            and self._agent_data.twitter_access_token_expires_at
-            and self._agent_data.twitter_access_token_expires_at
-            <= datetime.now(timezone.utc)
-        ):
-            # Token expired, try to get fresh agent data
-            self._agent_data = self._agent_store.get_data()
-
-            # Check if new token is valid
-            if (
-                self._agent_data
-                and self._agent_data.twitter_access_token
-                and self._agent_data.twitter_access_token_expires_at
-                and self._agent_data.twitter_access_token_expires_at
-                > datetime.now(timezone.utc)
-            ):
-                # Create new client with fresh token
-                self._client = Client(
-                    bearer_token=self._agent_data.twitter_access_token,
-                    return_type=dict,
-                )
-            else:
-                # No valid token available
-                self._client = None
-                self.need_auth = True
-
         return self._client
 
-    def get_id(self) -> Optional[str]:
+    def get_agent_data(self) -> Optional[AgentData]:
+        """Get the agent data.
+
+        Returns:
+            Optional[AgentData]: The agent data if available, None otherwise
+        """
+        return self._agent_data
+
+    @property
+    def self_id(self) -> Optional[str]:
         """Get the Twitter user ID.
 
         Returns:
@@ -142,21 +152,12 @@ class TwitterClient(TwitterABC):
         """
         if not self._client:
             return None
+        if not self._agent_data:
+            return None
+        return self._agent_data.twitter_id
 
-        # For OAuth2, use cached agent data
-        if not self.use_key and self._agent_data and self._agent_data.twitter_id:
-            return self._agent_data.twitter_id
-
-        try:
-            # Try to get from Twitter API
-            me = self._client.get_me()
-            if me and "data" in me and "id" in me["data"]:
-                return me["data"]["id"]
-        except Exception:
-            pass
-        return None
-
-    def get_username(self) -> Optional[str]:
+    @property
+    def self_username(self) -> Optional[str]:
         """Get the Twitter username.
 
         Returns:
@@ -164,21 +165,12 @@ class TwitterClient(TwitterABC):
         """
         if not self._client:
             return None
+        if not self._agent_data:
+            return None
+        return self._agent_data.twitter_username
 
-        # For OAuth2, use cached agent data
-        if not self.use_key and self._agent_data and self._agent_data.twitter_username:
-            return self._agent_data.twitter_username
-
-        try:
-            # Try to get from Twitter API
-            me = self._client.get_me()
-            if me and "data" in me and "username" in me["data"]:
-                return me["data"]["username"]
-        except Exception:
-            pass
-        return None
-
-    def get_name(self) -> Optional[str]:
+    @property
+    def self_name(self) -> Optional[str]:
         """Get the Twitter display name.
 
         Returns:
@@ -186,16 +178,6 @@ class TwitterClient(TwitterABC):
         """
         if not self._client:
             return None
-
-        # For OAuth2, use cached agent data
-        if not self.use_key and self._agent_data and self._agent_data.twitter_name:
-            return self._agent_data.twitter_name
-
-        try:
-            # Try to get from Twitter API
-            me = self._client.get_me()
-            if me and "data" in me and "name" in me["data"]:
-                return me["data"]["name"]
-        except Exception:
-            pass
-        return None
+        if not self._agent_data:
+            return None
+        return self._agent_data.twitter_name

@@ -33,8 +33,8 @@ class TwitterLikeTweet(TwitterBaseTool):
     description: str = "Like a tweet on Twitter"
     args_schema: Type[BaseModel] = TwitterLikeTweetInput
 
-    def _run(self, tweet_id: str) -> TwitterLikeTweetOutput:
-        """Run the tool to like a tweet.
+    async def _arun(self, tweet_id: str) -> TwitterLikeTweetOutput:
+        """Async implementation of the tool to like a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to like.
@@ -48,7 +48,7 @@ class TwitterLikeTweet(TwitterBaseTool):
         try:
             # Check rate limit only when not using OAuth
             if not self.twitter.use_key:
-                is_rate_limited, error = self.check_rate_limit(
+                is_rate_limited, error = await self.check_rate_limit(
                     max_requests=100, interval=1440
                 )
                 if is_rate_limited:
@@ -66,7 +66,9 @@ class TwitterLikeTweet(TwitterBaseTool):
                 )
 
             # Like the tweet using tweepy client
-            response = client.like(tweet_id=tweet_id, user_auth=self.twitter.use_key)
+            response = await client.like(
+                tweet_id=tweet_id, user_auth=self.twitter.use_key
+            )
 
             if "data" in response and "liked" in response["data"]:
                 return TwitterLikeTweetOutput(
@@ -82,9 +84,11 @@ class TwitterLikeTweet(TwitterBaseTool):
                 success=False, message=self._get_error_with_username(str(e))
             )
 
-    async def _arun(self, tweet_id: str) -> TwitterLikeTweetOutput:
-        """Async implementation of the tool.
+    def _run(self, tweet_id: str) -> TwitterLikeTweetOutput:
+        """Sync implementation of the tool.
 
-        This tool doesn't have a native async implementation, so we call the sync version.
+        This method is deprecated since we now have native async implementation in _arun.
         """
-        return self._run(tweet_id=tweet_id)
+        raise NotImplementedError(
+            "Use _arun instead, which is the async implementation"
+        )

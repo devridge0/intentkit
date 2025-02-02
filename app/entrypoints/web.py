@@ -6,7 +6,8 @@ from typing import List
 from epyxid import XID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
-from sqlmodel import Session, desc, select
+from sqlmodel import desc, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
@@ -34,7 +35,7 @@ async def chat(
     q: str = Query(None, description="Query string"),
     debug: bool = Query(None, description="Enable debug mode"),
     thread: str = Query(None, description="Thread ID for conversation tracking"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Debug mode: Chat with an AI agent.
 
@@ -62,8 +63,8 @@ async def chat(
           - 500: Internal server error
     """
     # check if the agent quota is exceeded
-    quota = AgentQuota.get(aid, db)
-    if not quota.has_message_quota(db):
+    quota = await AgentQuota.get(aid, db)
+    if not quota.has_message_quota():
         raise HTTPException(
             status_code=429,
             detail=(
@@ -83,13 +84,13 @@ async def chat(
     debug = debug if debug is not None else config.debug_resp
 
     # Execute agent and get response
-    resp = execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
+    resp = await execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
 
     # only log if not in debug mode
     if not config.debug_resp:
         logger.info(resp)
     # reduce message quota
-    quota.add_message(db)
+    await quota.add_message(db)
     return "\n".join(resp)
 
 
@@ -99,7 +100,7 @@ async def chat(
 async def get_chat_history(
     aid: str = Path(..., description="Agent ID"),
     chat_id: str = Query(..., description="Chat ID to get history for"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> List[ChatMessage]:
     """Get chat history for a specific chat.
 
@@ -116,17 +117,19 @@ async def get_chat_history(
           - 404: Agent not found
     """
     # Get agent and check if exists
-    agent = db.exec(select(Agent).where(Agent.id == aid)).first()
+    result = await db.exec(select(Agent).where(Agent.id == aid))
+    agent = result.first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get chat messages (last 50 in DESC order)
-    messages = db.exec(
+    result = await db.exec(
         select(ChatMessage)
         .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
         .order_by(desc(ChatMessage.created_at))
         .limit(50)
-    ).all()
+    )
+    messages = result.all()
 
     # Reverse messages to get chronological order
     messages.reverse()
@@ -138,7 +141,7 @@ async def get_chat_history(
 async def retry_chat(
     aid: str = Path(..., description="Agent ID"),
     chat_id: str = Query(..., description="Chat ID to retry last message"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ChatMessage:
     """Retry the last message in a chat.
 
@@ -160,17 +163,19 @@ async def retry_chat(
           - 500: Internal server error
     """
     # Get agent and check if exists
-    agent = db.exec(select(Agent).where(Agent.id == aid)).first()
+    result = await db.exec(select(Agent).where(Agent.id == aid))
+    agent = result.first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    last_message = db.exec(
+    result = await db.exec(
         select(ChatMessage)
         .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
         .order_by(desc(ChatMessage.created_at))
         .limit(1)
-    ).first()
+    )
+    last_message = result.first()
 
     if not last_message:
         raise HTTPException(status_code=404, detail="No messages found")
@@ -180,8 +185,8 @@ async def retry_chat(
         return last_message
 
     # Check quota before generating new response
-    quota = AgentQuota.get(aid, db)
-    if not quota.has_message_quota(db):
+    quota = await AgentQuota.get(aid, db)
+    if not quota.has_message_quota():
         raise HTTPException(status_code=429, detail="Message quota exceeded")
 
     try:
@@ -194,7 +199,7 @@ async def retry_chat(
 
         # Execute agent
         agent_input = AgentMessageInput(text=last_message.message, images=image_urls)
-        response_lines = execute_agent(aid, agent_input, f"{aid}-{chat_id}")
+        response_lines = await execute_agent(aid, agent_input, f"{aid}-{chat_id}")
 
         # Create agent's response message
         response_message = ChatMessage(
@@ -209,14 +214,14 @@ async def retry_chat(
         db.add(response_message)
 
         # Update quota
-        quota.add_message(db)
-        db.commit()
-        db.refresh(response_message)
+        await quota.add_message(db)
+        await db.commit()
+        await db.refresh(response_message)
 
         return response_message
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -224,7 +229,7 @@ async def retry_chat(
 async def create_chat(
     request: ChatMessageRequest,
     aid: str = Path(..., description="Agent ID"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ChatMessage:
     """Create a chat message and get agent's response.
 
@@ -250,13 +255,14 @@ async def create_chat(
           - 500: Internal server error
     """
     # Get agent and check if exists
-    agent = db.exec(select(Agent).where(Agent.id == aid)).first()
+    result = await db.exec(select(Agent).where(Agent.id == aid))
+    agent = result.first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Check quota
-    quota = AgentQuota.get(aid, db)
-    if not quota.has_message_quota(db):
+    quota = await AgentQuota.get(aid, db)
+    if not quota.has_message_quota():
         raise HTTPException(status_code=429, detail="Message quota exceeded")
 
     # Save input message
@@ -270,7 +276,7 @@ async def create_chat(
         attachments=request.attachments,
     )
     db.add(input_message)
-    db.commit()
+    await db.commit()
 
     try:
         # Execute agent
@@ -280,7 +286,9 @@ async def create_chat(
             if attachment.type == ChatMessageAttachmentType.IMAGE
         ]
         agent_input = AgentMessageInput(text=request.message, images=image_urls)
-        response_lines = execute_agent(aid, agent_input, f"{aid}-{request.chat_id}")
+        response_lines = await execute_agent(
+            aid, agent_input, f"{aid}-{request.chat_id}"
+        )
 
         # Create agent's response message
         response_message = ChatMessage(
@@ -295,12 +303,12 @@ async def create_chat(
         db.add(response_message)
 
         # Update quota
-        quota.add_message(db)
-        db.commit()
-        db.refresh(response_message)
+        await quota.add_message(db)
+        await db.commit()
+        await db.refresh(response_message)
 
         return response_message
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
