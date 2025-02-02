@@ -1,7 +1,7 @@
+import asyncio
 import logging
 import signal
 import sys
-import asyncio
 
 import sentry_sdk
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -22,6 +22,7 @@ if config.sentry_dsn:
     )
 
 if __name__ == "__main__":
+
     async def main():
         # Initialize database
         await init_db(**config.db)

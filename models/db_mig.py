@@ -20,9 +20,9 @@ async def add_column_if_not_exists(engine, table_name: str, column: Column) -> N
         def _get_columns(connection):
             inspector = inspect(connection)
             return [c["name"] for c in inspector.get_columns(table_name)]
-        
+
         columns = await conn.run_sync(_get_columns)
-        
+
         if column.name not in columns:
             async with conn.begin():
                 # Build column definition

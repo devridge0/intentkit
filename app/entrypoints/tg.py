@@ -109,13 +109,15 @@ async def run_telegram_server() -> None:
     bot_pool.init_all_dispatchers()
 
     scheduler = AgentScheduler(bot_pool)
-    
+
     # Start the scheduler
     asyncio.create_task(scheduler.start(int(config.tg_new_agent_poll_interval)))
-    
+
     # Start the bot pool
-    await bot_pool.start(asyncio.get_running_loop(), config.tg_server_host, int(config.tg_server_port))
-    
+    await bot_pool.start(
+        asyncio.get_running_loop(), config.tg_server_host, int(config.tg_server_port)
+    )
+
     # Keep the server running
     try:
         while True:
