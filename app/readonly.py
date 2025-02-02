@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db(**config.db)
+    await init_db(**config.db)
     logger.info("Readonly API server starting")
     yield
     logger.info("Readonly API server shutting down")

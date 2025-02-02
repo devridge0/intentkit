@@ -10,7 +10,9 @@ from app.config.config import config
 from app.core.engine import execute_agent as local_execute_agent
 
 
-def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[str]:
+async def execute_agent(
+    aid: str, message: AgentMessageInput, thread_id: str
+) -> list[str]:
     """Execute an agent with environment-aware routing.
 
     In local environment, directly calls the local execute_agent function.
@@ -29,18 +31,19 @@ def execute_agent(aid: str, message: AgentMessageInput, thread_id: str) -> list[
         Exception: For other execution errors
     """
     if config.env == "local":
-        return local_execute_agent(aid, message, thread_id)
+        return await local_execute_agent(aid, message, thread_id)
 
     # Make HTTP request in non-local environment
     url = f"{config.internal_base_url}/core/execute"
-    response = httpx.post(
-        url,
-        json={
-            "aid": aid,
-            "message": message.model_dump(),
-            "thread_id": thread_id,
-        },
-        timeout=100,
-    )
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            url,
+            json={
+                "aid": aid,
+                "message": message.model_dump(),
+                "thread_id": thread_id,
+            },
+            timeout=180,
+        )
     response.raise_for_status()
     return response.json()

@@ -2,7 +2,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlmodel import Session, func, select
+from sqlmodel import func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config.config import config
 from app.core.engine import clean_agent_memory, initialize_agent
@@ -22,7 +23,7 @@ verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_s
 async def create_agent(
     agent: Agent = Body(Agent, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     """Create or update an agent.
 
@@ -48,10 +49,10 @@ async def create_agent(
         agent.owner = subject
 
     # Get the latest agent from create_or_update
-    latest_agent = agent.create_or_update(db)
+    latest_agent = await agent.create_or_update(db)
 
     # Send Slack notification
-    total_agents = db.exec(select(func.count()).select_from(Agent)).one()
+    total_agents = (await db.exec(select(func.count()).select_from(Agent))).one()
     send_slack_message(
         "Agent created or updated:",
         attachments=[
@@ -117,8 +118,8 @@ async def create_agent(
     initialize_agent(agent.id)
 
     # Get agent data
-    agent_data = db.exec(
-        select(AgentData).where(AgentData.id == latest_agent.id)
+    agent_data = (
+        await db.exec(select(AgentData).where(AgentData.id == latest_agent.id))
     ).first()
 
     # Convert to AgentResponse
@@ -128,7 +129,7 @@ async def create_agent(
 @admin_router_readonly.get(
     "/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)]
 )
-async def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
+async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
 
     Args:
@@ -138,12 +139,12 @@ async def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
         list[AgentResponse]: List of agents with their quota information and additional processed data
     """
     # Query all agents first
-    agents = db.exec(select(Agent)).all()
+    agents = (await db.exec(select(Agent))).all()
 
     # Batch get agent data
     agent_ids = [agent.id for agent in agents]
-    agent_data_list = db.exec(
-        select(AgentData).where(AgentData.id.in_(agent_ids))
+    agent_data_list = (
+        await db.exec(select(AgentData).where(AgentData.id.in_(agent_ids)))
     ).all()
     agent_data_map = {data.id: data for data in agent_data_list}
 
@@ -157,7 +158,7 @@ async def get_agents(db: Session = Depends(get_db)) -> list[AgentResponse]:
 @admin_router_readonly.get(
     "/agents/{agent_id}", tags=["Agent"], dependencies=[Depends(verify_jwt)]
 )
-async def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentResponse:
+async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)) -> AgentResponse:
     """Get a single agent by ID.
 
     Args:
@@ -171,7 +172,7 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentRespon
         HTTPException:
             - 404: Agent not found
     """
-    agent = db.exec(select(Agent).where(Agent.id == agent_id)).first()
+    agent = (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
     if not agent:
         raise HTTPException(
             status_code=404,
@@ -179,7 +180,9 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)) -> AgentRespon
         )
 
     # Get agent data
-    agent_data = db.exec(select(AgentData).where(AgentData.id == agent_id)).first()
+    agent_data = (
+        await db.exec(select(AgentData).where(AgentData.id == agent_id))
+    ).first()
 
     return AgentResponse.from_agent(agent, agent_data)
 
@@ -210,7 +213,7 @@ async def clean_memory(
     request: MemCleanRequest = Body(
         MemCleanRequest, description="Agent memory cleanup requestd"
     ),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> str:
     """Clear an agent memory.
 
@@ -231,14 +234,16 @@ async def clean_memory(
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
 
     try:
-        agent = db.exec(select(Agent).where(Agent.id == request.agent_id)).first()
+        agent = (
+            await db.exec(select(Agent).where(Agent.id == request.agent_id))
+        ).first()
         if not agent:
             raise HTTPException(
                 status_code=404,
                 detail=f"Agent with id {request.agent_id} not found",
             )
 
-        return clean_agent_memory(
+        return await clean_agent_memory(
             request.agent_id,
             request.thread_id,
             clean_agent_memory=request.clean_agent_memory,
@@ -253,4 +258,4 @@ async def clean_memory(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

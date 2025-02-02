@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlmodel import Field, Session, SQLModel, select
+from sqlmodel import Field, SQLModel, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class Agent(SQLModel, table=True):
@@ -169,70 +170,95 @@ class Agent(SQLModel, table=True):
         nullable=False,
     )
 
-    def create_or_update(self, db: Session) -> "Agent":
-        """Create the agent if not exists, otherwise update it."""
-        # generate id if not exists
-        if not self.id:
-            self.id = XID().to_str()
+    async def create_or_update(self, db: AsyncSession) -> "Agent":
+        """Create the agent if not exists, otherwise update it.
 
-        # input check
-        self.number = None
-        self.created_at = None
-        self.updated_at = None
-        if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
-            raise HTTPException(
-                status_code=400,
-                detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
-            )
+        Args:
+            db: Database session
 
-        # Check if agent exists
-        existing_agent = db.exec(select(Agent).where(Agent.id == self.id)).first()
-        if existing_agent:
-            # Check owner
-            if (
-                existing_agent.owner
-                and self.owner  # if no owner, the request is coming from internal call, so skip the check
-                and existing_agent.owner != self.owner
-            ):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Your JWT token does not match the agent owner",
-                )
-            # Check upstream_id
-            if (
-                existing_agent.upstream_id
-                and self.upstream_id
-                and existing_agent.upstream_id != self.upstream_id
-            ):
+        Returns:
+            Agent: The created or updated agent
+
+        Raises:
+            HTTPException: If there are permission or validation errors
+            SQLAlchemyError: If there are database errors
+        """
+        try:
+            # Generate ID if not provided
+            if not self.id:
+                self.id = str(XID())
+
+            # input check
+            self.number = None
+            self.created_at = None
+            self.updated_at = None
+            if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
                 raise HTTPException(
                     status_code=400,
-                    detail="upstream_id cannot be changed after creation",
+                    detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
                 )
-            # Update existing agent
-            for field in self.model_fields:
-                if field != "id":  # Skip the primary key
-                    if getattr(self, field) is not None:
-                        setattr(existing_agent, field, getattr(self, field))
-            db.add(existing_agent)
-            db.commit()
-            db.refresh(existing_agent)
-            return existing_agent
-        else:
-            # Check upstream_id for idempotent
-            if self.upstream_id:
-                upstream_match = db.exec(
-                    select(Agent).where(Agent.upstream_id == self.upstream_id)
-                ).first()
-                if upstream_match:
+
+            # Check if agent exists
+            existing_agent = (
+                await db.exec(select(Agent).where(Agent.id == self.id))
+            ).first()
+            if existing_agent:
+                # Check owner
+                if (
+                    existing_agent.owner
+                    and self.owner  # if no owner, the request is coming from internal call, so skip the check
+                    and existing_agent.owner != self.owner
+                ):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Your JWT token does not match the agent owner",
+                    )
+                # Check upstream_id
+                if (
+                    existing_agent.upstream_id
+                    and self.upstream_id
+                    and existing_agent.upstream_id != self.upstream_id
+                ):
                     raise HTTPException(
                         status_code=400,
-                        detail="upstream_id already exists",
+                        detail="upstream_id cannot be changed after creation",
                     )
-            # Create new agent
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-            return self
+                # Update existing agent
+                for field in self.model_fields:
+                    if field != "id":  # Skip the primary key
+                        if getattr(self, field) is not None:
+                            setattr(existing_agent, field, getattr(self, field))
+                db.add(existing_agent)
+                await db.commit()
+                await db.refresh(existing_agent)
+                return existing_agent
+            else:
+                # Check upstream_id for idempotent
+                if self.upstream_id:
+                    upstream_match = (
+                        await db.exec(
+                            select(Agent).where(Agent.upstream_id == self.upstream_id)
+                        )
+                    ).first()
+                    if upstream_match:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="upstream_id already exists",
+                        )
+                # Create new agent
+                db.add(self)
+                await db.commit()
+                await db.refresh(self)
+                return self
+        except HTTPException:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error: {str(e)}",
+            ) from e
 
 
 class AgentResponse(BaseModel):
@@ -473,6 +499,63 @@ class AgentData(SQLModel, table=True):
         nullable=False,
     )
 
+    @classmethod
+    async def get(cls, id: str, db: AsyncSession) -> Optional["AgentData"]:
+        """Get agent data by ID.
+
+        Args:
+            id: Agent ID
+            db: Database session
+
+        Returns:
+            AgentData if found, None otherwise
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            return (await db.exec(select(cls).where(cls.id == id))).first()
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get agent data: {str(e)}",
+            ) from e
+
+    async def save(self, db: AsyncSession) -> None:
+        """Save or update agent data.
+
+        Args:
+            db: Database session
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            existing = (
+                await db.exec(
+                    select(self.__class__).where(self.__class__.id == self.id)
+                )
+            ).first()
+
+            if existing:
+                # Update existing record
+                for field in self.model_fields:
+                    if getattr(self, field) is not None:
+                        setattr(existing, field, getattr(self, field))
+                db.add(existing)
+            else:
+                # Create new record
+                db.add(self)
+
+            await db.commit()
+            await db.refresh(self if not existing else existing)
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save agent data: {str(e)}",
+            ) from e
+
 
 class AgentQuota(SQLModel, table=True):
     """AgentQuota model."""
@@ -482,21 +565,21 @@ class AgentQuota(SQLModel, table=True):
     id: str = Field(primary_key=True)
     plan: str = Field(default="self-hosted")
     message_count_total: int = Field(default=0)
-    message_limit_total: int = Field(default=9999)
+    message_limit_total: int = Field(default=99999999)
     message_count_monthly: int = Field(default=0)
-    message_limit_monthly: int = Field(default=9999)
+    message_limit_monthly: int = Field(default=99999999)
     message_count_daily: int = Field(default=0)
-    message_limit_daily: int = Field(default=9999)
+    message_limit_daily: int = Field(default=99999999)
     last_message_time: Optional[datetime] = Field(default=None)
     autonomous_count_total: int = Field(default=0)
-    autonomous_limit_total: int = Field(default=9999)
+    autonomous_limit_total: int = Field(default=99999999)
     autonomous_count_monthly: int = Field(default=0)
-    autonomous_limit_monthly: int = Field(default=9999)
+    autonomous_limit_monthly: int = Field(default=99999999)
     last_autonomous_time: Optional[datetime] = Field(default=None)
     twitter_count_total: int = Field(default=0)
-    twitter_limit_total: int = Field(default=9999)
+    twitter_limit_total: int = Field(default=99999999)
     twitter_count_daily: int = Field(default=0)
-    twitter_limit_daily: int = Field(default=9999)
+    twitter_limit_daily: int = Field(default=99999999)
     last_twitter_time: Optional[datetime] = Field(default=None)
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -513,74 +596,149 @@ class AgentQuota(SQLModel, table=True):
         nullable=False,
     )
 
-    @staticmethod
-    def get(id: str, db: Session) -> "AgentQuota":
-        """Get agent quota by id, if not exists, create a new one."""
-        aq = db.exec(select(AgentQuota).where(AgentQuota.id == id)).one_or_none()
-        if aq is None:
-            aq = AgentQuota(id=id)
-            db.add(aq)
-            db.commit()
-        return aq
+    @classmethod
+    async def get(cls, id: str, db: AsyncSession) -> "AgentQuota":
+        """Get agent quota by id, if not exists, create a new one.
 
-    def has_message_quota(self, db: Session) -> bool:
-        """Check if the agent has message quota."""
-        return (
-            self.message_count_monthly < self.message_limit_monthly
-            and self.message_count_daily < self.message_limit_daily
-            and self.message_count_total < self.message_limit_total
-        )
+        Args:
+            id: Agent ID
+            db: Database session
 
-    def has_autonomous_quota(self, db: Session) -> bool:
-        """Check if the agent has autonomous quota."""
-        if not self.has_message_quota(db):
+        Returns:
+            AgentQuota: The agent's quota object
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            quota = (await db.exec(select(cls).where(cls.id == id))).first()
+            if not quota:
+                quota = cls(id=id)
+                db.add(quota)
+                await db.commit()
+                await db.refresh(quota)
+            return quota
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get agent quota: {str(e)}",
+            ) from e
+
+    def has_message_quota(self) -> bool:
+        """Check if the agent has message quota.
+
+        Returns:
+            bool: True if the agent has quota, False otherwise
+        """
+        # Check total limit
+        if self.message_count_total >= self.message_limit_total:
             return False
-        return (
-            self.autonomous_count_monthly < self.autonomous_limit_monthly
-            and self.autonomous_count_total < self.autonomous_limit_total
-        )
-
-    def has_twitter_quota(self, db: Session) -> bool:
-        """Check if the agent has twitter quota."""
-        if not self.has_message_quota(db):
+        # Check monthly limit
+        if self.message_count_monthly >= self.message_limit_monthly:
             return False
-        return (
-            self.twitter_count_daily < self.twitter_limit_daily
-            and self.twitter_count_total < self.twitter_limit_total
-        )
+        # Check daily limit
+        if self.message_count_daily >= self.message_limit_daily:
+            return False
+        return True
 
-    def add_message(self, db: Session) -> None:
-        """Add a message to the agent's message count."""
-        self.message_count_monthly += 1
-        self.message_count_daily += 1
-        self.message_count_total += 1
-        self.last_message_time = datetime.now()
-        db.add(self)
-        db.commit()
+    def has_autonomous_quota(self) -> bool:
+        """Check if the agent has autonomous quota.
 
-    def add_autonomous(self, db: Session) -> None:
-        """Add an autonomous message to the agent's autonomous count."""
-        self.message_count_daily += 1
-        self.message_count_monthly += 1
-        self.message_count_total += 1
-        self.autonomous_count_monthly += 1
-        self.autonomous_count_total += 1
-        self.last_autonomous_time = datetime.now()
-        self.last_message_time = datetime.now()
-        db.add(self)
-        db.commit()
+        Returns:
+            bool: True if the agent has quota, False otherwise
+        """
+        # Check total limit
+        if self.autonomous_count_total >= self.autonomous_limit_total:
+            return False
+        # Check monthly limit
+        if self.autonomous_count_monthly >= self.autonomous_limit_monthly:
+            return False
+        return True
 
-    def add_twitter(self, db: Session) -> None:
-        """Add a twitter message to the agent's twitter count."""
-        self.message_count_daily += 1
-        self.message_count_monthly += 1
-        self.message_count_total += 1
-        self.twitter_count_daily += 1
-        self.twitter_count_total += 1
-        self.last_twitter_time = datetime.now()
-        self.last_message_time = datetime.now()
-        db.add(self)
-        db.commit()
+    def has_twitter_quota(self) -> bool:
+        """Check if the agent has twitter quota.
+
+        Returns:
+            bool: True if the agent has quota, False otherwise
+        """
+        # Check total limit
+        if self.twitter_count_total >= self.twitter_limit_total:
+            return False
+        # Check daily limit
+        if self.twitter_count_daily >= self.twitter_limit_daily:
+            return False
+        return True
+
+    async def add_message(self, db: AsyncSession) -> None:
+        """Add a message to the agent's message count.
+
+        Args:
+            db: Database session
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            self.message_count_total += 1
+            self.message_count_monthly += 1
+            self.message_count_daily += 1
+            self.last_message_time = datetime.now()
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to add message: {str(e)}",
+            ) from e
+
+    async def add_autonomous(self, db: AsyncSession) -> None:
+        """Add an autonomous message to the agent's autonomous count.
+
+        Args:
+            db: Database session
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            self.autonomous_count_total += 1
+            self.autonomous_count_monthly += 1
+            self.last_autonomous_time = datetime.now()
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to add autonomous message: {str(e)}",
+            ) from e
+
+    async def add_twitter(self, db: AsyncSession) -> None:
+        """Add a twitter message to the agent's twitter count.
+
+        Args:
+            db: Database session
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            self.twitter_count_total += 1
+            self.twitter_count_daily += 1
+            self.last_twitter_time = datetime.now()
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to add twitter message: {str(e)}",
+            ) from e
 
 
 class AgentPluginData(SQLModel, table=True):
@@ -618,8 +776,8 @@ class AgentPluginData(SQLModel, table=True):
     )
 
     @classmethod
-    def get(
-        cls, agent_id: str, plugin: str, key: str, db: Session
+    async def get(
+        cls, agent_id: str, plugin: str, key: str, db: AsyncSession
     ) -> Optional["AgentPluginData"]:
         """Get plugin data for an agent.
 
@@ -631,37 +789,59 @@ class AgentPluginData(SQLModel, table=True):
 
         Returns:
             AgentPluginData if found, None otherwise
-        """
-        return db.exec(
-            select(cls).where(
-                cls.agent_id == agent_id,
-                cls.plugin == plugin,
-                cls.key == key,
-            )
-        ).first()
 
-    def save(self, db: Session) -> None:
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            return (
+                await db.exec(
+                    select(cls).where(
+                        cls.agent_id == agent_id,
+                        cls.plugin == plugin,
+                        cls.key == key,
+                    )
+                )
+            ).first()
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get plugin data: {str(e)}",
+            ) from e
+
+    async def save(self, db: AsyncSession) -> None:
         """Save or update plugin data.
 
         Args:
             db: Database session
+
+        Raises:
+            HTTPException: If there are database errors
         """
-        existing = db.exec(
-            select(AgentPluginData).where(
-                AgentPluginData.agent_id == self.agent_id,
-                AgentPluginData.plugin == self.plugin,
-                AgentPluginData.key == self.key,
-            )
-        ).first()
+        try:
+            existing = (
+                await db.exec(
+                    select(AgentPluginData).where(
+                        AgentPluginData.agent_id == self.agent_id,
+                        AgentPluginData.plugin == self.plugin,
+                        AgentPluginData.key == self.key,
+                    )
+                )
+            ).first()
 
-        if existing:
-            # Update existing record
-            for field in self.model_fields:
-                if getattr(self, field) is not None:
-                    setattr(existing, field, getattr(self, field))
-            db.add(existing)
-        else:
-            # Create new record
-            db.add(self)
+            if existing:
+                # Update existing record
+                existing.data = self.data
+                db.add(existing)
+            else:
+                # Create new record
+                db.add(self)
 
-        db.commit()
+            await db.commit()
+            await db.refresh(self if not existing else existing)
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save plugin data: {str(e)}",
+            ) from e

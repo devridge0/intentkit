@@ -1,40 +1,39 @@
 import logging
 from datetime import datetime, timedelta
 
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
 from models.agent import Agent, AgentQuota
-from models.db import get_engine
+from models.db import get_session
 
 logger = logging.getLogger(__name__)
 
 
-def run_autonomous_agents():
+async def run_autonomous_agents():
     """Get all agents from the database which autonomous is enabled,
     get the quota of each agent, check the last run time, together with the autonomous_minutes in agent,
     decide whether to run them.
     If the quota check passes, run them autonomously."""
-    engine = get_engine()
-    with Session(engine) as db:
+    async with get_session() as db:
         # Get all autonomous agents
-        agents = db.exec(
+        agents = await db.exec(
             select(Agent).where(
                 Agent.autonomous_enabled == True,  # noqa: E712
                 Agent.autonomous_prompt != None,  # noqa: E711
                 Agent.autonomous_minutes != None,  # noqa: E711
             )
-        ).all()
+        )
 
-        for agent in agents:
+        for agent in agents.all():
             try:
                 # Get agent quota
-                quota = AgentQuota.get(agent.id, db)
+                quota = await AgentQuota.get(agent.id, db)
 
                 # Check if agent has quota
-                if not quota.has_autonomous_quota(db):
+                if not quota.has_autonomous_quota():
                     logger.warning(
                         f"Agent {agent.id} has no autonomous quota. "
                         f"Monthly: {quota.autonomous_count_monthly}/{quota.autonomous_limit_monthly}, "
@@ -56,9 +55,9 @@ def run_autonomous_agents():
 
                 # Run the autonomous action
                 try:
-                    run_autonomous_action(agent.id, agent.autonomous_prompt)
+                    await run_autonomous_action(agent.id, agent.autonomous_prompt)
                     # Update quota after successful run
-                    quota.add_autonomous(db)
+                    await quota.add_autonomous(db)
                 except Exception as e:
                     logger.error(
                         f"Error in autonomous action for agent {agent.id}: {str(e)}"
@@ -69,7 +68,7 @@ def run_autonomous_agents():
                 continue
 
 
-def run_autonomous_action(aid: str, prompt: str):
+async def run_autonomous_action(aid: str, prompt: str):
     """Run the agent autonomously with specified intervals."""
     logger.info(f"[{aid}] autonomous action started...")
     # get thread_id from request ip
@@ -78,7 +77,7 @@ def run_autonomous_action(aid: str, prompt: str):
         thread_id = f"{aid}-public"
 
     # Execute agent and get response
-    resp = execute_agent(aid, AgentMessageInput(text=prompt), thread_id)
+    resp = await execute_agent(aid, AgentMessageInput(text=prompt), thread_id)
 
     # Log the response
     logger.info("\n".join(resp))

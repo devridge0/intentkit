@@ -2,13 +2,13 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import tweepy
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
 from models.agent import Agent, AgentPluginData, AgentQuota
-from models.db import get_engine
+from models.db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -34,26 +34,26 @@ def create_twitter_client(twitter_config: dict) -> tweepy.Client:
     )
 
 
-def run_twitter_agents():
+async def run_twitter_agents():
     """Get all agents from the database which twitter is enabled,
     check their twitter config, get mentions, and process them."""
-    engine = get_engine()
-    with Session(engine) as db:
+    async with get_session() as db:
         # Get all twitter-enabled agents
-        agents = db.exec(
+        result = await db.exec(
             select(Agent).where(
                 Agent.twitter_entrypoint_enabled == True,  # noqa: E712
                 Agent.twitter_config != None,  # noqa: E711
             )
-        ).all()
+        )
+        agents = result.all()
 
         for agent in agents:
             try:
                 # Get agent quota
-                quota = AgentQuota.get(agent.id, db)
+                quota = await AgentQuota.get(agent.id, db)
 
                 # Check if agent has quota
-                if not quota.has_twitter_quota(db):
+                if not quota.has_twitter_quota():
                     logger.warning(
                         f"Agent {agent.id} has no twitter quota. "
                         f"Daily: {quota.twitter_count_daily}/{quota.twitter_limit_daily}, "
@@ -75,7 +75,9 @@ def run_twitter_agents():
                     continue
 
                 # Get last tweet id from plugin data
-                plugin_data = AgentPluginData.get(agent.id, "twitter", "entrypoint", db)
+                plugin_data = await AgentPluginData.get(
+                    agent.id, "twitter", "entrypoint", db
+                )
                 since_id = None
                 if plugin_data and plugin_data.data:
                     since_id = plugin_data.data.get("last_tweet_id")
@@ -105,7 +107,7 @@ def run_twitter_agents():
                         key="entrypoint",
                         data={"last_tweet_id": last_tweet_id},
                     )
-                    plugin_data.save(db)
+                    await plugin_data.save(db)
                 else:
                     raise Exception(f"Failed to get last tweet id for agent {agent.id}")
 
@@ -113,7 +115,7 @@ def run_twitter_agents():
                 for mention in mentions.data:
                     # because twitter react is all public, the memory shared by all public entrypoints
                     thread_id = f"{agent.id}-public"
-                    response = execute_agent(
+                    response = await execute_agent(
                         agent.id, AgentMessageInput(text=mention.text), thread_id
                     )
 
@@ -123,7 +125,7 @@ def run_twitter_agents():
                     )
 
                 # Update quota
-                quota.add_twitter(db)
+                await quota.add_twitter(db)
 
             except Exception as e:
                 logger.error(
