@@ -132,7 +132,7 @@ async def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=90,
+            timeout=180,
         )
         input_token_limit = 60000
     else:
@@ -142,7 +142,7 @@ async def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=60,
+            timeout=180,
         )
 
     # ==== Store buffered conversation history in memory.
