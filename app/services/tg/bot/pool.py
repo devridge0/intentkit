@@ -261,5 +261,8 @@ class BotPool:
                 f"failed to change the configs of the bot for agent {agent.id}: {str(e)}"
             )
 
-    def start(self, asyncio_loop, host, port):
-        web.run_app(self.app, loop=asyncio_loop, host=host, port=port)
+    async def start(self, asyncio_loop, host, port):
+        runner = web.AppRunner(self.app)
+        await runner.setup()
+        site = web.TCPSite(runner, host, port)
+        await site.start()

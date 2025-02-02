@@ -2,13 +2,12 @@ import logging
 from datetime import datetime, timedelta
 
 from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.client import execute_agent
 from models.agent import Agent, AgentQuota
-from models.db import get_engine
+from models.db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +17,7 @@ async def run_autonomous_agents():
     get the quota of each agent, check the last run time, together with the autonomous_minutes in agent,
     decide whether to run them.
     If the quota check passes, run them autonomously."""
-    engine = get_engine()
-    async with AsyncSession(engine) as db:
+    async with get_session() as db:
         # Get all autonomous agents
         agents = await db.exec(
             select(Agent).where(
@@ -59,7 +57,7 @@ async def run_autonomous_agents():
                 try:
                     await run_autonomous_action(agent.id, agent.autonomous_prompt)
                     # Update quota after successful run
-                    quota.add_autonomous(db)
+                    await quota.add_autonomous(db)
                 except Exception as e:
                     logger.error(
                         f"Error in autonomous action for agent {agent.id}: {str(e)}"
