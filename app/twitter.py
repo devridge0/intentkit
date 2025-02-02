@@ -22,6 +22,7 @@ if config.sentry_dsn:
     )
 
 if __name__ == "__main__":
+
     async def main():
         # Initialize infrastructure
         await init_db(**config.db)
