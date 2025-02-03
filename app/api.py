@@ -14,7 +14,6 @@ from fastapi import FastAPI
 
 from app.admin.api import admin_router, admin_router_readonly
 from app.admin.health import health_router
-from app.admin.scheduler import start_scheduler
 from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router, chat_router_readonly
@@ -50,14 +49,10 @@ async def lifespan(app: FastAPI):
     # Initialize database
     await init_db(**config.db)
 
-    # Start scheduler for periodic tasks
-    scheduler = start_scheduler()
-
     logger.info("API server start")
     yield
     # Clean up will run after the API server shutdown
     logger.info("Cleaning up and shutdown...")
-    scheduler.shutdown()
 
 
 app = FastAPI(lifespan=lifespan)
