@@ -54,7 +54,7 @@ class AgentScheduler:
                             agent_data = result.first()
                             if not agent_data:
                                 agent_data = AgentData(id=agent.id)
-                            agent_data.telegram_id = bot_info.id
+                            agent_data.telegram_id = str(bot_info.id)
                             agent_data.telegram_username = bot_info.username
                             agent_data.telegram_name = bot_info.first_name
                             if bot_info.last_name:
