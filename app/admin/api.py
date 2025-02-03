@@ -6,7 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config.config import config
-from app.core.engine import clean_agent_memory, initialize_agent
+from app.core.engine import clean_agent_memory
 from models.agent import Agent, AgentData, AgentResponse
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
@@ -61,7 +61,7 @@ async def create_agent(
                 "color": "good",
                 "fields": [
                     {"title": "ENV", "short": True, "value": config.env},
-                    {"title": "Total", "short": True, "value": Agent.count()},
+                    {"title": "Total", "short": True, "value": await Agent.count()},
                     {"title": "ID", "short": True, "value": latest_agent.id},
                     {"title": "Name", "short": True, "value": latest_agent.name},
                     {"title": "Model", "short": True, "value": latest_agent.model},
@@ -114,9 +114,6 @@ async def create_agent(
     if latest_agent.skill_sets is not None:
         for key in latest_agent.skill_sets:
             latest_agent.skill_sets[key] = {}
-
-    # TODO: change here when multiple instances deploy
-    await initialize_agent(agent.id)
 
     # Get agent data
     agent_data = await AgentData.get(latest_agent.id)

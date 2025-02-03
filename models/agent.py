@@ -174,7 +174,12 @@ class Agent(SQLModel, table=True):
     @classmethod
     async def count(cls) -> int:
         async with get_session() as db:
-            return (await db.exec(select(func.count(Agent.id)))).scalar()
+            return (await db.exec(select(func.count(Agent.id)))).one()
+
+    @classmethod
+    async def get(cls, agent_id: str) -> "Agent | None":
+        async with get_session() as db:
+            return (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
 
     async def create_or_update(self) -> "Agent":
         """Create the agent if not exists, otherwise update it.
