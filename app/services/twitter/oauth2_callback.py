@@ -8,22 +8,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.config.config import config
-from app.core.engine import initialize_agent
 from app.services.twitter.oauth2 import oauth2_user_handler
 from models.agent import Agent, AgentData
 from models.db import get_db
 
 router = APIRouter(prefix="/callback/auth", tags=["Callback"])
-
-
-async def _background_task(agent_id: str):
-    """Background task to perform after OAuth callback.
-
-    Args:
-        agent_id: ID of the agent to initialize
-    """
-    # Add any post-processing work here
-    await initialize_agent(agent_id)
 
 
 @router.get("/twitter")
@@ -91,9 +80,6 @@ async def twitter_oauth_callback(
         # Commit changes
         await db.commit()
         await db.refresh(agent_data)
-
-        # Schedule agent initialization as a background task
-        background_tasks.add_task(_background_task, agent_id)
 
         return JSONResponse(
             content={"message": "Authentication successful, you can close this window"},
