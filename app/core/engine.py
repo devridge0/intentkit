@@ -451,8 +451,8 @@ async def clean_agent_memory(
                 )
 
             if clean_skills_memory:
-                await AgentSkillData.clean_data(agent_id, db)
-                await ThreadSkillData.clean_data(agent_id, thread_id, db)
+                await AgentSkillData.clean_data(agent_id)
+                await ThreadSkillData.clean_data(agent_id, thread_id)
 
             if clean_agent_memory:
                 thread_id = thread_id.strip()

@@ -50,7 +50,7 @@ async def run_twitter_agents():
         for agent in agents:
             try:
                 # Get agent quota
-                quota = await AgentQuota.get(agent.id, db)
+                quota = await AgentQuota.get(agent.id)
 
                 # Check if agent has quota
                 if not quota.has_twitter_quota():
@@ -76,7 +76,7 @@ async def run_twitter_agents():
 
                 # Get last tweet id from plugin data
                 plugin_data = await AgentPluginData.get(
-                    agent.id, "twitter", "entrypoint", db
+                    agent.id, "twitter", "entrypoint"
                 )
                 since_id = None
                 if plugin_data and plugin_data.data:
@@ -107,7 +107,7 @@ async def run_twitter_agents():
                         key="entrypoint",
                         data={"last_tweet_id": last_tweet_id},
                     )
-                    await plugin_data.save(db)
+                    await plugin_data.save()
                 else:
                     raise Exception(f"Failed to get last tweet id for agent {agent.id}")
 
@@ -125,7 +125,7 @@ async def run_twitter_agents():
                     )
 
                 # Update quota
-                await quota.add_twitter(db)
+                await quota.add_twitter()
 
             except Exception as e:
                 logger.error(
