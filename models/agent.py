@@ -9,7 +9,8 @@ from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel, select
-from sqlmodel.ext.asyncio.session import AsyncSession
+
+from models.db import get_session
 
 
 class Agent(SQLModel, table=True):
@@ -170,7 +171,17 @@ class Agent(SQLModel, table=True):
         nullable=False,
     )
 
-    async def create_or_update(self, db: AsyncSession) -> "Agent":
+    @classmethod
+    async def count(cls) -> int:
+        async with get_session() as db:
+            return (await db.exec(select(func.count(Agent.id)))).one()
+
+    @classmethod
+    async def get(cls, agent_id: str) -> "Agent | None":
+        async with get_session() as db:
+            return (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
+
+    async def create_or_update(self) -> "Agent":
         """Create the agent if not exists, otherwise update it.
 
         Args:
@@ -199,9 +210,10 @@ class Agent(SQLModel, table=True):
                 )
 
             # Check if agent exists
-            existing_agent = (
-                await db.exec(select(Agent).where(Agent.id == self.id))
-            ).first()
+            async with get_session() as db:
+                existing_agent = (
+                    await db.exec(select(Agent).where(Agent.id == self.id))
+                ).first()
             if existing_agent:
                 # Check owner
                 if (
@@ -228,27 +240,31 @@ class Agent(SQLModel, table=True):
                     if field != "id":  # Skip the primary key
                         if getattr(self, field) is not None:
                             setattr(existing_agent, field, getattr(self, field))
-                db.add(existing_agent)
-                await db.commit()
-                await db.refresh(existing_agent)
+                async with get_session() as db:
+                    db.add(existing_agent)
+                    await db.commit()
+                    await db.refresh(existing_agent)
                 return existing_agent
             else:
                 # Check upstream_id for idempotent
-                if self.upstream_id:
-                    upstream_match = (
-                        await db.exec(
-                            select(Agent).where(Agent.upstream_id == self.upstream_id)
-                        )
-                    ).first()
-                    if upstream_match:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="upstream_id already exists",
-                        )
-                # Create new agent
-                db.add(self)
-                await db.commit()
-                await db.refresh(self)
+                async with get_session() as db:
+                    if self.upstream_id:
+                        upstream_match = (
+                            await db.exec(
+                                select(Agent).where(
+                                    Agent.upstream_id == self.upstream_id
+                                )
+                            )
+                        ).first()
+                        if upstream_match:
+                            raise HTTPException(
+                                status_code=400,
+                                detail="upstream_id already exists",
+                            )
+                    # Create new agent
+                    db.add(self)
+                    await db.commit()
+                    await db.refresh(self)
                 return self
         except HTTPException:
             await db.rollback()
@@ -500,7 +516,7 @@ class AgentData(SQLModel, table=True):
     )
 
     @classmethod
-    async def get(cls, id: str, db: AsyncSession) -> Optional["AgentData"]:
+    async def get(cls, agent_id: str) -> Optional["AgentData"]:
         """Get agent data by ID.
 
         Args:
@@ -514,14 +530,15 @@ class AgentData(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            return (await db.exec(select(cls).where(cls.id == id))).first()
+            async with get_session() as db:
+                return (await db.exec(select(cls).where(cls.id == agent_id))).first()
         except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to get agent data: {str(e)}",
             ) from e
 
-    async def save(self, db: AsyncSession) -> None:
+    async def save(self) -> None:
         """Save or update agent data.
 
         Args:
@@ -531,24 +548,25 @@ class AgentData(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            existing = (
-                await db.exec(
-                    select(self.__class__).where(self.__class__.id == self.id)
-                )
-            ).first()
+            async with get_session() as db:
+                existing = (
+                    await db.exec(
+                        select(self.__class__).where(self.__class__.id == self.id)
+                    )
+                ).first()
 
-            if existing:
-                # Update existing record
-                for field in self.model_fields:
-                    if getattr(self, field) is not None:
-                        setattr(existing, field, getattr(self, field))
-                db.add(existing)
-            else:
-                # Create new record
-                db.add(self)
+                if existing:
+                    # Update existing record
+                    for field in self.model_fields:
+                        if getattr(self, field) is not None:
+                            setattr(existing, field, getattr(self, field))
+                    db.add(existing)
+                else:
+                    # Create new record
+                    db.add(self)
 
-            await db.commit()
-            await db.refresh(self if not existing else existing)
+                await db.commit()
+                await db.refresh(self if not existing else existing)
         except Exception as e:
             await db.rollback()
             raise HTTPException(
@@ -597,11 +615,11 @@ class AgentQuota(SQLModel, table=True):
     )
 
     @classmethod
-    async def get(cls, id: str, db: AsyncSession) -> "AgentQuota":
+    async def get(cls, agent_id: str) -> "AgentQuota":
         """Get agent quota by id, if not exists, create a new one.
 
         Args:
-            id: Agent ID
+            agent_id: Agent ID
             db: Database session
 
         Returns:
@@ -611,12 +629,13 @@ class AgentQuota(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            quota = (await db.exec(select(cls).where(cls.id == id))).first()
-            if not quota:
-                quota = cls(id=id)
-                db.add(quota)
-                await db.commit()
-                await db.refresh(quota)
+            async with get_session() as db:
+                quota = (await db.exec(select(cls).where(cls.id == agent_id))).first()
+                if not quota:
+                    quota = cls(id=agent_id)
+                    db.add(quota)
+                    await db.commit()
+                    await db.refresh(quota)
             return quota
         except Exception as e:
             await db.rollback()
@@ -670,7 +689,7 @@ class AgentQuota(SQLModel, table=True):
             return False
         return True
 
-    async def add_message(self, db: AsyncSession) -> None:
+    async def add_message(self) -> None:
         """Add a message to the agent's message count.
 
         Args:
@@ -680,13 +699,14 @@ class AgentQuota(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            self.message_count_total += 1
-            self.message_count_monthly += 1
-            self.message_count_daily += 1
-            self.last_message_time = datetime.now()
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            async with get_session() as db:
+                self.message_count_total += 1
+                self.message_count_monthly += 1
+                self.message_count_daily += 1
+                self.last_message_time = datetime.now()
+                db.add(self)
+                await db.commit()
+                await db.refresh(self)
         except Exception as e:
             await db.rollback()
             raise HTTPException(
@@ -694,7 +714,7 @@ class AgentQuota(SQLModel, table=True):
                 detail=f"Failed to add message: {str(e)}",
             ) from e
 
-    async def add_autonomous(self, db: AsyncSession) -> None:
+    async def add_autonomous(self) -> None:
         """Add an autonomous message to the agent's autonomous count.
 
         Args:
@@ -704,12 +724,13 @@ class AgentQuota(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            self.autonomous_count_total += 1
-            self.autonomous_count_monthly += 1
-            self.last_autonomous_time = datetime.now()
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            async with get_session() as db:
+                self.autonomous_count_total += 1
+                self.autonomous_count_monthly += 1
+                self.last_autonomous_time = datetime.now()
+                db.add(self)
+                await db.commit()
+                await db.refresh(self)
         except Exception as e:
             await db.rollback()
             raise HTTPException(
@@ -717,7 +738,7 @@ class AgentQuota(SQLModel, table=True):
                 detail=f"Failed to add autonomous message: {str(e)}",
             ) from e
 
-    async def add_twitter(self, db: AsyncSession) -> None:
+    async def add_twitter(self) -> None:
         """Add a twitter message to the agent's twitter count.
 
         Args:
@@ -727,12 +748,13 @@ class AgentQuota(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            self.twitter_count_total += 1
-            self.twitter_count_daily += 1
-            self.last_twitter_time = datetime.now()
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            async with get_session() as db:
+                self.twitter_count_total += 1
+                self.twitter_count_daily += 1
+                self.last_twitter_time = datetime.now()
+                db.add(self)
+                await db.commit()
+                await db.refresh(self)
         except Exception as e:
             await db.rollback()
             raise HTTPException(
@@ -777,7 +799,7 @@ class AgentPluginData(SQLModel, table=True):
 
     @classmethod
     async def get(
-        cls, agent_id: str, plugin: str, key: str, db: AsyncSession
+        cls, agent_id: str, plugin: str, key: str
     ) -> Optional["AgentPluginData"]:
         """Get plugin data for an agent.
 
@@ -794,22 +816,23 @@ class AgentPluginData(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            return (
-                await db.exec(
-                    select(cls).where(
-                        cls.agent_id == agent_id,
-                        cls.plugin == plugin,
-                        cls.key == key,
+            async with get_session() as db:
+                return (
+                    await db.exec(
+                        select(cls).where(
+                            cls.agent_id == agent_id,
+                            cls.plugin == plugin,
+                            cls.key == key,
+                        )
                     )
-                )
-            ).first()
+                ).first()
         except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to get plugin data: {str(e)}",
             ) from e
 
-    async def save(self, db: AsyncSession) -> None:
+    async def save(self) -> None:
         """Save or update plugin data.
 
         Args:
@@ -819,26 +842,27 @@ class AgentPluginData(SQLModel, table=True):
             HTTPException: If there are database errors
         """
         try:
-            existing = (
-                await db.exec(
-                    select(AgentPluginData).where(
-                        AgentPluginData.agent_id == self.agent_id,
-                        AgentPluginData.plugin == self.plugin,
-                        AgentPluginData.key == self.key,
+            async with get_session() as db:
+                existing = (
+                    await db.exec(
+                        select(AgentPluginData).where(
+                            AgentPluginData.agent_id == self.agent_id,
+                            AgentPluginData.plugin == self.plugin,
+                            AgentPluginData.key == self.key,
+                        )
                     )
-                )
-            ).first()
+                ).first()
 
-            if existing:
-                # Update existing record
-                existing.data = self.data
-                db.add(existing)
-            else:
-                # Create new record
-                db.add(self)
+                if existing:
+                    # Update existing record
+                    existing.data = self.data
+                    db.add(existing)
+                else:
+                    # Create new record
+                    db.add(self)
 
-            await db.commit()
-            await db.refresh(self if not existing else existing)
+                await db.commit()
+                await db.refresh(self if not existing else existing)
         except Exception as e:
             await db.rollback()
             raise HTTPException(

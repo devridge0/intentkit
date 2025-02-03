@@ -12,6 +12,7 @@ The module uses a global cache to store initialized agents for better performanc
 
 import logging
 import time
+from datetime import datetime
 
 import sqlalchemy
 from cdp_langchain.agent_toolkits import CdpToolkit
@@ -48,6 +49,10 @@ logger = logging.getLogger(__name__)
 
 # Global variable to cache all agent executors
 agents: dict[str, CompiledGraph] = {}
+
+# Global dictionaries to cache agent update times
+agents_updated: dict[str, datetime] = {}
+agents_data_updated: dict[str, datetime] = {}
 
 
 def agent_prompt(agent: Agent) -> str:
@@ -113,6 +118,11 @@ async def initialize_agent(aid):
     # get the agent from the database
     try:
         agent: Agent = await agent_store.get_config()
+        agent_data: AgentData = await agent_store.get_data()
+
+        # Cache the update times
+        agents_updated[aid] = agent.updated_at
+        agents_data_updated[aid] = agent_data.updated_at if agent_data else None
     except NoResultFound:
         # Handle the case where the user is not found
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -153,7 +163,6 @@ async def initialize_agent(aid):
 
     agentkit: CdpAgentkitWrapper
     # Configure CDP Agentkit Langchain Extension.
-    agent_data: AgentData = await agent_store.get_data()
     if agent.cdp_enabled:
         values = {
             "cdp_api_key_name": config.cdp_api_key_name,
@@ -331,15 +340,36 @@ async def execute_agent(
     start = time.perf_counter()
     last = start
 
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    agent_data = await AgentData.get(aid)
+
+    # Check if agent needs reinitialization due to updates
+    needs_reinit = False
+    if aid in agents:
+        if (
+            aid not in agents_updated
+            or agent.updated_at != agents_updated[aid]
+            or aid not in agents_data_updated
+            or (agent_data and agent_data.updated_at != agents_data_updated[aid])
+        ):
+            needs_reinit = True
+            logger.info(f"Reinitializing agent {aid} due to updates")
+
     # user input
     resp_debug.append(
         f"[ Input: ]\n\n {message.text}\n{'\n'.join(message.images)}\n-------------------\n"
     )
 
-    # cold start
-    if aid not in agents:
+    # cold start or needs reinitialization
+    if aid not in agents or needs_reinit:
         await initialize_agent(aid)
-        resp_debug.append("[ Agent cold start ... ]")
+        resp_debug.append(
+            "[ Agent cold start ... ]"
+            if aid not in agents
+            else "[ Agent reinitialized ... ]"
+        )
         resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )
@@ -451,8 +481,8 @@ async def clean_agent_memory(
                 )
 
             if clean_skills_memory:
-                await AgentSkillData.clean_data(agent_id, db)
-                await ThreadSkillData.clean_data(agent_id, thread_id, db)
+                await AgentSkillData.clean_data(agent_id)
+                await ThreadSkillData.clean_data(agent_id, thread_id)
 
             if clean_agent_memory:
                 thread_id = thread_id.strip()

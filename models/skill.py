@@ -4,7 +4,8 @@ from typing import Any, Dict, Optional
 from sqlalchemy import Column, DateTime, delete, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel, select
-from sqlmodel.ext.asyncio.session import AsyncSession
+
+from models.db import get_session
 
 
 class AgentSkillData(SQLModel, table=True):
@@ -42,55 +43,52 @@ class AgentSkillData(SQLModel, table=True):
     )
 
     @classmethod
-    async def get(
-        cls, agent_id: str, skill: str, key: str, db: AsyncSession
-    ) -> Optional[dict]:
+    async def get(cls, agent_id: str, skill: str, key: str) -> Optional[dict]:
         """Get skill data for an agent.
 
         Args:
             agent_id: ID of the agent
             skill: Name of the skill
             key: Data key
-            db: Database session
 
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        result = (
-            await db.exec(
-                select(cls).where(
-                    cls.agent_id == agent_id,
-                    cls.skill == skill,
-                    cls.key == key,
+        async with get_session() as db:
+            result = (
+                await db.exec(
+                    select(cls).where(
+                        cls.agent_id == agent_id,
+                        cls.skill == skill,
+                        cls.key == key,
+                    )
                 )
-            )
-        ).first()
+            ).first()
         return result.data if result else None
 
-    async def save(self, db: AsyncSession) -> None:
-        """Save or update skill data.
-
-        Args:
-            db: Database session
-        """
-        existing = (
-            await db.exec(
-                select(self.__class__).where(
-                    self.__class__.agent_id == self.agent_id,
-                    self.__class__.skill == self.skill,
-                    self.__class__.key == self.key,
+    async def save(self) -> None:
+        """Save or update skill data."""
+        async with get_session() as db:
+            existing = (
+                await db.exec(
+                    select(self.__class__).where(
+                        self.__class__.agent_id == self.agent_id,
+                        self.__class__.skill == self.skill,
+                        self.__class__.key == self.key,
+                    )
                 )
-            )
-        ).first()
-        if existing:
-            existing.data = self.data
-            db.add(existing)
-        else:
-            db.add(self)
+            ).first()
+            if existing:
+                existing.data = self.data
+                db.add(existing)
+            else:
+                db.add(self)
+            db.commit()
 
     @classmethod
-    async def clean_data(cls, agent_id: str, db: AsyncSession):
-        await db.exec(delete(cls).where(cls.agent_id == agent_id))
+    async def clean_data(cls, agent_id: str):
+        async with get_session() as db:
+            await db.exec(delete(cls).where(cls.agent_id == agent_id))
 
 
 class ThreadSkillData(SQLModel, table=True):
@@ -131,9 +129,7 @@ class ThreadSkillData(SQLModel, table=True):
     )
 
     @classmethod
-    async def get(
-        cls, thread_id: str, skill: str, key: str, db: AsyncSession
-    ) -> Optional[dict]:
+    async def get(cls, thread_id: str, skill: str, key: str) -> Optional[dict]:
         """Get skill data for a thread.
 
         Args:
@@ -145,46 +141,50 @@ class ThreadSkillData(SQLModel, table=True):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        result = (
-            await db.exec(
-                select(cls).where(
-                    cls.thread_id == thread_id,
-                    cls.skill == skill,
-                    cls.key == key,
+        async with get_session() as db:
+            result = (
+                await db.exec(
+                    select(cls).where(
+                        cls.thread_id == thread_id,
+                        cls.skill == skill,
+                        cls.key == key,
+                    )
                 )
-            )
-        ).first()
+            ).first()
         return result.data if result else None
 
-    async def save(self, db: AsyncSession) -> None:
+    async def save(self) -> None:
         """Save or update skill data.
 
         Args:
             db: Database session
         """
-        existing = (
-            await db.exec(
-                select(self.__class__).where(
-                    self.__class__.thread_id == self.thread_id,
-                    self.__class__.skill == self.skill,
-                    self.__class__.key == self.key,
+        async with get_session() as db:
+            existing = (
+                await db.exec(
+                    select(self.__class__).where(
+                        self.__class__.thread_id == self.thread_id,
+                        self.__class__.skill == self.skill,
+                        self.__class__.key == self.key,
+                    )
                 )
-            )
-        ).first()
-        if existing:
-            existing.data = self.data
-            existing.agent_id = self.agent_id
-            db.add(existing)
-        else:
-            db.add(self)
+            ).first()
+            if existing:
+                existing.data = self.data
+                existing.agent_id = self.agent_id
+                db.add(existing)
+            else:
+                db.add(self)
+            db.commit()
 
     @classmethod
-    async def clean_data(cls, agent_id: str, thread_id: str, db: AsyncSession):
-        if thread_id and thread_id != "":
-            await db.exec(
-                delete(cls).where(
-                    (cls.agent_id == agent_id) & (cls.thread_id == thread_id)
+    async def clean_data(cls, agent_id: str, thread_id: str):
+        async with get_session() as db:
+            if thread_id and thread_id != "":
+                await db.exec(
+                    delete(cls).where(
+                        cls.agent_id == agent_id, cls.thread_id == thread_id
+                    )
                 )
-            )
-        else:
-            await db.exec(delete(cls).where(cls.agent_id == agent_id))
+            else:
+                await db.exec(delete(cls).where(cls.agent_id == agent_id))

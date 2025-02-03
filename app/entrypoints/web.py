@@ -63,7 +63,7 @@ async def chat(
           - 500: Internal server error
     """
     # check if the agent quota is exceeded
-    quota = await AgentQuota.get(aid, db)
+    quota = await AgentQuota.get(aid)
     if not quota.has_message_quota():
         raise HTTPException(
             status_code=429,
@@ -90,7 +90,7 @@ async def chat(
     if not config.debug_resp:
         logger.info(resp)
     # reduce message quota
-    await quota.add_message(db)
+    await quota.add_message()
     return "\n".join(resp)
 
 
@@ -185,7 +185,7 @@ async def retry_chat(
         return last_message
 
     # Check quota before generating new response
-    quota = await AgentQuota.get(aid, db)
+    quota = await AgentQuota.get(aid)
     if not quota.has_message_quota():
         raise HTTPException(status_code=429, detail="Message quota exceeded")
 
@@ -214,7 +214,7 @@ async def retry_chat(
         db.add(response_message)
 
         # Update quota
-        await quota.add_message(db)
+        await quota.add_message()
         await db.commit()
         await db.refresh(response_message)
 
@@ -261,7 +261,7 @@ async def create_chat(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Check quota
-    quota = await AgentQuota.get(aid, db)
+    quota = await AgentQuota.get(aid)
     if not quota.has_message_quota():
         raise HTTPException(status_code=429, detail="Message quota exceeded")
 
@@ -303,7 +303,7 @@ async def create_chat(
         db.add(response_message)
 
         # Update quota
-        await quota.add_message(db)
+        await quota.add_message()
         await db.commit()
         await db.refresh(response_message)
 
