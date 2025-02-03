@@ -34,8 +34,8 @@ async def reset_monthly_quotas():
         await session.commit()
 
 
-def start_scheduler():
-    """Start the APScheduler to run quota reset jobs."""
+def create_scheduler():
+    """Create and configure the APScheduler with all periodic tasks."""
     scheduler = AsyncIOScheduler()
 
     # Reset daily quotas at UTC 00:00
@@ -65,6 +65,12 @@ def start_scheduler():
         replace_existing=True,
     )
 
+    return scheduler
+
+
+def start_scheduler():
+    """Create, configure and start the APScheduler."""
+    scheduler = create_scheduler()
     scheduler.start()
     return scheduler
 
