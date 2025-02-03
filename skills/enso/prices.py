@@ -45,6 +45,21 @@ class EnsoGetPrices(EnsoBaseTool):
         chainId: int = default_chain_id,
         address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     ) -> EnsoGetPricesOutput:
+        """Run the tool to get the token price from the API.
+
+        Returns:
+            EnsoGetPricesOutput: A structured output containing the result of token prices.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(
+        self,
+        chainId: int = default_chain_id,
+        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    ) -> EnsoGetPricesOutput:
         """
         Asynchronous function to request the token price from the API.
 
@@ -62,9 +77,9 @@ class EnsoGetPrices(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
-                response = client.get(url, headers=headers)
+                response = await client.get(url, headers=headers)
                 response.raise_for_status()
                 json_dict = response.json()
 

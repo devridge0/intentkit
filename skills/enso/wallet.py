@@ -60,7 +60,24 @@ class EnsoGetWalletBalances(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetBalancesInput
 
-    def _run(self, chainId: int = default_chain_id) -> EnsoGetBalancesOutput:
+    def _run(
+        self,
+        chainId: int = default_chain_id,
+    ) -> EnsoGetBalancesOutput:
+        """Run the tool to get the token balances of a wallet.
+
+        Returns:
+            EnsoGetPricesOutput: A structured output containing the result of token balances of a wallet.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(
+        self,
+        chainId: int = default_chain_id,
+    ) -> EnsoGetBalancesOutput:
         """
         Run the tool to get token balances of a wallet.
 
@@ -81,10 +98,10 @@ class EnsoGetWalletBalances(EnsoBaseTool):
         params["eoaAddress"] = self.wallet.addresses[0].address_id
         params["useEoa"] = True
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
                 # Send the GET request
-                response = client.get(url, headers=headers, params=params)
+                response = await client.get(url, headers=headers, params=params)
                 response.raise_for_status()
 
                 # Map the response JSON into the WalletBalance model
@@ -146,9 +163,28 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
     description: str = (
         "Retrieve token spend approvals for a wallet on a specified blockchain network."
     )
-    args_schema: Type[BaseModel] = EnsoGetApprovalsInput
+    args_schema: Type[BaseModel] = EnsoGetApprovalsOutput
 
-    def _run(self, chainId: int = default_chain_id, **kwargs) -> EnsoGetApprovalsOutput:
+    def _run(
+        self,
+        chainId: int = default_chain_id,
+        **kwargs,
+    ) -> EnsoGetApprovalsOutput:
+        """Run the tool to get the token approvals for a wallet.
+
+        Returns:
+            EnsoGetPricesOutput: A structured output containing the result of token approvals for a wallet.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(
+        self,
+        chainId: int = default_chain_id,
+        **kwargs,
+    ) -> EnsoGetApprovalsOutput:
         """
         Run the tool to get token approvals for a wallet.
 
@@ -174,10 +210,10 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
         if kwargs.get("routingStrategy"):
             params.routingStrategy = kwargs["routingStrategy"]
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
                 # Send the GET request
-                response = client.get(
+                response = await client.get(
                     url, headers=headers, params=params.model_dump(exclude_none=True)
                 )
                 response.raise_for_status()
@@ -200,7 +236,7 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
                 raise ToolException(f"error from Enso API: {e}") from e
 
 
-class EnsoBroadcastWalletApproveInput(BaseModel):
+class EnsoWalletApproveInput(BaseModel):
     """
     Input model for approve the wallet.
     """
@@ -215,7 +251,7 @@ class EnsoBroadcastWalletApproveInput(BaseModel):
     )
 
 
-class EnsoBroadcastWalletApproveOutput(BaseModel):
+class EnsoWalletApproveOutput(BaseModel):
     """
     Output model for approve token for the wallet.
     """
@@ -226,7 +262,7 @@ class EnsoBroadcastWalletApproveOutput(BaseModel):
     spender: str | None = Field(None, description="The spender address to approve")
 
 
-class EnsoBroadcastWalletApproveArtifact(BaseModel):
+class EnsoWalletApproveArtifact(BaseModel):
     """
     Output model for approve token for the wallet.
     """
@@ -235,7 +271,7 @@ class EnsoBroadcastWalletApproveArtifact(BaseModel):
     txHash: str | None = Field(None, description="The transaction hash")
 
 
-class EnsoBroadcastWalletApprove(EnsoBaseTool):
+class EnsoWalletApprove(EnsoBaseTool):
     """
     This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network.
     It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token.
@@ -249,15 +285,34 @@ class EnsoBroadcastWalletApprove(EnsoBaseTool):
     - Approving token spending grants another account permission to spend your tokens.
 
     Attributes:
-        name (str): Name of the tool, specifically "enso_broadcast_wallet_approve".
+        name (str): Name of the tool, specifically "enso_wallet_approve".
         description (str): Comprehensive description of the tool's purpose and functionality.
         args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
     """
 
-    name: str = "enso_broadcast_wallet_approve"
-    description: str = "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
-    args_schema: Type[BaseModel] = EnsoBroadcastWalletApproveInput
+    name: str = "enso_wallet_approve"
+    description: str = (
+        "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
+    )
+    args_schema: Type[BaseModel] = EnsoWalletApproveInput
     response_format: str = "content_and_artifact"
+
+    # def _run(
+    #     self,
+    #     tokenAddress: str,
+    #     amount: int,
+    #     chainId: int = default_chain_id,
+    #     **kwargs,
+    # ) -> Tuple[EnsoBroadcastWalletApproveOutput, EnsoBroadcastWalletApproveArtifact]:
+    #     """Run the tool to approve enso router for a wallet.
+
+    #     Returns:
+    #         Tuple[EnsoBroadcastWalletApproveOutput, EnsoBroadcastWalletApproveArtifact]: A structured output containing the result of token approval.
+
+    #     Raises:
+    #         Exception: If there's an error accessing the Enso API.
+    #     """
+    #     raise NotImplementedError("Use _arun instead")
 
     def _run(
         self,
@@ -265,7 +320,7 @@ class EnsoBroadcastWalletApprove(EnsoBaseTool):
         amount: int,
         chainId: int = default_chain_id,
         **kwargs,
-    ) -> Tuple[EnsoBroadcastWalletApproveOutput, EnsoBroadcastWalletApproveArtifact]:
+    ) -> Tuple[EnsoWalletApproveOutput, EnsoWalletApproveArtifact]:
         """
         Run the tool to approve enso router for a wallet.
 
@@ -287,7 +342,7 @@ class EnsoBroadcastWalletApprove(EnsoBaseTool):
 
         from_address = self.wallet.addresses[0].address_id
 
-        params = EnsoBroadcastWalletApproveInput(
+        params = EnsoWalletApproveInput(
             tokenAddress=tokenAddress,
             amount=amount,
             chainId=chainId,
@@ -308,15 +363,10 @@ class EnsoBroadcastWalletApprove(EnsoBaseTool):
 
                 # Map the response JSON into the WalletApproveTransaction model
                 json_dict = response.json()
-                content = EnsoBroadcastWalletApproveOutput(**json_dict)
-                artifact = EnsoBroadcastWalletApproveArtifact(**json_dict)
+                content = EnsoWalletApproveOutput(**json_dict)
+                artifact = EnsoWalletApproveArtifact(**json_dict)
 
-                if not self.rpc_nodes.get(str(chainId)):
-                    raise ToolException(f"rpc node not found for chainId: {chainId}")
-
-                contract = EvmContractWrapper(
-                    self.rpc_nodes[str(chainId)], ABI_ERC20, artifact.tx
-                )
+                contract = EvmContractWrapper(self.rpc_node, ABI_ERC20, artifact.tx)
 
                 fn, fn_args = contract.fn_and_args
                 fn_args["value"] = str(fn_args["value"])

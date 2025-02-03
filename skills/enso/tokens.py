@@ -141,6 +141,21 @@ class EnsoGetTokens(EnsoBaseTool):
         chainId: int = default_chain_id,
         protocolSlug: str | None = None,
     ) -> EnsoGetTokensOutput:
+        """Run the tool to get the tokens and APYs from the API.
+
+        Returns:
+            EnsoGetPricesOutput: A structured output containing the result of tokens and APYs.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(
+        self,
+        chainId: int = default_chain_id,
+        protocolSlug: str | None = None,
+    ) -> EnsoGetTokensOutput:
         """Run the tool to get Tokens and APY.
         Args:
             chainId (int): The chain id of the network.
@@ -165,13 +180,13 @@ class EnsoGetTokens(EnsoBaseTool):
         params["page"] = 1
         params["includeMetadata"] = "true"
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
-                response = client.get(url, headers=headers, params=params)
+                response = await client.get(url, headers=headers, params=params)
                 response.raise_for_status()
                 json_dict = response.json()
 
-                token_decimals = self.store.get_agent_skill_data(
+                token_decimals = await self.skill_store.get_agent_skill_data(
                     self.agent_id,
                     "enso_get_tokens",
                     "decimals",
@@ -196,7 +211,7 @@ class EnsoGetTokens(EnsoBaseTool):
                             for u_token in token_response.underlyingTokens:
                                 token_decimals[u_token.address] = u_token.decimals
 
-                self.store.save_agent_skill_data(
+                await self.skill_store.save_agent_skill_data(
                     self.agent_id,
                     "enso_get_tokens",
                     "decimals",
