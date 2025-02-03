@@ -9,9 +9,9 @@ from skills.enso.prices import EnsoGetPrices
 from skills.enso.route import EnsoRouteShortcut
 from skills.enso.tokens import EnsoGetTokens
 from skills.enso.wallet import (
-    EnsoBroadcastWalletApprove,
     EnsoGetWalletApprovals,
     EnsoGetWalletBalances,
+    EnsoWalletApprove,
 )
 
 
@@ -20,8 +20,9 @@ def get_enso_skill(
     api_token: str,
     main_tokens: list[str],
     wallet: Wallet,
-    rpc_nodes: dict[str, str],
-    store: SkillStoreABC,
+    rpc_node: str,
+    skill_store: SkillStoreABC,
+    agent_store: SkillStoreABC,
     agent_id: str,
 ) -> EnsoBaseTool:
     if not api_token:
@@ -31,7 +32,8 @@ def get_enso_skill(
         return EnsoGetNetworks(
             api_token=api_token,
             main_tokens=main_tokens,
-            store=store,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
@@ -39,7 +41,8 @@ def get_enso_skill(
         return EnsoGetTokens(
             api_token=api_token,
             main_tokens=main_tokens,
-            store=store,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
@@ -47,7 +50,8 @@ def get_enso_skill(
         return EnsoGetPrices(
             api_token=api_token,
             main_tokens=main_tokens,
-            store=store,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
@@ -58,7 +62,8 @@ def get_enso_skill(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            store=store,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
@@ -69,31 +74,34 @@ def get_enso_skill(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            store=store,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
     if name == "wallet_approve":
         if not wallet:
             raise ValueError("Wallet is empty")
-        return EnsoBroadcastWalletApprove(
+        return EnsoWalletApprove(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            rpc_nodes=rpc_nodes,
-            store=store,
+            rpc_node=rpc_node,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
-    if name == "broadcast_route_shortcut":
+    if name == "route_shortcut":
         if not wallet:
             raise ValueError("Wallet is empty")
         return EnsoRouteShortcut(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            rpc_nodes=rpc_nodes,
-            store=store,
+            rpc_node=rpc_node,
+            skill_store=skill_store,
+            agent_store=agent_store,
             agent_id=agent_id,
         )
 
