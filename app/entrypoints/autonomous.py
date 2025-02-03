@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
-from app.core.client import execute_agent
+from app.core.engine import execute_agent
 from models.agent import Agent, AgentQuota
 from models.db import get_session
 
@@ -30,7 +30,7 @@ async def run_autonomous_agents():
         for agent in agents.all():
             try:
                 # Get agent quota
-                quota = await AgentQuota.get(agent.id, db)
+                quota = await AgentQuota.get(agent.id)
 
                 # Check if agent has quota
                 if not quota.has_autonomous_quota():
@@ -57,7 +57,7 @@ async def run_autonomous_agents():
                 try:
                     await run_autonomous_action(agent.id, agent.autonomous_prompt)
                     # Update quota after successful run
-                    await quota.add_autonomous(db)
+                    await quota.add_autonomous()
                 except Exception as e:
                     logger.error(
                         f"Error in autonomous action for agent {agent.id}: {str(e)}"

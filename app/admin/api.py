@@ -2,11 +2,11 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlmodel import func, select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config.config import config
-from app.core.engine import clean_agent_memory, initialize_agent
+from app.core.engine import clean_agent_memory
 from models.agent import Agent, AgentData, AgentResponse
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
@@ -23,7 +23,6 @@ verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_s
 async def create_agent(
     agent: Agent = Body(Agent, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
-    db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     """Create or update an agent.
 
@@ -49,18 +48,20 @@ async def create_agent(
         agent.owner = subject
 
     # Get the latest agent from create_or_update
-    latest_agent = await agent.create_or_update(db)
+    latest_agent = await agent.create_or_update()
 
+    message = "Agent created"
+    if latest_agent.created_at != latest_agent.updated_at:
+        message = "Agent updated"
     # Send Slack notification
-    total_agents = (await db.exec(select(func.count()).select_from(Agent))).one()
     send_slack_message(
-        "Agent created or updated:",
+        message,
         attachments=[
             {
                 "color": "good",
                 "fields": [
                     {"title": "ENV", "short": True, "value": config.env},
-                    {"title": "Total", "short": True, "value": total_agents},
+                    {"title": "Total", "short": True, "value": await Agent.count()},
                     {"title": "ID", "short": True, "value": latest_agent.id},
                     {"title": "Name", "short": True, "value": latest_agent.name},
                     {"title": "Model", "short": True, "value": latest_agent.model},
@@ -114,13 +115,8 @@ async def create_agent(
         for key in latest_agent.skill_sets:
             latest_agent.skill_sets[key] = {}
 
-    # TODO: change here when multiple instances deploy
-    initialize_agent(agent.id)
-
     # Get agent data
-    agent_data = (
-        await db.exec(select(AgentData).where(AgentData.id == latest_agent.id))
-    ).first()
+    agent_data = await AgentData.get(latest_agent.id)
 
     # Convert to AgentResponse
     return AgentResponse.from_agent(latest_agent, agent_data)
