@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from abstracts.engine import AgentMessageInput
 from app.config.config import config
-from app.core.client import execute_agent
+from app.core.engine import execute_agent
 from models.agent import Agent, AgentQuota
 from models.db import get_session
 
