@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional
 
 from abstracts.skill import SkillStoreABC
-from models.db import get_session
 from models.skill import AgentSkillData, ThreadSkillData
 
 
@@ -41,15 +40,13 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        async with get_session() as session:
-            skill_data = AgentSkillData(
-                agent_id=agent_id,
-                skill=skill,
-                key=key,
-                data=data,
-            )
-            await skill_data.save()
-            await session.commit()
+        skill_data = AgentSkillData(
+            agent_id=agent_id,
+            skill=skill,
+            key=key,
+            data=data,
+        )
+        await skill_data.save()
 
     async def get_thread_skill_data(
         self, thread_id: str, skill: str, key: str
@@ -64,8 +61,7 @@ class SkillStore(SkillStoreABC):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        async with get_session() as session:
-            return await ThreadSkillData.get(thread_id, skill, key)
+        return await ThreadSkillData.get(thread_id, skill, key)
 
     async def save_thread_skill_data(
         self,
@@ -84,13 +80,11 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        async with get_session() as session:
-            skill_data = ThreadSkillData(
-                thread_id=thread_id,
-                agent_id=agent_id,
-                skill=skill,
-                key=key,
-                data=data,
-            )
-            await skill_data.save()
-            await session.commit()
+        skill_data = ThreadSkillData(
+            thread_id=thread_id,
+            agent_id=agent_id,
+            skill=skill,
+            key=key,
+            data=data,
+        )
+        await skill_data.save()
