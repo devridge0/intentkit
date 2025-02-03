@@ -45,6 +45,17 @@ class EnsoGetNetworks(EnsoBaseTool):
     args_schema: Type[BaseModel] = EnsoGetNetworksInput
 
     def _run(self) -> EnsoGetNetworksOutput:
+        """Run the tool to get all supported networks.
+
+        Returns:
+            EnsoGetNetworksOutput: A structured output containing the result of the networks.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(self) -> EnsoGetNetworksOutput:
         """
         Function to request the list of supported networks and their chain id and name.
 
@@ -58,10 +69,10 @@ class EnsoGetNetworks(EnsoBaseTool):
             "Authorization": f"Bearer {self.api_token}",
         }
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
                 # Send the GET request
-                response = client.get(url, headers=headers)
+                response = await client.get(url, headers=headers)
                 response.raise_for_status()
 
                 # Parse the response JSON into the NetworkResponse model
@@ -74,7 +85,7 @@ class EnsoGetNetworks(EnsoBaseTool):
                     networks.append(network)
                     networks_memory[network.id] = network.model_dump(exclude_none=True)
 
-                self.store.save_agent_skill_data(
+                await self.skill_store.save_agent_skill_data(
                     self.agent_id,
                     "enso_get_networks",
                     "networks",

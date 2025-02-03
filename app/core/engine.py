@@ -192,6 +192,7 @@ async def initialize_agent(aid):
                     agentkit.wallet if agentkit else None,
                     config.rpc_base_mainnet,
                     skill_store,
+                    agent_store,
                     aid,
                 )
                 tools.append(s)
