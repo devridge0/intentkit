@@ -28,8 +28,7 @@ class SkillStore(SkillStoreABC):
         Returns:
             Dictionary containing the skill data if found, None otherwise
         """
-        async with get_session() as session:
-            return await AgentSkillData.get(agent_id, skill, key, session)
+        return await AgentSkillData.get(agent_id, skill, key)
 
     async def save_agent_skill_data(
         self, agent_id: str, skill: str, key: str, data: Dict[str, Any]
@@ -49,7 +48,7 @@ class SkillStore(SkillStoreABC):
                 key=key,
                 data=data,
             )
-            await skill_data.save(session)
+            await skill_data.save()
             await session.commit()
 
     async def get_thread_skill_data(
@@ -66,7 +65,7 @@ class SkillStore(SkillStoreABC):
             Dictionary containing the skill data if found, None otherwise
         """
         async with get_session() as session:
-            return await ThreadSkillData.get(thread_id, skill, key, session)
+            return await ThreadSkillData.get(thread_id, skill, key)
 
     async def save_thread_skill_data(
         self,
@@ -93,5 +92,5 @@ class SkillStore(SkillStoreABC):
                 key=key,
                 data=data,
             )
-            await skill_data.save(session)
+            await skill_data.save()
             await session.commit()
