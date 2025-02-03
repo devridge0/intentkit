@@ -82,7 +82,7 @@ async def gp_process_message(message: Message) -> None:
             # remove bot name tag from text
             message_text = remove_bot_name(bot.username, message.text)
 
-            response = execute_agent(
+            response = await execute_agent(
                 cached_bot_item.agent_id,
                 AgentMessageInput(text=message_text),
                 thread_id,
@@ -129,7 +129,7 @@ async def process_message(message: Message) -> None:
         thread_id = pool.agent_thread_id(
             cached_bot_item.agent_id, False, message.chat.id
         )
-        response = execute_agent(
+        response = await execute_agent(
             cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id
         )
         await message.answer(
