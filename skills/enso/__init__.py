@@ -9,9 +9,9 @@ from skills.enso.prices import EnsoGetPrices
 from skills.enso.route import EnsoRouteShortcut
 from skills.enso.tokens import EnsoGetTokens
 from skills.enso.wallet import (
-    EnsoWalletApprove,
     EnsoGetWalletApprovals,
     EnsoGetWalletBalances,
+    EnsoWalletApprove,
 )
 
 
