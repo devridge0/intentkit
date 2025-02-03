@@ -156,10 +156,31 @@ class EnsoRouteShortcut(EnsoBaseTool):
     """
 
     name: str = "enso_route_shortcut"
-    description: str = "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
+    description: str = (
+        "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
+    )
     args_schema: Type[BaseModel] = EnsoRouteShortcutInput
 
     def _run(
+        self,
+        amountIn: list[int],
+        tokenIn: list[str],
+        tokenOut: list[str],
+        chainId: int = default_chain_id,
+        broadcast_requested: bool | None = False,
+    ) -> EnsoRouteShortcutOutput:
+        """
+        Run the tool to get swap route information.
+
+        Returns:
+            EnsoRouteShortcutOutput: The response containing route shortcut information.
+
+        Raises:
+            Exception: If there's an error accessing the Enso API.
+        """
+        raise NotImplementedError("Use _arun instead")
+
+    async def _arun(
         self,
         amountIn: list[int],
         tokenIn: list[str],
@@ -181,10 +202,10 @@ class EnsoRouteShortcut(EnsoBaseTool):
             EnsoRouteShortcutOutput: The response containing route shortcut information.
         """
 
-        with httpx.Client() as client:
+        async with httpx.AsyncClient() as client:
             try:
                 network_name = None
-                networks = self.store.get_agent_skill_data(
+                networks = await self.skill_store.get_agent_skill_data(
                     self.agent_id, "enso_get_networks", "networks"
                 )
 
@@ -195,17 +216,15 @@ class EnsoRouteShortcut(EnsoBaseTool):
                         else None
                     )
                 if network_name is None:
-                    networks_list = (
-                        EnsoGetNetworks(
-                            api_token=self.api_token,
-                            main_tokens=self.main_tokens,
-                            store=self.store,
-                            agent_id=self.agent_id,
-                        )
-                        .run(EnsoGetNetworksInput())
-                        .res
-                    )
-                    for network in networks_list:
+                    networks = await EnsoGetNetworks(
+                        api_token=self.api_token,
+                        main_tokens=self.main_tokens,
+                        skill_store=self.skill_store,
+                        agent_store=self.agent_store,
+                        agent_id=self.agent_id,
+                    ).arun(EnsoGetNetworksInput())
+
+                    for network in networks.res:
                         if network.id == chainId:
                             network_name = network.name
 
@@ -219,7 +238,7 @@ class EnsoRouteShortcut(EnsoBaseTool):
                     "Authorization": f"Bearer {self.api_token}",
                 }
 
-                token_decimals = self.store.get_agent_skill_data(
+                token_decimals = await self.skill_store.get_agent_skill_data(
                     self.agent_id,
                     "enso_get_tokens",
                     "decimals",
@@ -252,7 +271,7 @@ class EnsoRouteShortcut(EnsoBaseTool):
 
                 params["fromAddress"] = self.wallet.addresses[0].address_id
 
-                response = client.get(url, headers=headers, params=params)
+                response = await client.get(url, headers=headers, params=params)
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
                 json_dict = response.json()
 
@@ -264,13 +283,8 @@ class EnsoRouteShortcut(EnsoBaseTool):
                 )
 
                 if broadcast_requested:
-                    if not self.rpc_nodes.get(str(chainId)):
-                        raise ToolException(
-                            f"rpc node not found for chainId: {chainId}"
-                        )
-
                     contract = EvmContractWrapper(
-                        self.rpc_nodes[str(chainId)], ABI_ROUTE, json_dict.get("tx")
+                        self.rpc_node, ABI_ROUTE, json_dict.get("tx")
                     )
 
                     fn, fn_args = contract.fn_and_args
