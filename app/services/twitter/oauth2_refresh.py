@@ -69,12 +69,6 @@ async def refresh_token(db: AsyncSession, agent: AgentData):
         )
     except Exception as e:
         logger.error(f"Failed to refresh Twitter token for agent {agent.id}: {str(e)}")
-        # if error, reset token
-        agent.twitter_access_token = None
-        agent.twitter_refresh_token = None
-        agent.twitter_access_token_expires_at = None
-        db.add(agent)
-        await db.commit()
 
 
 async def refresh_expiring_tokens():
