@@ -51,7 +51,7 @@ class TwitterReplyTweet(TwitterBaseTool):
                         f"Error replying to tweet: {error}"
                     )
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return self._get_error_with_username(
                     "Failed to get Twitter client. Please check your authentication."

@@ -52,7 +52,6 @@ agents: dict[str, CompiledGraph] = {}
 
 # Global dictionaries to cache agent update times
 agents_updated: dict[str, datetime] = {}
-agents_data_updated: dict[str, datetime] = {}
 
 
 def agent_prompt(agent: Agent) -> str:
@@ -122,7 +121,6 @@ async def initialize_agent(aid):
 
         # Cache the update times
         agents_updated[aid] = agent.updated_at
-        agents_data_updated[aid] = agent_data.updated_at if agent_data else None
     except NoResultFound:
         # Handle the case where the user is not found
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -212,33 +210,21 @@ async def initialize_agent(aid):
     if agent.twitter_skills and len(agent.twitter_skills) > 0:
         if not agent.twitter_config:
             agent.twitter_config = {}
-        try:
-            twitter_client = TwitterClient(agent_store, agent.twitter_config)
-            await twitter_client.initialize()
-            if not twitter_client.need_auth:
-                for skill in agent.twitter_skills:
-                    try:
-                        s = get_twitter_skill(
-                            skill,
-                            twitter_client,
-                            skill_store,
-                            aid,
-                            agent_store,
-                        )
-                        tools.append(s)
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to initialize Twitter skill {skill}: {e}"
-                        )
-                twitter_prompt = (
-                    f"\n\nYour twitter id is {agent_data.twitter_id}, never reply or retweet yourself. "
-                    f"Your twitter username is {agent_data.twitter_username}. \n"
-                    f"Your twitter name is {agent_data.twitter_name}. \n"
-                )
-            else:
-                logger.info(f"Twitter client needs authentication for agent {aid}")
-        except Exception as e:
-            logger.warning(f"Failed to initialize Twitter client for agent {aid}: {e}")
+        twitter_client = TwitterClient(aid, agent_store, agent.twitter_config)
+        for skill in agent.twitter_skills:
+            s = get_twitter_skill(
+                skill,
+                twitter_client,
+                skill_store,
+                aid,
+                agent_store,
+            )
+            tools.append(s)
+        twitter_prompt = (
+            f"\n\nYour twitter id is {agent_data.twitter_id}, never reply or retweet yourself. "
+            f"Your twitter username is {agent_data.twitter_username}. \n"
+            f"Your twitter name is {agent_data.twitter_name}. \n"
+        )
 
     # Crestal skills
     if agent.crestal_skills:
@@ -343,17 +329,11 @@ async def execute_agent(
     agent = await Agent.get(aid)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    agent_data = await AgentData.get(aid)
 
     # Check if agent needs reinitialization due to updates
     needs_reinit = False
     if aid in agents:
-        if (
-            aid not in agents_updated
-            or agent.updated_at != agents_updated[aid]
-            or aid not in agents_data_updated
-            or (agent_data and agent_data.updated_at != agents_data_updated[aid])
-        ):
+        if aid not in agents_updated or agent.updated_at != agents_updated[aid]:
             needs_reinit = True
             logger.info(f"Reinitializing agent {aid} due to updates")
 
@@ -387,33 +367,20 @@ async def execute_agent(
         ]
     )
     # debug prompt
-    # if debug:
-    #     # get the agent from the database
-    #     with get_session() as db:
-    #         try:
-    #             agent: Agent = db.exec(select(Agent).filter(Agent.id == aid)).one()
-    #         except NoResultFound:
-    #             # Handle the case where the user is not found
-    #             raise HTTPException(status_code=404, detail="Agent not found")
-    #         except SQLAlchemyError as e:
-    #             # Handle other SQLAlchemy-related errors
-    #             logger.error(e)
-    #             raise HTTPException(status_code=500, detail=str(e))
-    # try:
-    #     resp_debug_append = "\n===================\n\n[ system ]\n"
-    #     resp_debug_append += agent_prompt(agent)
-    #     snap = executor.get_state(stream_config)
-    #     if snap.values and "messages" in snap.values:
-    #         for msg in snap.values["messages"]:
-    #             resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"
-    #     if agent.prompt_append:
-    #         resp_debug_append += "[ system ]\n"
-    #         resp_debug_append += agent.prompt_append
-    # except Exception as e:
-    #     logger.error(
-    #         "failed to get debug prompt: " + str(e), exc_info=True, stack_info=True
-    #     )
-    #     resp_debug_append = ""
+    if debug:
+        try:
+            resp_debug_append = "\n===================\n\n[ system ]\n"
+            resp_debug_append += agent_prompt(agent)
+            snap = executor.get_state(stream_config)
+            if snap.values and "messages" in snap.values:
+                for msg in snap.values["messages"]:
+                    resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"
+            if agent.prompt_append:
+                resp_debug_append += "[ system ]\n"
+                resp_debug_append += agent.prompt_append
+        except Exception as e:
+            logger.error(f"failed to get debug prompt: {e}")
+            resp_debug_append = ""
     # run
     async for chunk in executor.astream(
         {"messages": [HumanMessage(content=content)]}, stream_config
@@ -441,7 +408,7 @@ async def execute_agent(
     total_time = time.perf_counter() - start
     resp_debug.append(f"Total time cost: {total_time:.3f} seconds")
     if debug:
-        # resp_debug.append(resp_debug_append)
+        resp_debug.append(resp_debug_append)
         return resp_debug
     else:
         return resp
