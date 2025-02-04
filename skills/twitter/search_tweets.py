@@ -63,7 +63,7 @@ class TwitterSearchTweets(TwitterBaseTool):
                         tweets=[], error=self._get_error_with_username(error)
                     )
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return TwitterSearchTweetsOutput(
                     tweets=[],

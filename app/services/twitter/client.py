@@ -22,126 +22,102 @@ class TwitterClient(TwitterABC):
         config: Configuration dictionary that may contain API keys
     """
 
-    def __init__(self, agent_store: AgentStoreABC, config: Dict) -> None:
+    def __init__(self, agent_id, agent_store: AgentStoreABC, config: Dict) -> None:
         """Initialize the Twitter client.
 
         Args:
             agent_store: The agent store for persisting data
             config: Configuration dictionary that may contain API keys
         """
+        self.agent_id = agent_id
         self._client: Optional[AsyncClient] = None
         self._agent_store = agent_store
         self._agent_data: Optional[AgentData] = None
         self.use_key = False
-        self.need_auth = False
+        self._config = config
 
-        # Check if we have API keys in config
-        if all(
-            key in config and config[key]
-            for key in [
-                "consumer_key",
-                "consumer_secret",
-                "access_token",
-                "access_token_secret",
-            ]
-        ):
-            self._client = AsyncClient(
-                consumer_key=config["consumer_key"],
-                consumer_secret=config["consumer_secret"],
-                access_token=config["access_token"],
-                access_token_secret=config["access_token_secret"],
-                return_type=dict,
-            )
-            self.use_key = True
-            return
-
-        # Otherwise try to get OAuth2 tokens from agent data
-        self._agent_data = None
-        self.need_auth = True
-
-    async def initialize(self) -> None:
-        """Initialize the Twitter client with OAuth2 tokens if available."""
-        if self.use_key:
-            me = await self._client.get_me(user_auth=self.use_key)
-            if me and "data" in me and "id" in me["data"]:
-                await self._agent_store.set_data(
-                    {
-                        "twitter_id": me["data"]["id"],
-                        "twitter_username": me["data"]["username"],
-                        "twitter_name": me["data"]["name"],
-                    }
-                )
-            self._agent_data = await self._agent_store.get_data()
-            logger.info(
-                f"Twitter client initialized. "
-                f"Use API key: {self.use_key}, "
-                f"User ID: {self.self_id}, "
-                f"Username: {self.self_username}, "
-                f"Name: {self.self_name}"
-            )
-            return
-
-        self._agent_data = await self._agent_store.get_data()
-        if not self._agent_data:
-            return
-
-        if (
-            self._agent_data.twitter_access_token
-            and self._agent_data.twitter_access_token_expires_at
-        ):
-            # Check if token is expired
-            if self._agent_data.twitter_access_token_expires_at <= datetime.now(
-                tz=timezone.utc
-            ):
-                self.need_auth = True
-                return
-
-            # Initialize client with access token
-            self._client = AsyncClient(
-                bearer_token=self._agent_data.twitter_access_token,
-                return_type=dict,
-            )
-            self.need_auth = False
-
-    async def update_tokens(
-        self, access_token: str, refresh_token: str, expires_at: datetime
-    ) -> None:
-        """Update OAuth2 tokens in agent data.
-
-        Args:
-            access_token: New access token
-            refresh_token: New refresh token
-            expires_at: Token expiration timestamp
-        """
-        if not self._agent_data:
-            self._agent_data = await self._agent_store.get_data()
-            if not self._agent_data:
-                return
-
-        self._agent_data.twitter_access_token = access_token
-        self._agent_data.twitter_refresh_token = refresh_token
-        self._agent_data.twitter_access_token_expires_at = expires_at
-        await self._agent_store.set_data(self._agent_data)
-
-        # Update client with new access token
-        self._client = AsyncClient(bearer_token=access_token, return_type=dict)
-        self.need_auth = False
-
-    def get_client(self) -> Optional[AsyncClient]:
+    async def get_client(self) -> Optional[AsyncClient]:
         """Get the initialized Twitter client.
 
         Returns:
             Optional[AsyncClient]: The Twitter client if initialized, None otherwise
         """
+        if not self._agent_data:
+            self._agent_data = await self._agent_store.get_data()
+            if not self._agent_data:
+                raise Exception(f"[{self.agent_id}] Agent data not found")
+        if not self._client:
+            # Check if we have API keys in config
+            if self._config and all(
+                key in self._config and self._config[key]
+                for key in [
+                    "consumer_key",
+                    "consumer_secret",
+                    "access_token",
+                    "access_token_secret",
+                ]
+            ):
+                self._client = AsyncClient(
+                    consumer_key=self._config["consumer_key"],
+                    consumer_secret=self._config["consumer_secret"],
+                    access_token=self._config["access_token"],
+                    access_token_secret=self._config["access_token_secret"],
+                    return_type=dict,
+                )
+                self.use_key = True
+                me = await self._client.get_me(user_auth=self.use_key)
+                if me and "data" in me and "id" in me["data"]:
+                    await self._agent_store.set_data(
+                        {
+                            "twitter_id": me["data"]["id"],
+                            "twitter_username": me["data"]["username"],
+                            "twitter_name": me["data"]["name"],
+                        }
+                    )
+                self._agent_data = await self._agent_store.get_data()
+                logger.info(
+                    f"Twitter client initialized. "
+                    f"Use API key: {self.use_key}, "
+                    f"User ID: {self.self_id}, "
+                    f"Username: {self.self_username}, "
+                    f"Name: {self.self_name}"
+                )
+                return self._client
+            # Otherwise try to get OAuth2 tokens from agent data
+            if not self._agent_data.twitter_access_token:
+                raise Exception(f"[{self.agent_id}] Twitter access token not found")
+            if not self._agent_data.twitter_access_token_expires_at:
+                raise Exception(
+                    f"[{self.agent_id}] Twitter access token expiration not found"
+                )
+            if self._agent_data.twitter_access_token_expires_at <= datetime.now(
+                tz=timezone.utc
+            ):
+                raise Exception(f"[{self.agent_id}] Twitter access token has expired")
+            self._client = AsyncClient(
+                bearer_token=self._agent_data.twitter_access_token,
+                return_type=dict,
+            )
+            return self._client
+        if not self.use_key:
+            # check if access token has expired
+            if self._agent_data.twitter_access_token_expires_at <= datetime.now(
+                tz=timezone.utc
+            ):
+                self._agent_data = await self._agent_store.get_data()
+                # check again
+                if self._agent_data.twitter_access_token_expires_at <= datetime.now(
+                    tz=timezone.utc
+                ):
+                    raise Exception(
+                        f"[{self.agent_id}] Twitter access token has expired"
+                    )
+                self._client = AsyncClient(
+                    bearer_token=self._agent_data.twitter_access_token,
+                    return_type=dict,
+                )
+                return self._client
         return self._client
-
-    def get_agent_data(self) -> Optional[AgentData]:
-        """Get the agent data.
-
-        Returns:
-            Optional[AgentData]: The agent data if available, None otherwise
-        """
-        return self._agent_data
 
     @property
     def self_id(self) -> Optional[str]:

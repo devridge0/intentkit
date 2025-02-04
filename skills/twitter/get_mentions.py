@@ -75,7 +75,7 @@ class TwitterGetMentions(TwitterBaseTool):
             # Always get mentions for the last day
             start_time = datetime.now(tz=timezone.utc) - timedelta(days=1)
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return TwitterGetMentionsOutput(
                     mentions=[],

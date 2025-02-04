@@ -49,7 +49,7 @@ class TwitterPostTweet(TwitterBaseTool):
                 if is_rate_limited:
                     return f"Error posting tweet: {error}"
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return self._get_error_with_username(
                     "Failed to get Twitter client. Please check your authentication."
