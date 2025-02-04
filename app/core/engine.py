@@ -343,13 +343,13 @@ async def execute_agent(
     )
 
     # cold start or needs reinitialization
-    if aid not in agents or needs_reinit:
-        await initialize_agent(aid)
+    if (aid not in agents) or needs_reinit:
         resp_debug.append(
             "[ Agent cold start ... ]"
             if aid not in agents
             else "[ Agent reinitialized ... ]"
         )
+        await initialize_agent(aid)
         resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )
@@ -371,7 +371,7 @@ async def execute_agent(
         try:
             resp_debug_append = "\n===================\n\n[ system ]\n"
             resp_debug_append += agent_prompt(agent)
-            snap = executor.get_state(stream_config)
+            snap = await executor.aget_state(stream_config)
             if snap.values and "messages" in snap.values:
                 for msg in snap.values["messages"]:
                     resp_debug_append += f"[ {msg.type} ]\n{str(msg.content)}\n\n"

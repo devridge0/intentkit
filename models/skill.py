@@ -83,7 +83,7 @@ class AgentSkillData(SQLModel, table=True):
                 db.add(existing)
             else:
                 db.add(self)
-            db.commit()
+            await db.commit()
 
     @classmethod
     async def clean_data(cls, agent_id: str):
@@ -175,7 +175,7 @@ class ThreadSkillData(SQLModel, table=True):
                 db.add(existing)
             else:
                 db.add(self)
-            db.commit()
+            await db.commit()
 
     @classmethod
     async def clean_data(cls, agent_id: str, thread_id: str):
