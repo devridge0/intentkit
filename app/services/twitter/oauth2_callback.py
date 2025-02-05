@@ -3,14 +3,12 @@
 from datetime import datetime, timezone
 
 import tweepy
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi import APIRouter, HTTPException
 from starlette.responses import JSONResponse
 
 from app.config.config import config
 from app.services.twitter.oauth2 import oauth2_user_handler
 from models.agent import Agent, AgentData
-from models.db import get_db
 
 router = APIRouter(prefix="/callback/auth", tags=["Callback"])
 
@@ -19,8 +17,6 @@ router = APIRouter(prefix="/callback/auth", tags=["Callback"])
 async def twitter_oauth_callback(
     state: str,
     code: str,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
 ):
     """Handle Twitter OAuth2 callback.
 
@@ -31,8 +27,6 @@ async def twitter_oauth_callback(
     Args:
         state: Agent ID from authorization request
         code: Authorization code from Twitter
-        background_tasks: FastAPI background tasks
-        db: Database session from FastAPI dependency injection
 
     Returns:
         JSONResponse with success message
@@ -45,15 +39,13 @@ async def twitter_oauth_callback(
 
     try:
         agent_id = state
-        agent = await db.get(Agent, agent_id)
+        agent = await Agent.get(agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
 
-        agent_data = await db.get(AgentData, agent_id)
-
+        agent_data = await AgentData.get(agent_id)
         if not agent_data:
             agent_data = AgentData(id=agent_id)
-            await db.add(agent_data)
 
         # Exchange code for tokens
         authorization_response = (
@@ -69,7 +61,7 @@ async def twitter_oauth_callback(
         )
 
         # Get user info
-        client = tweepy.Client(bearer_token=token["access_token"])
+        client = tweepy.Client(bearer_token=token["access_token"], return_type=dict)
         me = client.get_me(user_auth=False)
 
         if me and "data" in me:
@@ -78,8 +70,7 @@ async def twitter_oauth_callback(
             agent_data.twitter_name = me.get("data").get("name")
 
         # Commit changes
-        await db.commit()
-        await db.refresh(agent_data)
+        await agent_data.save()
 
         return JSONResponse(
             content={"message": "Authentication successful, you can close this window"},
