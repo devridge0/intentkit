@@ -56,7 +56,7 @@ class TwitterRetweet(TwitterBaseTool):
                         success=False, message=f"Error retweeting: {error}"
                     )
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return TwitterRetweetOutput(
                     success=False,
