@@ -149,6 +149,17 @@ class Agent(SQLModel, table=True):
         sa_column=Column(JSONB, nullable=True),
         description="Enso integration configuration settings",
     )
+    # Acolyt skills
+    acolyt_skills: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String)),
+        description="List of Acolyt-specific skills available to this agent",
+    )
+    acolyt_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Acolyt integration configuration settings",
+    )
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         default=None,
