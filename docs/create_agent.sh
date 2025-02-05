@@ -147,7 +147,6 @@ JSON_DATA=$(cat << EOF
   "twitter_entrypoint_enabled": $TWITTER_ENTRYPOINT_ENABLED,
   "twitter_config": $TWITTER_CONFIG,
   "twitter_skills": $TWITTER_SKILLS,
-  "telegram_enabled": $TELEGRAM_ENTRYPOINT_ENABLED,
   "telegram_entrypoint_enabled": $TELEGRAM_ENTRYPOINT_ENABLED,
   "telegram_config": $TELEGRAM_CONFIG,
   "telegram_skills": $TELEGRAM_SKILLS,
