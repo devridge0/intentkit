@@ -1,7 +1,5 @@
 """Acolyt skills."""
 
-from cdp import Wallet
-
 from abstracts.skill import SkillStoreABC
 from skills.acolyt.ask import AcolytAskGpt
 from skills.acolyt.base import AcolytBaseTool
