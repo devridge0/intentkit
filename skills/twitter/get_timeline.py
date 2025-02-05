@@ -83,7 +83,7 @@ class TwitterGetTimeline(TwitterBaseTool):
             if since_id:
                 max_results = 100
 
-            client = self.twitter.get_client()
+            client = await self.twitter.get_client()
             if not client:
                 return TwitterGetTimelineOutput(
                     tweets=[],
