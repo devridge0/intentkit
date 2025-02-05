@@ -40,6 +40,7 @@ from models.agent import Agent, AgentData
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skill_sets import get_skill_set
+from skills.acolyt import get_Acolyt_skill
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
@@ -200,6 +201,20 @@ async def initialize_agent(aid):
                     agent.enso_config.get("main_tokens", list[str]()),
                     agentkit.wallet if agentkit else None,
                     config.rpc_base_mainnet,
+                    skill_store,
+                    agent_store,
+                    aid,
+                )
+                tools.append(s)
+            except Exception as e:
+                logger.warning(e)
+    # Acolyt skills
+    if agent.acolyt_skills and len(agent.acolyt_skills) > 0 and agent.acolyt_config:
+        for skill in agent.acolyt_skills:
+            try:
+                s = get_Acolyt_skill(
+                    skill,
+                    agent.acolyt_config.get("api_key"),
                     skill_store,
                     agent_store,
                     aid,
