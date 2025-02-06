@@ -85,6 +85,12 @@ ENSO_CONFIG='{
 }'
 ENSO_SKILLS='["get_tokens"]'
 
+# Acolyt settings (optional)
+ACOLYT_CONFIG='{
+  "api_key": ""
+}'
+ACOLYT_SKILLS='["ask_gpt"]'
+
 # Twitter settings (optional)
 # If you don't need to use the twitter skills, you can remove it in TWITTER_SKILLS
 TWITTER_ENTRYPOINT_ENABLED=false
@@ -135,11 +141,12 @@ JSON_DATA=$(cat << EOF
   "enso_enabled": $ENSO_ENABLED,
   "enso_config": $ENSO_CONFIG,
   "enso_skills": $ENSO_SKILLS,
+  "acolyt_config": $ACOLYT_CONFIG,
+  "acolyt_skills": $ACOLYT_SKILLS,
   "twitter_enabled": $TWITTER_ENTRYPOINT_ENABLED,
   "twitter_entrypoint_enabled": $TWITTER_ENTRYPOINT_ENABLED,
   "twitter_config": $TWITTER_CONFIG,
   "twitter_skills": $TWITTER_SKILLS,
-  "telegram_enabled": $TELEGRAM_ENTRYPOINT_ENABLED,
   "telegram_entrypoint_enabled": $TELEGRAM_ENTRYPOINT_ENABLED,
   "telegram_config": $TELEGRAM_CONFIG,
   "telegram_skills": $TELEGRAM_SKILLS,
