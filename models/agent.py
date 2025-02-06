@@ -104,10 +104,7 @@ class Agent(SQLModel, table=True):
         sa_column=Column(ARRAY(String)),
         description="List of Twitter-specific skills available to this agent",
     )
-    # if telegram_enabled, the telegram_entrypoint will be enabled, telegram_config will be checked
-    telegram_enabled: Optional[bool] = Field(
-        default=False, description="Deprecated: Whether Telegram integration is enabled"
-    )
+    # if telegram_entrypoint_enabled, the telegram_entrypoint_enabled will be enabled, telegram_config will be checked
     telegram_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Telegram"
     )
@@ -148,6 +145,17 @@ class Agent(SQLModel, table=True):
         default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Enso integration configuration settings",
+    )
+    # Acolyt skills
+    acolyt_skills: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String)),
+        description="List of Acolyt-specific skills available to this agent",
+    )
+    acolyt_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Acolyt integration configuration settings",
     )
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(

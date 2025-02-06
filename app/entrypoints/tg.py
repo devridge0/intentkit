@@ -29,7 +29,7 @@ class AgentScheduler:
                 try:
                     if agent.id not in pool._agent_bots:
                         if (
-                            agent.telegram_enabled
+                            agent.telegram_entrypoint_enabled
                             and agent.telegram_config
                             and agent.telegram_config.get("token")
                         ):

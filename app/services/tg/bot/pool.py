@@ -133,7 +133,7 @@ class BotPool:
                 await bot_item.bot.session.close()
 
     async def change_bot_token(self, agent: Agent):
-        if not agent.telegram_enabled:
+        if not agent.telegram_entrypoint_enabled:
             old_agent_item = agent_by_id(agent.id)
             await self.stop_bot(agent.id, old_agent_item.bot_token)
             return
@@ -236,7 +236,7 @@ class BotPool:
                 f"illegal modification of agent configurations, the bot token for agent {agent.id} does not match existing token of the cache."
             )
 
-        if not agent.telegram_enabled:
+        if not agent.telegram_entrypoint_enabled:
             await self.stop_bot(agent.id, token)
             return
 
