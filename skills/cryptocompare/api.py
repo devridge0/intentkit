@@ -1,6 +1,5 @@
 """CryptoCompare API implementation and shared schemas."""
 
-import os
 import time
 import json
 import requests
@@ -8,7 +7,6 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 CRYPTO_COMPARE_BASE_URL = "https://min-api.cryptocompare.com"
-CRYPTO_COMPARE_API_KEY = os.getenv("CRYPTO_COMPARE_API_KEY")
 
 # Input Schemas
 class FetchNewsInput(BaseModel):
@@ -71,14 +69,14 @@ class FetchTopVolumeInput(BaseModel):
     )
 
 # API Functions
-def fetch_price(from_symbol: str, to_symbols: List[str]) -> dict:
+def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> dict:
     """
     Fetch current price for a cryptocurrency in multiple currencies.
     """
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/price"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     params = {
         "fsym": from_symbol.upper(),
@@ -89,14 +87,14 @@ def fetch_price(from_symbol: str, to_symbols: List[str]) -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_trading_signals(from_symbol: str) -> dict:
+def fetch_trading_signals(from_symbol: str, api_key: str) -> dict:
     """
     Fetch the latest trading signals.
     """
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/tradingsignals/intotheblock/latest"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     params = {
         "fsym": from_symbol.upper()
@@ -106,14 +104,14 @@ def fetch_trading_signals(from_symbol: str) -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_market_cap(limit: int = 10, to_symbol: str = "USD") -> dict:
+def fetch_top_market_cap(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by market cap.
     """
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/top/mktcapfull"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     params = {
         "limit": limit,
@@ -124,14 +122,14 @@ def fetch_top_market_cap(limit: int = 10, to_symbol: str = "USD") -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_exchanges(from_symbol: str, to_symbol: str = "USD") -> dict:
+def fetch_top_exchanges(api_key: str, from_symbol: str, to_symbol: str = "USD") -> dict:
     """
     Fetch top exchanges for a cryptocurrency pair.
     """
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/top/exchanges"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     params = {
         "fsym": from_symbol.upper(),
@@ -142,14 +140,14 @@ def fetch_top_exchanges(from_symbol: str, to_symbol: str = "USD") -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_volume(limit: int = 10, to_symbol: str = "USD") -> dict:
+def fetch_top_volume(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by total volume.
     """
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/top/totalvolfull"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     params = {
         "limit": limit,
@@ -160,7 +158,7 @@ def fetch_top_volume(limit: int = 10, to_symbol: str = "USD") -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_news(token: str, timestamp: int = None) -> dict:
+def fetch_news(api_key: str, token: str, timestamp: int = None) -> dict:
     """
     Fetch news for a specific token and timestamp.
     """
@@ -169,7 +167,7 @@ def fetch_news(token: str, timestamp: int = None) -> dict:
     url = f"{CRYPTO_COMPARE_BASE_URL}/data/v2/news/?lang=EN&lTs={timestamp}&categories={token}&sign=true"
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {CRYPTO_COMPARE_API_KEY}"
+        "Authorization": f"Bearer {api_key}"
     }
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
@@ -212,4 +210,3 @@ This tool retrieves cryptocurrencies ranked by their total trading volume.
 Customize the view with limit and quote currency parameters.
 Returns comprehensive volume data including 24h trading volume and volume distribution.
 """
-

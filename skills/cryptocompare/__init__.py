@@ -13,7 +13,7 @@ from skills.cryptocompare.fetch_top_volume import CryptoCompareFetchTopVolume
 
 def get_cryptocompare_skill(
     name: str,
-    cryptocompare: object,
+    api_key: str,
     store: SkillStoreABC,
     agent_id: str,
     agent_store: AgentStoreABC,
@@ -22,7 +22,7 @@ def get_cryptocompare_skill(
 
     Args:
         name: The name of the skill to get
-        cryptocompare: The CryptoCompare client or configuration
+        api_key: The CryptoCompare API key
         store: The skill store for persisting data
         agent_id: The ID of the agent
         agent_store: The agent store for persisting data
@@ -35,46 +35,45 @@ def get_cryptocompare_skill(
     """
     if name == "fetch_news":
         return CryptoCompareFetchNews(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     elif name == "fetch_price":
         return CryptoCompareFetchPrice(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     elif name == "fetch_trading_signals":
         return CryptoCompareFetchTradingSignals(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     elif name == "fetch_top_market_cap":
         return CryptoCompareFetchTopMarketCap(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     elif name == "fetch_top_exchanges":
         return CryptoCompareFetchTopExchanges(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     elif name == "fetch_top_volume":
         return CryptoCompareFetchTopVolume(
-            cryptocompare=cryptocompare,
+            api_key=api_key,
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
     else:
         raise ValueError(f"Unknown CryptoCompare skill: {name}")
-

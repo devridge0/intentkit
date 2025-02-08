@@ -7,10 +7,15 @@ from pydantic import BaseModel, Field
 from datetime import datetime, timedelta, timezone
 
 class CryptoCompareBaseTool(IntentKitSkill):
-    """Base class for CryptoCompare tools."""
+    """Base class for CryptoCompare tools.
+    
+    This class provides common functionality for all CryptoCompare API tools:
+    - API key management
+    - Rate limiting
+    - State management through skill_store
+    """
 
-    # A placeholder for a CryptoCompare client or configuration
-    cryptocompare: object = Field(description="The CryptoCompare client or configuration")
+    api_key: str = Field(description="The CryptoCompare API key")
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: type = Field(description="The input arguments schema")
@@ -19,7 +24,15 @@ class CryptoCompareBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(description="The skill store for persisting data")
 
     async def check_rate_limit(self, max_requests: int = 1, interval: int = 15) -> tuple[bool, str | None]:
-        """Check if the rate limit has been exceeded."""
+        """Check if the rate limit has been exceeded.
+        
+        Args:
+            max_requests: Maximum number of requests allowed in the interval
+            interval: Time interval in minutes
+            
+        Returns:
+            Tuple of (is_rate_limited, error_message)
+        """
         rate_limit = await self.skill_store.get_agent_skill_data(self.agent_id, self.name, "rate_limit")
         current_time = datetime.now(tz=timezone.utc)
         if (
@@ -40,4 +53,3 @@ class CryptoCompareBaseTool(IntentKitSkill):
         }
         await self.skill_store.save_agent_skill_data(self.agent_id, self.name, "rate_limit", new_rate_limit)
         return False, None
-
