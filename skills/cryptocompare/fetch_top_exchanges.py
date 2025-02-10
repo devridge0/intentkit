@@ -1,6 +1,5 @@
 """Tool for fetching top exchanges for a trading pair via CryptoCompare API."""
 
-import asyncio
 from typing import Any, Dict, Type
 from pydantic import BaseModel
 from skills.cryptocompare.base import CryptoCompareBaseTool
@@ -24,7 +23,7 @@ class CryptoCompareFetchTopExchanges(CryptoCompareBaseTool):
         if is_rate_limited:
             return CryptoCompareFetchTopExchangesOutput(result={}, error=error_msg)
         try:
-            result = await asyncio.to_thread(fetch_top_exchanges, input_data.from_symbol, input_data.to_symbol)
+            result = await fetch_top_exchanges(input_data.from_symbol, input_data.to_symbol)
             return CryptoCompareFetchTopExchangesOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopExchangesOutput(result={}, error=str(e))

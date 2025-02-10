@@ -1,6 +1,5 @@
 """Tool for fetching news via CryptoCompare API."""
 
-import asyncio
 import time
 from typing import Any, Dict, Type, List, Optional
 from pydantic import BaseModel, Field
@@ -67,7 +66,7 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
                 timestamp = int(time.time()) - 86400
             
             # Fetch news from API
-            result = await asyncio.to_thread(fetch_news, self.api_key, token, timestamp)
+            result = await fetch_news(self.api_key, token, timestamp)
             
             if "Data" not in result:
                 return CryptoCompareFetchNewsOutput(
