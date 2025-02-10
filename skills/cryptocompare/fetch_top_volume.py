@@ -1,6 +1,5 @@
 """Tool for fetching top cryptocurrencies by trading volume via CryptoCompare API."""
 
-import asyncio
 from typing import Any, Dict, Type
 from pydantic import BaseModel
 from skills.cryptocompare.base import CryptoCompareBaseTool
@@ -24,7 +23,7 @@ class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
         if is_rate_limited:
             return CryptoCompareFetchTopVolumeOutput(result={}, error=error_msg)
         try:
-            result = await asyncio.to_thread(fetch_top_volume, input_data.limit, input_data.to_symbol)
+            result = await fetch_top_volume(input_data.limit, input_data.to_symbol)
             return CryptoCompareFetchTopVolumeOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopVolumeOutput(result={}, error=str(e))

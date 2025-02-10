@@ -1,6 +1,5 @@
 """Tool for fetching top cryptocurrencies by market cap via CryptoCompare API."""
 
-import asyncio
 from typing import Any, Dict, Type
 from pydantic import BaseModel
 from skills.cryptocompare.base import CryptoCompareBaseTool
@@ -24,7 +23,7 @@ class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
         if is_rate_limited:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=error_msg)
         try:
-            result = await asyncio.to_thread(fetch_top_market_cap, input_data.limit, input_data.to_symbol)
+            result = await fetch_top_market_cap(input_data.limit, input_data.to_symbol)
             return CryptoCompareFetchTopMarketCapOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=str(e))

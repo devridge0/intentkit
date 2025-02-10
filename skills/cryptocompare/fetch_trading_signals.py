@@ -1,6 +1,5 @@
 """Tool for fetching trading signals via CryptoCompare API."""
 
-import asyncio
 from typing import Any, Dict, Type
 from pydantic import BaseModel
 from skills.cryptocompare.base import CryptoCompareBaseTool
@@ -24,7 +23,7 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
         if is_rate_limited:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=error_msg)
         try:
-            result = await asyncio.to_thread(fetch_trading_signals, input_data.from_symbol)
+            result = await fetch_trading_signals(input_data.from_symbol)
             return CryptoCompareFetchTradingSignalsOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))

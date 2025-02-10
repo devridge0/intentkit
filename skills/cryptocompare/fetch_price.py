@@ -24,7 +24,7 @@ class CryptoCompareFetchPrice(CryptoCompareBaseTool):
         if is_rate_limited:
             return CryptoCompareFetchPriceOutput(result={}, error=error_msg)
         try:
-            result = await asyncio.to_thread(fetch_price, input_data.from_symbol, input_data.to_symbols)
+            result = await fetch_price(input_data.from_symbol, input_data.to_symbols)
             return CryptoCompareFetchPriceOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchPriceOutput(result={}, error=str(e))

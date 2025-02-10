@@ -3,6 +3,7 @@
 import time
 import json
 import requests
+import httpx
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -69,7 +70,7 @@ class FetchTopVolumeInput(BaseModel):
     )
 
 # API Functions
-def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> dict:
+async def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> dict:
     """
     Fetch current price for a cryptocurrency in multiple currencies.
     """
@@ -82,12 +83,13 @@ def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> dict:
         "fsym": from_symbol.upper(),
         "tsyms": ",".join(to_symbols)
     }
-    response = requests.get(url, params=params, headers=headers)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_trading_signals(from_symbol: str, api_key: str) -> dict:
+async def fetch_trading_signals(from_symbol: str, api_key: str) -> dict:
     """
     Fetch the latest trading signals.
     """
@@ -96,15 +98,14 @@ def fetch_trading_signals(from_symbol: str, api_key: str) -> dict:
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    params = {
-        "fsym": from_symbol.upper()
-    }
-    response = requests.get(url, params=params, headers=headers)
+    params = {"fsym": from_symbol.upper()}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_market_cap(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
+async def fetch_top_market_cap(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by market cap.
     """
@@ -113,16 +114,14 @@ def fetch_top_market_cap(api_key: str, limit: int = 10, to_symbol: str = "USD") 
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    params = {
-        "limit": limit,
-        "tsym": to_symbol.upper()
-    }
-    response = requests.get(url, params=params, headers=headers)
+    params = {"limit": limit, "tsym": to_symbol.upper()}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_exchanges(api_key: str, from_symbol: str, to_symbol: str = "USD") -> dict:
+async def fetch_top_exchanges(api_key: str, from_symbol: str, to_symbol: str = "USD") -> dict:
     """
     Fetch top exchanges for a cryptocurrency pair.
     """
@@ -131,16 +130,14 @@ def fetch_top_exchanges(api_key: str, from_symbol: str, to_symbol: str = "USD") 
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    params = {
-        "fsym": from_symbol.upper(),
-        "tsym": to_symbol.upper()
-    }
-    response = requests.get(url, params=params, headers=headers)
+    params = {"fsym": from_symbol.upper(), "tsym": to_symbol.upper()}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_top_volume(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
+async def fetch_top_volume(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by total volume.
     """
@@ -149,16 +146,14 @@ def fetch_top_volume(api_key: str, limit: int = 10, to_symbol: str = "USD") -> d
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    params = {
-        "limit": limit,
-        "tsym": to_symbol.upper()
-    }
-    response = requests.get(url, params=params, headers=headers)
+    params = {"limit": limit, "tsym": to_symbol.upper()}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-def fetch_news(api_key: str, token: str, timestamp: int = None) -> dict:
+async def fetch_news(api_key: str, token: str, timestamp: int = None) -> dict:
     """
     Fetch news for a specific token and timestamp.
     """
@@ -169,7 +164,8 @@ def fetch_news(api_key: str, token: str, timestamp: int = None) -> dict:
         "Accept": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    response = requests.get(url, headers=headers)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
     if response.status_code != 200:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
