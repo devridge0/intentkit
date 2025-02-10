@@ -1,16 +1,16 @@
-# Twitter Integration
+# X
 
-IntentKit provides two ways to integrate with Twitter: using it as an entrypoint for your agent, or incorporating Twitter-specific skills into your agent's capabilities.
+IntentKit provides two ways to integrate with X: using it as an entrypoint for your agent, or incorporating X-specific skills into your agent's capabilities.
 
-## Twitter Skills
+## X Skills
 
-IntentKit provides a set of Twitter-specific skills that can be added to your agent's toolkit. All skills are built on top of the `TwitterBaseTool` base class which handles authentication and client initialization.
+IntentKit provides a set of X-specific skills that can be added to your agent's toolkit. All skills are built on top of the `XBaseTool` base class which handles authentication and client initialization.
 
 ### Available Skills
 
-The following Twitter skills are available:
+The following X skills are available:
 
-- **Follow User** (`follow_user`): Follow a specified Twitter user
+- **Follow User** (`follow_user`): Follow a specified X user
 - **Get Mentions** (`get_mentions`): Retrieve mentions of the authenticated user
 - **Get Timeline** (`get_timeline`): Fetch tweets from a user's timeline
 - **Like Tweet** (`like_tweet`): Like a specific tweet
@@ -19,9 +19,9 @@ The following Twitter skills are available:
 - **Retweet** (`retweet`): Retweet a specific tweet
 - **Search Tweets** (`search_tweets`): Search for tweets based on query
 
-### Using Twitter Skills
+### Using X Skills
 
-Add Twitter skills to your agent:
+Add X skills to your agent:
 Just configure the skills you need in your agent's config.
 ```python
 agent.twitter_skills = ["get_mentions", "get_timeline", "post_tweet", "reply_tweet", "follow_user", "like_tweet", "retweet", "search_tweets"]
@@ -40,23 +40,23 @@ agent.twitter_config = {
 }
 ```
 
-## Twitter as an Entrypoint
+## X as an Entrypoint
 
 Entrypoint is a type of conversational interface.
 
-The Twitter entrypoint allows your agent to automatically respond to Twitter mentions. When enabled, the agent will monitor mentions every 15 minutes and respond to them all.
+The X entrypoint allows your agent to automatically respond to X mentions. When enabled, the agent will monitor mentions every 15 minutes and respond to them all.
 
 We suggest you only use twitter skills, not use it as an entrypoint.
 
 ### Configuration
 
-1. Enable Twitter Entrypoint for your agent:
+1. Enable X Entrypoint for your agent:
 ```python
 agent.twitter_enabled = True
 ```
 
-2. Configure Twitter credentials in your agent's config:
-Get your Twitter credentials from your [Twitter developer portal](https://developer.x.com/en/portal/dashboard).
+2. Configure X credentials in your agent's config:
+Get your X credentials from your [X developer portal](https://developer.x.com/en/portal/dashboard).
 > Notice: Free accounts can only use post_tweet skill, if you want to use other skills, you need to upgrade your account.
 ```python
 agent.twitter_config = {
@@ -68,7 +68,7 @@ agent.twitter_config = {
 }
 ```
 
-3. Run the Twitter entrypoint:
+3. Run the X entrypoint:
 If you have use the docker-compose, it already run.
 ```bash
 python -m app.entrypoints.twitter
@@ -76,7 +76,7 @@ python -m app.entrypoints.twitter
 
 ### How it Works
 
-The Twitter entrypoint:
+The X entrypoint:
 - Polls for new mentions every 15 minutes
 - Uses both `since_id` and `start_time` for reliable mention tracking
 - Maintains the last processed tweet ID in the agent's plugin data
@@ -86,7 +86,7 @@ The Twitter entrypoint:
 
 ## Rate Limits and Quotas
 
-### Twitter side
+### X side
 
 [Rate Limits](https://developer.x.com/en/docs/x-api/rate-limits)
 
@@ -109,17 +109,17 @@ Not released yet.
 ## Best Practices
 
 1. Error Handling
-   - Always handle Twitter API errors gracefully
+   - Always handle X API errors gracefully
    - Implement exponential backoff for rate limits
    - Log failed interactions for debugging
 
 2. Content Guidelines
-   - Keep responses within Twitter's character limit
+   - Keep responses within X's character limit
    - Handle thread creation for longer responses
-   - Consider Twitter's content policies
+   - Consider X's content policies
 
 3. Security
-   - Store Twitter credentials securely
+   - Store X credentials securely
    - Use environment variables for sensitive data
    - Regularly rotate access tokens
 
@@ -129,7 +129,7 @@ Not released yet.
    ```python
    from models.agent import Agent
    
-   # Create an agent with Twitter skills
+   # Create an agent with X skills
    agent = Agent(
        name="Social Media Manager",
        twitter_enabled=True,
@@ -152,7 +152,7 @@ Not released yet.
        name="Content Analyzer",
        twitter_enabled=True,
        twitter_skills=["get_timeline", "post_tweet"],
-       twitter_config={...},  # Twitter credentials
+       twitter_config={...},  # X credentials
        prompt="""You are a content analyzer. Monitor the timeline for trending topics and provide insights.
        When you find interesting patterns, share them as tweets."""
    )
@@ -165,7 +165,7 @@ Not released yet.
        name="Support Assistant",
        twitter_enabled=True,
        twitter_skills=["get_mentions", "reply_tweet"],
-       twitter_config={...},  # Twitter credentials
+       twitter_config={...},  # X credentials
        prompt="""You are a support assistant. Monitor mentions for support queries.
        Respond helpfully and professionally to user questions.
        If you can't help, politely explain why and suggest alternatives."""
@@ -173,7 +173,7 @@ Not released yet.
    ```
 
 Each example demonstrates:
-- Proper agent configuration with Twitter credentials
+- Proper agent configuration with X credentials
 - Specific skill selection for the use case
 - Custom prompts to guide agent behavior
 - Integration with IntentKit's agent system
@@ -195,4 +195,4 @@ Common issues and solutions:
 3. Missing Mentions
    - Verify `since_id` tracking
    - Check `start_time` configuration
-   - Monitor the Twitter entrypoint logs
+   - Monitor the X entrypoint logs
