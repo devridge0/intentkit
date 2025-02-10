@@ -53,6 +53,7 @@ async def init_db(
         if auto_migrate:
             await safe_migrate(engine)
             async with _pool.connection() as conn:
+                await conn.set_autocommit(True)
                 saver = AsyncPostgresSaver(conn)
                 await saver.setup()
 
