@@ -3,6 +3,8 @@
 ## Quick Start
 
 ### Docker (Recommended)
+0. Install [Docker](https://docs.docker.com/get-started/get-docker/).
+
 1. Create a new directory and navigate into it:
 ```bash
 mkdir intentkit && cd intentkit
@@ -31,17 +33,7 @@ mv example.env .env
 docker compose up
 ```
 
-5. Create your first Agent:
-```bash
-curl -X POST http://127.0.0.1:8000/agents \
-     -H "Content-Type: application/json" \
-     -d '{
-         "id": "admin",
-         "name": "Admin",
-         "prompt": "You are an autonomous AI agent. Respond to user queries."
-     }'
-```
-There are many fields that can control the agent's behavior, we have provided a [helper shell](docs/create_agent.sh) for you.
+5. To create your first agent, check out the [agent creation guide](docs/create_agent.md) for development.
 
 6. Try it out:
 ```bash
@@ -50,6 +42,8 @@ curl "http://127.0.0.1:8000/admin/chat?q=Hello"
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
 ### Local Development
+0. Python 3.10-3.12 are supported versions, and it's recommended to use [3.12](https://www.python.org/downloads/).
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/crestalnetwork/intentkit.git
@@ -57,8 +51,8 @@ cd intentkit
 ```
 
 2. Set up your environment:
-Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
-If you haven't installed `poetry`, please install it first.
+
+If you haven't installed [poetry](https://python-poetry.org/), please [install](https://python-poetry.org/docs/#installation) it first.
 We recommend manually creating a venv; otherwise, the venv created automatically by Poetry may not meet your needs.
 ```bash
 python3.12 -m venv .venv
@@ -67,6 +61,8 @@ poetry install --with dev
 ```
 
 3. Configure your environment:
+
+Read [Configuration](docs/configuration.md) for detailed settings. Then create your local .env file.
 ```bash
 cp example.env .env
 # Edit .env with your configuration
@@ -81,4 +77,4 @@ uvicorn app.api:app --reload
 python -m app.autonomous
 ```
 
-"Create Agent" and "Try it out" refer to the Docker section.
+Refer to "To create your first agent" and "Try it out" in the Docker section.
