@@ -1,5 +1,29 @@
 # How to create an agent
 
+## Your First Agent
+
+Use the following bash script to create your first agent:
+
+```bash
+curl -X POST http://127.0.0.1:8000/agents \
+     -H "Content-Type: application/json" \
+     -d '{
+         "id": "admin",
+         "name": "Admin",
+         "prompt": "You are an autonomous AI agent. Respond to user queries."
+     }'
+```
+
+## Advanced Agent Creation Script
+
+There are many fields that can control an agent's behavior.
+We have provided a [helper shell](create_agent.sh) for your convenience.
+To use it, modify the config fields in the script as necessary, then run:
+
+```bash
+./create_agent.sh
+```
+
 ## The Prompt
 In agent config, there are 3 fields about prompt, they are `prompt`, `prompt_append` and `autonomous_prompt`.  
 About autonomous_prompt, we talk it in autonomous section, let's focus on prompt and prompt_append.

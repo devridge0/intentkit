@@ -1,6 +1,10 @@
 # IntentKit
 
-IntentKit is an autonomous agent framework that enables the creation and management of AI agents with various capabilities including blockchain interactions, social media management, and custom skill integration.
+<div align="center">
+  <img src="docs/images/intentkit_banner.png" alt="IntentKit by Crestal" width="100%" />
+</div>
+
+IntentKit is an autonomous agent framework that enables the creation and management of AI agents with various capabilities including blockchain interaction, social media management, and custom skill integration.
 
 ## Alpha Warning
 
@@ -10,168 +14,70 @@ This project is currently in alpha stage and is not recommended for production u
 
 - 🤖 Multiple Agent Support
 - 🔄 Autonomous Agent Management
-- 🔗 Blockchain Integration (EVM for now, will add more)
-- 🐦 Social Media Integration (Twitter, Telegram for now, will add more)
+- 🔗 Blockchain Integration (EVM chains first)
+- 🐦 Social Media Integration (Twitter, Telegram, and more)
 - 🛠️ Extensible Skill System
 - 🔌 Extensible Plugin System (WIP)
 
 ## Architecture
 
 ```
-                                                                                                       
-                                 Entrypoints                                                           
-                       │                             │                                                 
-                       │   Twitter/Telegram & more   │                                                 
-                       └──────────────┬──────────────┘                                                 
-                                      │                                                                
-  Storage:  ────┐                     │                      ┌──── Skills:                             
-                │                     │                      │                                         
-  Agent Config  │     ┌───────────────▼────────────────┐     │  Chain Integration (EVM,solana,etc...)  
-                │     │                                │     │                                         
-  Credentials   │     │                                │     │  Wallet Management                      
-                │     │           The  Agent           │     │                                         
-  Personality   │     │                                │     │  On-Chain Actions                       
-                │     │                                │     │                                         
-  Memory        │     │      Powered by LangGraph      │     │  Internet Search                        
-                │     │                                │     │                                         
-  Skill State   │     └────────────────────────────────┘     │  Image Processing                       
-            ────┘                                            └────                                     
-                                                                                                       
-                                                                More and More...                       
-                         ┌──────────────────────────┐                                                  
-                         │                          │                                                  
-                         │  Agent Config & Memory   │                                                  
-                         │                          │                                                  
-                         └──────────────────────────┘                                                  
-                                                                                                       
+                                                                                    
+                                 Entrypoints                                        
+                       │                             │                              
+                       │   Twitter/Telegram & more   │                              
+                       └──────────────┬──────────────┘                              
+                                      │                                             
+  Storage:  ────┐                     │                      ┌──── Skills:          
+                │                     │                      │                      
+  Agent Config  │     ┌───────────────▼────────────────┐     │  Chain Integration   
+                │     │                                │     │                      
+  Credentials   │     │                                │     │  Wallet Management   
+                │     │           The  Agent           │     │                      
+  Personality   │     │                                │     │  On-Chain Actions    
+                │     │                                │     │                      
+  Memory        │     │      Powered by LangGraph      │     │  Internet Search     
+                │     │                                │     │                      
+  Skill State   │     └────────────────────────────────┘     │  Image Processing    
+            ────┘                                            └────                  
+                                                                                    
+                                                                More and More...    
+                         ┌──────────────────────────┐                               
+                         │                          │                               
+                         │  Agent Config & Memory   │                               
+                         │                          │                               
+                         └──────────────────────────┘                               
+                                                                                    
 ```
 
 The architecture is a simplified view, and more details can be found in the [Architecture](docs/architecture.md) section.
 
-## Quick Start
+## Development
 
-### Docker (Recommended)
-1. Create a new directory and navigate into it:
-```bash
-mkdir intentkit && cd intentkit
-```
+Read [Development Guide](DEVELOPMENT.md) to get started with your setup.
 
-2. Download the required files:
-```bash
-# Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/docker-compose.yml
+## Documentation
 
-# Download example environment file
-curl -O https://raw.githubusercontent.com/crestalnetwork/intentkit/main/example.env
-```
-
-3. Set up environment:
-```bash
-# Rename example.env to .env
-mv example.env .env
-
-# Edit .env file and add your configuration
-# Make sure to set OPENAI_API_KEY
-```
-
-4. Start the services:
-```bash
-docker compose up
-```
-
-5. Create your first Agent:
-```bash
-curl -X POST http://127.0.0.1:8000/agents \
-     -H "Content-Type: application/json" \
-     -d '{
-         "id": "admin",
-         "name": "Admin",
-         "prompt": "You are an autonomous AI agent. Respond to user queries."
-     }'
-```
-There are many fields that can control the agent's behavior, we have provided a [helper shell](docs/create_agent.sh) for you.
-
-6. Try it out:
-```bash
-curl "http://127.0.0.1:8000/admin/chat?q=Hello"
-```
-In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
-
-### Local Development
-1. Clone the repository:
-```bash
-git clone https://github.com/crestalnetwork/intentkit.git
-cd intentkit
-```
-
-2. Set up your environment:
-Python 3.10-3.12 are supported versions, and it's recommended to use 3.12.
-If you haven't installed `poetry`, please install it first.
-We recommend manually creating a venv; otherwise, the venv created automatically by Poetry may not meet your needs.
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-poetry install --with dev
-```
-
-3. Configure your environment:
-```bash
-cp example.env .env
-# Edit .env with your configuration
-```
-
-4. Run the application:
-```bash
-# Run the API server in development mode
-uvicorn app.api:app --reload
-
-# Run the autonomous agent scheduler
-python -m app.autonomous
-```
-
-"Create Agent" and "Try it out" refer to the Docker section.
-
-## The Model
-For now, we only support any model from OpenAI and DeepSeek.  
-We will support more models in the future.
-
-## Integrations
-
-### Twitter
-[Twitter Integration](docs/twitter.md)
-
-### Coinbase
-[Coinbase Integration](docs/skills/cdp.md)
-
-## Configuration
-
-The application can be configured using environment variables or AWS Secrets Manager. Key configuration options:
-
-- `ENV`: Environment (local or others)
-- `DB_*`: PostgreSQL Database configuration (Required)
-- `OPENAI_API_KEY`: OpenAI API key for agent interactions (Required)
-- `CDP_*`: Coinbase Developer Platform configuration (Optional)
-
-See `example.env` for all available options.
+Check out [Documentation](docs/) before you start.
 
 ## Project Structure
 
-- `abstracts/`: Abstract classes and interfaces
-- `app/`: Core application code
-  - `core/`: Core modules
-  - `services/`: Services
-  - `entrypoints/`: Entrypoints means the way to interact with the agent
-  - `admin/`: Admin logic
-  - `config/`: Configurations
-  - `api.py`: REST API server
-  - `autonomous.py`: Autonomous agent scheduler
-  - `twitter.py`: Twitter listener
-  - `telegram.py`: Telegram listener
-- `models/`: Database models
-- `skills/`: Skill implementations
-- `skill_sets/`: Predefined skill set collections
-- `plugins/`: Reserved for Plugin implementations
-- `utils/`: Utility functions
+- [abstracts/](abstracts/): Abstract classes and interfaces
+- [app/](app/): Core application code
+  - [core/](app/core/): Core modules
+  - [services/](app/services/): Services
+  - [entrypoints/](app/entrypoints/): Entrypoints means the way to interact with the agent
+  - [admin/](app/admin/): Admin logic
+  - [config/](app/config/): Configurations
+  - [api.py](app/api.py): REST API server
+  - [autonomous.py](app/autonomous.py): Autonomous agent scheduler
+  - [twitter.py](app/twitter.py): Twitter listener
+  - [telegram.py](app/telegram.py): Telegram listener
+- [models/](models/): Database models
+- [skills/](skills/): Skill implementations
+- [skill_sets/](skill_sets/): Predefined skill set collections
+- [plugins/](plugins/): Reserved for Plugin implementations
+- [utils/](utils/): Utility functions
 
 ## Contributing
 
@@ -181,14 +87,14 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 
 If you want to add a skill collection, follow these steps:
 
-1. Create a new skill collection in the `skills/` directory
+1. Create a new skill collection in the [skills/](skills/) directory
 2. Implement the skill interface
 3. Register the skill in `skills/YOUR_SKILL_COLLECTION/__init__.py`
 
 If you want to add a simple skill, follow these steps:
 
-1. Create a new skill in the `skills/common/` directory
-2. Register the skill in `skills/common/__init__.py`
+1. Create a new skill in the [skills/common/](skills/common/) directory
+2. Register the skill in [skills/common/\_\_init\_\_.py](skills/common/__init__.py)
 
 See the [Skill Development Guide](docs/contributing/skills.md) for more information.
 

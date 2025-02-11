@@ -2,4 +2,4 @@
 
 ## Contents
 
-- [Clean Agent or Thread memory](./clean_memory.md)
+- [Clean Agent or Thread memory](clean_memory.md)
