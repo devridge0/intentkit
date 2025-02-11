@@ -67,13 +67,11 @@ class AcolytAskGpt(AcolytBaseTool):
     """
 
     name: str = "acolyt_ask_gpt"
-    description: str = (
-        """
+    description: str = """
         This tool allows users to ask questions which are then sent to the Acolyt API. this should be run if the user requests to
         ask Acolyt explicitly.
         The API response is processed and summarized before being returned to the user.
         """
-    )
     args_schema: Type[BaseModel] = AcolytAskGptInput
 
     def _run(self, question: str) -> AcolytAskGptOutput:
