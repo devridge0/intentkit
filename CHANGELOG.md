@@ -1,5 +1,47 @@
 # Changelog
 
+## 2025-02-11
+
+### Improvements
+- Twitter account link support redirect after authorization
+
+## 2025-02-05
+
+### New Features
+- Acolyt integration
+
+## 2025-02-04
+
+### Improvements
+- split scheduler to new service
+- split singleton to new service
+
+## 2025-02-03
+
+### Breaking Changes
+- Use async every where
+
+## 2025-02-02
+
+### Bug Fixes
+- Fix bugs in twitter account binding
+
+## 2025-02-01
+
+### New Features
+- Readonly API for better performance
+
+## 2025-01-30
+
+### New Features
+- LLM creativity in agent config
+- Agent memory cleanup by token count
+
+## 2025-01-28
+
+### New Features
+- Enso tx CDP wallet broadcast
+
 ## 2025-01-27
 
 ### New Features
