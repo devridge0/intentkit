@@ -85,6 +85,21 @@ class Agent(SQLModel, table=True):
     cdp_network_id: Optional[str] = Field(
         default="base-mainnet", description="Network identifier for CDP integration"
     )
+    # if goat_enabled, will load goat skills
+    goat_enabled: Optional[bool] = Field(
+        default=False,
+        description="Whether GOAT integration is enabled",
+    )
+    goat_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="GOAT integration configuration settings",
+    )
+    goat_skills: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Dict of GOAT skills and their corresponding configurations",
+    )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Twitter"

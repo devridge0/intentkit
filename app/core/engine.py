@@ -44,6 +44,7 @@ from skills.acolyt import get_Acolyt_skill
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
+from skills.goat import get_goat_skill
 from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,9 @@ def agent_prompt(agent: Agent) -> str:
         user explicitly requests a transaction broadcast. Insufficient funds or insufficient spending approval can cause 
         Route Shortcut broadcasts to fail. To avoid this, use the enso_broadcast_wallet_approve tool that requires explicit 
         user confirmation before broadcasting any approval transactions for security reasons.\n\n"""
+    if agent.goat_enabled:
+        prompt += """\n\nYou're using the Great Onchain Agent Toolkit (GOAT) SDK, which provides tools for DeFi, minting, betting, and analytics.
+        GOAT supports EVM blockchains and various wallets, including keypairs, smart wallets, LIT, and MPC.\n\n"""
     return prompt
 
 
@@ -185,6 +189,20 @@ async def initialize_agent(aid):
         if agent.cdp_skills and len(agent.cdp_skills) > 0:
             cdp_tools = [tool for tool in cdp_tools if tool.name in agent.cdp_skills]
         tools.extend(cdp_tools)
+
+    if agent.goat_enabled and len(agent.goat_skills) > 0 and agent.goat_config:
+        try:
+            s = get_goat_skill(
+                agent.goat_config.get("private_key"),
+                agent.goat_skills,
+                config.rpc_goat,
+                skill_store,
+                agent_store,
+                aid,
+            )
+            tools.extend(s)
+        except Exception as e:
+            logger.warning(e)
 
     # Enso skills
     if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
