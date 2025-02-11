@@ -42,11 +42,11 @@ async def twitter_oauth_callback(
     them in the database.
 
     Args:
-        state: URL-encoded state containing agent_id and result_uri
+        state: URL-encoded state containing agent_id and redirect_uri
         code: Authorization code from Twitter
 
     Returns:
-        JSONResponse or RedirectResponse depending on result_uri
+        JSONResponse or RedirectResponse depending on redirect_uri
 
     Raises:
         HTTPException: If state/code is missing or token exchange fails
@@ -58,7 +58,7 @@ async def twitter_oauth_callback(
         # Parse state parameter
         state_params = parse_qs(state)
         agent_id = state_params.get("agent_id", [""])[0]
-        result_uri = state_params.get("result_uri", [""])[0]
+        redirect_uri = state_params.get("redirect_uri", [""])[0]
 
         if not agent_id:
             raise HTTPException(
@@ -100,12 +100,10 @@ async def twitter_oauth_callback(
         # Commit changes
         await agent_data.save()
 
-        # Handle response based on result_uri
-        if result_uri and is_valid_url(result_uri):
+        # Handle response based on redirect_uri
+        if redirect_uri and is_valid_url(redirect_uri):
             params = {"twitter_auth": "success", "username": username}
-            redirect_url = (
-                f"{result_uri}{'&' if '?' in result_uri else '?'}{urlencode(params)}"
-            )
+            redirect_url = f"{redirect_uri}{'&' if '?' in redirect_uri else '?'}{urlencode(params)}"
             return RedirectResponse(url=redirect_url)
         else:
             return JSONResponse(
@@ -117,21 +115,17 @@ async def twitter_oauth_callback(
             )
     except HTTPException as http_exc:
         # Handle error response
-        if result_uri and is_valid_url(result_uri):
+        if redirect_uri and is_valid_url(redirect_uri):
             params = {"twitter_auth": "failed", "error": str(http_exc.detail)}
-            redirect_url = (
-                f"{result_uri}{'&' if '?' in result_uri else '?'}{urlencode(params)}"
-            )
+            redirect_url = f"{redirect_uri}{'&' if '?' in redirect_uri else '?'}{urlencode(params)}"
             return RedirectResponse(url=redirect_url)
         # Re-raise HTTP exceptions to preserve their status codes
         raise http_exc
     except Exception as e:
         # Handle error response for unexpected errors
-        if result_uri and is_valid_url(result_uri):
+        if redirect_uri and is_valid_url(redirect_uri):
             params = {"twitter_auth": "failed", "error": str(e)}
-            redirect_url = (
-                f"{result_uri}{'&' if '?' in result_uri else '?'}{urlencode(params)}"
-            )
+            redirect_url = f"{redirect_uri}{'&' if '?' in redirect_uri else '?'}{urlencode(params)}"
             return RedirectResponse(url=redirect_url)
         # For unexpected errors, use 500 status code
         raise HTTPException(status_code=500, detail=str(e))
