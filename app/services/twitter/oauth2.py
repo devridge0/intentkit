@@ -1,5 +1,7 @@
 """Twitter OAuth2 authentication module."""
 
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from requests.auth import HTTPBasicAuth
@@ -30,11 +32,17 @@ class OAuth2UserHandler(OAuth2Session):
             self._client.create_code_verifier(128), "S256"
         )
 
-    def get_authorization_url(self, agent_id: str):
-        """Get the authorization URL to redirect the user to"""
+    def get_authorization_url(self, agent_id: str, result_uri: str):
+        """Get the authorization URL to redirect the user to
+
+        Args:
+            agent_id: ID of the agent to authenticate
+            result_uri: URI to redirect to after authorization
+        """
+        state_params = {"agent_id": agent_id, "result_uri": result_uri}
         authorization_url, _ = self.authorization_url(
             "https://twitter.com/i/oauth2/authorize",
-            state=agent_id,
+            state=urlencode(state_params),
             code_challenge=self.code_challenge,
             code_challenge_method="S256",
         )
@@ -93,26 +101,28 @@ router = APIRouter(tags=["Auth"])
     response_model=TwitterAuthResponse,
     dependencies=[Depends(verify_jwt)],
 )
-async def get_twitter_auth_url(agent_id: str) -> TwitterAuthResponse:
+async def get_twitter_auth_url(agent_id: str, result_uri: str) -> TwitterAuthResponse:
     """Get Twitter OAuth2 authorization URL.
 
     Args:
         agent_id: ID of the agent to authenticate
+        result_uri: URI to redirect to after authorization
 
     Returns:
         Object containing agent_id and authorization URL
     """
-    url = oauth2_user_handler.get_authorization_url(agent_id)
+    url = oauth2_user_handler.get_authorization_url(agent_id, result_uri)
     return TwitterAuthResponse(agent_id=agent_id, url=url)
 
 
-def get_authorization_url(agent_id: str) -> str:
+def get_authorization_url(agent_id: str, result_uri: str) -> str:
     """Get Twitter OAuth2 authorization URL.
 
     Args:
         agent_id: ID of the agent to authenticate
+        result_uri: URI to redirect to after authorization
 
     Returns:
         Authorization URL with agent_id as state parameter
     """
-    return oauth2_user_handler.get_authorization_url(agent_id)
+    return oauth2_user_handler.get_authorization_url(agent_id, result_uri)
