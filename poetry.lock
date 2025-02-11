@@ -1901,6 +1901,22 @@ goat-sdk = ">=0.1.1,<0.2.0"
 pydantic = ">=2.0.0,<3.0.0"
 
 [[package]]
+name = "goat-sdk-plugin-opensea"
+version = "0.1.0"
+description = "Goat plugin for OpenSea"
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+    {file = "goat_sdk_plugin_opensea-0.1.0-py3-none-any.whl", hash = "sha256:9f8f741b828633c72d1df09917dc6c5061314422c94c9f673427dd829721162e"},
+    {file = "goat_sdk_plugin_opensea-0.1.0.tar.gz", hash = "sha256:a91d61b3ef2848179755dc31d16b07d5d3bf5558a425c43d74cee34d9a0a4954"},
+]
+
+[package.dependencies]
+aiohttp = ">=3.8.6,<4.0.0"
+goat-sdk = ">=0.1.1,<0.2.0"
+
+[[package]]
 name = "goat-sdk-plugin-superfluid"
 version = "0.1.0"
 description = "Goat plugin for Superfluid"
@@ -4947,4 +4963,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "b8b67e31278dbabfba551b2eac9ee20115199e48d2323ff1b2cd3736924c95a3"
+content-hash = "bda84e5d1f7f4ce173c90ed6b027ec16d2f3756453a76c57e37588d8f2e940dc"

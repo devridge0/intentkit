@@ -57,7 +57,7 @@ goat-sdk-plugin-jsonrpc = "^0.1.1"
 goat-sdk-plugin-nansen = "^0.1.0"
 goat-sdk-plugin-superfluid = "^0.1.0"
 goat-sdk-plugin-uniswap = "^0.1.1"
-
+goat-sdk-plugin-opensea = "^0.1.0"
 
 [tool.poetry.group.dev] 
 optional = true
