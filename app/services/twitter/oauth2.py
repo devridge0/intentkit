@@ -32,14 +32,14 @@ class OAuth2UserHandler(OAuth2Session):
             self._client.create_code_verifier(128), "S256"
         )
 
-    def get_authorization_url(self, agent_id: str, result_uri: str):
+    def get_authorization_url(self, agent_id: str, redirect_uri: str):
         """Get the authorization URL to redirect the user to
 
         Args:
             agent_id: ID of the agent to authenticate
-            result_uri: URI to redirect to after authorization
+            redirect_uri: URI to redirect to after authorization
         """
-        state_params = {"agent_id": agent_id, "result_uri": result_uri}
+        state_params = {"agent_id": agent_id, "redirect_uri": redirect_uri}
         authorization_url, _ = self.authorization_url(
             "https://x.com/i/oauth2/authorize",
             state=urlencode(state_params),
@@ -73,6 +73,7 @@ class OAuth2UserHandler(OAuth2Session):
 oauth2_user_handler = OAuth2UserHandler(
     client_id=config.twitter_oauth2_client_id,
     client_secret=config.twitter_oauth2_client_secret,
+    # backend uri point to twitter_oauth_callback
     redirect_uri=config.twitter_oauth2_redirect_uri,
     scope=[
         "tweet.read",
@@ -101,28 +102,28 @@ router = APIRouter(tags=["Auth"])
     response_model=TwitterAuthResponse,
     dependencies=[Depends(verify_jwt)],
 )
-async def get_twitter_auth_url(agent_id: str, result_uri: str) -> TwitterAuthResponse:
+async def get_twitter_auth_url(agent_id: str, redirect_uri: str) -> TwitterAuthResponse:
     """Get Twitter OAuth2 authorization URL.
 
     Args:
         agent_id: ID of the agent to authenticate
-        result_uri: URI to redirect to after authorization
+        redirect_uri: DApp URI to redirect to after authorization from agentkit to DApp
 
     Returns:
         Object containing agent_id and authorization URL
     """
-    url = oauth2_user_handler.get_authorization_url(agent_id, result_uri)
+    url = oauth2_user_handler.get_authorization_url(agent_id, redirect_uri)
     return TwitterAuthResponse(agent_id=agent_id, url=url)
 
 
-def get_authorization_url(agent_id: str, result_uri: str) -> str:
+def get_authorization_url(agent_id: str, redirect_uri: str) -> str:
     """Get Twitter OAuth2 authorization URL.
 
     Args:
         agent_id: ID of the agent to authenticate
-        result_uri: URI to redirect to after authorization
+        redirect_uri: DApp URI to redirect to after authorization from agentkit to DApp
 
     Returns:
         Authorization URL with agent_id as state parameter
     """
-    return oauth2_user_handler.get_authorization_url(agent_id, result_uri)
+    return oauth2_user_handler.get_authorization_url(agent_id, redirect_uri)
