@@ -34,6 +34,9 @@ The list of supported tools can be found [here](https://github.com/goat-sdk/goat
     "nansen": {
         "api_key": "nansen api key string"
     },
+    "opensea": {
+        "api_key": "opensea api key string"
+    },
     "superfluid": {},
     "uniswap": {
         "api_key": "uniswap api key string",
