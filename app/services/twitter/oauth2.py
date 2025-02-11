@@ -41,7 +41,7 @@ class OAuth2UserHandler(OAuth2Session):
         """
         state_params = {"agent_id": agent_id, "result_uri": result_uri}
         authorization_url, _ = self.authorization_url(
-            "https://twitter.com/i/oauth2/authorize",
+            "https://x.com/i/oauth2/authorize",
             state=urlencode(state_params),
             code_challenge=self.code_challenge,
             code_challenge_method="S256",
@@ -53,7 +53,7 @@ class OAuth2UserHandler(OAuth2Session):
         authorization response URL
         """
         return super().fetch_token(
-            "https://api.twitter.com/2/oauth2/token",
+            "https://api.x.com/2/oauth2/token",
             authorization_response=authorization_response,
             auth=self.auth,
             include_client_id=True,
@@ -63,7 +63,7 @@ class OAuth2UserHandler(OAuth2Session):
     def refresh(self, refresh_token: str):
         """Refresh token"""
         return super().refresh_token(
-            "https://api.twitter.com/2/oauth2/token",
+            "https://api.x.com/2/oauth2/token",
             refresh_token=refresh_token,
             include_client_id=True,
         )
