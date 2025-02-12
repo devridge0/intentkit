@@ -38,14 +38,14 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
     """
     
     name: str = "cryptocompare_fetch_news"
-    description: str = "Fetch cryptocurrency news for a given token using CryptoCompare API"
+    description: str = FETCH_NEWS_PROMPT
     args_schema: Type[BaseModel] = FetchNewsInput
 
-    def _run(self, token: str, timestamp: Optional[int] = None) -> CryptoCompareFetchNewsOutput:
+    def _run(self, token: str) -> CryptoCompareFetchNewsOutput:
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, token: str, timestamp: Optional[int] = None) -> CryptoCompareFetchNewsOutput:
+    async def _arun(self, token: str) -> CryptoCompareFetchNewsOutput:
         """Fetch news articles for the given token.
         
         Args:
@@ -61,9 +61,7 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
             if is_rate_limited:
                 return CryptoCompareFetchNewsOutput(error=error_msg)
 
-            # Use 24 hours ago as default timestamp if none provided
-            if timestamp is None:
-                timestamp = int(time.time()) - 86400
+            timestamp = int(time.time())
             
             # Fetch news from API
             result = await fetch_news(self.api_key, token, timestamp)
@@ -91,3 +89,9 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
             
         except Exception as e:
             return CryptoCompareFetchNewsOutput(error=str(e))
+
+FETCH_NEWS_PROMPT = """
+This tool fetches the latest cryptocurrency news articles for a specific token.
+You can optionally specify a timestamp to get historical news, otherwise it uses the current time.
+Returns articles in English with details like title, body, source, and publish time.
+"""

@@ -11,7 +11,7 @@ class CryptoCompareFetchTradingSignalsOutput(BaseModel):
 
 class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
     name: str = "cryptocompare_fetch_trading_signals"
-    description: str = "Fetch trading signals for a cryptocurrency using CryptoCompare API"
+    description: str = FETCH_TRADING_SIGNALS_PROMPT
     args_schema: Type[BaseModel] = FetchTradingSignalsInput
 
     def _run(self) -> CryptoCompareFetchTradingSignalsOutput:
@@ -27,4 +27,11 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
             return CryptoCompareFetchTradingSignalsOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))
+
+FETCH_TRADING_SIGNALS_PROMPT = """
+This tool retrieves advanced trading signals from IntoTheBlock analytics for a specific cryptocurrency.
+Provide a cryptocurrency symbol (e.g., 'BTC') to get detailed market indicators.
+Returns key metrics like network growth, large transaction patterns, holder composition, and market momentum.
+"""
+
 

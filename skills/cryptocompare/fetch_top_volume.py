@@ -11,7 +11,7 @@ class CryptoCompareFetchTopVolumeOutput(BaseModel):
 
 class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
     name: str = "cryptocompare_fetch_top_volume"
-    description: str = "Fetch top cryptocurrencies by trading volume using CryptoCompare API"
+    description: str = FETCH_TOP_VOLUME_PROMPT
     args_schema: Type[BaseModel] = FetchTopVolumeInput
 
     def _run(self) -> CryptoCompareFetchTopVolumeOutput:
@@ -27,4 +27,10 @@ class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
             return CryptoCompareFetchTopVolumeOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopVolumeOutput(result={}, error=str(e))
+
+FETCH_TOP_VOLUME_PROMPT = """
+This tool retrieves cryptocurrencies ranked by their total trading volume.
+Customize the view with limit and quote currency parameters.
+Returns comprehensive volume data including 24h trading volume and volume distribution.
+"""
 
