@@ -170,39 +170,3 @@ async def fetch_news(api_key: str, token: str, timestamp: int = None) -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-# Prompt Strings
-FETCH_NEWS_PROMPT = """
-This tool fetches the latest cryptocurrency news articles for a specific token.
-You can optionally specify a timestamp to get historical news, otherwise it uses the current time.
-Returns articles in English with details like title, body, source, and publish time.
-"""
-
-FETCH_PRICE_PROMPT = """
-This tool fetches real-time cryptocurrency price data with multi-currency support.
-Provide a base currency (e.g., 'BTC', 'ETH') and a list of target currencies (e.g., ['USD', 'EUR', 'JPY']).
-Returns current exchange rates for all requested currency pairs.
-"""
-
-FETCH_TRADING_SIGNALS_PROMPT = """
-This tool retrieves advanced trading signals from IntoTheBlock analytics for a specific cryptocurrency.
-Provide a cryptocurrency symbol (e.g., 'BTC') to get detailed market indicators.
-Returns key metrics like network growth, large transaction patterns, holder composition, and market momentum.
-"""
-
-FETCH_TOP_MARKET_CAP_PROMPT = """
-This tool retrieves the top cryptocurrencies ranked by market capitalization.
-Customize results with limit and quote currency parameters.
-Returns detailed information including current price, market cap, 24h volume, and circulating supply.
-"""
-
-FETCH_TOP_EXCHANGES_PROMPT = """
-This tool fetches the top cryptocurrency exchanges for a specific trading pair.
-Specify base and quote currencies (e.g., 'BTC'/'USD') to get exchange rankings.
-Returns key information such as 24h trading volume and market share.
-"""
-
-FETCH_TOP_VOLUME_PROMPT = """
-This tool retrieves cryptocurrencies ranked by their total trading volume.
-Customize the view with limit and quote currency parameters.
-Returns comprehensive volume data including 24h trading volume and volume distribution.
-"""

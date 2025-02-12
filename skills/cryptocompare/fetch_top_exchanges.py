@@ -11,7 +11,7 @@ class CryptoCompareFetchTopExchangesOutput(BaseModel):
 
 class CryptoCompareFetchTopExchanges(CryptoCompareBaseTool):
     name: str = "cryptocompare_fetch_top_exchanges"
-    description: str = "Fetch top exchanges for a given trading pair using CryptoCompare API"
+    description: str = FETCH_TOP_EXCHANGES_PROMPT
     args_schema: Type[BaseModel] = FetchTopExchangesInput
 
     def _run(self) -> CryptoCompareFetchTopExchangesOutput:
@@ -28,3 +28,9 @@ class CryptoCompareFetchTopExchanges(CryptoCompareBaseTool):
         except Exception as e:
             return CryptoCompareFetchTopExchangesOutput(result={}, error=str(e))
 
+
+FETCH_TOP_EXCHANGES_PROMPT = """
+This tool fetches the top cryptocurrency exchanges for a specific trading pair.
+Specify base and quote currencies (e.g., 'BTC'/'USD') to get exchange rankings.
+Returns key information such as 24h trading volume and market share.
+"""

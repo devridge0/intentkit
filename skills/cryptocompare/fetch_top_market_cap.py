@@ -11,7 +11,7 @@ class CryptoCompareFetchTopMarketCapOutput(BaseModel):
 
 class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
     name: str = "cryptocompare_fetch_top_market_cap"
-    description: str = "Fetch top cryptocurrencies by market cap using CryptoCompare API"
+    description: str = FETCH_TOP_MARKET_CAP_PROMPT
     args_schema: Type[BaseModel] = FetchTopMarketCapInput
 
     def _run(self) -> CryptoCompareFetchTopMarketCapOutput:
@@ -28,3 +28,8 @@ class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
         except Exception as e:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=str(e))
 
+FETCH_TOP_MARKET_CAP_PROMPT = """
+This tool retrieves the top cryptocurrencies ranked by market capitalization.
+Customize results with limit and quote currency parameters.
+Returns detailed information including current price, market cap, 24h volume, and circulating supply.
+"""
