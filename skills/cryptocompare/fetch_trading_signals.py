@@ -17,13 +17,12 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
     def _run(self) -> CryptoCompareFetchTradingSignalsOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self) -> CryptoCompareFetchTradingSignalsOutput:
-        input_data: FetchTradingSignalsInput = self.args
+    async def _arun(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
         if is_rate_limited:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=error_msg)
         try:
-            result = await fetch_trading_signals(input_data.from_symbol)
+            result = await fetch_trading_signals(self.api_key, from_symbol)
             return CryptoCompareFetchTradingSignalsOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))

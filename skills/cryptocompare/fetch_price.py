@@ -15,16 +15,15 @@ class CryptoCompareFetchPrice(CryptoCompareBaseTool):
     description: str = FETCH_PRICE_PROMPT
     args_schema: Type[BaseModel] = FetchPriceInput
 
-    def _run(self) -> CryptoCompareFetchPriceOutput:
+    def _run(self, from_symbol: str, to_symbols: List[str]) -> CryptoCompareFetchPriceOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self) -> CryptoCompareFetchPriceOutput:
-        input_data: FetchPriceInput = self.args
+    async def _arun(self, from_symbol: str, to_symbols: List[str]) -> CryptoCompareFetchPriceOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
         if is_rate_limited:
             return CryptoCompareFetchPriceOutput(result={}, error=error_msg)
         try:
-            result = await fetch_price(input_data.from_symbol, input_data.to_symbols)
+            result = await fetch_price(self.api_key, from_symbol, to_symbols)
             return CryptoCompareFetchPriceOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchPriceOutput(result={}, error=str(e))

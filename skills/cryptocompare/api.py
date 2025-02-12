@@ -70,7 +70,7 @@ class FetchTopVolumeInput(BaseModel):
     )
 
 # API Functions
-async def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> dict:
+async def fetch_price(api_key: str, from_symbol: str, to_symbols: List[str]) -> dict:
     """
     Fetch current price for a cryptocurrency in multiple currencies.
     """
@@ -89,7 +89,7 @@ async def fetch_price(from_symbol: str, to_symbols: List[str], api_key: str) -> 
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-async def fetch_trading_signals(from_symbol: str, api_key: str) -> dict:
+async def fetch_trading_signals(api_key: str, from_symbol: str) -> dict:
     """
     Fetch the latest trading signals.
     """
