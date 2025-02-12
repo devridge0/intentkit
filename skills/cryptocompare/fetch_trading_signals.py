@@ -14,7 +14,7 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
     description: str = FETCH_TRADING_SIGNALS_PROMPT
     args_schema: Type[BaseModel] = FetchTradingSignalsInput
 
-    def _run(self) -> CryptoCompareFetchTradingSignalsOutput:
+    def _run(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
         raise NotImplementedError("Use _arun instead")
 
     async def _arun(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
