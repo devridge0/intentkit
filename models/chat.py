@@ -21,9 +21,12 @@ class AuthorType(str, Enum):
     """Type of message author."""
 
     AGENT = "agent"
+    TRIGGER = "trigger"
+    SKILL = "skill"
     TELEGRAM = "telegram"
     TWITTER = "twitter"
     WEB = "web"
+    SYSTEM = "system"
 
 
 class ChatMessageAttachment(BaseModel):
@@ -45,6 +48,13 @@ class ChatMessageAttachment(BaseModel):
 
     class Config:
         use_enum_values = True
+
+
+class ChatMessageSkillCall(BaseModel):
+    name: str
+    parameters: dict
+    success: bool
+    error_message: str
 
 
 class ChatMessageRequest(BaseModel):
@@ -126,8 +136,25 @@ class ChatMessage(SQLModel, table=True):
     )
     attachments: Optional[List[ChatMessageAttachment]] = SQLModelField(
         default=None,
-        sa_column=Column(JSONB, nullable=False, server_default="[]"),
+        sa_column=Column(JSONB, nullable=True),
         description="List of attachments in the message",
+    )
+    skill_call: Optional[ChatMessageSkillCall] = SQLModelField(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Skill call details",
+    )
+    input_tokens: int = SQLModelField(
+        default=0,
+        description="Number of tokens in the input message",
+    )
+    output_tokens: int = SQLModelField(
+        default=0,
+        description="Number of tokens in the output message",
+    )
+    time_cost: float = SQLModelField(
+        default=0.0,
+        description="Time cost for the message in seconds",
     )
     created_at: datetime = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),

@@ -12,6 +12,7 @@ The module uses a global cache to store initialized agents for better performanc
 
 import logging
 import time
+import uuid
 from datetime import datetime
 
 import sqlalchemy
@@ -37,6 +38,7 @@ from app.core.graph import create_agent
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
 from models.agent import Agent, AgentData
+from models.chat import AuthorType, ChatMessage
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skill_sets import get_skill_set
@@ -307,9 +309,7 @@ async def initialize_agent(aid):
     )
 
 
-async def execute_agent(
-    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
-) -> list[str]:
+async def execute_agent(message: ChatMessage, debug: bool = False) -> list[str]:
     """Execute an agent with the given prompt and return response lines.
 
     This function:
@@ -319,9 +319,7 @@ async def execute_agent(
     4. Formats and times the execution steps
 
     Args:
-        aid (str): Agent ID
-        message (AgentMessageInput): Input message for the agent
-        thread_id (str): Thread ID for the agent execution
+        message (ChatMessage): The chat message containing agent_id, chat_id, and message content
         debug (bool): Enable debug mode
 
     Returns:
@@ -335,50 +333,64 @@ async def execute_agent(
             "Total time cost: 1.234 seconds"
         ]
     """
+    thread_id = f"{message.agent_id}-{message.chat_id}"
+
     stream_config = {"configurable": {"thread_id": thread_id}}
     resp_debug = [f"Thread ID: {thread_id}\n\n-------------------\n"]
     resp = []
     start = time.perf_counter()
     last = start
 
-    agent = await Agent.get(aid)
+    agent = await Agent.get(message.agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Check if agent needs reinitialization due to updates
     needs_reinit = False
-    if aid in agents:
-        if aid not in agents_updated or agent.updated_at != agents_updated[aid]:
+    if message.agent_id in agents:
+        if (
+            message.agent_id not in agents_updated
+            or agent.updated_at != agents_updated[message.agent_id]
+        ):
             needs_reinit = True
-            logger.info(f"Reinitializing agent {aid} due to updates")
+            logger.info(f"Reinitializing agent {message.agent_id} due to updates")
+
+    # Extract images from attachments
+    image_urls = []
+    if message.attachments:
+        image_urls = [
+            att.url
+            for att in message.attachments
+            if hasattr(att, "type") and att.type == "image" and hasattr(att, "url")
+        ]
 
     # user input
     resp_debug.append(
-        f"[ Input: ]\n\n {message.text}\n{'\n'.join(message.images)}\n-------------------\n"
+        f"[ Input: ]\n\n {message.message}\n{'\n'.join(image_urls)}\n-------------------\n"
     )
 
     # cold start or needs reinitialization
-    if (aid not in agents) or needs_reinit:
+    if (message.agent_id not in agents) or needs_reinit:
         resp_debug.append(
             "[ Agent cold start ... ]"
-            if aid not in agents
+            if message.agent_id not in agents
             else "[ Agent reinitialized ... ]"
         )
-        await initialize_agent(aid)
+        await initialize_agent(message.agent_id)
         resp_debug.append(
             f"\n------------------- start cost: {time.perf_counter() - last:.3f} seconds\n"
         )
         last = time.perf_counter()
 
-    executor: CompiledGraph = agents[aid]
+    executor: CompiledGraph = agents[message.agent_id]
     # message
     content = [
-        {"type": "text", "text": message.text},
+        {"type": "text", "text": message.message},
     ]
     content.extend(
         [
             {"type": "image_url", "image_url": {"url": image_url}}
-            for image_url in message.images
+            for image_url in image_urls
         ]
     )
     # debug prompt
@@ -400,6 +412,7 @@ async def execute_agent(
     async for chunk in executor.astream(
         {"messages": [HumanMessage(content=content)]}, stream_config
     ):
+        logger.debug(chunk)
         if "agent" in chunk:
             v = chunk["agent"]["messages"][0].content
             if v:
@@ -427,6 +440,35 @@ async def execute_agent(
         return resp_debug
     else:
         return resp
+
+
+async def execute_agent_legacy(
+    aid: str, message: AgentMessageInput, thread_id: str, debug: bool = False
+) -> list[str]:
+    """Legacy wrapper for execute_agent that maintains old signature.
+
+    Args:
+        aid (str): Agent ID
+        message (AgentMessageInput): Input message for the agent
+        thread_id (str): Thread ID for the agent execution
+        debug (bool): Enable debug mode
+
+    Returns:
+        list[str]: Formatted response lines including timing information
+    """
+    # Extract chat_id from thread_id
+    _, chat_id = thread_id.split("-", 1)
+
+    chat_message = ChatMessage(
+        id=str(uuid.uuid4()),
+        agent_id=aid,
+        chat_id=chat_id,
+        author_id="user",
+        author_type=AuthorType.user,
+        message=message.text,
+        attachments=[{"type": "image", "url": url} for url in (message.images or [])],
+    )
+    return await execute_agent(chat_message, debug=debug)
 
 
 async def clean_agent_memory(

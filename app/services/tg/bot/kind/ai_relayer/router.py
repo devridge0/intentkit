@@ -4,8 +4,8 @@ import logging
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
+from epyxid import XID
 
-from abstracts.engine import AgentMessageInput
 from app.core.client import execute_agent
 from app.services.tg.bot import pool
 from app.services.tg.bot.filter.chat_type import GroupOnlyFilter
@@ -13,6 +13,7 @@ from app.services.tg.bot.filter.content_type import TextOnlyFilter
 from app.services.tg.bot.filter.id import WhitelistedChatIDsFilter
 from app.services.tg.bot.filter.no_bot import NoBotFilter
 from app.services.tg.utils.cleanup import remove_bot_name
+from models.chat import AuthorType, ChatMessage
 
 logger = logging.getLogger(__name__)
 
@@ -73,20 +74,20 @@ async def gp_process_message(message: Message) -> None:
             return
 
         try:
-            thread_id = pool.agent_thread_id(
-                cached_bot_item.agent_id,
-                cached_bot_item.is_public_memory,
-                message.chat.id,
-            )
-
             # remove bot name tag from text
             message_text = remove_bot_name(bot.username, message.text)
 
-            response = await execute_agent(
-                cached_bot_item.agent_id,
-                AgentMessageInput(text=message_text),
-                thread_id,
+            message = ChatMessage(
+                id=str(XID()),
+                agent_id=cached_bot_item.agent_id,
+                chat_id=pool.agent_chat_id(
+                    cached_bot_item.is_public_memory, message.chat.id
+                ),
+                author_id=str(message.from_user.id),
+                author_type=AuthorType.TELEGRAM,
+                message=message_text,
             )
+            response = await execute_agent(message)
             await message.answer(
                 text="\n".join(response),
                 reply_to_message_id=message.message_id,
@@ -125,13 +126,18 @@ async def process_message(message: Message) -> None:
         return
 
     try:
-        # only group memory can be public, dm always private
-        thread_id = pool.agent_thread_id(
-            cached_bot_item.agent_id, False, message.chat.id
+        # remove bot name tag from text
+        message_text = remove_bot_name(message.bot.username, message.text)
+
+        message = ChatMessage(
+            id=str(XID()),
+            agent_id=cached_bot_item.agent_id,
+            chat_id=pool.agent_chat_id(False, message.chat.id),
+            author_id=str(message.from_user.id),
+            author_type=AuthorType.TELEGRAM,
+            message=message_text,
         )
-        response = await execute_agent(
-            cached_bot_item.agent_id, AgentMessageInput(text=message.text), thread_id
-        )
+        response = await execute_agent(message)
         await message.answer(
             text="\n".join(response),
             reply_to_message_id=message.message_id,
