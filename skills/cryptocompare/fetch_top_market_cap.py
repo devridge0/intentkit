@@ -17,8 +17,9 @@ class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
     def _run(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopMarketCapOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopMarketCapOutput:
+    async def _arun(self,  to_symbol: str) -> CryptoCompareFetchTopMarketCapOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
+        limit = 10
         if is_rate_limited:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=error_msg)
         try:

@@ -14,11 +14,12 @@ class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
     description: str = FETCH_TOP_VOLUME_PROMPT
     args_schema: Type[BaseModel] = FetchTopVolumeInput
 
-    def _run(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopVolumeOutput:
+    def _run(self, to_symbol: str) -> CryptoCompareFetchTopVolumeOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopVolumeOutput:
+    async def _arun(self, to_symbol: str) -> CryptoCompareFetchTopVolumeOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
+        limit = 10
         if is_rate_limited:
             return CryptoCompareFetchTopVolumeOutput(result={}, error=error_msg)
         try:
