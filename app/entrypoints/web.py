@@ -62,29 +62,34 @@ async def chat(
           - 429: Quota exceeded
           - 500: Internal server error
     """
-    # check if the agent quota is exceeded
-    quota = await AgentQuota.get(aid)
-    if not quota.has_message_quota():
-        raise HTTPException(
-            status_code=429,
-            detail=(
-                "Message quota exceeded. Please upgrade your plan. "
-                f"Daily: {quota.message_count_daily}/{quota.message_limit_daily}, "
-                f"Monthly: {quota.message_count_monthly}/{quota.message_limit_monthly}, "
-                f"Total: {quota.message_count_total}/{quota.message_limit_total}"
-            ),
-        )
+    if not q:
+        raise HTTPException(status_code=400, detail="Query string cannot be empty")
 
-    # get thread_id from query or request ip
-    thread_id = (
-        f"{aid}-{thread}" if thread is not None else f"{aid}-{request.client.host}"
+    # Get agent and validate quota
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
+
+    # Check quota
+    quota = await AgentQuota.get(aid)
+    if quota and not quota.has_message_quota():
+        raise HTTPException(status_code=429, detail="Quota exceeded")
+
+    # get thread_id from request ip
+    chat_id = thread if thread else request.client.host
+    message = ChatMessage(
+        id=str(XID()),
+        agent_id=aid,
+        chat_id=chat_id,
+        author_id="debug",
+        author_type=AuthorType.WEB,
+        message=q,
     )
-    logger.debug(f"thread id: {thread_id}")
 
     debug = debug if debug is not None else config.debug_resp
 
     # Execute agent and get response
-    resp = await execute_agent(aid, AgentMessageInput(text=q), thread_id, debug=debug)
+    resp = await execute_agent(message, debug=debug)
 
     # only log if not in debug mode
     if not config.debug_resp:
@@ -254,19 +259,18 @@ async def create_chat(
           - 429: Quota exceeded
           - 500: Internal server error
     """
-    # Get agent and check if exists
-    result = await db.exec(select(Agent).where(Agent.id == aid))
-    agent = result.first()
+    # Get agent and validate quota
+    agent = await Agent.get(aid)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
 
     # Check quota
     quota = await AgentQuota.get(aid)
-    if not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Message quota exceeded")
+    if quota and not quota.has_message_quota():
+        raise HTTPException(status_code=429, detail="Quota exceeded")
 
-    # Save input message
-    input_message = ChatMessage(
+    # Create user message
+    user_message = ChatMessage(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
@@ -275,20 +279,12 @@ async def create_chat(
         message=request.message,
         attachments=request.attachments,
     )
-    db.add(input_message)
+    db.add(user_message)
     await db.commit()
 
     try:
         # Execute agent
-        image_urls = [
-            attachment.url
-            for attachment in (request.attachments or [])
-            if attachment.type == ChatMessageAttachmentType.IMAGE
-        ]
-        agent_input = AgentMessageInput(text=request.message, images=image_urls)
-        response_lines = await execute_agent(
-            aid, agent_input, f"{aid}-{request.chat_id}"
-        )
+        response_lines = await execute_agent(user_message)
 
         # Create agent's response message
         response_message = ChatMessage(

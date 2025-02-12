@@ -2,12 +2,13 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import tweepy
+from epyxid import XID
 from sqlmodel import select
 
-from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.engine import execute_agent
 from models.agent import Agent, AgentPluginData, AgentQuota
+from models.chat import AuthorType, ChatMessage
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
@@ -114,10 +115,15 @@ async def run_twitter_agents():
                 # Process each mention
                 for mention in mentions.data:
                     # because twitter react is all public, the memory shared by all public entrypoints
-                    thread_id = f"{agent.id}-public"
-                    response = await execute_agent(
-                        agent.id, AgentMessageInput(text=mention.text), thread_id
+                    message = ChatMessage(
+                        id=str(XID()),
+                        agent_id=agent.id,
+                        chat_id="public",
+                        author_id=str(mention.author_id),
+                        author_type=AuthorType.TWITTER,
+                        message=mention.text,
                     )
+                    response = await execute_agent(message)
 
                     # Reply to the tweet
                     client.create_tweet(
