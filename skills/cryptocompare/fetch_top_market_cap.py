@@ -14,16 +14,15 @@ class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
     description: str = FETCH_TOP_MARKET_CAP_PROMPT
     args_schema: Type[BaseModel] = FetchTopMarketCapInput
 
-    def _run(self) -> CryptoCompareFetchTopMarketCapOutput:
+    def _run(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopMarketCapOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self) -> CryptoCompareFetchTopMarketCapOutput:
-        input_data: FetchTopMarketCapInput = self.args
+    async def _arun(self, limit: int, to_symbol: str) -> CryptoCompareFetchTopMarketCapOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
         if is_rate_limited:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=error_msg)
         try:
-            result = await fetch_top_market_cap(input_data.limit, input_data.to_symbol)
+            result = await fetch_top_market_cap(self.api_key, limit, to_symbol)
             return CryptoCompareFetchTopMarketCapOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=str(e))
