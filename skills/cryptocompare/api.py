@@ -13,10 +13,6 @@ CRYPTO_COMPARE_BASE_URL = "https://min-api.cryptocompare.com"
 class FetchNewsInput(BaseModel):
     """Input schema for fetching news."""
     token: str = Field(..., description="Token symbol to fetch news for (e.g., BTC, ETH, SOL)")
-    timestamp: Optional[int] = Field(
-        None,
-        description="Unix timestamp to search for news (optional, defaults to current time)"
-    )
 
 class FetchPriceInput(BaseModel):
     """Input schema for fetching crypto prices."""
@@ -38,10 +34,6 @@ class FetchTradingSignalsInput(BaseModel):
 
 class FetchTopMarketCapInput(BaseModel):
     """Input schema for fetching top cryptocurrencies by market cap."""
-    limit: int = Field(
-        10, 
-        description="Number of top cryptocurrencies to return"
-    )
     to_symbol: str = Field(
         "USD", 
         description="Quote currency for market cap calculation (e.g., 'USD', 'EUR')"
@@ -60,10 +52,6 @@ class FetchTopExchangesInput(BaseModel):
 
 class FetchTopVolumeInput(BaseModel):
     """Input schema for fetching top cryptocurrencies by trading volume."""
-    limit: int = Field(
-        10, 
-        description="Number of top cryptocurrencies to return"
-    )
     to_symbol: str = Field(
         "USD", 
         description="Quote currency for volume calculation. Defaults to 'USD'"
@@ -105,7 +93,7 @@ async def fetch_trading_signals(api_key: str, from_symbol: str) -> dict:
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-async def fetch_top_market_cap(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
+async def fetch_top_market_cap(api_key: str, limit: int, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by market cap.
     """
@@ -137,7 +125,7 @@ async def fetch_top_exchanges(api_key: str, from_symbol: str, to_symbol: str = "
         return {"error": f"API returned status code {response.status_code}"}
     return response.json()
 
-async def fetch_top_volume(api_key: str, limit: int = 10, to_symbol: str = "USD") -> dict:
+async def fetch_top_volume(api_key: str, limit: int, to_symbol: str = "USD") -> dict:
     """
     Fetch top cryptocurrencies by total volume.
     """
