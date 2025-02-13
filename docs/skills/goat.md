@@ -31,11 +31,21 @@ The list of supported tools can be found [here](https://github.com/goat-sdk/goat
     "jsonrpc": {
         "endpoint": "https://eth.llamarpc.com"
     },
+    "jupiter": {},
     "nansen": {
         "api_key": "nansen api key string"
     },
     "opensea": {
         "api_key": "opensea api key string"
+    },
+    "rugcheck": {
+        "jwt_token": "rugcheck JWT token string"
+    },
+    "spl_token": {
+        "network": "mainnet",
+        "tokens": [
+            "goat_plugins.erc20.token.USDC"
+        ]
     },
     "superfluid": {},
     "uniswap": {
