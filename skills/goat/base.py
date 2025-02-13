@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 
+base_url = "https://staging.crossmint.com"
+
 
 class GoatBaseTool(IntentKitSkill):
     """Base class for Goat tools."""

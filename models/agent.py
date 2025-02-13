@@ -86,14 +86,14 @@ class Agent(SQLModel, table=True):
         default="base-mainnet", description="Network identifier for CDP integration"
     )
     # if goat_enabled, will load goat skills
+    crossmint_wallet_data: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Crossmint wallet information",
+    )
     goat_enabled: Optional[bool] = Field(
         default=False,
         description="Whether GOAT integration is enabled",
-    )
-    goat_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="GOAT integration configuration settings",
     )
     goat_skills: Optional[dict] = Field(
         default=None,
@@ -505,6 +505,7 @@ class AgentData(SQLModel, table=True):
 
     id: str = Field(primary_key=True)  # Same as Agent.id
     cdp_wallet_data: Optional[str]
+    crossmint_wallet_data: Optional[str]
     twitter_id: Optional[str]
     twitter_username: Optional[str]
     twitter_name: Optional[str]
