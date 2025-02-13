@@ -85,9 +85,6 @@ class Agent(SQLModel, table=True):
     cdp_network_id: Optional[str] = Field(
         default="base-mainnet", description="Network identifier for CDP integration"
     )
-    cdp_wallet_data: SkipJsonSchema[Optional[str]] = Field(
-        default=None, description="Deprecated: CDP wallet information"
-    )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_entrypoint_enabled: Optional[bool] = Field(
         default=False, description="Whether the agent can receive events from Twitter"
@@ -189,11 +186,8 @@ class Agent(SQLModel, table=True):
         async with get_session() as db:
             return (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
 
-    async def create_or_update(self) -> "Agent":
+    async def create_or_update(self) -> ("Agent", bool):
         """Create the agent if not exists, otherwise update it.
-
-        Args:
-            db: Database session
 
         Returns:
             Agent: The created or updated agent
@@ -252,7 +246,7 @@ class Agent(SQLModel, table=True):
                     db.add(existing_agent)
                     await db.commit()
                     await db.refresh(existing_agent)
-                return existing_agent
+                return existing_agent, False
             else:
                 # Check upstream_id for idempotent
                 async with get_session() as db:
@@ -273,7 +267,7 @@ class Agent(SQLModel, table=True):
                     db.add(self)
                     await db.commit()
                     await db.refresh(self)
-                return self
+                return self, True
         except HTTPException:
             await db.rollback()
             raise

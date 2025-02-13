@@ -172,9 +172,6 @@ async def initialize_agent(aid):
         }
         if agent_data and agent_data.cdp_wallet_data:
             values["cdp_wallet_data"] = agent_data.cdp_wallet_data
-        elif agent.cdp_wallet_data:
-            # If there is a persisted agentic wallet, load it and pass to the CDP Agentkit Wrapper.
-            values["cdp_wallet_data"] = agent.cdp_wallet_data
         agentkit = CdpAgentkitWrapper(**values)
         # save the wallet after first create
         if not agent_data or not agent_data.cdp_wallet_data:
