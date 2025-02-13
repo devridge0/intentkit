@@ -5,16 +5,12 @@ import tweepy
 from epyxid import XID
 from sqlmodel import select
 
-from app.config.config import config
 from app.core.engine import execute_agent
 from models.agent import Agent, AgentPluginData, AgentQuota
 from models.chat import AuthorType, ChatMessage
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
-
-# Set debug_resp to False
-config.debug_resp = False
 
 
 def create_twitter_client(twitter_config: dict) -> tweepy.Client:
@@ -127,7 +123,8 @@ async def run_twitter_agents():
 
                     # Reply to the tweet
                     client.create_tweet(
-                        text="\n".join(response), in_reply_to_tweet_id=mention.id
+                        text="\n".join(response[-1].message),
+                        in_reply_to_tweet_id=mention.id,
                     )
 
                 # Update quota

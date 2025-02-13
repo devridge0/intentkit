@@ -1,13 +1,17 @@
 """Tool for fetching top cryptocurrencies by trading volume via CryptoCompare API."""
 
 from typing import Any, Dict, Type
+
 from pydantic import BaseModel
+
+from skills.cryptocompare.api import FetchTopVolumeInput, fetch_top_volume
 from skills.cryptocompare.base import CryptoCompareBaseTool
-from skills.cryptocompare.api import fetch_top_volume, FetchTopVolumeInput
+
 
 class CryptoCompareFetchTopVolumeOutput(BaseModel):
     result: Dict[str, Any]
     error: str | None = None
+
 
 class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
     name: str = "cryptocompare_fetch_top_volume"
@@ -28,9 +32,9 @@ class CryptoCompareFetchTopVolume(CryptoCompareBaseTool):
         except Exception as e:
             return CryptoCompareFetchTopVolumeOutput(result={}, error=str(e))
 
+
 FETCH_TOP_VOLUME_PROMPT = """
 This tool retrieves cryptocurrencies ranked by their total trading volume.
 Customize the view with limit and quote currency parameters.
 Returns comprehensive volume data including 24h trading volume and volume distribution.
 """
-

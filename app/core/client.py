@@ -10,7 +10,7 @@ from app.core.engine import execute_agent as local_execute_agent
 from models.chat import ChatMessage
 
 
-async def execute_agent(message: ChatMessage, debug: bool = False) -> list[str]:
+async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
     """Execute an agent with environment-aware routing.
 
     In local environment, directly calls the local execute_agent function.
