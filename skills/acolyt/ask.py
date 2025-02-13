@@ -55,9 +55,15 @@ class AcolytAskGptOutput(BaseModel):
 
 class AcolytAskGpt(AcolytBaseTool):
     """
-    This tool allows users to ask questions which are then sent to the Acolyt API. this should be run if the user requests to
-    ask Acolyt explicitly.
-    The API response is processed and summarized before being returned to the user.
+    The Acolyt Data Fetcher is a versatile LangChain tool designed to interact with the Acolyt chat API to retrieve insightful data
+    across various categories, including Twitter Metrics, Onchain Analysis, DEX & Trading, and Overall Metrics. This tool seamlessly
+    processes user queries, fetches relevant data from the Acolyt API, and returns concise, summarized responses for easy consumption.
+
+    Features:
+    - Twitter Metrics: Retrieve engagement metrics for specific Twitter accounts, Identify which AI agents have the highest count of smart followers, Display the best tweets from specified accounts, Compare the mindshare between different AI agents, Determine which agents have the highest impressions-to-followers ratio.
+    - Onchain Analysis: Fetch the current market capitalization for tokens, Show the distribution of top holders for tokens, Identify tokens with the highest whale concentration, Compare holder retention rates between tokens, Calculate the Herfindahl index for tokens, List tokens with large amount of holders.
+    - DEX & Trading: Get the 24-hour trading volume for tokens, Identify which DEX has the highest liquidity for tokens, Obtain the buy/sell ratio for tokens over specific time periods. Compare price changes across different timeframes for tokens. List trading pairs with over a value in liquidity for tokens.
+    - Overall Metrics: Identify projects with the highest smart engagement relative to their market cap, Determine which agents have the best mindshare relative to their market cap. Compare the percentage of smart followers across the top n AI agents by market cap
 
 
     Attributes:
@@ -68,9 +74,12 @@ class AcolytAskGpt(AcolytBaseTool):
 
     name: str = "acolyt_ask_gpt"
     description: str = """
-        This tool allows users to ask questions which are then sent to the Acolyt API. this should be run if the user requests to
-        ask Acolyt explicitly.
-        The API response is processed and summarized before being returned to the user.
+        The Acolyt Data Fetcher is a LangChain tool accessing the Acolyt chat API for data across Twitter Metrics, Onchain Analysis, DEX & Trading, and Overall Metrics.  It processes queries, fetches data, and returns summarized responses. Features include:
+
+        Twitter: Engagement metrics, top smart follower counts, best tweets, mindshare comparison, impressions/follower ratio.
+        Onchain: Market cap, holder distribution, whale concentration, holder retention, Herfindahl index, high holder count tokens.
+        DEX & Trading: 24h volume, top DEX liquidity, buy/sell ratio, price change comparison, high liquidity pairs.
+        Overall: Smart engagement/market cap ratio, mindshare/market cap ratio, smart follower percentage comparison across top AI agents.
         """
     args_schema: Type[BaseModel] = AcolytAskGptInput
 
