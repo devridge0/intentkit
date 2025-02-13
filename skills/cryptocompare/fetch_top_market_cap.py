@@ -7,6 +7,12 @@ from pydantic import BaseModel
 from skills.cryptocompare.api import FetchTopMarketCapInput, fetch_top_market_cap
 from skills.cryptocompare.base import CryptoCompareBaseTool
 
+FETCH_TOP_MARKET_CAP_PROMPT = """
+This tool retrieves the top cryptocurrencies ranked by market capitalization.
+Customize results with limit and quote currency parameters.
+Returns detailed information including current price, market cap, 24h volume, and circulating supply.
+"""
+
 
 class CryptoCompareFetchTopMarketCapOutput(BaseModel):
     result: Dict[str, Any]
@@ -31,10 +37,3 @@ class CryptoCompareFetchTopMarketCap(CryptoCompareBaseTool):
             return CryptoCompareFetchTopMarketCapOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopMarketCapOutput(result={}, error=str(e))
-
-
-FETCH_TOP_MARKET_CAP_PROMPT = """
-This tool retrieves the top cryptocurrencies ranked by market capitalization.
-Customize results with limit and quote currency parameters.
-Returns detailed information including current price, market cap, 24h volume, and circulating supply.
-"""

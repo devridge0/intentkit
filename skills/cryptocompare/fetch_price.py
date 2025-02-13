@@ -7,6 +7,12 @@ from pydantic import BaseModel
 from skills.cryptocompare.api import FetchPriceInput, fetch_price
 from skills.cryptocompare.base import CryptoCompareBaseTool
 
+FETCH_PRICE_PROMPT = """
+This tool fetches real-time cryptocurrency price data with multi-currency support.
+Provide a base currency (e.g., 'BTC', 'ETH') and a list of target currencies (e.g., ['USD', 'EUR', 'JPY']).
+Returns current exchange rates for all requested currency pairs.
+"""
+
 
 class CryptoCompareFetchPriceOutput(BaseModel):
     result: Dict[str, Any]
@@ -34,10 +40,3 @@ class CryptoCompareFetchPrice(CryptoCompareBaseTool):
             return CryptoCompareFetchPriceOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchPriceOutput(result={}, error=str(e))
-
-
-FETCH_PRICE_PROMPT = """
-This tool fetches real-time cryptocurrency price data with multi-currency support.
-Provide a base currency (e.g., 'BTC', 'ETH') and a list of target currencies (e.g., ['USD', 'EUR', 'JPY']).
-Returns current exchange rates for all requested currency pairs.
-"""

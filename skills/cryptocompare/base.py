@@ -1,6 +1,7 @@
 """Base class for all CryptoCompare tools."""
 
 from datetime import datetime, timedelta, timezone
+from typing import Type
 
 from pydantic import BaseModel, Field
 
