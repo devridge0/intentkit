@@ -1,3 +1,7 @@
+import json
+
+from cdp import Wallet
+from cdp.cdp import Cdp
 from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
@@ -48,11 +52,26 @@ async def create_agent(
         agent.owner = subject
 
     # Get the latest agent from create_or_update
-    latest_agent = await agent.create_or_update()
+    latest_agent, is_new = await agent.create_or_update()
 
-    message = "Agent created"
-    if latest_agent.created_at != latest_agent.updated_at:
-        message = "Agent updated"
+    if is_new:
+        message = "Agent Created"
+        # create the wallet
+        Cdp.configure(
+            api_key_name=config.cdp_api_key_name,
+            private_key=config.cdp_api_key_private_key,
+        )
+        wallet = Wallet.create(network_id=latest_agent.cdp_network_id)
+        wallet_data = wallet.export_data().to_dict()
+        wallet_data["default_address_id"] = wallet.default_address.address_id
+        agent_data = AgentData(
+            id=latest_agent.id, cdp_wallet_data=json.dumps(wallet_data)
+        )
+        await agent_data.save()
+    else:
+        message = "Agent Updated"
+        agent_data = await AgentData.get(latest_agent.id)
+        wallet_data = json.loads(agent_data.cdp_wallet_data) if agent_data else {}
     # Send Slack notification
     send_slack_message(
         message,
@@ -104,19 +123,19 @@ async def create_agent(
                         "title": "Twitter Skills",
                         "value": str(latest_agent.twitter_skills),
                     },
+                    {
+                        "title": "CDP Wallet Address",
+                        "value": wallet_data.get("default_address_id"),
+                    },
                 ],
             }
         ],
     )
 
     # Mask sensitive data in response
-    latest_agent.cdp_wallet_data = "forbidden"
     if latest_agent.skill_sets is not None:
         for key in latest_agent.skill_sets:
             latest_agent.skill_sets[key] = {}
-
-    # Get agent data
-    agent_data = await AgentData.get(latest_agent.id)
 
     # Convert to AgentResponse
     return AgentResponse.from_agent(latest_agent, agent_data)
