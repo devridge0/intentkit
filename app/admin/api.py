@@ -1,4 +1,5 @@
 import json
+import logging
 
 from cdp import Wallet
 from cdp.cdp import Cdp
@@ -21,6 +22,8 @@ admin_router = APIRouter()
 
 # Create JWT middleware with admin config
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
+
+logger = logging.getLogger(__name__)
 
 
 @admin_router.post("/agents", tags=["Agent"], status_code=201)
@@ -54,24 +57,37 @@ async def create_agent(
     # Get the latest agent from create_or_update
     latest_agent, is_new = await agent.create_or_update()
 
+    has_wallet = False
+    agent_data = None
     if is_new:
         message = "Agent Created"
+    else:
+        message = "Agent Updated"
+        agent_data = await AgentData.get(latest_agent.id)
+        if agent_data and agent_data.cdp_wallet_data:
+            has_wallet = True
+            wallet_data = json.loads(agent_data.cdp_wallet_data)
+    if not has_wallet:
         # create the wallet
         Cdp.configure(
             api_key_name=config.cdp_api_key_name,
-            private_key=config.cdp_api_key_private_key,
+            private_key=config.cdp_api_key_private_key.replace("\\n", "\n"),
         )
         wallet = Wallet.create(network_id=latest_agent.cdp_network_id)
         wallet_data = wallet.export_data().to_dict()
         wallet_data["default_address_id"] = wallet.default_address.address_id
-        agent_data = AgentData(
-            id=latest_agent.id, cdp_wallet_data=json.dumps(wallet_data)
-        )
+        if not agent_data:
+            agent_data = AgentData(
+                id=latest_agent.id, cdp_wallet_data=json.dumps(wallet_data)
+            )
+        else:
+            agent_data.cdp_wallet_data = json.dumps(wallet_data)
         await agent_data.save()
-    else:
-        message = "Agent Updated"
-        agent_data = await AgentData.get(latest_agent.id)
-        wallet_data = json.loads(agent_data.cdp_wallet_data) if agent_data else {}
+        logger.info(
+            "Wallet created for agent %s: %s",
+            latest_agent.id,
+            wallet_data["default_address_id"],
+        )
     # Send Slack notification
     send_slack_message(
         message,
