@@ -1,6 +1,8 @@
 """Goat skills."""
 
 import importlib
+import secrets
+import time
 from dataclasses import is_dataclass
 from typing import (
     Any,
@@ -13,16 +15,99 @@ from typing import (
     get_type_hints,
 )
 
+import httpx
 from eth_account import Account
-from eth_account.signers.local import LocalAccount
+from eth_utils import encode_hex
+from goat import WalletClientBase
 from goat.classes.plugin_base import PluginBase
 from goat_adapters.langchain import get_on_chain_tools
-from goat_wallets.web3 import Web3EVMWalletClient
-from web3 import Web3
-from web3.middleware.signing import SignAndSendRawMiddlewareBuilder
+from goat_wallets.crossmint import crossmint
 
 from abstracts.skill import SkillStoreABC
 from skills.goat.base import GoatBaseTool
+
+from .base import base_url
+
+
+def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
+    url = f"{base_url}/api/v1-alpha2/wallets"
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-KEY": api_key,
+    }
+
+    js = {
+        "type": "evm-smart-wallet",
+        "config": {
+            "adminSigner": {
+                "type": "evm-keypair",
+                "address": signer_address,
+            },
+        },
+    }
+
+    with httpx.Client() as client:
+        try:
+            response = client.post(url, headers=headers, json=js)
+            response.raise_for_status()
+            json_dict = response.json()
+
+            if "error" in json_dict:
+                raise Exception(f"Failed to create wallet: {json_dict}")
+
+            return json_dict
+        except httpx.RequestError as req_err:
+            raise Exception(f"request error from Crossmint API: {req_err}") from req_err
+        except httpx.HTTPStatusError as http_err:
+            raise Exception(f"http error from Crossmint API: {http_err}") from http_err
+        except Exception as e:
+            raise Exception(f"error from Crossmint API: {e}") from e
+
+
+def init_smart_wallet(
+    api_key: str,
+    chain: Literal["base"],
+    evm_provider_url: str,
+    ens_provider_url: str,
+    wallet_data: dict | None = {},
+):
+    if wallet_data.get("address") and (
+        not wallet_data.get("private_key")
+        or wallet_data.get("private_key").strip() == ""
+    ):
+        raise Exception(
+            "smart wallet address is present but private key is not provided"
+        )
+
+    if (
+        not wallet_data.get("private_key")
+        or wallet_data.get("private_key").strip() == ""
+    ):
+        # Generate a random 256-bit (32-byte) private key
+        private_key_bytes = secrets.token_bytes(32)
+
+        # Encode the private key to a hexadecimal string
+        wallet_data["private_key"] = encode_hex(private_key_bytes)
+        signer_address = Account.from_key(wallet_data["private_key"]).address
+        created_wallet = create_smart_wallet(api_key, signer_address)
+        wallet_data["address"] = created_wallet["address"]
+        # put an sleep to prevent 429 error
+        time.sleep(1)
+
+    # Create Crossmint client
+    crossmint_client = crossmint(api_key)
+    crossmint_wallet = crossmint_client["smartwallet"](
+        {
+            "address": wallet_data["address"],
+            "signer": {
+                "secretKey": wallet_data["private_key"],
+            },
+            "provider": evm_provider_url,
+            "ensProvider": ens_provider_url,
+            "chain": chain,
+        }
+    )
+    return crossmint_wallet, wallet_data
 
 
 def resolve_optional_type(field_type: Type) -> Type:
@@ -74,18 +159,14 @@ def resolve_value(val: Any, f_type: Type, mod) -> Any:
 
 
 def get_goat_skill(
-    private_key: str,
+    wallet: WalletClientBase,
     plugin_configs: Dict[str, Any],
-    rpc_node: str,
     skill_store: SkillStoreABC,
     agent_store: SkillStoreABC,
     agent_id: str,
 ) -> list[GoatBaseTool]:
-    if not private_key:
-        raise ValueError("GOAT private key is empty")
-
-    if not rpc_node:
-        raise ValueError("GOAT rpc node is empty")
+    if not wallet:
+        raise ValueError("GOAT crossmint wallet is empty")
 
     plugins = {}
     for p_name, p_options in plugin_configs.items():
@@ -143,13 +224,9 @@ def get_goat_skill(
 
     tools = []
     try:
-        w3 = Web3(Web3.HTTPProvider(rpc_node))
-        account: LocalAccount = Account.from_key(private_key)
-        w3.eth.default_account = account.address
-        w3.middleware_onion.add(SignAndSendRawMiddlewareBuilder.build(account))
         for p_name, plugin in plugins.items():
             p_tools = get_on_chain_tools(
-                wallet=Web3EVMWalletClient(w3),
+                wallet=wallet,
                 plugins=[plugin],
             )
 
