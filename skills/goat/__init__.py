@@ -5,6 +5,7 @@ from dataclasses import is_dataclass
 from typing import (
     Any,
     Dict,
+    Literal,
     Type,
     Union,
     get_args,
@@ -52,12 +53,19 @@ def resolve_value(val: Any, f_type: Type, mod) -> Any:
     if f_type in (str, int, float, bool):
         return f_type(val)
 
-    if hasattr(f_type, "__origin__") and f_type.__origin__ is list:
-        if not isinstance(val, list):
-            raise ValueError(f"expected list object but got {type(val).__name__}")
+    if hasattr(f_type, "__origin__"):
+        if f_type.__origin__ is list:
+            if not isinstance(val, list):
+                raise ValueError(f"expected list object but got {type(val).__name__}")
 
-        elem_type = f_type.__args__[0]
-        return [resolve_value(item, elem_type, mod) for item in val]
+            elem_type = f_type.__args__[0]
+            return [resolve_value(item, elem_type, mod) for item in val]
+        if f_type.__origin__ is Literal:
+            literal_items = f_type.__args__
+            if val not in literal_items:
+                raise ValueError(f"not supported literal value {type(val)}")
+
+            return val
 
     if isinstance(val, str):
         return resolve_type(val, mod)
@@ -72,7 +80,7 @@ def get_goat_skill(
     skill_store: SkillStoreABC,
     agent_store: SkillStoreABC,
     agent_id: str,
-) -> GoatBaseTool:
+) -> list[GoatBaseTool]:
     if not private_key:
         raise ValueError("GOAT private key is empty")
 
