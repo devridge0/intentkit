@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List, NotRequired, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field as SQLModelField
 from sqlmodel import SQLModel
+
+from models.db import get_session
 
 
 class ChatMessageAttachmentType(str, Enum):
@@ -50,11 +52,16 @@ class ChatMessageAttachment(BaseModel):
         use_enum_values = True
 
 
-class ChatMessageSkillCall(BaseModel):
+class ChatMessageSkillCall(TypedDict):
+    """TypedDict for skill call details."""
+
     name: str
     parameters: dict
     success: bool
-    error_message: str
+    response: NotRequired[
+        str
+    ]  # Optional response from the skill call, trimmed to 100 characters
+    error_message: NotRequired[str]  # Optional error message from the skill call
 
 
 class ChatMessageRequest(BaseModel):
@@ -139,7 +146,7 @@ class ChatMessage(SQLModel, table=True):
         sa_column=Column(JSONB, nullable=True),
         description="List of attachments in the message",
     )
-    skill_call: Optional[ChatMessageSkillCall] = SQLModelField(
+    skill_calls: Optional[List[ChatMessageSkillCall]] = SQLModelField(
         default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Skill call details",
@@ -156,6 +163,10 @@ class ChatMessage(SQLModel, table=True):
         default=0.0,
         description="Time cost for the message in seconds",
     )
+    cold_start_cost: float = SQLModelField(
+        default=0.0,
+        description="Cost for the cold start of the message in seconds",
+    )
     created_at: datetime = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
@@ -166,3 +177,18 @@ class ChatMessage(SQLModel, table=True):
 
     class Config:
         use_enum_values = True
+
+    def __str__(self):
+        resp = ""
+        if self.skill_calls:
+            for call in self.skill_calls:
+                resp += f"{call['name']}: {call['parameters']}\n"
+            resp += "\n"
+        resp += self.message
+        return resp
+
+    async def save(self):
+        async with get_session() as db:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)

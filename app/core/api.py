@@ -30,7 +30,7 @@ class ExecuteRequest(BaseModel):
 
 
 @core_router.post("/execute")
-async def execute(message: ChatMessage, debug: bool = False) -> list[str]:
+async def execute(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
     """Execute an agent with the given input and return response lines.
 
     Args:

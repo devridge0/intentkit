@@ -6,17 +6,15 @@ from typing import List
 from epyxid import XID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import PlainTextResponse
+from langchain_core.messages import BaseMessage
 from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from abstracts.engine import AgentMessageInput
-from app.config.config import config
-from app.core.engine import execute_agent
+from app.core.engine import execute_agent, thread_stats
 from models.agent import Agent, AgentQuota
 from models.chat import (
     AuthorType,
     ChatMessage,
-    ChatMessageAttachmentType,
     ChatMessageRequest,
 )
 from models.db import get_db
@@ -28,14 +26,23 @@ chat_router = APIRouter()
 chat_router_readonly = APIRouter()
 
 
+@chat_router.get(
+    "/{agent_id}/chats/{chat_id}", tags=["Debug"], response_model=list[BaseMessage]
+)
+async def chat_history(
+    agent_id: str = Path(..., description="Agent id"),
+    chat_id: str = Path(..., description="Chat id"),
+):
+    return await thread_stats(agent_id, chat_id)
+
+
 @chat_router.get("/{aid}/chat", tags=["Debug"], response_class=PlainTextResponse)
-async def chat(
+async def debug_chat(
     request: Request,
-    aid: str = Path(..., description="instance id"),
+    aid: str = Path(..., description="Agent id"),
     q: str = Query(None, description="Query string"),
     debug: bool = Query(None, description="Enable debug mode"),
     thread: str = Query(None, description="Thread ID for conversation tracking"),
-    db: AsyncSession = Depends(get_db),
 ):
     """Debug mode: Chat with an AI agent.
 
@@ -51,7 +58,6 @@ async def chat(
       - q: User's input query
       - debug: Enable debug mode
       - thread: Thread ID for conversation tracking
-      - db: Database session
 
     Returns:
       - str: Formatted chat response
@@ -77,7 +83,7 @@ async def chat(
 
     # get thread_id from request ip
     chat_id = thread if thread else request.client.host
-    message = ChatMessage(
+    user_input = ChatMessage(
         id=str(XID()),
         agent_id=aid,
         chat_id=chat_id,
@@ -86,17 +92,42 @@ async def chat(
         message=q,
     )
 
-    debug = debug if debug is not None else config.debug_resp
-
     # Execute agent and get response
-    resp = await execute_agent(message, debug=debug)
+    messages = await execute_agent(user_input, debug=debug)
 
-    # only log if not in debug mode
-    if not config.debug_resp:
-        logger.info(resp)
+    resp = f"Agent ID:\t{aid}\n\nChat ID:\t{chat_id}\n\n-------------------\n\n"
+    resp += "[ Input: ]\n\n"
+    resp += f" {q} \n\n-------------------\n\n"
+    for message in messages:
+        if message.cold_start_cost:
+            resp += "[ Agent cold start ... ]\n"
+            resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
+        if message.author_type == AuthorType.SKILL:
+            resp += "[ Calling skills ... ]\n\n"
+            for skill_call in message.skill_calls:
+                resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
+                if skill_call["success"]:
+                    resp += f"  Success: {skill_call.get('response', '')}\n"
+                else:
+                    resp += f"  Failed: {skill_call.get('error_message', '')}\n"
+            resp += (
+                f"\n------------------- skill cost: {message.time_cost:.3f} seconds\n\n"
+            )
+        if message.author_type == AuthorType.AGENT:
+            resp += "[ Agent: ]\n\n"
+            resp += f" {message.message}\n"
+            resp += (
+                f"\n------------------- agent cost: {message.time_cost:.3f} seconds\n\n"
+            )
+
+    resp += "Total time cost: {:.3f} seconds".format(
+        sum([message.time_cost + message.cold_start_cost for message in messages])
+    )
+
     # reduce message quota
     await quota.add_message()
-    return "\n".join(resp)
+
+    return resp
 
 
 @chat_router_readonly.get(
@@ -168,8 +199,7 @@ async def retry_chat(
           - 500: Internal server error
     """
     # Get agent and check if exists
-    result = await db.exec(select(Agent).where(Agent.id == aid))
-    agent = result.first()
+    agent = await Agent.get(aid)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -186,55 +216,103 @@ async def retry_chat(
         raise HTTPException(status_code=404, detail="No messages found")
 
     # If last message is from agent, return it
-    if last_message.author_type == AuthorType.AGENT:
+    if (
+        last_message.author_type == AuthorType.AGENT
+        or last_message.author_type == AuthorType.SYSTEM
+    ):
         return last_message
 
-    # Check quota before generating new response
-    quota = await AgentQuota.get(aid)
-    if not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Message quota exceeded")
-
-    try:
-        # Extract image URLs from last message
-        image_urls = [
-            attachment.url
-            for attachment in (last_message.attachments or [])
-            if attachment.type == ChatMessageAttachmentType.IMAGE
-        ]
-
-        # Execute agent
-        agent_input = AgentMessageInput(text=last_message.message, images=image_urls)
-        response_lines = await execute_agent(aid, agent_input, f"{aid}-{chat_id}")
-
-        # Create agent's response message
-        response_message = ChatMessage(
+    if last_message.author_type == AuthorType.SKILL:
+        error_message = ChatMessage(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
             author_id=aid,
-            author_type=AuthorType.AGENT,
-            message="\n".join(response_lines),
+            author_type=AuthorType.SYSTEM,
+            message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
             attachments=None,
         )
-        db.add(response_message)
+        await error_message.save()
+        return error_message
 
-        # Update quota
-        await quota.add_message()
-        await db.commit()
-        await db.refresh(response_message)
-
-        return response_message
-
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    # If last message is from user, generate a new agent response
+    return await create_chat()
 
 
-@chat_router.post("/agents/{aid}/chat", tags=["Chat"], response_model=ChatMessage)
+@chat_router.put(
+    "/agents/{aid}/public/chat/retry", tags=["Chat"], response_model=list[ChatMessage]
+)
+async def retry_public_chat(
+    aid: str = Path(..., description="Agent ID"),
+    chat_id: str = Query(..., description="Chat ID to retry last message"),
+    db: AsyncSession = Depends(get_db),
+) -> list[ChatMessage]:
+    """Retry the last message in a chat.
+
+    If the last message is from the agent, return it directly.
+    If the last message is from a user, generate a new agent response.
+
+    Args:
+      - aid: Agent ID
+      - chat_id: Chat ID to retry
+      - db: Database session
+
+    Returns:
+      - ChatMessage: Agent's response message
+
+    Raises:
+      - HTTPException:
+          - 404: Agent not found or no messages found
+          - 429: Quota exceeded
+          - 500: Internal server error
+    """
+    # Get agent and check if exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get last message
+    result = await db.exec(
+        select(ChatMessage)
+        .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
+        .order_by(desc(ChatMessage.created_at))
+        .limit(1)
+    )
+    last_message = result.first()
+
+    if not last_message:
+        raise HTTPException(status_code=404, detail="No messages found")
+
+    # If last message is from agent, return it
+    if (
+        last_message.author_type == AuthorType.AGENT
+        or last_message.author_type == AuthorType.SYSTEM
+    ):
+        return [last_message]
+
+    if last_message.author_type == AuthorType.SKILL:
+        error_message = ChatMessage(
+            id=str(XID()),
+            agent_id=aid,
+            chat_id=chat_id,
+            author_id=aid,
+            author_type=AuthorType.SYSTEM,
+            message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
+            attachments=None,
+        )
+        await error_message.save()
+        return [last_message, error_message]
+
+    # If last message is from user, generate a new agent response
+    return await create_public_chat()
+
+
+@chat_router.post(
+    "/agents/{aid}/chat", tags=["Chat"], response_model=ChatMessage, deprecated=True
+)
 async def create_chat(
     request: ChatMessageRequest,
     aid: str = Path(..., description="Agent ID"),
-    db: AsyncSession = Depends(get_db),
 ) -> ChatMessage:
     """Create a chat message and get agent's response.
 
@@ -248,7 +326,6 @@ async def create_chat(
     Args:
       - request: Chat message request
       - aid: Agent ID
-      - db: Database session
 
     Returns:
       - ChatMessage: Agent's response message
@@ -279,32 +356,82 @@ async def create_chat(
         message=request.message,
         attachments=request.attachments,
     )
-    db.add(user_message)
-    await db.commit()
 
     try:
         # Execute agent
-        response_lines = await execute_agent(user_message)
-
-        # Create agent's response message
-        response_message = ChatMessage(
-            id=str(XID()),
-            agent_id=aid,
-            chat_id=request.chat_id,
-            author_id=aid,
-            author_type=AuthorType.AGENT,
-            message="\n".join(response_lines),
-            attachments=None,
-        )
-        db.add(response_message)
+        response_messages = await execute_agent(user_message)
 
         # Update quota
         await quota.add_message()
-        await db.commit()
-        await db.refresh(response_message)
 
-        return response_message
+        return response_messages[-1]
 
     except Exception as e:
-        await db.rollback()
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@chat_router.post(
+    "/agents/{aid}/public/chat", tags=["Chat"], response_model=list[ChatMessage]
+)
+async def create_public_chat(
+    request: ChatMessageRequest,
+    aid: str = Path(..., description="Agent ID"),
+) -> list[ChatMessage]:
+    """Create a chat message and get agent's response.
+
+    This endpoint:
+    1. Validates agent quota
+    2. Creates a thread-specific context
+    3. Executes the agent with the query
+    4. Updates quota usage
+    5. Saves both input and output messages
+
+    Args:
+      - request: Chat message request
+      - aid: Agent ID
+
+    Returns:
+      - ChatMessage: Agent's response message
+
+    Raises:
+      - HTTPException:
+          - 404: Agent not found
+          - 429: Quota exceeded
+          - 500: Internal server error
+    """
+    # Get agent and validate quota
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
+
+    # Check quota
+    quota = await AgentQuota.get(aid)
+    if quota and not quota.has_message_quota():
+        raise HTTPException(status_code=429, detail="Quota exceeded")
+
+    # Create user message
+    user_message = ChatMessage(
+        id=str(XID()),
+        agent_id=aid,
+        chat_id=request.chat_id,
+        author_id=request.user_id,
+        author_type=AuthorType.WEB,
+        message=request.message,
+        attachments=request.attachments,
+    )
+
+    try:
+        # Execute agent
+        response_messages = await execute_agent(user_message)
+
+        # Update quota
+        await quota.add_message()
+
+        return response_messages
+
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
         raise HTTPException(status_code=500, detail=str(e))

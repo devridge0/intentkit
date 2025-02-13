@@ -89,7 +89,7 @@ async def gp_process_message(message: Message) -> None:
             )
             response = await execute_agent(message)
             await message.answer(
-                text="\n".join(response),
+                text=response[-1].message,
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -139,7 +139,7 @@ async def process_message(message: Message) -> None:
         )
         response = await execute_agent(message)
         await message.answer(
-            text="\n".join(response),
+            text=response[-1].message,
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
