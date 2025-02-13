@@ -7,6 +7,12 @@ from pydantic import BaseModel
 from skills.cryptocompare.api import FetchTradingSignalsInput, fetch_trading_signals
 from skills.cryptocompare.base import CryptoCompareBaseTool
 
+FETCH_TRADING_SIGNALS_PROMPT = """
+This tool retrieves advanced trading signals from IntoTheBlock analytics for a specific cryptocurrency.
+Provide a cryptocurrency symbol (e.g., 'BTC') to get detailed market indicators.
+Returns key metrics like network growth, large transaction patterns, holder composition, and market momentum.
+"""
+
 
 class CryptoCompareFetchTradingSignalsOutput(BaseModel):
     result: Dict[str, Any]
@@ -30,10 +36,3 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
             return CryptoCompareFetchTradingSignalsOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))
-
-
-FETCH_TRADING_SIGNALS_PROMPT = """
-This tool retrieves advanced trading signals from IntoTheBlock analytics for a specific cryptocurrency.
-Provide a cryptocurrency symbol (e.g., 'BTC') to get detailed market indicators.
-Returns key metrics like network growth, large transaction patterns, holder composition, and market momentum.
-"""

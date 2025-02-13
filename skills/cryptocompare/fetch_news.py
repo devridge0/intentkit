@@ -8,6 +8,12 @@ from pydantic import BaseModel, Field
 from skills.cryptocompare.api import FetchNewsInput, fetch_news
 from skills.cryptocompare.base import CryptoCompareBaseTool
 
+FETCH_NEWS_PROMPT = """
+This tool fetches the latest cryptocurrency news articles for a specific token.
+You can optionally specify a timestamp to get historical news, otherwise it uses the current time.
+Returns articles in English with details like title, body, source, and publish time.
+"""
+
 
 class NewsArticle(BaseModel):
     """Model representing a news article."""
@@ -98,10 +104,3 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
 
         except Exception as e:
             return CryptoCompareFetchNewsOutput(error=str(e))
-
-
-FETCH_NEWS_PROMPT = """
-This tool fetches the latest cryptocurrency news articles for a specific token.
-You can optionally specify a timestamp to get historical news, otherwise it uses the current time.
-Returns articles in English with details like title, body, source, and publish time.
-"""
