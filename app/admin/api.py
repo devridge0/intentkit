@@ -69,9 +69,6 @@ async def create_agent(
             wallet_data = json.loads(agent_data.cdp_wallet_data)
     if not has_wallet:
         # create the wallet
-        logger.debug(
-            f"key name {config.cdp_api_key_name} , private key {config.cdp_api_key_private_key}"
-        )
         Cdp.configure(
             api_key_name=config.cdp_api_key_name,
             private_key=config.cdp_api_key_private_key.replace("\\n", "\n"),
@@ -86,6 +83,11 @@ async def create_agent(
         else:
             agent_data.cdp_wallet_data = json.dumps(wallet_data)
         await agent_data.save()
+        logger.info(
+            "Wallet created for agent %s: %s",
+            latest_agent.id,
+            wallet_data["default_address_id"],
+        )
     # Send Slack notification
     send_slack_message(
         message,
