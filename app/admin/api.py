@@ -74,7 +74,7 @@ async def create_agent(
         )
         Cdp.configure(
             api_key_name=config.cdp_api_key_name,
-            private_key=config.cdp_api_key_private_key,
+            private_key=config.cdp_api_key_private_key.replace("\\n", "\n"),
         )
         wallet = Wallet.create(network_id=latest_agent.cdp_network_id)
         wallet_data = wallet.export_data().to_dict()
