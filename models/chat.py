@@ -31,7 +31,7 @@ class AuthorType(str, Enum):
     SYSTEM = "system"
 
 
-class ChatMessageAttachment(BaseModel):
+class ChatMessageAttachment(TypedDict):
     """Chat message attachment model.
 
     An attachment can be a link, image, or file that is associated with a chat message.
@@ -47,9 +47,6 @@ class ChatMessageAttachment(BaseModel):
         description="URL of the attachment",
         examples=["https://example.com/image.jpg"],
     )
-
-    class Config:
-        use_enum_values = True
 
 
 class ChatMessageSkillCall(TypedDict):
