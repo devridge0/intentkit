@@ -99,7 +99,10 @@ async def debug_chat(
     aid: str = Path(..., description="Agent ID"),
     q: str = Query(None, description="Query string"),
     debug: bool = Query(None, description="Enable debug mode"),
-    thread: str = Query(None, description="Thread ID for conversation tracking"),
+    thread: str = Query(
+        None, description="Thread ID for conversation tracking", deprecated=True
+    ),
+    chat_id: str = Query(None, description="Chat ID for conversation tracking"),
 ) -> str:
     """Debug mode: Chat with an AI agent.
 
