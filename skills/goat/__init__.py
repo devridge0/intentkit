@@ -39,7 +39,7 @@ crossmint_chains = {
     ),
     "arbitrum": ChainConfig(
         "arbitrum",
-        NetworkType.Testnet,
+        NetworkType.Mainnet,
         "https://arb-mainnet.g.alchemy.com/v2/demo",
         "https://arb-mainnet.g.alchemy.com/v2/demo",
     ),
