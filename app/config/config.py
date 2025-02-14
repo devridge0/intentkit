@@ -68,6 +68,9 @@ class Config:
         # Admin
         self.admin_auth_enabled = self.load("ADMIN_AUTH_ENABLED", "false") == "true"
         self.admin_jwt_secret = self.load("ADMIN_JWT_SECRET")
+        self.debug_auth_enabled = self.load("DEBUG_AUTH_ENABLED", "false") == "true"
+        self.debug_username = self.load("DEBUG_USERNAME")
+        self.debug_password = self.load("DEBUG_PASSWORD")
         # API
         self.api_auth_enabled = self.load("API_AUTH_ENABLED", "false") == "true"
         self.api_jwt_secret = self.load("API_JWT_SECRET")
