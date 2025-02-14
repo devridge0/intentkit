@@ -10,7 +10,6 @@ This module provides functionality for initializing and executing AI agents. It 
 The module uses a global cache to store initialized agents for better performance.
 """
 
-import json
 import logging
 import time
 from datetime import datetime
@@ -46,8 +45,8 @@ from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
-    crossmint_chains,
     create_smart_wallets_if_not_exist,
+    crossmint_chains,
     get_goat_skill,
     init_smart_wallets,
 )
