@@ -4,7 +4,17 @@ All GOAT Skills are supported by [GOAT](https://github.com/goat-sdk/goat/).
 
 The list of supported tools can be found [here](https://github.com/goat-sdk/goat/tree/main/python#plugins).
 
-## Sample Configuration
+## Sample configuration
+
+```json
+{
+    "chains": {
+        "base"
+    }
+}
+```
+
+## Sample Skills list
 
 ```json
 {
