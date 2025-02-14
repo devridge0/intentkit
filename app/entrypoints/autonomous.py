@@ -83,4 +83,4 @@ async def run_autonomous_action(aid: str, prompt: str):
     resp = await execute_agent(message)
 
     # Log the response
-    logger.info("\n".join(str(resp)))
+    logger.info("\n".join(str(m) for m in resp), extra={"aid": aid})

@@ -394,10 +394,10 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                         extra={"thread_id": thread_id},
                     )
                 msg = chunk["agent"]["messages"][0]
-                if msg.tool_calls:
+                if hasattr(msg, "tool_calls") and msg.tool_calls:
                     # tool calls, save for later use
                     cached_tool_step = msg
-                elif msg.content:
+                elif hasattr(msg, "content") and msg.content:
                     # agent message
                     chat_message = ChatMessage(
                         id=str(XID()),
@@ -406,8 +406,12 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                         author_id=message.agent_id,
                         author_type=AuthorType.AGENT,
                         message=msg.content,
-                        input_tokens=msg.usage_metadata.get("input_tokens", 0),
-                        output_tokens=msg.usage_metadata.get("output_tokens", 0),
+                        input_tokens=msg.usage_metadata.get("input_tokens", 0)
+                        if hasattr(msg, "usage_metadata") and msg.usage_metadata
+                        else 0,
+                        output_tokens=msg.usage_metadata.get("output_tokens", 0)
+                        if hasattr(msg, "usage_metadata") and msg.usage_metadata
+                        else 0,
                         time_cost=this_time - last,
                     )
                     last = this_time
@@ -463,10 +467,16 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     author_type=AuthorType.SKILL,
                     message="",
                     skill_calls=skill_calls,
-                    input_tokens=cached_tool_step.usage_metadata.get("input_tokens", 0),
+                    input_tokens=cached_tool_step.usage_metadata.get("input_tokens", 0)
+                    if hasattr(cached_tool_step, "usage_metadata")
+                    and cached_tool_step.usage_metadata
+                    else 0,
                     output_tokens=cached_tool_step.usage_metadata.get(
                         "output_tokens", 0
-                    ),
+                    )
+                    if hasattr(cached_tool_step, "usage_metadata")
+                    and cached_tool_step.usage_metadata
+                    else 0,
                     time_cost=this_time - last,
                 )
                 last = this_time
