@@ -373,14 +373,14 @@ async def retry_chat(
 @chat_router.post(
     "/agents/{aid}/chat",
     tags=["Chat"],
-    response_model=list[ChatMessage],
+    response_model=ChatMessage,
     deprecated=True,
     summary="Chat",
 )
 async def create_chat_deprecated(
     request: ChatMessageRequest,
     aid: str = Path(..., description="Agent ID"),
-) -> list[ChatMessage]:
+) -> ChatMessage:
     """Create a private chat message and get agent's response.
 
     **Process Flow:**
@@ -433,7 +433,7 @@ async def create_chat_deprecated(
         # Update quota
         await quota.add_message()
 
-        return response_messages
+        return response_messages[-1]
 
     except Exception as e:
         if isinstance(e, HTTPException):
