@@ -25,8 +25,25 @@ from goat_wallets.crossmint import crossmint
 
 from abstracts.skill import SkillStoreABC
 from skills.goat.base import GoatBaseTool
+from utils.chain import ChainConfig, NetworkType
 
 from .base import base_url
+
+# TODO: add the configuration of the chains to a proper place. https://docs.crossmint.com/introduction/supported-chains
+crossmint_chains = {
+    "base": ChainConfig(
+        "base",
+        NetworkType.Mainnet,
+        "https://base-mainnet.g.alchemy.com/v2/demo",
+        "https://base-mainnet.g.alchemy.com/v2/demo",
+    ),
+    "arbitrum": ChainConfig(
+        "arbitrum",
+        NetworkType.Testnet,
+        "https://arb-mainnet.g.alchemy.com/v2/demo",
+        "https://arb-mainnet.g.alchemy.com/v2/demo",
+    ),
+}
 
 
 def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
@@ -64,50 +81,62 @@ def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
             raise Exception(f"error from Crossmint API: {e}") from e
 
 
-def init_smart_wallet(
-    api_key: str,
-    chain: Literal["base"],
-    evm_provider_url: str,
-    ens_provider_url: str,
-    wallet_data: dict | None = {},
-):
-    if wallet_data.get("address") and (
-        not wallet_data.get("private_key")
-        or wallet_data.get("private_key").strip() == ""
-    ):
-        raise Exception(
-            "smart wallet address is present but private key is not provided"
-        )
+def create_smart_wallets_if_not_exist(api_key: str, wallet_data: dict | None):
+    evm_wallet_data = wallet_data.get("evm") if wallet_data else None
+    # no wallet data or private_key is empty
+    if not evm_wallet_data or not evm_wallet_data.get("private_key"):
+        evm_wallet_data = evm_wallet_data or {}
 
-    if (
-        not wallet_data.get("private_key")
-        or wallet_data.get("private_key").strip() == ""
-    ):
+        if evm_wallet_data.get("address"):
+            raise Exception(
+                "smart wallet address is present but private key is not provided"
+            )
+
         # Generate a random 256-bit (32-byte) private key
         private_key_bytes = secrets.token_bytes(32)
-
         # Encode the private key to a hexadecimal string
-        wallet_data["private_key"] = encode_hex(private_key_bytes)
-        signer_address = Account.from_key(wallet_data["private_key"]).address
-        created_wallet = create_smart_wallet(api_key, signer_address)
-        wallet_data["address"] = created_wallet["address"]
-        # put an sleep to prevent 429 error
-        time.sleep(1)
+        evm_wallet_data["private_key"] = encode_hex(private_key_bytes)
 
+        signer_address = Account.from_key(evm_wallet_data["private_key"]).address
+
+        new_smart_wallet = create_smart_wallet(api_key, signer_address)
+        if not new_smart_wallet or not new_smart_wallet.get("address"):
+            raise RuntimeError("Failed to create smart wallet")
+
+        evm_wallet_data["address"] = new_smart_wallet["address"]
+        # put an sleep to prevent 429 error
+
+    if not evm_wallet_data.get("address"):
+        raise Exception("smart wallet address is empty")
+
+    return {"evm": evm_wallet_data}
+
+
+def init_smart_wallets(
+    api_key: str,
+    chain_configs: Dict[str, ChainConfig],
+    wallet_data: dict | None,
+):
     # Create Crossmint client
     crossmint_client = crossmint(api_key)
-    crossmint_wallet = crossmint_client["smartwallet"](
-        {
-            "address": wallet_data["address"],
-            "signer": {
-                "secretKey": wallet_data["private_key"],
-            },
-            "provider": evm_provider_url,
-            "ensProvider": ens_provider_url,
-            "chain": chain,
-        }
-    )
-    return crossmint_wallet, wallet_data
+
+    wallets = []
+    for chain_name, chain_config in chain_configs.items():
+        wallet = crossmint_client["smartwallet"](
+            {
+                "address": wallet_data["address"],
+                "signer": {
+                    "secretKey": wallet_data["private_key"],
+                },
+                "provider": chain_config.rpc_url,
+                "ensProvider": chain_config.ens_url,
+                "chain": chain_name,
+            }
+        )
+        wallets.append(wallet)
+        time.sleep(1)
+
+    return wallets
 
 
 def resolve_optional_type(field_type: Type) -> Type:
@@ -168,7 +197,7 @@ def get_goat_skill(
     if not wallet:
         raise ValueError("GOAT crossmint wallet is empty")
 
-    plugins = {}
+    plugins = []
     for p_name, p_options in plugin_configs.items():
         try:
             mod = importlib.import_module(f"goat_plugins.{p_name}")
@@ -213,7 +242,7 @@ def get_goat_skill(
             plugin_options = opt_type(**resolved_vals)
 
             plugin: PluginBase = initializer(options=plugin_options)
-            plugins[p_name] = plugin
+            plugins.append(plugin)
 
         except AttributeError:
             raise Exception(f"GOAT initializer function not found: {p_name}")
@@ -229,11 +258,16 @@ def get_goat_skill(
                 wallet=wallet,
                 plugins=[plugin],
             )
+            time.sleep(0.2)
 
-            for t in p_tools:
-                t.name = f"goat_{p_name}_{t.name.replace(".", "_")}"
-                t.description = f"This is {p_name} plugin of GOAT tool, {t.description}"
-            tools.extend(p_tools)
+        p_tools = get_on_chain_tools(
+            wallet=wallet,
+            plugins=plugins,
+        )
+        for t in p_tools:
+            t.name = f"goat_{t.name.replace(".", "_")}"
+            t.description = f"This is plugin of GOAT tool, {t.description}"
+        tools.extend(p_tools)
 
     except Exception as e:
         raise Exception(f"GOAT tools initiation failed: {str(e)}")

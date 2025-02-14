@@ -117,13 +117,6 @@ class Config:
         self.rpc_base_mainnet = self.load(
             "RPC_BASE_MAINNET", "https://mainnet.base.org"
         )
-        self.rpc_crossmint = self.load(
-            "RPC_CROSSMINT", "https://base-mainnet.g.alchemy.com/v2/demo"
-        )
-        # ENS
-        self.ens_crossmint = self.load(
-            "ENS_CROSSMINT", "https://base-mainnet.g.alchemy.com/v2/demo"
-        )
         # ===== config loaded
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)
