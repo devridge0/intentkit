@@ -41,7 +41,7 @@ security = HTTPBasic()
 
 # Add credentials checker
 def verify_debug_credentials(credentials: HTTPBasicCredentials = Depends(security)):
-    from app.config import config
+    from app.config.config import config
 
     if not config.debug_auth_enabled:
         return None
