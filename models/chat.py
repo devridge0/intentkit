@@ -179,7 +179,7 @@ class ChatMessage(SQLModel, table=True):
         resp = ""
         if self.skill_calls:
             for call in self.skill_calls:
-                resp += f"{call['name']}: {call['parameters']}\n"
+                resp += f"{call['name']} {call['parameters']}: {call['response'] if call['success'] else call['error_message']}\n"
             resp += "\n"
         resp += self.message
         return resp
