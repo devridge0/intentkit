@@ -202,6 +202,11 @@ async def get_chat_history(
 ) -> List[ChatMessage]:
     """Get chat history for a specific chat.
 
+    **Special Chat IDs:**
+    * `autonomous` - Autonomous log
+    * `public` - Public chat history in X and TG groups
+    * `owner` - Owner chat history (coming soon)
+
     **Parameters:**
     * `aid` - Agent ID
     * `chat_id` - Chat ID to get history for
