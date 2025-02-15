@@ -5,23 +5,20 @@ This module provides client functions for core API endpoints with environment-aw
 
 import httpx
 
-from abstracts.engine import AgentMessageInput
 from app.config.config import config
 from app.core.engine import execute_agent as local_execute_agent
+from models.chat import ChatMessage
 
 
-async def execute_agent(
-    aid: str, message: AgentMessageInput, thread_id: str
-) -> list[str]:
+async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
     """Execute an agent with environment-aware routing.
 
     In local environment, directly calls the local execute_agent function.
     In other environments, makes HTTP request to the core API endpoint.
 
     Args:
-        aid (str): Agent ID to execute
-        message (AgentMessageInput): Input message containing text and optional images
-        thread_id (str): Thread ID for conversation tracking
+        message (ChatMessage): The chat message containing agent_id, chat_id and message content
+        debug (bool): Enable debug mode
 
     Returns:
         list[str]: Formatted response lines from agent execution
@@ -31,18 +28,14 @@ async def execute_agent(
         Exception: For other execution errors
     """
     if config.env == "local":
-        return await local_execute_agent(aid, message, thread_id)
+        return await local_execute_agent(message, debug)
 
     # Make HTTP request in non-local environment
     url = f"{config.internal_base_url}/core/execute"
     async with httpx.AsyncClient() as client:
         response = await client.post(
             url,
-            json={
-                "aid": aid,
-                "message": message.model_dump(),
-                "thread_id": thread_id,
-            },
+            json={"message": message.model_dump(), "debug": debug},
             timeout=180,
         )
     response.raise_for_status()

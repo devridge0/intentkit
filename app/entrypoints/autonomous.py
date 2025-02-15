@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime, timedelta
 
+from epyxid import XID
 from sqlmodel import select
 
-from abstracts.engine import AgentMessageInput
-from app.config.config import config
 from app.core.engine import execute_agent
 from models.agent import Agent, AgentQuota
+from models.chat import AuthorType, ChatMessage
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
@@ -70,14 +70,17 @@ async def run_autonomous_agents():
 
 async def run_autonomous_action(aid: str, prompt: str):
     """Run the agent autonomously with specified intervals."""
-    logger.info(f"[{aid}] autonomous action started...")
-    # get thread_id from request ip
-    thread_id = f"{aid}-autonomous"
-    if config.autonomous_memory_public:
-        thread_id = f"{aid}-public"
+    message = ChatMessage(
+        id=str(XID()),
+        agent_id=aid,
+        chat_id="autonomous",
+        author_id="autonomous",
+        author_type=AuthorType.TRIGGER,
+        message=prompt,
+    )
 
     # Execute agent and get response
-    resp = await execute_agent(aid, AgentMessageInput(text=prompt), thread_id)
+    resp = await execute_agent(message)
 
     # Log the response
-    logger.info("\n".join(resp))
+    logger.info("\n".join(str(m) for m in resp), extra={"aid": aid})

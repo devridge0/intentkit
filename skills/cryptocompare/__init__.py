@@ -5,10 +5,10 @@ from abstracts.skill import SkillStoreABC
 from skills.cryptocompare.base import CryptoCompareBaseTool
 from skills.cryptocompare.fetch_news import CryptoCompareFetchNews
 from skills.cryptocompare.fetch_price import CryptoCompareFetchPrice
-from skills.cryptocompare.fetch_trading_signals import CryptoCompareFetchTradingSignals
-from skills.cryptocompare.fetch_top_market_cap import CryptoCompareFetchTopMarketCap
 from skills.cryptocompare.fetch_top_exchanges import CryptoCompareFetchTopExchanges
+from skills.cryptocompare.fetch_top_market_cap import CryptoCompareFetchTopMarketCap
 from skills.cryptocompare.fetch_top_volume import CryptoCompareFetchTopVolume
+from skills.cryptocompare.fetch_trading_signals import CryptoCompareFetchTradingSignals
 
 
 def get_cryptocompare_skill(
