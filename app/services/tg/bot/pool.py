@@ -45,10 +45,10 @@ def set_cache_agent(agent: BotPoolAgentItem):
     _agent_bots[agent.id] = agent
 
 
-def agent_thread_id(agent_id, group_memory_public, chat_id):
+def agent_chat_id(group_memory_public, chat_id):
     if group_memory_public:
-        return f"{agent_id}-public"
-    return f"{agent_id}-telegram-{chat_id}"
+        return "public"
+    return f"telegram-{chat_id}"
 
 
 async def health_handler(request):

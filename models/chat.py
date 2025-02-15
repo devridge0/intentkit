@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import List, NotRequired, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field as SQLModelField
 from sqlmodel import SQLModel
+
+from models.db import get_session
 
 
 class ChatMessageAttachmentType(str, Enum):
@@ -21,12 +23,15 @@ class AuthorType(str, Enum):
     """Type of message author."""
 
     AGENT = "agent"
+    TRIGGER = "trigger"
+    SKILL = "skill"
     TELEGRAM = "telegram"
     TWITTER = "twitter"
     WEB = "web"
+    SYSTEM = "system"
 
 
-class ChatMessageAttachment(BaseModel):
+class ChatMessageAttachment(TypedDict):
     """Chat message attachment model.
 
     An attachment can be a link, image, or file that is associated with a chat message.
@@ -43,8 +48,17 @@ class ChatMessageAttachment(BaseModel):
         examples=["https://example.com/image.jpg"],
     )
 
-    class Config:
-        use_enum_values = True
+
+class ChatMessageSkillCall(TypedDict):
+    """TypedDict for skill call details."""
+
+    name: str
+    parameters: dict
+    success: bool
+    response: NotRequired[
+        str
+    ]  # Optional response from the skill call, trimmed to 100 characters
+    error_message: NotRequired[str]  # Optional error message from the skill call
 
 
 class ChatMessageRequest(BaseModel):
@@ -126,8 +140,29 @@ class ChatMessage(SQLModel, table=True):
     )
     attachments: Optional[List[ChatMessageAttachment]] = SQLModelField(
         default=None,
-        sa_column=Column(JSONB, nullable=False, server_default="[]"),
+        sa_column=Column(JSONB, nullable=True),
         description="List of attachments in the message",
+    )
+    skill_calls: Optional[List[ChatMessageSkillCall]] = SQLModelField(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Skill call details",
+    )
+    input_tokens: int = SQLModelField(
+        default=0,
+        description="Number of tokens in the input message",
+    )
+    output_tokens: int = SQLModelField(
+        default=0,
+        description="Number of tokens in the output message",
+    )
+    time_cost: float = SQLModelField(
+        default=0.0,
+        description="Time cost for the message in seconds",
+    )
+    cold_start_cost: float = SQLModelField(
+        default=0.0,
+        description="Cost for the cold start of the message in seconds",
     )
     created_at: datetime = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -139,3 +174,18 @@ class ChatMessage(SQLModel, table=True):
 
     class Config:
         use_enum_values = True
+
+    def __str__(self):
+        resp = ""
+        if self.skill_calls:
+            for call in self.skill_calls:
+                resp += f"{call['name']} {call['parameters']}: {call['response'] if call['success'] else call['error_message']}\n"
+            resp += "\n"
+        resp += self.message
+        return resp
+
+    async def save(self):
+        async with get_session() as db:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)

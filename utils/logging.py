@@ -24,6 +24,11 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "message": record.getMessage(),
         }
+        # Include any extra attributes
+        if hasattr(record, "extra"):
+            log_obj.update(record.extra)
+        elif record.__dict__.get("extra"):
+            log_obj.update(record.__dict__["extra"])
         if record.exc_info:
             log_obj["exc_info"] = self.formatException(record.exc_info)
         return json.dumps(log_obj)
@@ -45,8 +50,8 @@ def setup_logging(env: str, debug: bool = False):
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             handlers=[logging.StreamHandler()],
         )
-        # logging.getLogger("openai._base_client").setLevel(logging.INFO)
-        # logging.getLogger("httpcore.http11").setLevel(logging.INFO)
+        logging.getLogger("openai._base_client").setLevel(logging.INFO)
+        logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     else:
         # For non-local environments, use JSON format
         handler = logging.StreamHandler()

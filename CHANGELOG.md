@@ -1,5 +1,14 @@
 # Changelog
 
+## 2025-02-13
+
+### New Features
+- All chats will be saved in the db table chat_messages
+
+### Breaking Changes
+- Remove config.debug_resp flag, you can only use debug endpoint for debugging
+- Remove config.autonomous_memory_public, the autonomous task will always use chat id "autonomous"
+
 ## 2025-02-11
 
 ### Improvements
@@ -19,7 +28,7 @@
 ## 2025-02-03
 
 ### Breaking Changes
-- Use async every where
+- Use async everywhere
 
 ## 2025-02-02
 
