@@ -20,6 +20,7 @@ from langchain_core.messages import BaseMessage
 from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.config.config import config
 from app.core.engine import execute_agent, thread_stats
 from models.agent import Agent, AgentQuota
 from models.chat import (
@@ -28,6 +29,7 @@ from models.chat import (
     ChatMessageRequest,
 )
 from models.db import get_db
+from utils.middleware import create_jwt_middleware
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -37,6 +39,9 @@ chat_router_readonly = APIRouter()
 
 # Add security scheme
 security = HTTPBasic()
+
+# Create JWT middleware with admin config
+verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
 
 
 # Add credentials checker
@@ -140,7 +145,8 @@ async def debug_chat(
         raise HTTPException(status_code=429, detail="Quota exceeded")
 
     # get thread_id from request ip
-    chat_id = thread if thread else request.client.host
+    if not chat_id:
+        chat_id = thread if thread else request.client.host
     user_input = ChatMessage(
         id=str(XID()),
         agent_id=aid,
@@ -191,6 +197,7 @@ async def debug_chat(
 @chat_router_readonly.get(
     "/agents/{aid}/chat/history",
     tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
     response_model=List[ChatMessage],
     operation_id="get_chat_history",
     summary="Chat History",
@@ -241,6 +248,7 @@ async def get_chat_history(
 @chat_router.get(
     "/agents/{aid}/chat/retry",
     tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
     response_model=ChatMessage,
     deprecated=True,
     summary="Retry Chat",
@@ -311,6 +319,7 @@ async def retry_chat_deprecated(
 @chat_router.put(
     "/agents/{aid}/chat/retry/v2",
     tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
     response_model=list[ChatMessage],
     operation_id="retry_chat",
     summary="Retry Chat",
@@ -381,6 +390,7 @@ async def retry_chat(
 @chat_router.post(
     "/agents/{aid}/chat",
     tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
     response_model=ChatMessage,
     deprecated=True,
     summary="Chat",
@@ -452,6 +462,7 @@ async def create_chat_deprecated(
 @chat_router.post(
     "/agents/{aid}/chat/v2",
     tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
     response_model=list[ChatMessage],
     operation_id="chat",
     summary="Chat",
