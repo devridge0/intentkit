@@ -10,6 +10,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from abstracts.engine import AgentMessageInput
 from app.core.engine import execute_agent
+from models.chat import ChatMessage
 
 core_router = APIRouter(prefix="/core", tags=["core"])
 
@@ -29,33 +30,36 @@ class ExecuteRequest(BaseModel):
 
 
 @core_router.post("/execute")
-async def execute(request: ExecuteRequest) -> list[str]:
+async def execute(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
     """Execute an agent with the given input and return response lines.
 
     Args:
-        request (ExecuteRequest): The execution request containing agent ID, message, and thread ID
+        message (ChatMessage): The chat message containing agent_id, chat_id and message content
+        debug (bool): Enable debug mode
 
     Returns:
         list[str]: Formatted response lines from agent execution
 
     Raises:
         HTTPException:
-            - 400: If input parameters are invalid (empty aid, thread_id, or message text)
+            - 400: If input parameters are invalid
             - 404: If agent not found
             - 500: For other server-side errors
     """
     # Validate input parameters
-    if not request.aid or not request.aid.strip():
+    if not message.agent_id or not message.agent_id.strip():
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
-    if not request.thread_id or not request.thread_id.strip():
-        raise HTTPException(status_code=400, detail="Thread ID cannot be empty")
-    if not request.message.text or not request.message.text.strip():
+    if not message.chat_id or not message.chat_id.strip():
+        raise HTTPException(status_code=400, detail="Chat ID cannot be empty")
+    if not message.message or not message.message.strip():
         raise HTTPException(status_code=400, detail="Message text cannot be empty")
 
     try:
-        return await execute_agent(request.aid, request.message, request.thread_id)
+        return await execute_agent(message, debug)
     except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Agent {request.aid} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Agent {message.agent_id} not found"
+        )
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except ValueError as e:

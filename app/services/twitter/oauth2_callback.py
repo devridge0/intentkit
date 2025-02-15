@@ -1,6 +1,7 @@
 """Twitter OAuth2 callback handler."""
 
 from datetime import datetime, timezone
+from typing import Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import tweepy
@@ -33,7 +34,8 @@ def is_valid_url(url: str) -> bool:
 @router.get("/twitter")
 async def twitter_oauth_callback(
     state: str,
-    code: str,
+    code: Optional[str] = None,
+    error: Optional[str] = None,
 ):
     """Handle Twitter OAuth2 callback.
 
@@ -51,14 +53,20 @@ async def twitter_oauth_callback(
     Raises:
         HTTPException: If state/code is missing or token exchange fails
     """
-    if not state or not code:
-        raise HTTPException(status_code=400, detail="Missing state or code parameter")
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing state parameter")
 
     try:
         # Parse state parameter
         state_params = parse_qs(state)
         agent_id = state_params.get("agent_id", [""])[0]
         redirect_uri = state_params.get("redirect_uri", [""])[0]
+
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+
+        if not code:
+            raise HTTPException(status_code=400, detail="Missing code parameter")
 
         if not agent_id:
             raise HTTPException(

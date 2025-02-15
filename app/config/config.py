@@ -60,9 +60,6 @@ class Config:
         # ==== this part can be load from env or aws secrets manager
         self.db["auto_migrate"] = self.load("DB_AUTO_MIGRATE", "true") == "true"
         self.debug = self.load("DEBUG") == "true"
-        self.debug_resp = (
-            self.load("DEBUG_RESP", "false") == "true"
-        )  # Agent response with thought steps and time cost
         self.debug_checkpoint = (
             self.load("DEBUG_CHECKPOINT", "false") == "true"
         )  # log with checkpoint
@@ -71,6 +68,9 @@ class Config:
         # Admin
         self.admin_auth_enabled = self.load("ADMIN_AUTH_ENABLED", "false") == "true"
         self.admin_jwt_secret = self.load("ADMIN_JWT_SECRET")
+        self.debug_auth_enabled = self.load("DEBUG_AUTH_ENABLED", "false") == "true"
+        self.debug_username = self.load("DEBUG_USERNAME")
+        self.debug_password = self.load("DEBUG_PASSWORD")
         # API
         self.api_auth_enabled = self.load("API_AUTH_ENABLED", "false") == "true"
         self.api_jwt_secret = self.load("API_JWT_SECRET")
@@ -83,11 +83,6 @@ class Config:
         self.openai_api_key = self.load("OPENAI_API_KEY")
         self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")
         self.system_prompt = self.load("SYSTEM_PROMPT")
-        # Autonomous
-        # self.autonomous_entrypoint_interval = int(
-        #     self.load("AUTONOMOUS_ENTRYPOINT_INTERVAL", "1")
-        # )
-        self.autonomous_memory_public = self.load("AUTONOMOUS_MEMORY_PUBLIC", "true")
         # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")
         self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
