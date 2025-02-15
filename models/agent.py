@@ -154,6 +154,17 @@ class Agent(SQLModel, table=True):
         sa_column=Column(JSONB, nullable=True),
         description="Acolyt integration configuration settings",
     )
+    # Allora skills
+    allora_skills: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String)),
+        description="List of Allora-specific skills available to this agent",
+    )
+    allora_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Allora integration configuration settings",
+    )
     # skill set
     skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
         default=None,
