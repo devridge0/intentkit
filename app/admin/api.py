@@ -3,7 +3,7 @@ import logging
 
 from cdp import Wallet
 from cdp.cdp import Cdp
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 @admin_router.post("/agents", tags=["Agent"], status_code=201)
 async def create_agent(
+    request: Request,
     agent: Agent = Body(Agent, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
 ) -> AgentResponse:
@@ -51,6 +52,8 @@ async def create_agent(
           - 400: Invalid agent ID format
           - 500: Database error
     """
+    body = await request.body()
+    logger.info(f"Raw request body for create_agent: {body.decode()}")
     if subject:
         agent.owner = subject
 
