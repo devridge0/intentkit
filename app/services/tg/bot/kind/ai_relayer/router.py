@@ -126,16 +126,13 @@ async def process_message(message: Message) -> None:
         return
 
     try:
-        # remove bot name tag from text
-        message_text = remove_bot_name(message.bot.username, message.text)
-
         message = ChatMessage(
             id=str(XID()),
             agent_id=cached_bot_item.agent_id,
             chat_id=pool.agent_chat_id(False, message.chat.id),
             author_id=str(message.from_user.id),
             author_type=AuthorType.TELEGRAM,
-            message=message_text,
+            message=message.text,
         )
         response = await execute_agent(message)
         await message.answer(
