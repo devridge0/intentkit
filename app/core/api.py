@@ -37,7 +37,7 @@ async def execute(
             - 404: If agent not found
             - 500: For other server-side errors
     """
-
+    message.created_at = None
     # Validate input parameters
     if not message.agent_id or not message.agent_id.strip():
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
