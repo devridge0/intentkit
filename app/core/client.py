@@ -35,7 +35,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     async with httpx.AsyncClient() as client:
         response = await client.post(
             url,
-            json=message.model_dump(),
+            json=message.model_dump(mode="json"),
             timeout=180,
         )
     response.raise_for_status()
