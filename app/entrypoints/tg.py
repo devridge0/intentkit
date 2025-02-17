@@ -25,56 +25,52 @@ class AgentScheduler:
             result = await db.exec(select(Agent))
             agents = result.all()
 
-            for agent in agents:
-                try:
-                    if agent.id not in pool._agent_bots:
-                        if (
-                            agent.telegram_entrypoint_enabled
-                            and agent.telegram_config
-                            and agent.telegram_config.get("token")
-                        ):
-                            token = clean_token_str(agent.telegram_config["token"])
-                            if token in pool._bots:
-                                logger.warning(
-                                    f"there is an existing bot with {token}, skipping agent {agent.id}..."
-                                )
-                                continue
-
-                            logger.info(f"New agent with id {agent.id} found...")
-                            await self.bot_pool.init_new_bot(agent)
-                            await asyncio.sleep(1)
-                            bot = bot_by_token(token)
-                            if not bot:
-                                continue
-                            bot_info = await bot.bot.get_me()
-                            # after bot init, refresh its info to agent data
-                            result = await db.exec(
-                                select(AgentData).where(AgentData.id == agent.id)
+        for agent in agents:
+            try:
+                if agent.id not in pool._agent_bots:
+                    if (
+                        agent.telegram_entrypoint_enabled
+                        and agent.telegram_config
+                        and agent.telegram_config.get("token")
+                    ):
+                        token = clean_token_str(agent.telegram_config["token"])
+                        if token in pool._bots:
+                            logger.warning(
+                                f"there is an existing bot with {token}, skipping agent {agent.id}..."
                             )
-                            agent_data = result.first()
-                            if not agent_data:
-                                agent_data = AgentData(id=agent.id)
-                            agent_data.telegram_id = str(bot_info.id)
-                            agent_data.telegram_username = bot_info.username
-                            agent_data.telegram_name = bot_info.first_name
-                            if bot_info.last_name:
-                                agent_data.telegram_name = (
-                                    f"{bot_info.first_name} {bot_info.last_name}"
-                                )
-                            db.add(agent_data)
-                            await db.commit()
-                    else:
-                        cached_agent = pool._agent_bots[agent.id]
-                        if cached_agent.updated_at != agent.updated_at:
-                            if agent.telegram_config.get("token") not in pool._bots:
-                                await self.bot_pool.change_bot_token(agent)
-                                await asyncio.sleep(2)
-                            else:
-                                await self.bot_pool.modify_config(agent)
-                except Exception as e:
-                    logger.error(
-                        f"failed to process agent {agent.id}, skipping this to the next agent: {e}"
-                    )
+                            continue
+
+                        logger.info(f"New agent with id {agent.id} found...")
+                        await self.bot_pool.init_new_bot(agent)
+                        await asyncio.sleep(1)
+                        bot = bot_by_token(token)
+                        if not bot:
+                            continue
+                        bot_info = await bot.bot.get_me()
+                        # after bot init, refresh its info to agent data
+                        agent_data = await AgentData.get(agent.id)
+                        if not agent_data:
+                            agent_data = AgentData(id=agent.id)
+                        agent_data.telegram_id = str(bot_info.id)
+                        agent_data.telegram_username = bot_info.username
+                        agent_data.telegram_name = bot_info.first_name
+                        if bot_info.last_name:
+                            agent_data.telegram_name = (
+                                f"{bot_info.first_name} {bot_info.last_name}"
+                            )
+                        await agent_data.save()
+                else:
+                    cached_agent = pool._agent_bots[agent.id]
+                    if cached_agent.updated_at != agent.updated_at:
+                        if agent.telegram_config.get("token") not in pool._bots:
+                            await self.bot_pool.change_bot_token(agent)
+                            await asyncio.sleep(2)
+                        else:
+                            await self.bot_pool.modify_config(agent)
+            except Exception as e:
+                logger.error(
+                    f"failed to process agent {agent.id}, skipping this to the next agent: {e}"
+                )
 
     async def start(self, interval):
         logger.info("New agent addition tracking started...")

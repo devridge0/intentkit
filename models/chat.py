@@ -174,6 +174,7 @@ class ChatMessage(SQLModel, table=True):
 
     class Config:
         use_enum_values = True
+        json_encoders = {datetime: lambda v: v.isoformat(timespec="milliseconds")}
 
     def __str__(self):
         resp = ""

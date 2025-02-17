@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.exception_handlers import http_exception_handler
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.admin.api import admin_router, admin_router_readonly
 from app.admin.health import health_router
@@ -56,6 +58,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def global_exception_handler(request, exc):
+    """Log all 500 errors at ERROR level"""
+    if exc.status_code == 500:
+        logger.error(f"Internal Server Error for request {request.url}: {str(exc)}")
+    return await http_exception_handler(request, exc)
+
 
 app.include_router(chat_router)
 app.include_router(chat_router_readonly)

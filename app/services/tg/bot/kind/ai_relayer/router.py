@@ -89,7 +89,7 @@ async def gp_process_message(message: Message) -> None:
             )
             response = await execute_agent(input)
             await message.answer(
-                text=response[-1].message,
+                text=response[-1].message if response else "Server Error",
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -136,7 +136,7 @@ async def process_message(message: Message) -> None:
         )
         response = await execute_agent(input)
         await message.answer(
-            text=response[-1].message,
+            text=response[-1].message if response else "Server Error",
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
