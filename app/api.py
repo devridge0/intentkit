@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from app.admin.api import admin_router, admin_router_readonly
 from app.admin.health import health_router
@@ -56,6 +57,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Log all 500 errors at ERROR level"""
+    logger.error(f"Internal Server Error for request {request.url}: {str(exc)}")
+    return JSONResponse(content={"detail": "Internal Server Error"}, status_code=500)
+
 
 app.include_router(chat_router)
 app.include_router(chat_router_readonly)
