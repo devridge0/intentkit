@@ -4,29 +4,13 @@ This module provides the core API endpoints for agent execution and management.
 """
 
 from fastapi import APIRouter, Body, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 
-from abstracts.engine import AgentMessageInput
 from app.core.engine import execute_agent
 from models.chat import ChatMessage
 
 core_router = APIRouter(prefix="/core", tags=["core"])
-
-
-class ExecuteRequest(BaseModel):
-    """Request model for agent execution endpoint.
-
-    Attributes:
-        aid (str): Agent ID to execute
-        message (AgentMessageInput): Input message containing text and optional images
-        thread_id (str): Thread ID for conversation tracking
-    """
-
-    aid: str
-    message: AgentMessageInput
-    thread_id: str
 
 
 @core_router.post("/execute", response_model=list[ChatMessage])
