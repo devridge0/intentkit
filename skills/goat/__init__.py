@@ -265,7 +265,7 @@ def get_goat_skill(
             plugins=plugins,
         )
         for t in p_tools:
-            t.name = f"goat_{t.name.replace(".", "_")}"
+            t.name = f"goat_{t.name.replace('.', '_')}"
             t.description = f"This is plugin of GOAT tool, {t.description}"
         tools.extend(p_tools)
 
