@@ -210,51 +210,60 @@ async def initialize_agent(aid):
                 if chain_config:
                     chain_configs[chain_name] = chain_config
 
-            crossmint_wallet_data = (
-                agent_data.crossmint_wallet_data
-                if agent_data.crossmint_wallet_data
-                else {}
-            )
-            smart_wallet_data = create_smart_wallets_if_not_exist(
-                config.crossmint_api_key,
-                crossmint_wallet_data.get("smart"),
-            )
-
-            # save the wallet after first create
-            if (
-                not crossmint_wallet_data
-                or not crossmint_wallet_data.get("smart")
-                or not crossmint_wallet_data.get("smart").get("evm")
-                or not crossmint_wallet_data.get("smart").get("evm").get("address")
-            ):
-                await agent_store.set_data(
-                    {
-                        "crossmint_wallet_data": {"smart": smart_wallet_data},
-                    }
+            if len(chain_configs) > 0:
+                crossmint_wallet_data = (
+                    agent_data.crossmint_wallet_data
+                    if agent_data.crossmint_wallet_data
+                    else {}
                 )
-
-            # give rpc some time to prevent error #429
-            time.sleep(1)
-
-            try:
-                evm_crossmint_wallets = init_smart_wallets(
-                    config.crossmint_api_key, chain_configs, smart_wallet_data["evm"]
-                )
-            except Exception as e:
-                logger.warning(e)
-
-            for wallet in evm_crossmint_wallets:
                 try:
-                    s = get_goat_skill(
-                        wallet,
-                        agent.goat_skills,
-                        skill_store,
-                        agent_store,
-                        aid,
+                    smart_wallet_data = create_smart_wallets_if_not_exist(
+                        config.crossmint_api_key,
+                        crossmint_wallet_data.get("smart"),
                     )
-                    tools.extend(s)
+
+                    # save the wallet after first create
+                    if (
+                        not crossmint_wallet_data
+                        or not crossmint_wallet_data.get("smart")
+                        or not crossmint_wallet_data.get("smart").get("evm")
+                        or not crossmint_wallet_data.get("smart")
+                        .get("evm")
+                        .get("address")
+                    ):
+                        await agent_store.set_data(
+                            {
+                                "crossmint_wallet_data": {"smart": smart_wallet_data},
+                            }
+                        )
+
+                    # give rpc some time to prevent error #429
+                    time.sleep(1)
+
+                    evm_crossmint_wallets = init_smart_wallets(
+                        config.crossmint_api_key,
+                        chain_configs,
+                        smart_wallet_data["evm"],
+                    )
+
+                    for wallet in evm_crossmint_wallets:
+                        try:
+                            s = get_goat_skill(
+                                wallet,
+                                agent.goat_skills,
+                                skill_store,
+                                agent_store,
+                                aid,
+                            )
+                            tools.extend(s)
+                        except Exception as e:
+                            logger.warning(e)
                 except Exception as e:
                     logger.warning(e)
+            else:
+                logger.warning(
+                    "No chain configs found for the configured crossmint chains."
+                )
 
     # Enso skills
     if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
@@ -487,12 +496,16 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                         author_id=message.agent_id,
                         author_type=AuthorType.AGENT,
                         message=msg.content,
-                        input_tokens=msg.usage_metadata.get("input_tokens", 0)
-                        if hasattr(msg, "usage_metadata") and msg.usage_metadata
-                        else 0,
-                        output_tokens=msg.usage_metadata.get("output_tokens", 0)
-                        if hasattr(msg, "usage_metadata") and msg.usage_metadata
-                        else 0,
+                        input_tokens=(
+                            msg.usage_metadata.get("input_tokens", 0)
+                            if hasattr(msg, "usage_metadata") and msg.usage_metadata
+                            else 0
+                        ),
+                        output_tokens=(
+                            msg.usage_metadata.get("output_tokens", 0)
+                            if hasattr(msg, "usage_metadata") and msg.usage_metadata
+                            else 0
+                        ),
                         time_cost=this_time - last,
                     )
                     last = this_time
@@ -548,16 +561,18 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     author_type=AuthorType.SKILL,
                     message="",
                     skill_calls=skill_calls,
-                    input_tokens=cached_tool_step.usage_metadata.get("input_tokens", 0)
-                    if hasattr(cached_tool_step, "usage_metadata")
-                    and cached_tool_step.usage_metadata
-                    else 0,
-                    output_tokens=cached_tool_step.usage_metadata.get(
-                        "output_tokens", 0
-                    )
-                    if hasattr(cached_tool_step, "usage_metadata")
-                    and cached_tool_step.usage_metadata
-                    else 0,
+                    input_tokens=(
+                        cached_tool_step.usage_metadata.get("input_tokens", 0)
+                        if hasattr(cached_tool_step, "usage_metadata")
+                        and cached_tool_step.usage_metadata
+                        else 0
+                    ),
+                    output_tokens=(
+                        cached_tool_step.usage_metadata.get("output_tokens", 0)
+                        if hasattr(cached_tool_step, "usage_metadata")
+                        and cached_tool_step.usage_metadata
+                        else 0
+                    ),
                     time_cost=this_time - last,
                 )
                 last = this_time
