@@ -3,7 +3,7 @@
 This module provides the core API endpoints for agent execution and management.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -29,13 +29,17 @@ class ExecuteRequest(BaseModel):
     thread_id: str
 
 
-@core_router.post("/execute")
-async def execute(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
+@core_router.post("/execute", response_model=list[ChatMessage])
+async def execute(
+    message: ChatMessage = Body(
+        ChatMessage,
+        description="The chat message containing agent_id, chat_id and message content",
+    ),
+) -> list[ChatMessage]:
     """Execute an agent with the given input and return response lines.
 
     Args:
         message (ChatMessage): The chat message containing agent_id, chat_id and message content
-        debug (bool): Enable debug mode
 
     Returns:
         list[str]: Formatted response lines from agent execution
@@ -55,7 +59,7 @@ async def execute(message: ChatMessage, debug: bool = False) -> list[ChatMessage
         raise HTTPException(status_code=400, detail="Message text cannot be empty")
 
     try:
-        return await execute_agent(message, debug)
+        return await execute_agent(message)
     except NoResultFound:
         raise HTTPException(
             status_code=404, detail=f"Agent {message.agent_id} not found"
