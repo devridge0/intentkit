@@ -1,6 +1,7 @@
 import json
 import logging
 
+from aiogram import Bot
 from cdp import Wallet
 from cdp.cdp import Cdp
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
@@ -91,6 +92,26 @@ async def create_agent(
             latest_agent.id,
             wallet_data["default_address_id"],
         )
+
+    if agent.telegram_config:
+        tg_bot_token = agent.telegram_config.get("token")
+        if tg_bot_token:
+            try:
+                bot = Bot(token=tg_bot_token)
+                bot_info = await bot.get_me()
+                agent_data.telegram_id = str(bot_info.id)
+                agent_data.telegram_username = bot_info.username
+                agent_data.telegram_name = bot_info.first_name
+                await agent_data.save()
+                try:
+                    await bot.close()
+                except Exception as e:
+                    logger.info(
+                        f"failed to close bot with token {tg_bot_token} connection: {e}"
+                    )
+            except Exception as e:
+                raise Exception(f"Error getting telegram bot username: {e}")
+
     # Send Slack notification
     send_slack_message(
         message,
