@@ -3,7 +3,10 @@
 This module provides the core API endpoints for agent execution and management.
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Body, HTTPException
+from pydantic import AfterValidator
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -15,7 +18,7 @@ core_router = APIRouter(prefix="/core", tags=["core"])
 
 @core_router.post("/execute", response_model=list[ChatMessage])
 async def execute(
-    message: ChatMessage = Body(
+    message: Annotated[ChatMessage, AfterValidator(ChatMessage.model_validate)] = Body(
         ChatMessage,
         description="The chat message containing agent_id, chat_id and message content",
     ),
@@ -34,6 +37,7 @@ async def execute(
             - 404: If agent not found
             - 500: For other server-side errors
     """
+
     # Validate input parameters
     if not message.agent_id or not message.agent_id.strip():
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
