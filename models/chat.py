@@ -177,7 +177,13 @@ class ChatMessage(SQLModel, table=True):
         json_encoders = {datetime: lambda v: v.isoformat()}
 
     def __str__(self):
-        return f"ChatMessage(id={self.id}, agent_id={self.agent_id}, chat_id={self.chat_id}, message={self.message})"
+        resp = ""
+        if self.skill_calls:
+            for call in self.skill_calls:
+                resp += f"{call['name']} {call['parameters']}: {call['response'] if call['success'] else call['error_message']}\n"
+            resp += "\n"
+        resp += self.message
+        return resp
 
     async def save(self):
         async with get_session() as db:
