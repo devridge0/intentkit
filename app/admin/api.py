@@ -2,6 +2,7 @@ import json
 import logging
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramUnauthorizedError
 from cdp import Wallet
 from cdp.cdp import Cdp
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
@@ -105,12 +106,17 @@ async def create_agent(
                 await agent_data.save()
                 try:
                     await bot.close()
-                except Exception as e:
-                    logger.info(
-                        f"failed to close bot with token {tg_bot_token} connection: {e}"
-                    )
+                except Exception:
+                    pass
+            except TelegramUnauthorizedError as req_err:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unauthorized err getting telegram bot username with token {tg_bot_token}: {req_err}",
+                )
             except Exception as e:
-                raise Exception(f"Error getting telegram bot username: {e}")
+                raise Exception(
+                    f"Error getting telegram bot username with token {tg_bot_token}: {e}"
+                )
 
     # Send Slack notification
     send_slack_message(
