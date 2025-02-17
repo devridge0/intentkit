@@ -106,10 +106,8 @@ async def create_agent(
                 await agent_data.save()
                 try:
                     await bot.close()
-                except Exception as e:
-                    logger.info(
-                        f"failed to close bot with token {tg_bot_token} connection: {e}"
-                    )
+                except Exception:
+                    pass
             except TelegramUnauthorizedError as req_err:
                 raise HTTPException(
                     status_code=400,
