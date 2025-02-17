@@ -1,5 +1,7 @@
 import inspect
+import json
 import logging
+from datetime import datetime
 
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
@@ -16,6 +18,13 @@ from app.services.tg.utils.cleanup import remove_bot_name
 from models.chat import AuthorType, ChatMessage
 
 logger = logging.getLogger(__name__)
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def cur_func_name():
@@ -89,7 +98,7 @@ async def gp_process_message(message: Message) -> None:
             )
             response = await execute_agent(input)
             await message.answer(
-                text=response[-1].message,
+                text=response[-1].message if response else "No response generated",
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -136,7 +145,7 @@ async def process_message(message: Message) -> None:
         )
         response = await execute_agent(input)
         await message.answer(
-            text=response[-1].message,
+            text=response[-1].message if response else "No response generated",
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
