@@ -75,6 +75,60 @@ CDP_ENABLED=false
 CDP_SKILLS='["get_wallet_details", "get_balance"]'
 CDP_NETWORK_ID="base-mainnet"
 
+# GOAT settings (optional)
+GOAT_ENABLED=false
+CROSSMINT_CONFIG='{
+  "chains": [
+    "base"
+  ]
+}'
+GOAT_SKILLS='{
+    "inch1": {
+        "api_key": "1inch api key string"
+    },
+    "coingecko": {
+        "api_key": "coingecko api key string"
+    },
+    "allora": {
+        "api_key": "allora api key string",
+        "api_root": "https://api.upshot.xyz/v2/allora" 
+    },
+    "dexscreener": {},
+    "erc20": {
+        "tokens": [
+            "goat_plugins.erc20.token.USDC"
+        ]
+    },
+    "farcaster": {
+        "api_key": "farcaster api key string",
+        "base_url": "https://farcaster.xyz" 
+    },
+    "jsonrpc": {
+        "endpoint": "https://eth.llamarpc.com"
+    },
+    "jupiter": {},
+    "nansen": {
+        "api_key": "nansen api key string"
+    },
+    "opensea": {
+        "api_key": "opensea api key string"
+    },
+    "rugcheck": {
+        "jwt_token": "rugcheck JWT token string"
+    },
+    "spl_token": {
+        "network": "mainnet",
+        "tokens": [
+            "goat_plugins.erc20.token.USDC"
+        ]
+    },
+    "superfluid": {},
+    "uniswap": {
+        "api_key": "uniswap api key string",
+        "base_url": "https://app.uniswap.org" 
+    }
+}'
+
 # Enso settings (optional)
 ENSO_ENABLED=false
 ENSO_CONFIG='{
@@ -90,6 +144,12 @@ ACOLYT_CONFIG='{
   "api_key": ""
 }'
 ACOLYT_SKILLS='["ask_gpt"]'
+
+# Allora settings (optional)
+ALLORA_CONFIG='{
+  "api_key": ""
+}'
+ALLORA_SKILLS='["get_price_prediction"]'
 
 # Twitter settings (optional)
 # If you don't need to use the twitter skills, you can remove it in TWITTER_SKILLS
@@ -138,11 +198,16 @@ JSON_DATA=$(cat << EOF
   "cdp_skills": $CDP_SKILLS,
   "cdp_wallet_data": "$CDP_WALLET_DATA",
   "cdp_network_id": "$CDP_NETWORK_ID",
+  "goat_enabled": $GOAT_ENABLED,
+  "crossmint_config": $CROSSMINT_CONFIG,
+  "goat_skills": $GOAT_SKILLS,
   "enso_enabled": $ENSO_ENABLED,
   "enso_config": $ENSO_CONFIG,
   "enso_skills": $ENSO_SKILLS,
   "acolyt_config": $ACOLYT_CONFIG,
   "acolyt_skills": $ACOLYT_SKILLS,
+  "allora_config": $ALLORA_CONFIG,
+  "allora_skills": $ALLORA_SKILLS,
   "twitter_enabled": $TWITTER_ENTRYPOINT_ENABLED,
   "twitter_entrypoint_enabled": $TWITTER_ENTRYPOINT_ENABLED,
   "twitter_config": $TWITTER_CONFIG,
