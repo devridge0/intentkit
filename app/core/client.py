@@ -21,7 +21,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
         debug (bool): Enable debug mode
 
     Returns:
-        list[str]: Formatted response lines from agent execution
+        list[ChatMessage]: Formatted response lines from agent execution
 
     Raises:
         HTTPException: For API errors (in non-local environment)
@@ -35,8 +35,9 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     async with httpx.AsyncClient() as client:
         response = await client.post(
             url,
-            json={"message": message.model_dump(), "debug": debug},
+            json=message.model_dump(mode="json"),
             timeout=180,
         )
     response.raise_for_status()
-    return response.json()
+    json_data = response.json()
+    return [ChatMessage.model_validate(msg) for msg in json_data]
