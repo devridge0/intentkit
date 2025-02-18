@@ -50,7 +50,6 @@ from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
     create_smart_wallets_if_not_exist,
-    crossmint_chains,
     get_goat_skill,
     init_smart_wallets,
 )
@@ -200,70 +199,57 @@ async def initialize_agent(aid):
         tools.extend(cdp_tools)
 
     if agent.goat_enabled and agent.crossmint_config:
-        if (
-            agent.crossmint_config.get("chains")
-            and len(agent.crossmint_config.get("chains")) > 0
-        ):
-            chain_configs = {}
-            for chain_name in agent.crossmint_config["chains"]:
-                chain_config = crossmint_chains.get(chain_name)
-                if chain_config:
-                    chain_configs[chain_name] = chain_config
+        crossmint_networks = agent.crossmint_config.get("networks")
+        if crossmint_networks and len(crossmint_networks) > 0:
 
-            if len(chain_configs) > 0:
-                crossmint_wallet_data = (
-                    agent_data.crossmint_wallet_data
-                    if agent_data.crossmint_wallet_data
-                    else {}
+            crossmint_wallet_data = (
+                agent_data.crossmint_wallet_data
+                if agent_data.crossmint_wallet_data
+                else {}
+            )
+            try:
+                smart_wallet_data = create_smart_wallets_if_not_exist(
+                    config.crossmint_api_key,
+                    crossmint_wallet_data.get("smart"),
                 )
-                try:
-                    smart_wallet_data = create_smart_wallets_if_not_exist(
-                        config.crossmint_api_key,
-                        crossmint_wallet_data.get("smart"),
+
+                # save the wallet after first create
+                if (
+                    not crossmint_wallet_data
+                    or not crossmint_wallet_data.get("smart")
+                    or not crossmint_wallet_data.get("smart").get("evm")
+                    or not crossmint_wallet_data.get("smart").get("evm").get("address")
+                ):
+                    await agent_store.set_data(
+                        {
+                            "crossmint_wallet_data": {"smart": smart_wallet_data},
+                        }
                     )
 
-                    # save the wallet after first create
-                    if (
-                        not crossmint_wallet_data
-                        or not crossmint_wallet_data.get("smart")
-                        or not crossmint_wallet_data.get("smart").get("evm")
-                        or not crossmint_wallet_data.get("smart")
-                        .get("evm")
-                        .get("address")
-                    ):
-                        await agent_store.set_data(
-                            {
-                                "crossmint_wallet_data": {"smart": smart_wallet_data},
-                            }
+                # give rpc some time to prevent error #429
+                time.sleep(1)
+
+                evm_crossmint_wallets = init_smart_wallets(
+                    config.crossmint_api_key,
+                    config.chain_provider,
+                    crossmint_networks,
+                    smart_wallet_data["evm"],
+                )
+
+                for wallet in evm_crossmint_wallets:
+                    try:
+                        s = get_goat_skill(
+                            wallet,
+                            agent.goat_skills,
+                            skill_store,
+                            agent_store,
+                            aid,
                         )
-
-                    # give rpc some time to prevent error #429
-                    time.sleep(1)
-
-                    evm_crossmint_wallets = init_smart_wallets(
-                        config.crossmint_api_key,
-                        chain_configs,
-                        smart_wallet_data["evm"],
-                    )
-
-                    for wallet in evm_crossmint_wallets:
-                        try:
-                            s = get_goat_skill(
-                                wallet,
-                                agent.goat_skills,
-                                skill_store,
-                                agent_store,
-                                aid,
-                            )
-                            tools.extend(s)
-                        except Exception as e:
-                            logger.warning(e)
-                except Exception as e:
-                    logger.warning(e)
-            else:
-                logger.warning(
-                    "No chain configs found for the configured crossmint chains."
-                )
+                        tools.extend(s)
+                    except Exception as e:
+                        logger.warning(e)
+            except Exception as e:
+                logger.warning(e)
 
     # Enso skills
     if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
@@ -274,7 +260,7 @@ async def initialize_agent(aid):
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
                     agentkit.wallet if agentkit else None,
-                    config.rpc_base_mainnet,
+                    config.chain_provider,
                     skill_store,
                     agent_store,
                     aid,

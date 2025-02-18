@@ -156,7 +156,9 @@ class EnsoRouteShortcut(EnsoBaseTool):
     """
 
     name: str = "enso_route_shortcut"
-    description: str = "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
+    description: str = (
+        "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
+    )
     args_schema: Type[BaseModel] = EnsoRouteShortcutInput
 
     def _run(
@@ -281,8 +283,11 @@ class EnsoRouteShortcut(EnsoBaseTool):
                 )
 
                 if broadcast_requested:
+                    rpc_url = self.chain_provider.get_chain_config_by_id(
+                        chainId
+                    ).rpc_url
                     contract = EvmContractWrapper(
-                        self.rpc_node, ABI_ROUTE, json_dict.get("tx")
+                        rpc_url, ABI_ROUTE, json_dict.get("tx")
                     )
 
                     fn, fn_args = contract.fn_and_args
