@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +13,8 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel, select
 
 from models.db import get_session
+
+logger = logging.getLogger(__name__)
 
 
 class Agent(SQLModel, table=True):
@@ -188,13 +191,13 @@ class Agent(SQLModel, table=True):
         description="Mapping of skill set configurations for different platforms and capabilities",
     )
     # auto timestamp
-    created_at: SkipJsonSchema[datetime] | None = Field(
+    created_at: SkipJsonSchema[datetime] = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
-    updated_at: SkipJsonSchema[datetime] | None = Field(
+    updated_at: SkipJsonSchema[datetime] = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={
@@ -207,6 +210,7 @@ class Agent(SQLModel, table=True):
         """
         Dump the agent model to YAML format with field descriptions as comments.
         The comments are extracted from the field descriptions in the model.
+        Fields annotated with SkipJsonSchema will be excluded from the output.
 
         Returns:
             str: YAML representation of the agent with field descriptions as comments
@@ -215,7 +219,12 @@ class Agent(SQLModel, table=True):
         data = {}
         yaml_lines = []
 
-        for field_name, field in self.__fields__.items():
+        for field_name, field in self.model_fields.items():
+            logger.debug(f"Processing field {field_name} with type {field.metadata}")
+            # Skip fields with SkipJsonSchema annotation
+            if any(isinstance(item, SkipJsonSchema) for item in field.metadata):
+                continue
+
             value = getattr(self, field_name)
             if value is not None:
                 data[field_name] = value
@@ -232,14 +241,11 @@ class Agent(SQLModel, table=True):
                 if isinstance(value, str) and ("\n" in value or len(value) > 60):
                     # Use block literal style for multiline or long strings
                     yaml_value = yaml.dump(
-                        {field_name: value}, 
-                        default_flow_style=False,
-                        default_style='|'
+                        {field_name: value}, default_flow_style=False, default_style="|"
                     )
                 else:
                     yaml_value = yaml.dump(
-                        {field_name: value}, 
-                        default_flow_style=False
+                        {field_name: value}, default_flow_style=False
                     )
                 yaml_lines.append(yaml_value.rstrip())
 
