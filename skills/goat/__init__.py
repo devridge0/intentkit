@@ -25,25 +25,9 @@ from goat_wallets.crossmint import crossmint
 
 from abstracts.skill import SkillStoreABC
 from skills.goat.base import GoatBaseTool
-from utils.chain import ChainConfig, NetworkType
+from utils.chain import ChainProvider, Network
 
-from .base import base_url
-
-# TODO: add the configuration of the chains to a proper place. https://docs.crossmint.com/introduction/supported-chains
-crossmint_chains = {
-    "base": ChainConfig(
-        "base",
-        NetworkType.Mainnet,
-        "https://base-mainnet.g.alchemy.com/v2/demo",
-        "https://base-mainnet.g.alchemy.com/v2/demo",
-    ),
-    "arbitrum": ChainConfig(
-        "arbitrum",
-        NetworkType.Mainnet,
-        "https://arb-mainnet.g.alchemy.com/v2/demo",
-        "https://arb-mainnet.g.alchemy.com/v2/demo",
-    ),
-}
+from .base import CrossmintChainProviderAdapter, base_url
 
 
 def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
@@ -114,23 +98,25 @@ def create_smart_wallets_if_not_exist(api_key: str, wallet_data: dict | None):
 
 def init_smart_wallets(
     api_key: str,
-    chain_configs: Dict[str, ChainConfig],
+    chain_provider: ChainProvider,
+    networks: list[Network],
     wallet_data: dict | None,
 ):
+    cs_chain_provider = CrossmintChainProviderAdapter(chain_provider, networks)
     # Create Crossmint client
     crossmint_client = crossmint(api_key)
 
     wallets = []
-    for chain_name, chain_config in chain_configs.items():
+    for cfg in cs_chain_provider.chain_configs:
         wallet = crossmint_client["smartwallet"](
             {
                 "address": wallet_data["address"],
                 "signer": {
                     "secretKey": wallet_data["private_key"],
                 },
-                "provider": chain_config.rpc_url,
-                "ensProvider": chain_config.ens_url,
-                "chain": chain_name,
+                "provider": cfg.chain_config.rpc_url,
+                "ensProvider": cfg.chain_config.ens_url,
+                "chain": cfg.network_alias,
             }
         )
         wallets.append(wallet)

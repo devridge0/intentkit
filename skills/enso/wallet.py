@@ -291,7 +291,9 @@ class EnsoWalletApprove(EnsoBaseTool):
     """
 
     name: str = "enso_wallet_approve"
-    description: str = "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
+    description: str = (
+        "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
+    )
     args_schema: Type[BaseModel] = EnsoWalletApproveInput
     response_format: str = "content_and_artifact"
 
@@ -364,7 +366,8 @@ class EnsoWalletApprove(EnsoBaseTool):
                 content = EnsoWalletApproveOutput(**json_dict)
                 artifact = EnsoWalletApproveArtifact(**json_dict)
 
-                contract = EvmContractWrapper(self.rpc_node, ABI_ERC20, artifact.tx)
+                rpc_url = self.chain_provider.get_chain_config_by_id(chainId).rpc_url
+                contract = EvmContractWrapper(rpc_url, ABI_ERC20, artifact.tx)
 
                 fn, fn_args = contract.fn_and_args
                 fn_args["value"] = str(fn_args["value"])

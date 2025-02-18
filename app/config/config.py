@@ -7,6 +7,7 @@ import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from dotenv import load_dotenv
 
+from utils.chain import ChainProvider, QuicknodeChainProvider
 from utils.logging import setup_logging
 from utils.slack_alert import init_slack
 
@@ -108,9 +109,18 @@ class Config:
         self.sentry_profiles_sample_rate = float(
             self.load("SENTRY_PROFILES_SAMPLE_RATE", "0.01")
         )
+        # RPC Providers
+        self.quicknode_api_key = self.load("QUICKNODE_API_KEY")
+        if self.quicknode_api_key:
+            self.chain_provider: ChainProvider = QuicknodeChainProvider(
+                self.quicknode_api_key
+            )
+
+        if self.chain_provider:
+            self.chain_provider.init_chain_configs()
         # RPC
-        self.rpc_base_mainnet = self.load(
-            "RPC_BASE_MAINNET", "https://mainnet.base.org"
+        self.rpc_networks = self.load(
+            "RPC_NETWORKS", "base-mainnet,base-sepolia,ethereum-sepolia,solana-mainnet"
         )
         # ===== config loaded
         # Now we know the env, set up logging

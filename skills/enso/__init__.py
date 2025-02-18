@@ -13,6 +13,7 @@ from skills.enso.wallet import (
     EnsoGetWalletBalances,
     EnsoWalletApprove,
 )
+from utils.chain import ChainProvider
 
 
 def get_enso_skill(
@@ -20,7 +21,7 @@ def get_enso_skill(
     api_token: str,
     main_tokens: list[str],
     wallet: Wallet,
-    rpc_node: str,
+    chain_provider: ChainProvider,
     skill_store: SkillStoreABC,
     agent_store: SkillStoreABC,
     agent_id: str,
@@ -86,7 +87,7 @@ def get_enso_skill(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            rpc_node=rpc_node,
+            chain_provider=chain_provider,
             skill_store=skill_store,
             agent_store=agent_store,
             agent_id=agent_id,
@@ -99,7 +100,7 @@ def get_enso_skill(
             api_token=api_token,
             main_tokens=main_tokens,
             wallet=wallet,
-            rpc_node=rpc_node,
+            chain_provider=chain_provider,
             skill_store=skill_store,
             agent_store=agent_store,
             agent_id=agent_id,
