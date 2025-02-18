@@ -14,8 +14,12 @@ from fastapi import FastAPI
 from fastapi.exception_handlers import http_exception_handler
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.admin.api import admin_router, admin_router_readonly
-from app.admin.health import health_router
+from app.admin import (
+    admin_router,
+    admin_router_readonly,
+    health_router,
+    schema_router_readonly,
+)
 from app.config.config import config
 from app.core.api import core_router
 from app.entrypoints.web import chat_router, chat_router_readonly
@@ -72,6 +76,7 @@ app.include_router(chat_router)
 app.include_router(chat_router_readonly)
 app.include_router(admin_router)
 app.include_router(admin_router_readonly)
+app.include_router(schema_router_readonly)
 app.include_router(core_router)
 app.include_router(twitter_callback_router)
 app.include_router(twitter_oauth2_router)

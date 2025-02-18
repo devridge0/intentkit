@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import yaml
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -201,6 +202,48 @@ class Agent(SQLModel, table=True):
         },
         nullable=False,
     )
+
+    def to_yaml(self) -> str:
+        """
+        Dump the agent model to YAML format with field descriptions as comments.
+        The comments are extracted from the field descriptions in the model.
+
+        Returns:
+            str: YAML representation of the agent with field descriptions as comments
+        """
+        # Get all fields that have values
+        data = {}
+        yaml_lines = []
+
+        for field_name, field in self.__fields__.items():
+            value = getattr(self, field_name)
+            if value is not None:
+                data[field_name] = value
+                # Add comment from field description if available
+                description = field.description
+                if description:
+                    if len(yaml_lines) > 0:  # Add blank line between fields
+                        yaml_lines.append("")
+                    # Split description into multiple lines if too long
+                    desc_lines = [f"# {line}" for line in description.split("\n")]
+                    yaml_lines.extend(desc_lines)
+
+                # Convert the field value to YAML with block style for strings
+                if isinstance(value, str) and ("\n" in value or len(value) > 60):
+                    # Use block literal style for multiline or long strings
+                    yaml_value = yaml.dump(
+                        {field_name: value}, 
+                        default_flow_style=False,
+                        default_style='|'
+                    )
+                else:
+                    yaml_value = yaml.dump(
+                        {field_name: value}, 
+                        default_flow_style=False
+                    )
+                yaml_lines.append(yaml_value.rstrip())
+
+        return "\n".join(yaml_lines)
 
     @classmethod
     async def count(cls) -> int:
@@ -473,10 +516,6 @@ class AgentResponse(BaseModel):
             has_twitter_self_key = all(
                 key in twitter_config and twitter_config[key] for key in required_keys
             )
-            # Remove sensitive fields
-            for key in required_keys:
-                twitter_config.pop(key, None)
-            data["twitter_config"] = twitter_config
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None
@@ -486,8 +525,6 @@ class AgentResponse(BaseModel):
             telegram_config and "token" in telegram_config and telegram_config["token"]
         )
         if telegram_config and "token" in telegram_config:
-            telegram_config.pop("token")
-            data["telegram_config"] = telegram_config
             if agent_data:
                 linked_telegram_username = agent_data.telegram_username
                 linked_telegram_name = agent_data.telegram_name
