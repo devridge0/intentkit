@@ -1,0 +1,196 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent",
+  "description": "Agent model.",
+  "type": "object",
+  "x-groups": [
+    {
+      "id": "basic",
+      "title": "Basic Information",
+      "order": 1
+    },
+    {
+      "id": "ai",
+      "title": "AI Configuration",
+      "order": 2
+    },
+    {
+      "id": "autonomous",
+      "title": "Autonomous Mode",
+      "order": 3
+    },
+    {
+      "id": "onchain",
+      "title": "On-Chain Integrations",
+      "order": 4
+    },
+    {
+      "id": "social",
+      "title": "Social Media",
+      "order": 5
+    },
+    {
+      "id": "skills",
+      "title": "Agent Skills",
+      "order": 6
+    }
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
+      "readOnly": true,
+      "x-group": "basic"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the agent",
+      "x-group": "basic"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Owner identifier of the agent, used for access control",
+      "readOnly": true,
+      "x-group": "basic"
+    },
+    "upstream_id": {
+      "type": "string",
+      "description": "External reference ID for idempotent operations",
+      "readOnly": true,
+      "x-group": "basic"
+    },
+    "model": {
+      "type": "string",
+      "description": "AI model identifier to be used by this agent for processing requests",
+      "default": "gpt-4o-mini",
+      "x-group": "ai"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Base system prompt that defines the agent's behavior and capabilities",
+      "x-group": "ai"
+    },
+    "prompt_append": {
+      "type": "string",
+      "description": "Additional system prompt that overrides or extends the base prompt",
+      "x-group": "ai"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "AI model temperature parameter controlling response randomness (0.0~1.0)",
+      "default": 0.7,
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-group": "ai"
+    },
+    "frequency_penalty": {
+      "type": "number",
+      "description": "Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+      "default": 0.0,
+      "minimum": -2.0,
+      "maximum": 2.0,
+      "x-group": "ai"
+    },
+    "presence_penalty": {
+      "type": "number",
+      "description": "Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+      "default": 0.0,
+      "minimum": -2.0,
+      "maximum": 2.0,
+      "x-group": "ai"
+    },
+    "autonomous_enabled": {
+      "type": "boolean",
+      "description": "Whether the agent can operate autonomously without user input",
+      "default": false,
+      "x-group": "autonomous"
+    },
+    "autonomous_minutes": {
+      "type": "integer",
+      "description": "Interval in minutes between autonomous operations when enabled",
+      "default": 240,
+      "x-group": "autonomous"
+    },
+    "autonomous_prompt": {
+      "type": "string",
+      "description": "Special prompt used during autonomous operation mode",
+      "x-group": "autonomous"
+    },
+    "cdp_enabled": {
+      "type": "boolean",
+      "description": "Whether CDP (Crestal Development Platform) integration is enabled",
+      "default": false,
+      "x-group": "onchain"
+    },
+    "cdp_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of CDP skills available to this agent",
+      "x-group": "skills"
+    },
+    "cdp_network_id": {
+      "type": "string",
+      "description": "Network identifier for CDP integration",
+      "default": "base-mainnet",
+      "x-group": "onchain"
+    },
+    "twitter_entrypoint_enabled": {
+      "type": "boolean",
+      "description": "Whether the agent can receive events from Twitter",
+      "default": false,
+      "x-group": "social"
+    },
+    "twitter_config": {
+      "type": "object",
+      "description": "Twitter integration configuration settings",
+      "x-group": "social"
+    },
+    "twitter_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Twitter-specific skills available to this agent",
+      "x-group": "social"
+    },
+    "telegram_entrypoint_enabled": {
+      "type": "boolean",
+      "description": "Whether the agent can receive events from Telegram",
+      "default": false,
+      "x-group": "social"
+    },
+    "telegram_config": {
+      "type": "object",
+      "description": "Telegram integration configuration settings",
+      "x-group": "social"
+    },
+    "telegram_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Telegram-specific skills available to this agent",
+      "x-group": "social"
+    },
+    "crestal_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Crestal platform-specific skills available to this agent",
+      "x-group": "skills"
+    },
+    "common_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of general-purpose skills available to this agent",
+      "x-group": "skills"
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
