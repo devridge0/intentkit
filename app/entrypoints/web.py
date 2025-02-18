@@ -167,7 +167,7 @@ async def debug_chat(
             resp += "[ Agent cold start ... ]\n"
             resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
         if message.author_type == AuthorType.SKILL:
-            resp += "[ Calling skills ... ]\n\n"
+            resp += "[ Skill Calls: ]\n\n"
             for skill_call in message.skill_calls:
                 resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
                 if skill_call["success"]:
