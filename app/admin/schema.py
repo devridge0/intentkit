@@ -14,7 +14,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 AGENT_SCHEMA_PATH = PROJECT_ROOT / "models" / "agent_schema.json"
 
 
-@schema_router_readonly.get("/schema/agent", tags=["Schema"])
+@schema_router_readonly.get(
+    "/schema/agent", tags=["Schema"], operation_id="get_agent_schema"
+)
 async def get_agent_schema() -> JSONResponse:
     """Get the JSON schema for Agent model.
 
