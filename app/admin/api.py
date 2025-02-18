@@ -5,12 +5,22 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramUnauthorizedError
 from cdp import Wallet
 from cdp.cdp import Cdp
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Path,
+    Response,
+    UploadFile,
+)
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from yaml import safe_load
 
 from app.config.config import config
 from app.core.engine import clean_agent_memory
@@ -28,34 +38,19 @@ verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_s
 logger = logging.getLogger(__name__)
 
 
-@admin_router.post("/agents", tags=["Agent"], status_code=201)
-async def create_agent(
-    request: Request,
-    agent: Agent = Body(Agent, description="Agent configuration"),
-    subject: str = Depends(verify_jwt),
-) -> AgentResponse:
-    """Create or update an agent.
-
-    This endpoint:
-    1. Validates agent ID format
-    2. Creates or updates agent configuration
-    3. Reinitializes agent if already in cache
-    4. Masks sensitive data in response
+async def _process_agent(
+    agent: Agent, subject: str | None = None, slack_message: str | None = None
+) -> tuple[Agent, AgentData]:
+    """Shared function to process agent creation or update.
 
     Args:
-      - agent: Agent configuration
-      - db: Database session
+        agent: Agent configuration to process
+        subject: Optional subject from JWT token
+        slack_message: Optional custom message for Slack notification
 
     Returns:
-      - AgentResponse: Updated agent configuration with additional processed data
-
-    Raises:
-      - HTTPException:
-          - 400: Invalid agent ID format
-          - 500: Database error
+        tuple[Agent, AgentData]: Tuple of (processed agent, agent data)
     """
-    body = await request.body()
-    logger.info(f"Raw request body for create_agent: {body.decode()}")
     if subject:
         agent.owner = subject
 
@@ -64,14 +59,12 @@ async def create_agent(
 
     has_wallet = False
     agent_data = None
-    if is_new:
-        message = "Agent Created"
-    else:
-        message = "Agent Updated"
+    if not is_new:
         agent_data = await AgentData.get(latest_agent.id)
         if agent_data and agent_data.cdp_wallet_data:
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
+
     if not has_wallet:
         # create the wallet
         Cdp.configure(
@@ -119,8 +112,9 @@ async def create_agent(
                 )
 
     # Send Slack notification
+    slack_message = slack_message or ("Agent Created" if is_new else "Agent Updated")
     send_slack_message(
-        message,
+        slack_message,
         attachments=[
             {
                 "color": "good",
@@ -178,17 +172,45 @@ async def create_agent(
         ],
     )
 
-    # Mask sensitive data in response
-    if latest_agent.skill_sets is not None:
-        for key in latest_agent.skill_sets:
-            latest_agent.skill_sets[key] = {}
+    return latest_agent, agent_data
 
-    # Convert to AgentResponse
+
+@admin_router.post(
+    "/agents", tags=["Agent"], status_code=201, operation_id="post_agent"
+)
+async def create_agent(
+    agent: Agent = Body(Agent, description="Agent configuration"),
+    subject: str = Depends(verify_jwt),
+) -> AgentResponse:
+    """Create or update an agent.
+
+    This endpoint:
+    1. Validates agent ID format
+    2. Creates or updates agent configuration
+    3. Reinitializes agent if already in cache
+    4. Masks sensitive data in response
+
+    Args:
+      - agent: Agent configuration
+      - db: Database session
+
+    Returns:
+      - AgentResponse: Updated agent configuration with additional processed data
+
+    Raises:
+      - HTTPException:
+          - 400: Invalid agent ID format
+          - 500: Database error
+    """
+    latest_agent, agent_data = await _process_agent(agent, subject)
     return AgentResponse.from_agent(latest_agent, agent_data)
 
 
 @admin_router_readonly.get(
-    "/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+    "/agents",
+    tags=["Agent"],
+    dependencies=[Depends(verify_jwt)],
+    operation_id="get_agents",
 )
 async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
@@ -217,7 +239,10 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
 
 
 @admin_router_readonly.get(
-    "/agents/{agent_id}", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+    "/agents/{agent_id}",
+    tags=["Agent"],
+    dependencies=[Depends(verify_jwt)],
+    operation_id="get_agent",
 )
 async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)) -> AgentResponse:
     """Get a single agent by ID.
@@ -269,6 +294,7 @@ class MemCleanRequest(BaseModel):
     tags=["Agent"],
     status_code=201,
     dependencies=[Depends(verify_jwt)],
+    operation_id="clean_agent_memory",
 )
 async def clean_memory(
     request: MemCleanRequest = Body(
@@ -320,3 +346,108 @@ async def clean_memory(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+@admin_router_readonly.get(
+    "/agents/{agent_id}/export", tags=["Agent"], operation_id="export_agent"
+)
+async def export_agent(
+    agent_id: str,
+) -> str:
+    """Export agent configuration as YAML.
+
+    Args:
+        agent_id: ID of the agent to export
+
+    Returns:
+        str: YAML configuration of the agent
+
+    Raises:
+        HTTPException:
+            - 404: Agent not found
+    """
+    try:
+        agent = await Agent.get(agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        yaml_content = agent.to_yaml()
+        return Response(
+            content=yaml_content,
+            media_type="application/x-yaml",
+            headers={"Content-Disposition": f'attachment; filename="{agent_id}.yaml"'},
+        )
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    except Exception as e:
+        logger.error(f"Error exporting agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@admin_router.put(
+    "/agents/{agent_id}/import", tags=["Agent"], operation_id="import_agent"
+)
+async def import_agent(
+    agent_id: str = Path(...),
+    file: UploadFile = File(
+        ..., description="YAML file containing agent configuration"
+    ),
+    subject: str = Depends(verify_jwt),
+) -> AgentResponse:
+    """Import agent configuration from YAML file.
+    Only updates existing agents, will not create new ones.
+
+    Args:
+        agent_id: ID of the agent to update
+        file: YAML file containing agent configuration
+        subject: JWT subject for authorization
+        db: Database session
+
+    Returns:
+        AgentResponse: Updated agent configuration
+
+    Raises:
+        HTTPException:
+            - 400: Invalid YAML or agent configuration
+            - 404: Agent not found
+            - 500: Server error
+    """
+    try:
+        # First check if agent exists
+        existing_agent = await Agent.get(agent_id)
+        if not existing_agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        # Read and parse YAML
+        content = await file.read()
+        try:
+            yaml_data = safe_load(content)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
+
+        # Ensure agent ID matches
+        if yaml_data.get("id") != agent_id:
+            raise HTTPException(
+                status_code=400, detail="Agent ID in YAML does not match URL parameter"
+            )
+
+        # Create Agent instance from YAML
+        try:
+            agent = Agent(**yaml_data)
+        except ValidationError as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid agent configuration: {e}"
+            )
+
+        # Process the agent
+        latest_agent, agent_data = await _process_agent(
+            agent, subject, slack_message="Agent Updated via YAML Import"
+        )
+
+        return AgentResponse.from_agent(latest_agent, agent_data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error importing agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
