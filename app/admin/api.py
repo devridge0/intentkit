@@ -175,7 +175,9 @@ async def _process_agent(
     return latest_agent, agent_data
 
 
-@admin_router.post("/agents", tags=["Agent"], status_code=201)
+@admin_router.post(
+    "/agents", tags=["Agent"], status_code=201, operation_id="post_agent"
+)
 async def create_agent(
     agent: Agent = Body(Agent, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
@@ -205,7 +207,10 @@ async def create_agent(
 
 
 @admin_router_readonly.get(
-    "/agents", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+    "/agents",
+    tags=["Agent"],
+    dependencies=[Depends(verify_jwt)],
+    operation_id="get_agents",
 )
 async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
@@ -234,7 +239,10 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
 
 
 @admin_router_readonly.get(
-    "/agents/{agent_id}", tags=["Agent"], dependencies=[Depends(verify_jwt)]
+    "/agents/{agent_id}",
+    tags=["Agent"],
+    dependencies=[Depends(verify_jwt)],
+    operation_id="get_agent",
 )
 async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)) -> AgentResponse:
     """Get a single agent by ID.
@@ -286,6 +294,7 @@ class MemCleanRequest(BaseModel):
     tags=["Agent"],
     status_code=201,
     dependencies=[Depends(verify_jwt)],
+    operation_id="clean_agent_memory",
 )
 async def clean_memory(
     request: MemCleanRequest = Body(
@@ -339,7 +348,9 @@ async def clean_memory(
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
-@admin_router_readonly.get("/agents/{agent_id}/export", tags=["Agent"])
+@admin_router_readonly.get(
+    "/agents/{agent_id}/export", tags=["Agent"], operation_id="export_agent"
+)
 async def export_agent(
     agent_id: str,
 ) -> str:
@@ -373,7 +384,9 @@ async def export_agent(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@admin_router.put("/agents/{agent_id}/import", tags=["Agent"])
+@admin_router.put(
+    "/agents/{agent_id}/import", tags=["Agent"], operation_id="import_agent"
+)
 async def import_agent(
     agent_id: str = Path(...),
     file: UploadFile = File(
