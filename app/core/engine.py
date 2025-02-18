@@ -470,11 +470,11 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     )
 
     # run
-    try:
-        cached_tool_step = None
-        async for chunk in executor.astream(
-            {"messages": [HumanMessage(content=content)]}, stream_config
-        ):
+    cached_tool_step = None
+    async for chunk in executor.astream(
+        {"messages": [HumanMessage(content=content)]}, stream_config
+    ):
+        try:
             this_time = time.perf_counter()
             logger.debug(f"stream chunk: {chunk}", extra={"thread_id": thread_id})
             if "agent" in chunk and "messages" in chunk["agent"]:
@@ -543,7 +543,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                             }
                             if msg.status == "error":
                                 skill_call["success"] = False
-                                skill_call["error_message"] = msg.error
+                                skill_call["error_message"] = msg.content
                             else:
                                 if debug:
                                     skill_call["response"] = msg.content
@@ -589,22 +589,22 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     "unexpected message type: " + str(chunk),
                     extra={"thread_id": thread_id},
                 )
-    except Exception as e:
-        logger.error(
-            f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
-        )
-        error_message = ChatMessage(
-            id=str(XID()),
-            agent_id=message.agent_id,
-            chat_id=message.chat_id,
-            author_id=message.agent_id,
-            author_type=AuthorType.SYSTEM,
-            message=f"Error in agent:\n  {str(e)}",
-            time_cost=time.perf_counter() - start,
-        )
-        await error_message.save()
-        resp.append(error_message)
-
+        except Exception as e:
+            logger.error(
+                f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
+            )
+            error_message = ChatMessage(
+                id=str(XID()),
+                agent_id=message.agent_id,
+                chat_id=message.chat_id,
+                author_id=message.agent_id,
+                author_type=AuthorType.SYSTEM,
+                message=f"Error in agent:\n  {str(e)}",
+                time_cost=time.perf_counter() - start,
+            )
+            await error_message.save()
+            resp.append(error_message)
+            return resp
     return resp
 
 
