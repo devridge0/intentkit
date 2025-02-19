@@ -215,7 +215,6 @@ class Agent(SQLModel, table=True):
         Returns:
             str: YAML representation of the agent with field descriptions as comments
         """
-        # Get all fields that have values
         data = {}
         yaml_lines = []
 
@@ -237,19 +236,34 @@ class Agent(SQLModel, table=True):
                     desc_lines = [f"# {line}" for line in description.split("\n")]
                     yaml_lines.extend(desc_lines)
 
-                # Convert the field value to YAML with block style for strings
-                if isinstance(value, str) and ("\n" in value or len(value) > 60):
-                    # Use block literal style for multiline or long strings
-                    yaml_value = yaml.dump(
-                        {field_name: value}, default_flow_style=False, default_style="|"
-                    )
+                # Format the value based on its type
+                if isinstance(value, str):
+                    if "\n" in value or len(value) > 60:
+                        # Use block literal style (|) for multiline strings
+                        # Remove any existing escaped newlines and use actual line breaks
+                        value = value.replace("\\n", "\n")
+                        yaml_value = f"{field_name}: |-\n"
+                        # Indent each line with 2 spaces
+                        yaml_value += "\n".join(f"  {line}" for line in value.split("\n"))
+                        yaml_lines.append(yaml_value)
+                    else:
+                        # Use flow style for short strings
+                        yaml_value = yaml.dump(
+                            {field_name: value}, 
+                            default_flow_style=False,
+                            allow_unicode=True  # This ensures emojis are preserved
+                        )
+                        yaml_lines.append(yaml_value.rstrip())
                 else:
+                    # Handle non-string values
                     yaml_value = yaml.dump(
-                        {field_name: value}, default_flow_style=False
+                        {field_name: value}, 
+                        default_flow_style=False,
+                        allow_unicode=True
                     )
-                yaml_lines.append(yaml_value.rstrip())
+                    yaml_lines.append(yaml_value.rstrip())
 
-        return "\n".join(yaml_lines)
+        return "\n".join(yaml_lines) + "\n"
 
     @classmethod
     async def count(cls) -> int:
