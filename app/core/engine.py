@@ -66,15 +66,25 @@ agents_updated: dict[str, datetime] = {}
 
 
 def agent_prompt(agent: Agent) -> str:
-    prompt = ""
+    prompt = "# SYSTEM PROMPT\n\n"
     if config.system_prompt:
         prompt += config.system_prompt + "\n\n"
     if agent.name:
-        prompt += f"Your name is {agent.name}.\n\n"
+        prompt += f"Your name is {agent.name}.\n"
+    if agent.ticker:
+        prompt += f"Your ticker symbol is {agent.ticker}.\n"
+    prompt += "\n"
+    if agent.purpose:
+        prompt += f"## Purpose\n\n{agent.purpose}\n\n"
+    if agent.personality:
+        prompt += f"## Personality\n\n{agent.personality}\n\n"
+    if agent.principles:
+        prompt += f"## Principles\n\n{agent.principles}\n\n"
     if agent.prompt:
-        prompt += agent.prompt
+        prompt += f"## Initial Rules\n\n{agent.prompt}\n\n"
     elif agent.cdp_enabled:
         prompt += (
+            "## Coinbase AgentKit Skills Guide\n\n"
             "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
             "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
             "them from the faucet if you are on network ID 'base-mainnet'. If not, you can provide your wallet "
@@ -84,13 +94,12 @@ def agent_prompt(agent: Agent) -> str:
             "you must say so, and encourage them to implement it themselves using the CDP SDK + Agentkit, "
             "recommend they go to docs.cdp.coinbase.com for more information. Be concise and helpful with your "
             "responses. Refrain from restating your tools' descriptions unless it is explicitly requested."
+            "\n\nWallet addresses are public information. If someone asks for your default wallet, current wallet, "
+            "personal wallet, crypto wallet, or wallet public address, don't use any address in message history, "
+            "you must use the 'get_wallet_details' tool to retrieve your wallet address every time."
         )
-    if agent.cdp_enabled:
-        prompt += """\n\nWallet addresses are public information.  If someone asks for your default wallet, 
-            current wallet, personal wallet, crypto wallet, or wallet public address, don't use any address in message history,
-            you must use the "get_wallet_details" tool to retrieve your wallet address every time.\n\n"""
     if agent.enso_enabled:
-        prompt += """\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
+        prompt += """## ENSO Skills Guide\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
         including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
         ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
         Utilize enso_route_shortcut to find the best swap or deposit route. Set broadcast_request to True only when the 
@@ -98,7 +107,7 @@ def agent_prompt(agent: Agent) -> str:
         Route Shortcut broadcasts to fail. To avoid this, use the enso_broadcast_wallet_approve tool that requires explicit 
         user confirmation before broadcasting any approval transactions for security reasons.\n\n"""
     if agent.goat_enabled:
-        prompt += """\n\nYou're using the Great Onchain Agent Toolkit (GOAT) SDK, which provides tools for DeFi, minting, betting, and analytics.
+        prompt += """## GOAT Skills Guide\n\nYou're using the Great Onchain Agent Toolkit (GOAT) SDK, which provides tools for DeFi, minting, betting, and analytics.
         GOAT supports EVM blockchains and various wallets, including keypairs, smart wallets, LIT, and MPC.\n\n"""
     return prompt
 
