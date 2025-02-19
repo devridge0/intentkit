@@ -11,6 +11,10 @@ class IntentKitSkill(BaseTool):
 
     agent_id: str
     skill_store: "SkillStoreABC"
+    # overwrite the value of BaseTool
+    handle_tool_error: True
+    # overwrite the value of BaseTool
+    handle_validation_error: True
 
 
 class SkillStoreABC(ABC):
