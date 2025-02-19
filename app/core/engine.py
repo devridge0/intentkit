@@ -197,7 +197,7 @@ async def initialize_agent(aid):
         # Filter the tools to only include the ones that in agent.cdp_skills.
         if agent.cdp_skills and len(agent.cdp_skills) > 0:
             cdp_tools = [tool for tool in cdp_tools if tool.name in agent.cdp_skills]
-        tools.extend(cdp_tools)
+            tools.extend(cdp_tools)
 
     if agent.goat_enabled and agent.crossmint_config:
         if (
