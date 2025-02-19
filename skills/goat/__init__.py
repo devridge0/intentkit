@@ -239,13 +239,6 @@ def get_goat_skill(
 
     tools = []
     try:
-        for p_name, plugin in plugins.items():
-            p_tools = get_on_chain_tools(
-                wallet=wallet,
-                plugins=[plugin],
-            )
-            time.sleep(0.2)
-
         p_tools = get_on_chain_tools(
             wallet=wallet,
             plugins=plugins,
