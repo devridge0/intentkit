@@ -119,7 +119,7 @@ class Config:
                 self.quicknode_api_key
             )
 
-        if self.chain_provider:
+        if hasattr(self, "chain_provider"):
             self.chain_provider.init_chain_configs()
         # RPC
         self.rpc_networks = self.load(
