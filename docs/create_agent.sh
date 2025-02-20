@@ -10,7 +10,7 @@ JWT_TOKEN="your-jwt-token-here"
 # Change this to your actual JWT token
 
 # Agent ID - must contain only lowercase letters, numbers, and hyphens
-AGENT_ID="local3"
+AGENT_ID="my-test-agent"
 
 # Agent name
 AGENT_NAME="IntentKit"
@@ -76,7 +76,7 @@ CDP_SKILLS='["get_wallet_details", "get_balance"]'
 CDP_NETWORK_ID="base-mainnet"
 
 # GOAT settings (optional)
-GOAT_ENABLED=true
+GOAT_ENABLED=false
 CROSSMINT_CONFIG='{
   "networks": [
     "base-mainnet"
