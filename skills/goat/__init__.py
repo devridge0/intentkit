@@ -27,10 +27,10 @@ from abstracts.skill import SkillStoreABC
 from skills.goat.base import GoatBaseTool
 from utils.chain import ChainProvider, Network
 
-from .base import CrossmintChainProviderAdapter, base_url
+from .base import CrossmintChainProviderAdapter
 
 
-def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
+def create_smart_wallet(base_url: str, api_key: str, signer_address: str) -> Dict:
     url = f"{base_url}/api/v1-alpha2/wallets"
     headers = {
         "Content-Type": "application/json",
@@ -65,7 +65,9 @@ def create_smart_wallet(api_key: str, signer_address: str) -> Dict:
             raise Exception(f"error from Crossmint API: {e}") from e
 
 
-def create_smart_wallets_if_not_exist(api_key: str, wallet_data: dict | None):
+def create_smart_wallets_if_not_exist(
+    base_url: str, api_key: str, wallet_data: dict | None
+):
     evm_wallet_data = wallet_data.get("evm") if wallet_data else None
     # no wallet data or private_key is empty
     if not evm_wallet_data or not evm_wallet_data.get("private_key"):
@@ -83,7 +85,7 @@ def create_smart_wallets_if_not_exist(api_key: str, wallet_data: dict | None):
 
         signer_address = Account.from_key(evm_wallet_data["private_key"]).address
 
-        new_smart_wallet = create_smart_wallet(api_key, signer_address)
+        new_smart_wallet = create_smart_wallet(base_url, api_key, signer_address)
         if not new_smart_wallet or not new_smart_wallet.get("address"):
             raise RuntimeError("Failed to create smart wallet")
 
