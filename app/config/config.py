@@ -86,6 +86,7 @@ class Config:
         # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
         self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")
+        self.xai_api_key = self.load("XAI_API_KEY")
         self.system_prompt = self.load("SYSTEM_PROMPT")
         # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")

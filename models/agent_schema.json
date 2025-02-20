@@ -47,6 +47,26 @@
       "description": "Display name of the agent",
       "x-group": "basic"
     },
+    "ticker": {
+      "type": "string",
+      "description": "Ticker symbol of the agent",
+      "x-group": "basic"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Purpose or role of the agent",
+      "x-group": "basic"
+    },
+    "personality": {
+      "type": "string",
+      "description": "Personality traits of the agent",
+      "x-group": "basic"
+    },
+    "principles": {
+      "type": "string",
+      "description": "Principles or values of the agent",
+      "x-group": "basic"
+    },
     "owner": {
       "type": "string",
       "description": "Owner identifier of the agent, used for access control",
@@ -61,8 +81,9 @@
     },
     "model": {
       "type": "string",
-      "description": "AI model identifier to be used by this agent for processing requests",
+      "description": "AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
       "default": "gpt-4o-mini",
+      "enum": ["gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest", "deepseek-chat", "deepseek-reasoner", "grok-2"],
       "x-group": "ai"
     },
     "prompt": {
@@ -136,6 +157,22 @@
       "default": "base-mainnet",
       "x-group": "onchain"
     },
+    "crossmint_config": {
+      "type": "object",
+      "description": "Dict of Crossmint wallet configurations",
+      "x-group": "onchain"
+    },
+    "goat_enabled": {
+      "type": "boolean",
+      "description": "Whether GOAT integration is enabled",
+      "default": false,
+      "x-group": "onchain"
+    },
+    "goat_skills": {
+      "type": "object",
+      "description": "Dict of GOAT skills and their corresponding configurations",
+      "x-group": "onchain"
+    },
     "twitter_entrypoint_enabled": {
       "type": "boolean",
       "description": "Whether the agent can receive events from Twitter",
@@ -188,6 +225,65 @@
         "type": "string"
       },
       "description": "List of general-purpose skills available to this agent",
+      "x-group": "skills"
+    },
+    "skills": {
+      "type": "object",
+      "description": "Dict of skills and their corresponding configurations",
+      "x-group": "skills"
+    },
+    "enso_enabled": {
+      "type": "boolean",
+      "description": "Whether Enso integration is enabled",
+      "default": false,
+      "x-group": "onchain"
+    },
+    "enso_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Enso-specific skills available to this agent",
+      "x-group": "skills"
+    },
+    "enso_config": {
+      "type": "object",
+      "description": "Enso integration configuration settings",
+      "x-group": "onchain"
+    },
+    "acolyt_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Acolyt-specific skills available to this agent",
+      "x-group": "skills"
+    },
+    "acolyt_config": {
+      "type": "object",
+      "description": "Acolyt integration configuration settings",
+      "x-group": "onchain"
+    },
+    "allora_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Allora-specific skills available to this agent",
+      "x-group": "skills"
+    },
+    "allora_config": {
+      "type": "object",
+      "description": "Allora integration configuration settings",
+      "x-group": "onchain"
+    },
+    "skill_sets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Mapping of skill set configurations for different platforms and capabilities",
       "x-group": "skills"
     }
   },
