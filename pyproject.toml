@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "intentkit"
-version = "0.1.0"
+version = "0.1.19"
 description = "Intent-based AI Agent Platform"
 authors = ["Ruihua <ruihua@crestal.network>"]
 readme = "README.md"
