@@ -3,8 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.admin.api import admin_router_readonly
-from app.admin.health import health_router
+from app.admin import admin_router_readonly, health_router, schema_router_readonly
 from app.config.config import config
 from app.entrypoints.web import chat_router_readonly
 from models.db import init_db
@@ -24,4 +23,5 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(health_router)
 app.include_router(admin_router_readonly)
+app.include_router(schema_router_readonly)
 app.include_router(chat_router_readonly)

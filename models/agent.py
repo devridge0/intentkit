@@ -1,7 +1,9 @@
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import yaml
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -11,6 +13,8 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel, select
 
 from models.db import get_session
+
+logger = logging.getLogger(__name__)
 
 
 class Agent(SQLModel, table=True):
@@ -187,13 +191,13 @@ class Agent(SQLModel, table=True):
         description="Mapping of skill set configurations for different platforms and capabilities",
     )
     # auto timestamp
-    created_at: SkipJsonSchema[datetime] | None = Field(
+    created_at: SkipJsonSchema[datetime] = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
-    updated_at: SkipJsonSchema[datetime] | None = Field(
+    updated_at: SkipJsonSchema[datetime] = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={
@@ -201,6 +205,51 @@ class Agent(SQLModel, table=True):
         },
         nullable=False,
     )
+
+    def to_yaml(self) -> str:
+        """
+        Dump the agent model to YAML format with field descriptions as comments.
+        The comments are extracted from the field descriptions in the model.
+        Fields annotated with SkipJsonSchema will be excluded from the output.
+
+        Returns:
+            str: YAML representation of the agent with field descriptions as comments
+        """
+        # Get all fields that have values
+        data = {}
+        yaml_lines = []
+
+        for field_name, field in self.model_fields.items():
+            logger.debug(f"Processing field {field_name} with type {field.metadata}")
+            # Skip fields with SkipJsonSchema annotation
+            if any(isinstance(item, SkipJsonSchema) for item in field.metadata):
+                continue
+
+            value = getattr(self, field_name)
+            if value is not None:
+                data[field_name] = value
+                # Add comment from field description if available
+                description = field.description
+                if description:
+                    if len(yaml_lines) > 0:  # Add blank line between fields
+                        yaml_lines.append("")
+                    # Split description into multiple lines if too long
+                    desc_lines = [f"# {line}" for line in description.split("\n")]
+                    yaml_lines.extend(desc_lines)
+
+                # Convert the field value to YAML with block style for strings
+                if isinstance(value, str) and ("\n" in value or len(value) > 60):
+                    # Use block literal style for multiline or long strings
+                    yaml_value = yaml.dump(
+                        {field_name: value}, default_flow_style=False, default_style="|"
+                    )
+                else:
+                    yaml_value = yaml.dump(
+                        {field_name: value}, default_flow_style=False
+                    )
+                yaml_lines.append(yaml_value.rstrip())
+
+        return "\n".join(yaml_lines)
 
     @classmethod
     async def count(cls) -> int:
@@ -473,10 +522,6 @@ class AgentResponse(BaseModel):
             has_twitter_self_key = all(
                 key in twitter_config and twitter_config[key] for key in required_keys
             )
-            # Remove sensitive fields
-            for key in required_keys:
-                twitter_config.pop(key, None)
-            data["twitter_config"] = twitter_config
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None
@@ -486,8 +531,6 @@ class AgentResponse(BaseModel):
             telegram_config and "token" in telegram_config and telegram_config["token"]
         )
         if telegram_config and "token" in telegram_config:
-            telegram_config.pop("token")
-            data["telegram_config"] = telegram_config
             if agent_data:
                 linked_telegram_username = agent_data.telegram_username
                 linked_telegram_name = agent_data.telegram_name
