@@ -78,8 +78,8 @@ CDP_NETWORK_ID="base-mainnet"
 # GOAT settings (optional)
 GOAT_ENABLED=false
 CROSSMINT_CONFIG='{
-  "chains": [
-    "base"
+  "networks": [
+    "base-mainnet"
   ]
 }'
 GOAT_SKILLS='{
@@ -114,7 +114,8 @@ GOAT_SKILLS='{
         "api_key": "opensea api key string"
     },
     "rugcheck": {
-        "jwt_token": "rugcheck JWT token string"
+        "jwt_token": "rugcheck JWT token string",
+        "base_url": "https://api.rugcheck.xyz/v1"
     },
     "spl_token": {
         "network": "mainnet",
