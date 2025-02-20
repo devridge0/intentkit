@@ -659,52 +659,15 @@ doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphin
 test = ["coverage (>=7)", "hypothesis", "pytest"]
 
 [[package]]
-name = "cdp-agentkit-core"
-version = "0.0.11"
-description = "CDP Agentkit core primitives"
-optional = false
-python-versions = "<4.0,>=3.10"
-groups = ["main"]
-files = [
-    {file = "cdp_agentkit_core-0.0.11-py3-none-any.whl", hash = "sha256:103259f7780e690da0aa13a00e6c40f95d0f1ea568d340adc40f309621a8f2c0"},
-    {file = "cdp_agentkit_core-0.0.11.tar.gz", hash = "sha256:00e30358877f01f8d0c2018b27c3cfa900e6e9a62fa766859321202abe3f9bea"},
-]
-
-[package.dependencies]
-cdp-sdk = ">=0.15.0,<0.16.0"
-pydantic = ">=2.0,<3.0"
-web3 = ">=7.6.0,<8.0.0"
-
-[[package]]
-name = "cdp-langchain"
-version = "0.0.13"
-description = "CDP Agentkit Langchain Extension"
-optional = false
-python-versions = "<4.0,>=3.10"
-groups = ["main"]
-files = [
-    {file = "cdp_langchain-0.0.13-py3-none-any.whl", hash = "sha256:52f918b0df4f7dae20d29cef3b83bc1239e054ff46721355ab9a8875b2079cc4"},
-    {file = "cdp_langchain-0.0.13.tar.gz", hash = "sha256:e36badd1a632eb7823b20ef093405b45af185470c79dd2b4a8a7db869d3e2869"},
-]
-
-[package.dependencies]
-cdp-agentkit-core = ">=0.0.11,<0.0.12"
-cdp-sdk = ">=0.15.0,<0.16.0"
-langchain = ">=0.3.4,<0.4.0"
-langchain-openai = ">=0.2.4,<0.3.0"
-langgraph = ">=0.2.39,<0.3.0"
-pydantic = ">=2.0,<3.0"
-
-[[package]]
 name = "cdp-sdk"
-version = "0.15.0"
+version = "0.17.0"
 description = "CDP Python SDK"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "cdp_sdk-0.15.0-py3-none-any.whl", hash = "sha256:f640c1cad0aee829ad24ee1b41dc3f40f74472a1da4d53e257ba996527a64f95"},
-    {file = "cdp_sdk-0.15.0.tar.gz", hash = "sha256:f7b015b2d3811d69db4ea5cb29cefc33fb47e7d2ce587f70222742ab602f610c"},
+    {file = "cdp_sdk-0.17.0-py3-none-any.whl", hash = "sha256:7fc886fc9556dca4085d0891e04f7ad303bcf1d3714f57cdef00a2a84782b33a"},
+    {file = "cdp_sdk-0.17.0.tar.gz", hash = "sha256:b2dfb03675c57994033d4b7d089ab6b85c56f0e437a6b4812f1d6332c2a7ac5f"},
 ]
 
 [package.dependencies]
@@ -1029,6 +992,42 @@ files = [
 
 [package.dependencies]
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[[package]]
+name = "coinbase-agentkit"
+version = "0.1.2"
+description = "Coinbase AgentKit"
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+    {file = "coinbase_agentkit-0.1.2-py3-none-any.whl", hash = "sha256:0cec649a590720340904449fa8ffe38fafc77caff7f75d28cffb9d7a06967cb1"},
+    {file = "coinbase_agentkit-0.1.2.tar.gz", hash = "sha256:da0cc7ffdf1e02816da07b5e110203e81281451bc9fb4452ad1c3af0a5b45fa7"},
+]
+
+[package.dependencies]
+cdp-sdk = "0.17.0"
+pydantic = ">=2.0,<3.0"
+python-dotenv = ">=1.0.1,<2.0.0"
+requests = ">=2.31.0,<3.0.0"
+web3 = ">=7.6.0,<8.0.0"
+
+[[package]]
+name = "coinbase-agentkit-langchain"
+version = "0.1.0"
+description = "Coinbase AgentKit LangChain extension"
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+    {file = "coinbase_agentkit_langchain-0.1.0-py3-none-any.whl", hash = "sha256:c853eb2cf18f2c0cb715355c89434ea1db820875a457761721cffb2f559ba6ea"},
+    {file = "coinbase_agentkit_langchain-0.1.0.tar.gz", hash = "sha256:5d7c4039e6d86be338162b4f349156e87f1d9029864938e735e747e021f7c4a6"},
+]
+
+[package.dependencies]
+coinbase-agentkit = ">=0.1.0,<0.2.0"
+langchain = ">=0.3.4,<0.4.0"
+python-dotenv = ">=1.0.1,<2.0.0"
 
 [[package]]
 name = "coincurve"
@@ -2567,22 +2566,22 @@ xai = ["langchain-xai"]
 
 [[package]]
 name = "langchain-community"
-version = "0.3.17"
+version = "0.3.18"
 description = "Community contributed LangChain integrations."
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langchain_community-0.3.17-py3-none-any.whl", hash = "sha256:13bbd87d681b0df67bafa294321613b13ac524f173c92f11048d40c74e585f0b"},
-    {file = "langchain_community-0.3.17.tar.gz", hash = "sha256:d8547a3d4f8307950be88ca638cd6ab1abe2440d0012e401a172ba4a39aa8044"},
+    {file = "langchain_community-0.3.18-py3-none-any.whl", hash = "sha256:0d4a70144a1750045c4f726f9a43379ed2484178f76e4b8295bcef3a7fdf41d5"},
+    {file = "langchain_community-0.3.18.tar.gz", hash = "sha256:fa2889a8f0b2d22b5c306fd1b070c0970e1f11b604bf55fad2f4a1d0bf68a077"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.8.3,<4.0.0"
 dataclasses-json = ">=0.5.7,<0.7"
 httpx-sse = ">=0.4.0,<1.0.0"
-langchain = ">=0.3.18,<1.0.0"
-langchain-core = ">=0.3.34,<1.0.0"
+langchain = ">=0.3.19,<1.0.0"
+langchain-core = ">=0.3.37,<1.0.0"
 langsmith = ">=0.1.125,<0.4"
 numpy = {version = ">=1.26.2,<3", markers = "python_version >= \"3.12\""}
 pydantic-settings = ">=2.4.0,<3.0.0"
@@ -2593,14 +2592,14 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
 
 [[package]]
 name = "langchain-core"
-version = "0.3.35"
+version = "0.3.37"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langchain_core-0.3.35-py3-none-any.whl", hash = "sha256:81a4097226e180fa6c64e2d2ab38dcacbbc23b64fc109fb15622910fe8951670"},
-    {file = "langchain_core-0.3.35.tar.gz", hash = "sha256:328688228ece259da734417d477994a69cf8202dea9ed4271f2d792e3575c6fc"},
+    {file = "langchain_core-0.3.37-py3-none-any.whl", hash = "sha256:8202fd6506ce139a3a1b1c4c3006216b1c7fffa40bdd1779f7d2c67f75eb5f79"},
+    {file = "langchain_core-0.3.37.tar.gz", hash = "sha256:cda8786e616caa2f68f7cc9e811b9b50e3b63fb2094333318b348e5961a7ea01"},
 ]
 
 [package.dependencies]
@@ -2617,18 +2616,18 @@ typing-extensions = ">=4.7"
 
 [[package]]
 name = "langchain-openai"
-version = "0.2.14"
+version = "0.3.6"
 description = "An integration package connecting OpenAI and LangChain"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langchain_openai-0.2.14-py3-none-any.whl", hash = "sha256:d232496662f79ece9a11caf7d798ba863e559c771bc366814f7688e0fe664fe8"},
-    {file = "langchain_openai-0.2.14.tar.gz", hash = "sha256:7a514f309e356b182a337c0ed36ab3fbe34d9834a235a3b85cb7f91ae775d978"},
+    {file = "langchain_openai-0.3.6-py3-none-any.whl", hash = "sha256:05f0869f6cc963e2ec9e2e54ea1038d9c2af784c67f0e217040dfc918b31649a"},
+    {file = "langchain_openai-0.3.6.tar.gz", hash = "sha256:7daf92e1cd98865ab5213ec5bec2cbd6c28f011e250714978b3a99c7e4fc88ce"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.3.27,<0.4.0"
+langchain-core = ">=0.3.35,<1.0.0"
 openai = ">=1.58.1,<2.0.0"
 tiktoken = ">=0.7,<1"
 
@@ -2668,15 +2667,33 @@ files = [
 langchain-core = ">=0.3.34,<1.0.0"
 
 [[package]]
+name = "langchain-xai"
+version = "0.2.1"
+description = "An integration package connecting xAI and LangChain"
+optional = false
+python-versions = "<4.0,>=3.9"
+groups = ["main"]
+files = [
+    {file = "langchain_xai-0.2.1-py3-none-any.whl", hash = "sha256:87228125cb15131663979d627210fca47dcd6b9a28462e8b5fee47f73bbed9f4"},
+    {file = "langchain_xai-0.2.1.tar.gz", hash = "sha256:143a6f52be7617b5e5c68ab10c9b7df90914f54a6b3098566ce22b5d8fd89da5"},
+]
+
+[package.dependencies]
+aiohttp = ">=3.9.1,<4"
+langchain-core = ">=0.3.35,<1.0.0"
+langchain-openai = ">=0.3.6,<0.4"
+requests = ">=2,<3"
+
+[[package]]
 name = "langgraph"
-version = "0.2.73"
+version = "0.2.74"
 description = "Building stateful, multi-actor applications with LLMs"
 optional = false
 python-versions = "<4.0,>=3.9.0"
 groups = ["main"]
 files = [
-    {file = "langgraph-0.2.73-py3-none-any.whl", hash = "sha256:a6c1e491674a11b8d4f946cb7120ae0d18313f0daf6bb16cccd9d49ea547a780"},
-    {file = "langgraph-0.2.73.tar.gz", hash = "sha256:61ae2b2140940d32543a384ebc96f5cca13c14932a377fba58e73257f9997de6"},
+    {file = "langgraph-0.2.74-py3-none-any.whl", hash = "sha256:91a522df764e66068f1a6de09ea748cea0687912838f29218c1d1b92b1ca025f"},
+    {file = "langgraph-0.2.74.tar.gz", hash = "sha256:db6e63e0771e2e8fb17dc0e040007b32f009e0f114e35d8348e336eb15f068e5"},
 ]
 
 [package.dependencies]
@@ -2686,14 +2703,14 @@ langgraph-sdk = ">=0.1.42,<0.2.0"
 
 [[package]]
 name = "langgraph-checkpoint"
-version = "2.0.15"
+version = "2.0.16"
 description = "Library with base interfaces for LangGraph checkpoint savers."
 optional = false
 python-versions = "<4.0.0,>=3.9.0"
 groups = ["main"]
 files = [
-    {file = "langgraph_checkpoint-2.0.15-py3-none-any.whl", hash = "sha256:769d73544a3f4e89e65ba8034ad15e233c9a81bbd62b0a678d233849a0026c32"},
-    {file = "langgraph_checkpoint-2.0.15.tar.gz", hash = "sha256:e3fffb7ce35b709caab2422fd6db2ec9fc446aab18a3845d30ffb6ace391d738"},
+    {file = "langgraph_checkpoint-2.0.16-py3-none-any.whl", hash = "sha256:dfab51076a6eddb5f9e146cfe1b977e3dd6419168b2afa23ff3f4e47973bf06f"},
+    {file = "langgraph_checkpoint-2.0.16.tar.gz", hash = "sha256:49ba8cfa12b2aae845ccc3b1fbd1d7a8d3a6c4a2e387ab3a92fca40dd3d4baa5"},
 ]
 
 [package.dependencies]
@@ -5201,4 +5218,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f68fe04b8606ffb284eb914e821665cc92c5bc55609615ed11a8187fda8c7925"
+content-hash = "0b31a7459950671e607904508a7bdc8201ce998e5a67af15b7640e0d1468526c"
