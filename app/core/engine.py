@@ -358,10 +358,6 @@ async def initialize_agent(aid):
     # filter the duplicate tools
     tools = list({tool.name: tool for tool in tools}.values())
 
-    # log all tools
-    for tool in tools:
-        logger.info(f"[{aid}] loaded tool: {tool.name}")
-
     # finally, setup the system prompt
     prompt = agent_prompt(agent)
     # Escape curly braces in the prompt
@@ -393,6 +389,12 @@ async def initialize_agent(aid):
     # hack for deepseek, it doesn't support tools
     if agent.model.startswith("deepseek"):
         tools = []
+
+    # log all tools
+    for tool in tools:
+        logger.info(f"[{aid}] loaded tool: {tool.name}")
+
+    logger.info(f"[{aid}] init prompt: {escaped_prompt}")
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
     agents[aid] = create_agent(
