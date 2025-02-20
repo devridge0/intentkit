@@ -199,7 +199,11 @@ async def initialize_agent(aid):
         tools.extend(cdp_tools)
 
     if agent.goat_enabled and agent.crossmint_config:
-        if config.crossmint_api_key and config.crossmint_api_base_url:
+        if (
+            config.chain_provider
+            and config.crossmint_api_key
+            and config.crossmint_api_base_url
+        ):
             crossmint_networks = agent.crossmint_config.get("networks")
             if crossmint_networks and len(crossmint_networks) > 0:
 
