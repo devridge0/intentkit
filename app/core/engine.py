@@ -50,7 +50,6 @@ from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
     create_smart_wallets_if_not_exist,
-    crossmint_chains,
     get_goat_skill,
     init_smart_wallets,
 )
@@ -201,16 +200,13 @@ async def initialize_agent(aid):
 
     if agent.goat_enabled and agent.crossmint_config:
         if (
-            agent.crossmint_config.get("chains")
-            and len(agent.crossmint_config.get("chains")) > 0
+            config.chain_provider
+            and config.crossmint_api_key
+            and config.crossmint_api_base_url
         ):
-            chain_configs = {}
-            for chain_name in agent.crossmint_config["chains"]:
-                chain_config = crossmint_chains.get(chain_name)
-                if chain_config:
-                    chain_configs[chain_name] = chain_config
+            crossmint_networks = agent.crossmint_config.get("networks")
+            if crossmint_networks and len(crossmint_networks) > 0:
 
-            if len(chain_configs) > 0:
                 crossmint_wallet_data = (
                     agent_data.crossmint_wallet_data
                     if agent_data.crossmint_wallet_data
@@ -218,6 +214,7 @@ async def initialize_agent(aid):
                 )
                 try:
                     smart_wallet_data = create_smart_wallets_if_not_exist(
+                        config.crossmint_api_base_url,
                         config.crossmint_api_key,
                         crossmint_wallet_data.get("smart"),
                     )
@@ -242,7 +239,8 @@ async def initialize_agent(aid):
 
                     evm_crossmint_wallets = init_smart_wallets(
                         config.crossmint_api_key,
-                        chain_configs,
+                        config.chain_provider,
+                        crossmint_networks,
                         smart_wallet_data["evm"],
                     )
 
@@ -260,10 +258,6 @@ async def initialize_agent(aid):
                             logger.warning(e)
                 except Exception as e:
                     logger.warning(e)
-            else:
-                logger.warning(
-                    "No chain configs found for the configured crossmint chains."
-                )
 
     # Enso skills
     if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
@@ -274,7 +268,7 @@ async def initialize_agent(aid):
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
                     agentkit.wallet if agentkit else None,
-                    config.rpc_base_mainnet,
+                    config.chain_provider,
                     skill_store,
                     agent_store,
                     aid,
