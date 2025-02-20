@@ -13,6 +13,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel, select
 
 from models.db import get_session
+from models.skill import SkillConfig
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,12 @@ class Agent(SQLModel, table=True):
         default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Telegram-specific skills available to this agent",
+    )
+    # skills
+    skills: Optional[Dict[str, SkillConfig]] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Dict of skills and their corresponding configurations",
     )
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(
@@ -338,10 +345,7 @@ class Agent(SQLModel, table=True):
                 )
 
             # Check if agent exists
-            async with get_session() as db:
-                existing_agent = (
-                    await db.exec(select(Agent).where(Agent.id == self.id))
-                ).first()
+            existing_agent = await self.__class__.get(self.id)
             if existing_agent:
                 # Check owner
                 if (

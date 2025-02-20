@@ -42,7 +42,7 @@ curl "http://127.0.0.1:8000/admin/chat?q=Hello"
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
 ### Local Development
-0. Python 3.10-3.12 are supported versions, and it's recommended to use [3.12](https://www.python.org/downloads/).
+0. Python 3.11-3.12 are supported versions, and it's recommended to use [3.12](https://www.python.org/downloads/).
 
 1. Clone the repository:
 ```bash
