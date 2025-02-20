@@ -1,11 +1,19 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, NotRequired, Optional, TypedDict
 
 from sqlalchemy import Column, DateTime, delete, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel, select
 
 from models.db import get_session
+
+
+class SkillConfig(TypedDict):
+    """Abstract base class for skill configuration."""
+
+    public_skills: List[str]
+    private_skills: List[str]
+    __extra__: NotRequired[Dict[str, Any]]
 
 
 class AgentSkillData(SQLModel, table=True):
