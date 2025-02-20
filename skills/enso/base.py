@@ -5,9 +5,10 @@ from pydantic import BaseModel, Field
 
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import IntentKitSkill, SkillStoreABC
+from utils.chain import ChainProvider, NetworkId
 
 base_url = "https://api.enso.finance"
-default_chain_id = 8453
+default_chain_id = int(NetworkId.BaseMainnet)
 
 
 class EnsoBaseTool(IntentKitSkill):
@@ -16,7 +17,9 @@ class EnsoBaseTool(IntentKitSkill):
     api_token: str = Field(description="API token")
     main_tokens: list[str] = Field(description="Main supported tokens")
     wallet: Wallet | None = Field(None, description="The wallet of the agent")
-    rpc_node: str | None = Field(None, description="RPC nodes for different networks")
+    chain_provider: ChainProvider | None = Field(
+        None, description="Chain Provider object"
+    )
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
