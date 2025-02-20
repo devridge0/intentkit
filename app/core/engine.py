@@ -209,7 +209,7 @@ async def initialize_agent(aid):
 
     if agent.goat_enabled and agent.crossmint_config:
         if (
-            config.chain_provider
+            hasattr(config, "chain_provider")
             and config.crossmint_api_key
             and config.crossmint_api_base_url
         ):
@@ -277,7 +277,11 @@ async def initialize_agent(aid):
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
                     agentkit.wallet if agentkit else None,
-                    config.chain_provider,
+                    (
+                        config.chain_provider
+                        if hasattr(config, "chain_provider") and config.chain_provider
+                        else None
+                    ),
                     skill_store,
                     agent_store,
                     aid,
