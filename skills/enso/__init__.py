@@ -81,6 +81,8 @@ def get_enso_skill(
         )
 
     if name == "wallet_approve":
+        if not chain_provider:
+            raise ValueError("chain provider is empty")
         if not wallet:
             raise ValueError("Wallet is empty")
         return EnsoWalletApprove(
@@ -94,6 +96,8 @@ def get_enso_skill(
         )
 
     if name == "route_shortcut":
+        if not chain_provider:
+            raise ValueError("chain provider is empty")
         if not wallet:
             raise ValueError("Wallet is empty")
         return EnsoRouteShortcut(
