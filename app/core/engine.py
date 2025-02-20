@@ -36,6 +36,7 @@ from langchain_core.messages import (
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
+from langchain_xai import ChatXAI
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy.exc import SQLAlchemyError
@@ -171,9 +172,18 @@ async def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=180,
+            timeout=300,
         )
         input_token_limit = 60000
+    elif agent.model.startswith("grok"):
+        llm = ChatXAI(
+            model_name=agent.model,
+            openai_api_key=config.xai_api_key,
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
+            timeout=180,
+        )
     else:
         llm = ChatOpenAI(
             model_name=agent.model,

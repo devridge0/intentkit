@@ -58,7 +58,7 @@ class Agent(SQLModel, table=True):
     # AI part
     model: Optional[str] = Field(
         default="gpt-4o-mini",
-        description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner",
+        description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
     )
     prompt: Optional[str] = Field(
         default=None,
