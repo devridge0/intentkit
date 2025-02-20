@@ -80,6 +80,9 @@ class Config:
         self.cdp_api_key_private_key = self.load("CDP_API_KEY_PRIVATE_KEY")
         # Crossmint
         self.crossmint_api_key = self.load("CROSSMINT_API_KEY")
+        self.crossmint_api_base_url = self.load(
+            "CROSSMINT_API_BASE_URL", "https://staging.crossmint.com"
+        )
         # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
         self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")

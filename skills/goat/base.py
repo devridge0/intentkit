@@ -6,8 +6,6 @@ from abstracts.agent import AgentStoreABC
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 from utils.chain import ChainConfig, ChainProvider, Network
 
-base_url = "https://staging.crossmint.com"
-
 
 class CrossmintChainConfig:
     """
