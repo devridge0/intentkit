@@ -16,8 +16,17 @@ import time
 from datetime import datetime
 
 import sqlalchemy
-from cdp_langchain.agent_toolkits import CdpToolkit
-from cdp_langchain.utils import CdpAgentkitWrapper
+from coinbase_agentkit import (
+    AgentKit,
+    AgentKitConfig,
+    CdpWalletProvider,
+    CdpWalletProviderConfig,
+    cdp_api_action_provider,
+    cdp_wallet_action_provider,
+    pyth_action_provider,
+    wallet_action_provider,
+)
+from coinbase_agentkit_langchain import get_langchain_tools
 from epyxid import XID
 from fastapi import HTTPException
 from langchain_core.messages import (
@@ -27,6 +36,7 @@ from langchain_core.messages import (
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
+from langchain_xai import ChatXAI
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy.exc import SQLAlchemyError
@@ -162,9 +172,18 @@ async def initialize_agent(aid):
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
-            timeout=180,
+            timeout=300,
         )
         input_token_limit = 60000
+    elif agent.model.startswith("grok"):
+        llm = ChatXAI(
+            model_name=agent.model,
+            openai_api_key=config.xai_api_key,
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
+            timeout=180,
+        )
     else:
         llm = ChatOpenAI(
             model_name=agent.model,
@@ -181,31 +200,32 @@ async def initialize_agent(aid):
     # ==== Load skills
     tools: list[BaseTool] = []
 
-    agentkit: CdpAgentkitWrapper
     # Configure CDP Agentkit Langchain Extension.
-    if agent.cdp_enabled:
-        values = {
-            "cdp_api_key_name": config.cdp_api_key_name,
-            "cdp_api_key_private_key": config.cdp_api_key_private_key,
-            "network_id": getattr(agent, "cdp_network_id", "base-mainnet"),
-        }
-        if agent_data and agent_data.cdp_wallet_data:
-            values["cdp_wallet_data"] = agent_data.cdp_wallet_data
-        agentkit = CdpAgentkitWrapper(**values)
-        # save the wallet after first create
-        if not agent_data or not agent_data.cdp_wallet_data:
-            await agent_store.set_data(
-                {
-                    "cdp_wallet_data": agentkit.export_wallet(),
-                }
+    cdp_wallet_provider = None
+    if agent.cdp_enabled and agent_data and agent_data.cdp_wallet_data:
+        cdp_wallet_provider_config = CdpWalletProviderConfig(
+            api_key_name=config.cdp_api_key_name,
+            api_key_private=config.cdp_api_key_private_key,
+            network_id=agent.cdp_network_id,
+            wallet_data=agent_data.cdp_wallet_data,
+        )
+        cdp_wallet_provider = CdpWalletProvider(cdp_wallet_provider_config)
+        agent_kit = AgentKit(
+            AgentKitConfig(
+                wallet_provider=cdp_wallet_provider,
+                action_providers=[
+                    wallet_action_provider(),
+                    cdp_api_action_provider(cdp_wallet_provider_config),
+                    cdp_wallet_action_provider(cdp_wallet_provider_config),
+                    pyth_action_provider(),
+                ],
             )
-        # Initialize CDP Agentkit Toolkit and get tools.
-        cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
-        cdp_tools = cdp_toolkit.get_tools()
-        # Filter the tools to only include the ones that in agent.cdp_skills.
-        if agent.cdp_skills and len(agent.cdp_skills) > 0:
-            cdp_tools = [tool for tool in cdp_tools if tool.name in agent.cdp_skills]
-            tools.extend(cdp_tools)
+        )
+        cdp_tools = get_langchain_tools(agent_kit)
+        for skill in agent.cdp_skills:
+            for tool in cdp_tools:
+                if tool.name.endswith(skill):
+                    tools.append(tool)
 
     if agent.goat_enabled and agent.crossmint_config:
         if (
@@ -215,7 +235,6 @@ async def initialize_agent(aid):
         ):
             crossmint_networks = agent.crossmint_config.get("networks")
             if crossmint_networks and len(crossmint_networks) > 0:
-
                 crossmint_wallet_data = (
                     agent_data.crossmint_wallet_data
                     if agent_data.crossmint_wallet_data
@@ -276,7 +295,7 @@ async def initialize_agent(aid):
                     skill,
                     agent.enso_config.get("api_token"),
                     agent.enso_config.get("main_tokens", list[str]()),
-                    agentkit.wallet if agentkit else None,
+                    cdp_wallet_provider._wallet if cdp_wallet_provider else None,
                     (
                         config.chain_provider
                         if hasattr(config, "chain_provider") and config.chain_provider
