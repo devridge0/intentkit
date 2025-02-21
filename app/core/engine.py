@@ -10,6 +10,7 @@ This module provides functionality for initializing and executing AI agents. It 
 The module uses a global cache to store initialized agents for better performance.
 """
 
+import json
 import logging
 import textwrap
 import time
@@ -74,14 +75,32 @@ agents: dict[str, CompiledGraph] = {}
 agents_updated: dict[str, datetime] = {}
 
 
-def agent_prompt(agent: Agent) -> str:
+def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
     prompt = "# SYSTEM PROMPT\n\n"
     if config.system_prompt:
         prompt += config.system_prompt + "\n\n"
+    prompt += "You are an autonomous AI agent in an opensource platform 'IntentKit'.\n"
+    prompt += "Your tools are called 'skills'.\n"
     if agent.name:
         prompt += f"Your name is {agent.name}.\n"
     if agent.ticker:
         prompt += f"Your ticker symbol is {agent.ticker}.\n"
+    if agent_data:
+        if agent_data.cdp_wallet_data:
+            wallet_data = json.loads(agent_data.cdp_wallet_data)
+            prompt += f"Your CDP wallet address in {agent.cdp_network_id} is {wallet_data['default_address_id']} .\n"
+        if agent_data.twitter_id:
+            prompt += f"Your twitter id is {agent_data.twitter_id}, never reply or retweet yourself.\n"
+        if agent_data.twitter_username:
+            prompt += f"Your twitter username is {agent_data.twitter_username}.\n"
+        if agent_data.twitter_name:
+            prompt += f"Your twitter name is {agent_data.twitter_name}.\n"
+        if agent_data.telegram_id:
+            prompt += f"Your telegram bot id is {agent_data.telegram_id}.\n"
+        if agent_data.telegram_username:
+            prompt += f"Your telegram bot username is {agent_data.telegram_username}.\n"
+        if agent_data.telegram_name:
+            prompt += f"Your telegram bot name is {agent_data.telegram_name}.\n"
     prompt += "\n"
     if agent.purpose:
         prompt += f"## Purpose\n\n{agent.purpose}\n\n"
@@ -337,7 +356,6 @@ async def initialize_agent(aid):
             except Exception as e:
                 logger.warning(e)
     # Twitter skills
-    twitter_prompt = ""
     if agent.twitter_skills and len(agent.twitter_skills) > 0:
         if not agent.twitter_config:
             agent.twitter_config = {}
@@ -351,11 +369,6 @@ async def initialize_agent(aid):
                 agent_store,
             )
             tools.append(s)
-        twitter_prompt = (
-            f"\n\nYour twitter id is {agent_data.twitter_id}, never reply or retweet yourself. "
-            f"Your twitter username is {agent_data.twitter_username}. \n"
-            f"Your twitter name is {agent_data.twitter_name}. \n"
-        )
 
     # Crestal skills
     if agent.crestal_skills:
@@ -376,20 +389,13 @@ async def initialize_agent(aid):
     tools = list({tool.name: tool for tool in tools}.values())
 
     # finally, setup the system prompt
-    prompt = agent_prompt(agent)
+    prompt = agent_prompt(agent, agent_data)
     # Escape curly braces in the prompt
     escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
     prompt_array = [
         ("system", escaped_prompt),
         ("placeholder", "{messages}"),
     ]
-    if twitter_prompt:
-        # deepseek only supports system prompt in the beginning
-        if agent.model.startswith("deepseek"):
-            # prompt_array.insert(0, ("system", twitter_prompt))
-            pass
-        else:
-            prompt_array.append(("system", twitter_prompt))
     if agent.prompt_append:
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
