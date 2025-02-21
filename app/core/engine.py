@@ -224,7 +224,7 @@ async def initialize_agent(aid):
     if agent.cdp_enabled and agent_data and agent_data.cdp_wallet_data:
         cdp_wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=config.cdp_api_key_name,
-            api_key_private=config.cdp_api_key_private_key,
+            api_key_private_key=config.cdp_api_key_private_key,
             network_id=agent.cdp_network_id,
             wallet_data=agent_data.cdp_wallet_data,
         )
