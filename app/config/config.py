@@ -107,6 +107,7 @@ class Config:
         self.slack_alert_channel = self.load("SLACK_ALERT_CHANNEL")
         # Sentry
         self.sentry_dsn = self.load("SENTRY_DSN")
+        self.sentry_sample_rate = float(self.load("SENTRY_SAMPLE_RATE", "0.1"))
         self.sentry_traces_sample_rate = float(
             self.load("SENTRY_TRACES_SAMPLE_RATE", "0.01")
         )
