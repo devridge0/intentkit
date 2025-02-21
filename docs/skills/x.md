@@ -98,9 +98,9 @@ Only when use the OAuth2.0 authentication, intentkit has a built-in rate limit:
 - retweet: 5/15min
 - follow: 5/15min
 - like: 100/day
-- get mentions: 1/15min
-- get timeline: 5/15min
-- search: 3/15min
+- get mentions: 1/4hr
+- get timeline: 3/day
+- search: 3/day
 
 ### Yourself
 You can set the rate limit under the intentkit config in the future.

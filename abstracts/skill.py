@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
 from langchain_core.tools import BaseTool
+from langchain_core.tools.base import ToolException
+from pydantic import (
+    ValidationError,
+)
+from pydantic.v1 import ValidationError as ValidationErrorV1
 
 
 class IntentKitSkill(BaseTool):
@@ -11,6 +16,15 @@ class IntentKitSkill(BaseTool):
 
     agent_id: str
     skill_store: "SkillStoreABC"
+    # overwrite the value of BaseTool
+    handle_tool_error: Optional[Union[bool, str, Callable[[ToolException], str]]] = True
+    """Handle the content of the ToolException thrown."""
+
+    # overwrite the value of BaseTool
+    handle_validation_error: Optional[
+        Union[bool, str, Callable[[Union[ValidationError, ValidationErrorV1]], str]]
+    ] = True
+    """Handle the content of the ValidationError thrown."""
 
 
 class SkillStoreABC(ABC):
