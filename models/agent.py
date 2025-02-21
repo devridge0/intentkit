@@ -13,6 +13,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlmodel import Field, SQLModel, select
 
 from models.db import get_session
+from models.skill import SkillConfig
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,23 @@ class Agent(SQLModel, table=True):
         sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False),
         description="Auto-incrementing number assigned by the system for easy reference",
     )
-    # AI part
     name: Optional[str] = Field(default=None, description="Display name of the agent")
+    ticker: Optional[str] = Field(
+        default=None,
+        description="Ticker symbol of the agent",
+    )
+    purpose: Optional[str] = Field(
+        default=None,
+        description="Purpose or role of the agent",
+    )
+    personality: Optional[str] = Field(
+        default=None,
+        description="Personality traits of the agent",
+    )
+    principles: Optional[str] = Field(
+        default=None,
+        description="Principles or values of the agent",
+    )
     owner: Optional[str] = Field(
         default=None,
         description="Owner identifier of the agent, used for access control",
@@ -39,9 +55,10 @@ class Agent(SQLModel, table=True):
     upstream_id: Optional[str] = Field(
         default=None, description="External reference ID for idempotent operations"
     )
+    # AI part
     model: Optional[str] = Field(
         default="gpt-4o-mini",
-        description="AI model identifier to be used by this agent for processing requests",
+        description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
     )
     prompt: Optional[str] = Field(
         default=None,
@@ -75,8 +92,7 @@ class Agent(SQLModel, table=True):
     autonomous_prompt: Optional[str] = Field(
         default=None, description="Special prompt used during autonomous operation mode"
     )
-    # if cdp_enabled, will load cdp skills
-    # if the cdp_skills is empty, will load all
+    # if cdp_enabled, agent will have a cdp wallet
     cdp_enabled: Optional[bool] = Field(
         default=False,
         description="Whether CDP (Crestal Development Platform) integration is enabled",
@@ -134,6 +150,12 @@ class Agent(SQLModel, table=True):
         default=None,
         sa_column=Column(ARRAY(String)),
         description="List of Telegram-specific skills available to this agent",
+    )
+    # skills
+    skills: Optional[Dict[str, SkillConfig]] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Dict of skills and their corresponding configurations",
     )
     # crestal skills
     crestal_skills: Optional[List[str]] = Field(
@@ -215,7 +237,6 @@ class Agent(SQLModel, table=True):
         Returns:
             str: YAML representation of the agent with field descriptions as comments
         """
-        # Get all fields that have values
         data = {}
         yaml_lines = []
 
@@ -237,19 +258,36 @@ class Agent(SQLModel, table=True):
                     desc_lines = [f"# {line}" for line in description.split("\n")]
                     yaml_lines.extend(desc_lines)
 
-                # Convert the field value to YAML with block style for strings
-                if isinstance(value, str) and ("\n" in value or len(value) > 60):
-                    # Use block literal style for multiline or long strings
-                    yaml_value = yaml.dump(
-                        {field_name: value}, default_flow_style=False, default_style="|"
-                    )
+                # Format the value based on its type
+                if isinstance(value, str):
+                    if "\n" in value or len(value) > 60:
+                        # Use block literal style (|) for multiline strings
+                        # Remove any existing escaped newlines and use actual line breaks
+                        value = value.replace("\\n", "\n")
+                        yaml_value = f"{field_name}: |-\n"
+                        # Indent each line with 2 spaces
+                        yaml_value += "\n".join(
+                            f"  {line}" for line in value.split("\n")
+                        )
+                        yaml_lines.append(yaml_value)
+                    else:
+                        # Use flow style for short strings
+                        yaml_value = yaml.dump(
+                            {field_name: value},
+                            default_flow_style=False,
+                            allow_unicode=True,  # This ensures emojis are preserved
+                        )
+                        yaml_lines.append(yaml_value.rstrip())
                 else:
+                    # Handle non-string values
                     yaml_value = yaml.dump(
-                        {field_name: value}, default_flow_style=False
+                        {field_name: value},
+                        default_flow_style=False,
+                        allow_unicode=True,
                     )
-                yaml_lines.append(yaml_value.rstrip())
+                    yaml_lines.append(yaml_value.rstrip())
 
-        return "\n".join(yaml_lines)
+        return "\n".join(yaml_lines) + "\n"
 
     @classmethod
     async def count(cls) -> int:
@@ -280,6 +318,26 @@ class Agent(SQLModel, table=True):
             self.number = None
             self.created_at = None
             self.updated_at = None
+
+            # Check for markdown headers in text fields
+            fields_to_check = [
+                "purpose",
+                "personality",
+                "principles",
+                "prompt",
+                "prompt_append",
+            ]
+            for field in fields_to_check:
+                value = getattr(self, field)
+                if value and isinstance(value, str):
+                    for line_num, line in enumerate(value.split("\n"), 1):
+                        line = line.strip()
+                        if line.startswith("# ") or line.startswith("## "):
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Field '{field}' contains markdown level 1/2 header at line {line_num}. You can use level 3 (### ) instead.",
+                            )
+
             if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
                 raise HTTPException(
                     status_code=400,
@@ -287,10 +345,7 @@ class Agent(SQLModel, table=True):
                 )
 
             # Check if agent exists
-            async with get_session() as db:
-                existing_agent = (
-                    await db.exec(select(Agent).where(Agent.id == self.id))
-                ).first()
+            existing_agent = await self.__class__.get(self.id)
             if existing_agent:
                 # Check owner
                 if (

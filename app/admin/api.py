@@ -2,7 +2,8 @@ import json
 import logging
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramUnauthorizedError
+from aiogram.exceptions import TelegramConflictError, TelegramUnauthorizedError
+from aiogram.utils.token import TokenValidationError
 from cdp import Wallet
 from cdp.cdp import Cdp
 from fastapi import (
@@ -101,7 +102,11 @@ async def _process_agent(
                     await bot.close()
                 except Exception:
                     pass
-            except TelegramUnauthorizedError as req_err:
+            except (
+                TelegramUnauthorizedError,
+                TelegramConflictError,
+                TokenValidationError,
+            ) as req_err:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Unauthorized err getting telegram bot username with token {tg_bot_token}: {req_err}",

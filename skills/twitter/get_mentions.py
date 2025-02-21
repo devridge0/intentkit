@@ -54,7 +54,7 @@ class TwitterGetMentions(TwitterBaseTool):
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
-        is_rate_limited, error_msg = await self.check_rate_limit()
+        is_rate_limited, error_msg = await self.check_rate_limit(1, 240)
         if is_rate_limited:
             return TwitterGetMentionsOutput(
                 mentions=[],
