@@ -247,45 +247,46 @@ class Agent(SQLModel, table=True):
                 continue
 
             value = getattr(self, field_name)
-            if value is not None:
-                data[field_name] = value
-                # Add comment from field description if available
-                description = field.description
-                if description:
-                    if len(yaml_lines) > 0:  # Add blank line between fields
-                        yaml_lines.append("")
-                    # Split description into multiple lines if too long
-                    desc_lines = [f"# {line}" for line in description.split("\n")]
-                    yaml_lines.extend(desc_lines)
+            data[field_name] = value
+            # Add comment from field description if available
+            description = field.description
+            if description:
+                if len(yaml_lines) > 0:  # Add blank line between fields
+                    yaml_lines.append("")
+                # Split description into multiple lines if too long
+                desc_lines = [f"# {line}" for line in description.split("\n")]
+                yaml_lines.extend(desc_lines)
 
-                # Format the value based on its type
-                if isinstance(value, str):
-                    if "\n" in value or len(value) > 60:
-                        # Use block literal style (|) for multiline strings
-                        # Remove any existing escaped newlines and use actual line breaks
-                        value = value.replace("\\n", "\n")
-                        yaml_value = f"{field_name}: |-\n"
-                        # Indent each line with 2 spaces
-                        yaml_value += "\n".join(
-                            f"  {line}" for line in value.split("\n")
-                        )
-                        yaml_lines.append(yaml_value)
-                    else:
-                        # Use flow style for short strings
-                        yaml_value = yaml.dump(
-                            {field_name: value},
-                            default_flow_style=False,
-                            allow_unicode=True,  # This ensures emojis are preserved
-                        )
-                        yaml_lines.append(yaml_value.rstrip())
+            # Format the value based on its type
+            if value is None:
+                yaml_lines.append(f"{field_name}: null")
+            elif isinstance(value, str):
+                if "\n" in value or len(value) > 60:
+                    # Use block literal style (|) for multiline strings
+                    # Remove any existing escaped newlines and use actual line breaks
+                    value = value.replace("\\n", "\n")
+                    yaml_value = f"{field_name}: |-\n"
+                    # Indent each line with 2 spaces
+                    yaml_value += "\n".join(
+                        f"  {line}" for line in value.split("\n")
+                    )
+                    yaml_lines.append(yaml_value)
                 else:
-                    # Handle non-string values
+                    # Use flow style for short strings
                     yaml_value = yaml.dump(
                         {field_name: value},
                         default_flow_style=False,
-                        allow_unicode=True,
+                        allow_unicode=True,  # This ensures emojis are preserved
                     )
                     yaml_lines.append(yaml_value.rstrip())
+            else:
+                # Handle non-string values
+                yaml_value = yaml.dump(
+                    {field_name: value},
+                    default_flow_style=False,
+                    allow_unicode=True,
+                )
+                yaml_lines.append(yaml_value.rstrip())
 
         return "\n".join(yaml_lines) + "\n"
 
