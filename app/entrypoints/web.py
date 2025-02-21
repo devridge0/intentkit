@@ -1,5 +1,6 @@
 """IntentKit Web API Router."""
 
+import json
 import logging
 import secrets
 from typing import List
@@ -12,11 +13,11 @@ from fastapi import (
     Path,
     Query,
     Request,
+    Response,
     status,
 )
 from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from langchain_core.messages import BaseMessage
 from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -73,19 +74,73 @@ def verify_debug_credentials(credentials: HTTPBasicCredentials = Depends(securit
     return credentials.username
 
 
+def format_debug_messages(messages: list[ChatMessage]) -> str:
+    resp = ""
+    for message in messages:
+        if message.cold_start_cost:
+            resp += "[ Agent cold start ... ]\n"
+            resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
+        if message.author_type == AuthorType.SKILL:
+            resp += "[ Skill Calls: ]\n\n"
+            for skill_call in message.skill_calls:
+                resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
+                if skill_call["success"]:
+                    resp += f"  Success: {skill_call.get('response', '')}\n"
+                else:
+                    resp += f"  Failed: {skill_call.get('error_message', '')}\n"
+            resp += (
+                f"\n------------------- skill cost: {message.time_cost:.3f} seconds\n\n"
+            )
+        if message.author_type == AuthorType.AGENT:
+            resp += "[ Agent: ]\n\n"
+            resp += f" {message.message}\n"
+            resp += (
+                f"\n------------------- agent cost: {message.time_cost:.3f} seconds\n\n"
+            )
+    return resp
+
+
+@chat_router.get(
+    "/debug/{agent_id}/chats/{chat_id}/memory",
+    tags=["Debug"],
+    response_class=Response,
+    dependencies=[Depends(verify_debug_credentials)],
+    operation_id="debug_chat_memory",
+    summary="Chat Memory",
+)
+async def debug_chat_memory(
+    agent_id: str = Path(..., description="Agent id"),
+    chat_id: str = Path(..., description="Chat id"),
+) -> Response:
+    """Get chat memory for debugging."""
+    messages = await thread_stats(agent_id, chat_id)
+    # Convert messages to format JSON
+    formatted_json = json.dumps(
+        [message.model_dump() for message in messages], indent=4
+    )
+    return Response(content=formatted_json, media_type="application/json")
+
+
 @chat_router.get(
     "/debug/{agent_id}/chats/{chat_id}",
     tags=["Debug"],
-    response_model=List[BaseMessage],
+    response_class=PlainTextResponse,
     dependencies=[Depends(verify_debug_credentials)],
     operation_id="debug_chat_history",
     summary="Chat History",
 )
-async def chat_history(
+async def debug_chat_history(
     agent_id: str = Path(..., description="Agent id"),
     chat_id: str = Path(..., description="Chat id"),
-) -> List[BaseMessage]:
-    return await thread_stats(agent_id, chat_id)
+    db: AsyncSession = Depends(get_db),
+) -> str:
+    resp = f"Agent ID:\t{agent_id}\n\nChat ID:\t{chat_id}\n\n-------------------\n\n"
+    messages = await get_chat_history(agent_id, chat_id, db)
+    if messages:
+        resp += format_debug_messages(messages)
+    else:
+        resp += "No messages\n"
+    return resp
 
 
 @chat_router.get(
@@ -162,27 +217,8 @@ async def debug_chat(
     resp = f"Agent ID:\t{aid}\n\nChat ID:\t{chat_id}\n\n-------------------\n\n"
     resp += "[ Input: ]\n\n"
     resp += f" {q} \n\n-------------------\n\n"
-    for message in messages:
-        if message.cold_start_cost:
-            resp += "[ Agent cold start ... ]\n"
-            resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
-        if message.author_type == AuthorType.SKILL:
-            resp += "[ Skill Calls: ]\n\n"
-            for skill_call in message.skill_calls:
-                resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
-                if skill_call["success"]:
-                    resp += f"  Success: {skill_call.get('response', '')}\n"
-                else:
-                    resp += f"  Failed: {skill_call.get('error_message', '')}\n"
-            resp += (
-                f"\n------------------- skill cost: {message.time_cost:.3f} seconds\n\n"
-            )
-        if message.author_type == AuthorType.AGENT:
-            resp += "[ Agent: ]\n\n"
-            resp += f" {message.message}\n"
-            resp += (
-                f"\n------------------- agent cost: {message.time_cost:.3f} seconds\n\n"
-            )
+
+    resp += format_debug_messages(messages)
 
     resp += "Total time cost: {:.3f} seconds".format(
         sum([message.time_cost + message.cold_start_cost for message in messages])
