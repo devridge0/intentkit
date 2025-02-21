@@ -221,7 +221,12 @@ async def initialize_agent(aid):
 
     # Configure CDP Agentkit Langchain Extension.
     cdp_wallet_provider = None
-    if agent.cdp_enabled and agent_data and agent_data.cdp_wallet_data:
+    if (
+        agent.cdp_enabled
+        and agent_data
+        and agent_data.cdp_wallet_data
+        and agent.cdp_skills
+    ):
         cdp_wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=config.cdp_api_key_name,
             api_key_private_key=config.cdp_api_key_private_key,
