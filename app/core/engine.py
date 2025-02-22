@@ -22,11 +22,14 @@ from coinbase_agentkit import (
     AgentKitConfig,
     CdpWalletProvider,
     CdpWalletProviderConfig,
+    basename_action_provider,
     cdp_api_action_provider,
     cdp_wallet_action_provider,
+    erc20_action_provider,
     pyth_action_provider,
     wallet_action_provider,
 )
+from coinbase_agentkit.action_providers.erc721 import erc721_action_provider
 from coinbase_agentkit_langchain import get_langchain_tools
 from epyxid import XID
 from fastapi import HTTPException
@@ -242,6 +245,9 @@ async def initialize_agent(aid):
                     cdp_api_action_provider(cdp_wallet_provider_config),
                     cdp_wallet_action_provider(cdp_wallet_provider_config),
                     pyth_action_provider(),
+                    basename_action_provider(),
+                    erc20_action_provider(),
+                    erc721_action_provider(),
                 ],
             )
         )
