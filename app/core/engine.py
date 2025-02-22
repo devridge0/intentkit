@@ -63,6 +63,7 @@ from models.skill import AgentSkillData, ThreadSkillData
 from skill_sets import get_skill_set
 from skills.acolyt import get_Acolyt_skill
 from skills.allora import get_allora_skill
+from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
@@ -196,6 +197,15 @@ async def initialize_agent(aid):
         )
         cdp_tools = get_langchain_tools(agent_kit)
         for skill in agent.cdp_skills:
+            if skill == "get_balance":
+                tools.append(
+                    GetBalance(
+                        wallet=cdp_wallet_provider._wallet,
+                        agent_id=aid,
+                        skill_store=skill_store,
+                    )
+                )
+                continue
             for tool in cdp_tools:
                 if tool.name.endswith(skill):
                     tools.append(tool)
