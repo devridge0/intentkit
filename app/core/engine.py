@@ -98,6 +98,9 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
             prompt += f"Your CDP wallet address in {agent.cdp_network_id} is {wallet_data['default_address_id']} .\n"
             if agent.cdp_network_id == "base-mainnet":
                 prompt += "The USDC contract address in base-mainnet is 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\n"
+                prompt += "When you get balance from tools, or pass amount to tools, don't forget they have decimals.\n"
+                prompt += "USDC and USDT has 6 decimals, you must divide the amount you get by 10^6, multiply 10^6 when passing to tools.\n"
+                prompt += "Other currencies include native ETH usually has 18 decimals, you need divide or multiply 10^18.\n"
         if agent_data.twitter_id:
             prompt += f"Your twitter id is {agent_data.twitter_id}, never reply or retweet yourself.\n"
         if agent_data.twitter_username:
