@@ -22,11 +22,18 @@ from coinbase_agentkit import (
     AgentKitConfig,
     CdpWalletProvider,
     CdpWalletProviderConfig,
+    basename_action_provider,
     cdp_api_action_provider,
     cdp_wallet_action_provider,
+    erc20_action_provider,
+    morpho_action_provider,
     pyth_action_provider,
+    superfluid_action_provider,
     wallet_action_provider,
+    weth_action_provider,
+    wow_action_provider,
 )
+from coinbase_agentkit.action_providers.erc721 import erc721_action_provider
 from coinbase_agentkit_langchain import get_langchain_tools
 from epyxid import XID
 from fastapi import HTTPException
@@ -89,6 +96,8 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
         if agent_data.cdp_wallet_data:
             wallet_data = json.loads(agent_data.cdp_wallet_data)
             prompt += f"Your CDP wallet address in {agent.cdp_network_id} is {wallet_data['default_address_id']} .\n"
+            if agent.cdp_network_id == "base-mainnet":
+                prompt += "The USDC contract address in base-mainnet is 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\n"
         if agent_data.twitter_id:
             prompt += f"Your twitter id is {agent_data.twitter_id}, never reply or retweet yourself.\n"
         if agent_data.twitter_username:
@@ -242,6 +251,13 @@ async def initialize_agent(aid):
                     cdp_api_action_provider(cdp_wallet_provider_config),
                     cdp_wallet_action_provider(cdp_wallet_provider_config),
                     pyth_action_provider(),
+                    basename_action_provider(),
+                    erc20_action_provider(),
+                    erc721_action_provider(),
+                    weth_action_provider(),
+                    morpho_action_provider(),
+                    superfluid_action_provider(),
+                    wow_action_provider(),
                 ],
             )
         )
