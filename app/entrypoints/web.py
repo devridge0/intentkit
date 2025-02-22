@@ -23,7 +23,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config.config import config
 from app.core.engine import execute_agent, thread_stats
-from models.agent import Agent, AgentQuota
+from app.core.prompt import agent_prompt
+from models.agent import Agent, AgentData, AgentQuota
 from models.chat import (
     AuthorType,
     ChatMessage,
@@ -228,6 +229,30 @@ async def debug_chat(
     await quota.add_message()
 
     return resp
+
+
+@chat_router.get(
+    "/debug/{agent_id}/prompt",
+    tags=["Debug"],
+    response_class=PlainTextResponse,
+    dependencies=[Depends(verify_debug_credentials)],
+    operation_id="debug_agent_prompt",
+    summary="Agent Prompt",
+)
+async def debug_agent_prompt(
+    agent_id: str = Path(..., description="Agent id"),
+) -> str:
+    """Get agent's init and append prompts for debugging."""
+    agent = await Agent.get(agent_id)
+    agent_data = await AgentData.get(agent_id)
+
+    init_prompt = agent_prompt(agent, agent_data)
+    append_prompt = agent.prompt_append or "None"
+
+    full_prompt = (
+        f"[Init Prompt]\n\n{init_prompt}\n\n[Append Prompt]\n\n{append_prompt}"
+    )
+    return full_prompt
 
 
 @chat_router_readonly.get(
