@@ -26,8 +26,12 @@ from coinbase_agentkit import (
     cdp_api_action_provider,
     cdp_wallet_action_provider,
     erc20_action_provider,
+    morpho_action_provider,
     pyth_action_provider,
+    superfluid_action_provider,
     wallet_action_provider,
+    weth_action_provider,
+    wow_action_provider,
 )
 from coinbase_agentkit.action_providers.erc721 import erc721_action_provider
 from coinbase_agentkit_langchain import get_langchain_tools
@@ -248,6 +252,10 @@ async def initialize_agent(aid):
                     basename_action_provider(),
                     erc20_action_provider(),
                     erc721_action_provider(),
+                    weth_action_provider(),
+                    morpho_action_provider(),
+                    superfluid_action_provider(),
+                    wow_action_provider(),
                 ],
             )
         )
