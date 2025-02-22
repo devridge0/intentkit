@@ -267,9 +267,7 @@ class Agent(SQLModel, table=True):
                     value = value.replace("\\n", "\n")
                     yaml_value = f"{field_name}: |-\n"
                     # Indent each line with 2 spaces
-                    yaml_value += "\n".join(
-                        f"  {line}" for line in value.split("\n")
-                    )
+                    yaml_value += "\n".join(f"  {line}" for line in value.split("\n"))
                     yaml_lines.append(yaml_value)
                 else:
                     # Use flow style for short strings
