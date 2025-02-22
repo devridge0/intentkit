@@ -38,6 +38,7 @@ if config.sentry_dsn:
         profiles_sample_rate=config.sentry_profiles_sample_rate,
         environment=config.env,
         release=config.release,
+        server_name="intent-api",
     )
 
 
