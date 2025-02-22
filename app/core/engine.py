@@ -96,6 +96,8 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
         if agent_data.cdp_wallet_data:
             wallet_data = json.loads(agent_data.cdp_wallet_data)
             prompt += f"Your CDP wallet address in {agent.cdp_network_id} is {wallet_data['default_address_id']} .\n"
+            if agent.cdp_network_id == "base-mainnet":
+                prompt += "The USDC contract address in base-mainnet is 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\n"
         if agent_data.twitter_id:
             prompt += f"Your twitter id is {agent_data.twitter_id}, never reply or retweet yourself.\n"
         if agent_data.twitter_username:
