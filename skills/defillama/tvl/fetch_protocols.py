@@ -1,6 +1,6 @@
 """Tool for fetching all protocols via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Type
 from pydantic import BaseModel, Field
 
 from skills.defillama.base import DefiLlamaBaseTool

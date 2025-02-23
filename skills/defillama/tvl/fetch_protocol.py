@@ -1,6 +1,6 @@
 """Tool for fetching specific protocol details via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Type
 from datetime import datetime
 from pydantic import BaseModel, Field
 
