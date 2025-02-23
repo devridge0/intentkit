@@ -1,10 +1,11 @@
 """Tool for fetching stablecoin prices via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_stablecoin_prices
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_STABLECOIN_PRICES_PROMPT = """
 This tool fetches current price data for stablecoins from DeFi Llama.
@@ -18,13 +19,9 @@ Returns:
 class PriceDataPoint(BaseModel):
     """Model representing a price data point."""
 
-    date: str = Field(
-        ...,
-        description="Unix timestamp for the price data"
-    )
+    date: str = Field(..., description="Unix timestamp for the price data")
     prices: Dict[str, float] = Field(
-        ...,
-        description="Dictionary of stablecoin prices indexed by identifier"
+        ..., description="Dictionary of stablecoin prices indexed by identifier"
     )
 
 
@@ -32,18 +29,14 @@ class FetchStablecoinPricesResponse(BaseModel):
     """Response schema for stablecoin prices data."""
 
     data: List[PriceDataPoint] = Field(
-        default_factory=list,
-        description="List of price data points"
+        default_factory=list, description="List of price data points"
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchStablecoinPrices(DefiLlamaBaseTool):
     """Tool for fetching stablecoin prices from DeFi Llama.
-    
+
     This tool retrieves current price data for stablecoins, including historical
     price points and their timestamps.
 
@@ -78,16 +71,13 @@ class DefiLlamaFetchStablecoinPrices(DefiLlamaBaseTool):
 
             # Fetch price data from API
             result = await fetch_stablecoin_prices()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchStablecoinPricesResponse(error=result["error"])
 
             # Parse results into models
-            data_points = [
-                PriceDataPoint(**point) 
-                for point in result
-            ]
+            data_points = [PriceDataPoint(**point) for point in result]
 
             return FetchStablecoinPricesResponse(data=data_points)
 

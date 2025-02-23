@@ -1,10 +1,11 @@
 """Tool for fetching stablecoin data via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_stablecoins
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_STABLECOINS_PROMPT = """
 This tool fetches comprehensive stablecoin data from DeFi Llama.
@@ -19,111 +20,68 @@ Returns:
 
 class CirculatingAmount(BaseModel):
     """Model representing circulating amounts for a specific peg type."""
-    
-    peggedUSD: float = Field(
-        ...,
-        description="Amount pegged to USD"
-    )
+
+    peggedUSD: float = Field(..., description="Amount pegged to USD")
 
 
 class ChainCirculating(BaseModel):
     """Model representing circulating amounts on a specific chain."""
 
-    current: CirculatingAmount = Field(
-        ...,
-        description="Current circulating amount"
-    )
+    current: CirculatingAmount = Field(..., description="Current circulating amount")
     circulatingPrevDay: CirculatingAmount = Field(
-        ...,
-        description="Circulating amount from previous day"
+        ..., description="Circulating amount from previous day"
     )
     circulatingPrevWeek: CirculatingAmount = Field(
-        ...,
-        description="Circulating amount from previous week"
+        ..., description="Circulating amount from previous week"
     )
     circulatingPrevMonth: CirculatingAmount = Field(
-        ...,
-        description="Circulating amount from previous month"
+        ..., description="Circulating amount from previous month"
     )
 
 
 class Stablecoin(BaseModel):
     """Model representing a single stablecoin's data."""
 
-    id: str = Field(
-        ...,
-        description="Unique identifier"
-    )
-    name: str = Field(
-        ...,
-        description="Stablecoin name"
-    )
-    symbol: str = Field(
-        ...,
-        description="Token symbol"
-    )
-    gecko_id: Optional[str] = Field(
-        None,
-        description="CoinGecko ID if available"
-    )
-    pegType: str = Field(
-        ...,
-        description="Type of peg (e.g. peggedUSD)"
-    )
-    priceSource: str = Field(
-        ...,
-        description="Source of price data"
-    )
-    pegMechanism: str = Field(
-        ...,
-        description="Mechanism maintaining the peg"
-    )
+    id: str = Field(..., description="Unique identifier")
+    name: str = Field(..., description="Stablecoin name")
+    symbol: str = Field(..., description="Token symbol")
+    gecko_id: Optional[str] = Field(None, description="CoinGecko ID if available")
+    pegType: str = Field(..., description="Type of peg (e.g. peggedUSD)")
+    priceSource: str = Field(..., description="Source of price data")
+    pegMechanism: str = Field(..., description="Mechanism maintaining the peg")
     circulating: CirculatingAmount = Field(
-        ...,
-        description="Current total circulating amount"
+        ..., description="Current total circulating amount"
     )
     circulatingPrevDay: CirculatingAmount = Field(
-        ...,
-        description="Total circulating amount from previous day"
+        ..., description="Total circulating amount from previous day"
     )
     circulatingPrevWeek: CirculatingAmount = Field(
-        ...,
-        description="Total circulating amount from previous week"
+        ..., description="Total circulating amount from previous week"
     )
     circulatingPrevMonth: CirculatingAmount = Field(
-        ...,
-        description="Total circulating amount from previous month"
+        ..., description="Total circulating amount from previous month"
     )
     chainCirculating: Dict[str, ChainCirculating] = Field(
-        ...,
-        description="Circulating amounts per chain"
+        ..., description="Circulating amounts per chain"
     )
     chains: List[str] = Field(
-        ...,
-        description="List of chains where the stablecoin is present"
+        ..., description="List of chains where the stablecoin is present"
     )
-    price: float = Field(
-        ...,
-        description="Current price in USD"
-    )
+    price: float = Field(..., description="Current price in USD")
 
 
 class FetchStablecoinsResponse(BaseModel):
     """Response schema for stablecoin data."""
 
     peggedAssets: List[Stablecoin] = Field(
-        default_factory=list,
-        description="List of stablecoins with their data"
+        default_factory=list, description="List of stablecoins with their data"
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchStablecoins(DefiLlamaBaseTool):
     """Tool for fetching stablecoin data from DeFi Llama.
-    
+
     This tool retrieves comprehensive data about stablecoins, including their
     circulating supply across different chains, price information, and peg details.
 
@@ -158,7 +116,7 @@ class DefiLlamaFetchStablecoins(DefiLlamaBaseTool):
 
             # Fetch stablecoin data from API
             result = await fetch_stablecoins()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchStablecoinsResponse(error=result["error"])

@@ -1,40 +1,41 @@
 import unittest
-from unittest.mock import patch, AsyncMock
-import asyncio
+from unittest.mock import AsyncMock, patch
 
 # Import the endpoints from your module.
 # Adjust the import path if your module has a different name or location.
 from skills.defillama.api import (
-    # Original functions
-    fetch_protocols,
-    fetch_protocol,
-    fetch_historical_tvl,
+    fetch_batch_historical_prices,
+    fetch_block,
     fetch_chain_historical_tvl,
-    fetch_protocol_current_tvl,
     fetch_chains,
     fetch_current_prices,
-    fetch_historical_prices,
-    fetch_batch_historical_prices,
-    # Price related functions
-    fetch_price_chart,
-    fetch_price_percentage,
-    fetch_first_price,
-    fetch_block,
-    # Stablecoin related functions
-    fetch_stablecoins,
-    fetch_stablecoin_charts,
-    fetch_stablecoin_chains,
-    fetch_stablecoin_prices,
-    # Yields related functions
-    fetch_pools,
-    fetch_pool_chart,
     # Volume related functions
     fetch_dex_overview,
     fetch_dex_summary,
-    fetch_options_overview,
     # Fees related functions
     fetch_fees_overview,
+    fetch_first_price,
+    fetch_historical_prices,
+    fetch_historical_tvl,
+    fetch_options_overview,
+    fetch_pool_chart,
+    # Yields related functions
+    fetch_pools,
+    # Price related functions
+    fetch_price_chart,
+    fetch_price_percentage,
+    fetch_protocol,
+    fetch_protocol_current_tvl,
+    # Original functions
+    fetch_protocols,
+    fetch_stablecoin_chains,
+    fetch_stablecoin_charts,
+    fetch_stablecoin_prices,
+    # Stablecoin related functions
+    fetch_stablecoins,
 )
+
+
 # Dummy response to simulate httpx responses.
 class DummyResponse:
     def __init__(self, status_code, json_data):
@@ -44,8 +45,8 @@ class DummyResponse:
     def json(self):
         return self._json_data
 
-class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
 
+class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         # Set up a fixed timestamp that all tests will use
@@ -53,7 +54,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         # Start the patcher before each test
-        self.datetime_patcher = patch('skills.defillama.api.datetime')
+        self.datetime_patcher = patch("skills.defillama.api.datetime")
         self.mock_datetime = self.datetime_patcher.start()
         # Configure the mock to return our fixed timestamp
         self.mock_datetime.now.return_value.timestamp.return_value = self.mock_timestamp
@@ -63,7 +64,9 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         self.datetime_patcher.stop()
 
     # Helper method to patch httpx.AsyncClient and set up the dummy client.
-    async def _run_with_dummy(self, func, expected_url, dummy_response, *args, expected_kwargs=None):
+    async def _run_with_dummy(
+        self, func, expected_url, dummy_response, *args, expected_kwargs=None
+    ):
         if expected_kwargs is None:
             expected_kwargs = {}
         with patch("httpx.AsyncClient") as MockClient:
@@ -101,10 +104,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"protocol": protocol})
         expected_url = f"https://api.llama.fi/protocol/{protocol}"
         result = await self._run_with_dummy(
-            fetch_protocol,
-            expected_url,
-            dummy,
-            protocol
+            fetch_protocol, expected_url, dummy, protocol
         )
         self.assertEqual(result, {"protocol": protocol})
 
@@ -113,10 +113,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(500, None)
         expected_url = f"https://api.llama.fi/protocol/{protocol}"
         result = await self._run_with_dummy(
-            fetch_protocol,
-            expected_url,
-            dummy,
-            protocol
+            fetch_protocol, expected_url, dummy, protocol
         )
         self.assertEqual(result, {"error": "API returned status code 500"})
 
@@ -147,10 +144,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"chain": chain})
         expected_url = f"https://api.llama.fi/v2/historicalChainTvl/{chain}"
         result = await self._run_with_dummy(
-            fetch_chain_historical_tvl,
-            expected_url,
-            dummy,
-            chain
+            fetch_chain_historical_tvl, expected_url, dummy, chain
         )
         self.assertEqual(result, {"chain": chain})
 
@@ -159,10 +153,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(503, None)
         expected_url = f"https://api.llama.fi/v2/historicalChainTvl/{chain}"
         result = await self._run_with_dummy(
-            fetch_chain_historical_tvl,
-            expected_url,
-            dummy,
-            chain
+            fetch_chain_historical_tvl, expected_url, dummy, chain
         )
         self.assertEqual(result, {"error": "API returned status code 503"})
 
@@ -172,10 +163,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"current_tvl": 12345})
         expected_url = f"https://api.llama.fi/tvl/{protocol}"
         result = await self._run_with_dummy(
-            fetch_protocol_current_tvl,
-            expected_url,
-            dummy,
-            protocol
+            fetch_protocol_current_tvl, expected_url, dummy, protocol
         )
         self.assertEqual(result, {"current_tvl": 12345})
 
@@ -184,10 +172,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(418, None)
         expected_url = f"https://api.llama.fi/tvl/{protocol}"
         result = await self._run_with_dummy(
-            fetch_protocol_current_tvl,
-            expected_url,
-            dummy,
-            protocol
+            fetch_protocol_current_tvl, expected_url, dummy, protocol
         )
         self.assertEqual(result, {"error": "API returned status code 418"})
 
@@ -219,10 +204,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"prices": "data"})
         expected_url = f"https://api.llama.fi/prices/current/{coins_str}?searchWidth=4h"
         result = await self._run_with_dummy(
-            fetch_current_prices,
-            expected_url,
-            dummy,
-            coins
+            fetch_current_prices, expected_url, dummy, coins
         )
         self.assertEqual(result, {"prices": "data"})
 
@@ -232,10 +214,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(500, None)
         expected_url = f"https://api.llama.fi/prices/current/{coins_str}?searchWidth=4h"
         result = await self._run_with_dummy(
-            fetch_current_prices,
-            expected_url,
-            dummy,
-            coins
+            fetch_current_prices, expected_url, dummy, coins
         )
         self.assertEqual(result, {"error": "API returned status code 500"})
 
@@ -247,11 +226,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"historical_prices": "data"})
         expected_url = f"https://api.llama.fi/prices/historical/{timestamp}/{coins_str}?searchWidth=4h"
         result = await self._run_with_dummy(
-            fetch_historical_prices,
-            expected_url,
-            dummy,
-            timestamp,
-            coins
+            fetch_historical_prices, expected_url, dummy, timestamp, coins
         )
         self.assertEqual(result, {"historical_prices": "data"})
 
@@ -262,11 +237,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(400, None)
         expected_url = f"https://api.llama.fi/prices/historical/{timestamp}/{coins_str}?searchWidth=4h"
         result = await self._run_with_dummy(
-            fetch_historical_prices,
-            expected_url,
-            dummy,
-            timestamp,
-            coins
+            fetch_historical_prices, expected_url, dummy, timestamp, coins
         )
         self.assertEqual(result, {"error": "API returned status code 400"})
 
@@ -282,7 +253,9 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_batch_historical_prices(coins_timestamps)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"batch": "data"})
 
     async def test_fetch_batch_historical_prices_error(self):
@@ -295,7 +268,9 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_batch_historical_prices(coins_timestamps)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"error": "API returned status code 503"})
 
     async def test_fetch_price_chart_success(self):
@@ -303,22 +278,24 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         coins_str = ",".join(coins)
         dummy = DummyResponse(200, {"chart": "data"})
         expected_url = f"https://api.llama.fi/chart/{coins_str}"
-        
+
         # Calculate start time based on mock timestamp
         start_time = self.mock_timestamp - 86400  # mock timestamp - 1 day
         expected_params = {
             "start": start_time,
             "span": 10,
             "period": "2d",
-            "searchWidth": "600"
+            "searchWidth": "600",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_price_chart(coins)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"chart": "data"})
 
     async def test_fetch_price_chart_error(self):
@@ -326,24 +303,25 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         coins_str = ",".join(coins)
         dummy = DummyResponse(500, None)
         expected_url = f"https://api.llama.fi/chart/{coins_str}"
-        
+
         # Calculate start time based on mock timestamp
         start_time = self.mock_timestamp - 86400  # mock timestamp - 1 day
         expected_params = {
             "start": start_time,
             "span": 10,
             "period": "2d",
-            "searchWidth": "600"
+            "searchWidth": "600",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_price_chart(coins)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"error": "API returned status code 500"})
-
 
     # --- Tests for fetch_price_percentage ---
     async def test_fetch_price_percentage_success(self):
@@ -351,22 +329,24 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         coins_str = ",".join(coins)
         dummy = DummyResponse(200, {"percentage": "data"})
         expected_url = f"https://api.llama.fi/percentage/{coins_str}"
-        
+
         mock_timestamp = 1677648000  # Fixed timestamp
         with patch("skills.defillama.api.datetime") as mock_datetime:
             mock_datetime.now.return_value.timestamp.return_value = mock_timestamp
             expected_params = {
                 "timestamp": mock_timestamp,
                 "lookForward": "false",
-                "period": "24h"
+                "period": "24h",
             }
-            
+
             with patch("httpx.AsyncClient") as MockClient:
                 client_instance = AsyncMock()
                 client_instance.get.return_value = dummy
                 MockClient.return_value.__aenter__.return_value = client_instance
                 result = await fetch_price_percentage(coins)
-                client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+                client_instance.get.assert_called_once_with(
+                    expected_url, params=expected_params
+                )
                 self.assertEqual(result, {"percentage": "data"})
 
     async def test_fetch_price_percentage_error(self):
@@ -374,42 +354,45 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         coins_str = ",".join(coins)
         dummy = DummyResponse(404, None)
         expected_url = f"https://api.llama.fi/percentage/{coins_str}"
-        
+
         expected_params = {
             "timestamp": self.mock_timestamp,
             "lookForward": "false",
-            "period": "24h"
+            "period": "24h",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_price_percentage(coins)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"error": "API returned status code 404"})
 
-
-    async def test_fetch_price_percentage_error(self):
+    async def test_fetch_price_percentage_error2(self):
         coins = ["bitcoin", "ethereum"]
         coins_str = ",".join(coins)
         dummy = DummyResponse(404, None)
         expected_url = f"https://api.llama.fi/percentage/{coins_str}"
-        
+
         with patch("datetime.datetime") as mock_datetime:
             mock_datetime.now.return_value.timestamp.return_value = 1677648000
             expected_params = {
                 "timestamp": 1677648000,
                 "lookForward": "false",
-                "period": "24h"
+                "period": "24h",
             }
-            
+
             with patch("httpx.AsyncClient") as MockClient:
                 client_instance = AsyncMock()
                 client_instance.get.return_value = dummy
                 MockClient.return_value.__aenter__.return_value = client_instance
                 result = await fetch_price_percentage(coins)
-                client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+                client_instance.get.assert_called_once_with(
+                    expected_url, params=expected_params
+                )
                 self.assertEqual(result, {"error": "API returned status code 404"})
 
     # --- Tests for fetch_first_price ---
@@ -419,10 +402,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"first_prices": "data"})
         expected_url = f"https://api.llama.fi/prices/first/{coins_str}"
         result = await self._run_with_dummy(
-            fetch_first_price,
-            expected_url,
-            dummy,
-            coins
+            fetch_first_price, expected_url, dummy, coins
         )
         self.assertEqual(result, {"first_prices": "data"})
 
@@ -432,10 +412,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(500, None)
         expected_url = f"https://api.llama.fi/prices/first/{coins_str}"
         result = await self._run_with_dummy(
-            fetch_first_price,
-            expected_url,
-            dummy,
-            coins
+            fetch_first_price, expected_url, dummy, coins
         )
         self.assertEqual(result, {"error": "API returned status code 500"})
 
@@ -444,32 +421,22 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         chain = "ethereum"
         dummy = DummyResponse(200, {"block": 123456})
         mock_timestamp = 1677648000  # Fixed timestamp
-        
+
         with patch("skills.defillama.api.datetime") as mock_datetime:
             mock_datetime.now.return_value.timestamp.return_value = mock_timestamp
             expected_url = f"https://api.llama.fi/block/{chain}/{mock_timestamp}"
-            result = await self._run_with_dummy(
-                fetch_block,
-                expected_url,
-                dummy,
-                chain
-            )
+            result = await self._run_with_dummy(fetch_block, expected_url, dummy, chain)
             self.assertEqual(result, {"block": 123456})
 
     async def test_fetch_block_error(self):
         chain = "ethereum"
         dummy = DummyResponse(404, None)
         mock_timestamp = 1677648000  # Fixed timestamp
-        
+
         with patch("skills.defillama.api.datetime") as mock_datetime:
             mock_datetime.now.return_value.timestamp.return_value = mock_timestamp
             expected_url = f"https://api.llama.fi/block/{chain}/{mock_timestamp}"
-            result = await self._run_with_dummy(
-                fetch_block,
-                expected_url,
-                dummy,
-                chain
-            )
+            result = await self._run_with_dummy(fetch_block, expected_url, dummy, chain)
             self.assertEqual(result, {"error": "API returned status code 404"})
 
     # --- Tests for Stablecoins API ---
@@ -477,26 +444,26 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"stablecoins": "data"})
         expected_url = "https://api.llama.fi/stablecoins"
         expected_params = {"includePrices": "true"}
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_stablecoins()
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"stablecoins": "data"})
 
     async def test_fetch_stablecoin_charts_success(self):
         stablecoin_id = "USDT"
         chain = "ethereum"
         dummy = DummyResponse(200, {"charts": "data"})
-        expected_url = f"https://api.llama.fi/stablecoincharts/{chain}?stablecoin={stablecoin_id}"
+        expected_url = (
+            f"https://api.llama.fi/stablecoincharts/{chain}?stablecoin={stablecoin_id}"
+        )
         result = await self._run_with_dummy(
-            fetch_stablecoin_charts,
-            expected_url,
-            dummy,
-            stablecoin_id,
-            chain
+            fetch_stablecoin_charts, expected_url, dummy, stablecoin_id, chain
         )
         self.assertEqual(result, {"charts": "data"})
 
@@ -504,9 +471,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"chains": "data"})
         expected_url = "https://api.llama.fi/stablecoinchains"
         result = await self._run_with_dummy(
-            fetch_stablecoin_chains,
-            expected_url,
-            dummy
+            fetch_stablecoin_chains, expected_url, dummy
         )
         self.assertEqual(result, {"chains": "data"})
 
@@ -514,9 +479,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"prices": "data"})
         expected_url = "https://api.llama.fi/stablecoinprices"
         result = await self._run_with_dummy(
-            fetch_stablecoin_prices,
-            expected_url,
-            dummy
+            fetch_stablecoin_prices, expected_url, dummy
         )
         self.assertEqual(result, {"prices": "data"})
 
@@ -524,11 +487,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
     async def test_fetch_pools_success(self):
         dummy = DummyResponse(200, {"pools": "data"})
         expected_url = "https://api.llama.fi/pools"
-        result = await self._run_with_dummy(
-            fetch_pools,
-            expected_url,
-            dummy
-        )
+        result = await self._run_with_dummy(fetch_pools, expected_url, dummy)
         self.assertEqual(result, {"pools": "data"})
 
     async def test_fetch_pool_chart_success(self):
@@ -536,10 +495,7 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         dummy = DummyResponse(200, {"chart": "data"})
         expected_url = f"https://api.llama.fi/chart/{pool_id}"
         result = await self._run_with_dummy(
-            fetch_pool_chart,
-            expected_url,
-            dummy,
-            pool_id
+            fetch_pool_chart, expected_url, dummy, pool_id
         )
         self.assertEqual(result, {"chart": "data"})
 
@@ -550,15 +506,17 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         expected_params = {
             "excludeTotalDataChart": "true",
             "excludeTotalDataChartBreakdown": "true",
-            "dataType": "dailyVolume"
+            "dataType": "dailyVolume",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_dex_overview()
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"overview": "data"})
 
     async def test_fetch_dex_summary_success(self):
@@ -568,15 +526,17 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         expected_params = {
             "excludeTotalDataChart": "true",
             "excludeTotalDataChartBreakdown": "true",
-            "dataType": "dailyVolume"
+            "dataType": "dailyVolume",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_dex_summary(protocol)
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"summary": "data"})
 
     async def test_fetch_options_overview_success(self):
@@ -585,15 +545,17 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         expected_params = {
             "excludeTotalDataChart": "true",
             "excludeTotalDataChartBreakdown": "true",
-            "dataType": "dailyPremiumVolume"
+            "dataType": "dailyPremiumVolume",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_options_overview()
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"options": "data"})
 
     # --- Tests for Fees API ---
@@ -603,17 +565,19 @@ class TestDefiLlamaAPI(unittest.IsolatedAsyncioTestCase):
         expected_params = {
             "excludeTotalDataChart": "true",
             "excludeTotalDataChartBreakdown": "true",
-            "dataType": "dailyFees"
+            "dataType": "dailyFees",
         }
-        
+
         with patch("httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.get.return_value = dummy
             MockClient.return_value.__aenter__.return_value = client_instance
             result = await fetch_fees_overview()
-            client_instance.get.assert_called_once_with(expected_url, params=expected_params)
+            client_instance.get.assert_called_once_with(
+                expected_url, params=expected_params
+            )
             self.assertEqual(result, {"fees": "data"})
 
-if __name__ == '__main__':
-    unittest.main()
 
+if __name__ == "__main__":
+    unittest.main()

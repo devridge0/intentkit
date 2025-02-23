@@ -1,10 +1,11 @@
 """Tool for fetching DEX overview data via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_dex_overview
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_DEX_OVERVIEW_PROMPT = """
 This tool fetches comprehensive overview data for DEX protocols from DeFi Llama.
@@ -24,7 +25,9 @@ class MethodologyInfo(BaseModel):
     Revenue: Optional[str] = Field(None, description="Revenue model")
     ProtocolRevenue: Optional[str] = Field(None, description="Protocol revenue info")
     HoldersRevenue: Optional[str] = Field(None, description="Holder revenue info")
-    SupplySideRevenue: Optional[str] = Field(None, description="Supply side revenue info")
+    SupplySideRevenue: Optional[str] = Field(
+        None, description="Supply side revenue info"
+    )
 
 
 class ProtocolInfo(BaseModel):
@@ -61,7 +64,9 @@ class ProtocolInfo(BaseModel):
     chains: List[str] = Field(..., description="Supported chains")
     protocolType: str = Field(..., description="Protocol type")
     methodologyURL: Optional[str] = Field(None, description="Methodology URL")
-    methodology: Optional[MethodologyInfo] = Field(None, description="Methodology details")
+    methodology: Optional[MethodologyInfo] = Field(
+        None, description="Methodology details"
+    )
     latestFetchIsOk: bool = Field(..., description="Latest fetch status")
     disabled: Optional[bool] = Field(None, description="Whether protocol is disabled")
     parentProtocol: Optional[str] = Field(None, description="Parent protocol")
@@ -74,98 +79,40 @@ class FetchDexOverviewResponse(BaseModel):
     """Response schema for DEX overview data."""
 
     totalDataChart: List = Field(
-        default_factory=list,
-        description="Total data chart points"
+        default_factory=list, description="Total data chart points"
     )
     totalDataChartBreakdown: List = Field(
-        default_factory=list,
-        description="Total data chart breakdown"
+        default_factory=list, description="Total data chart breakdown"
     )
     breakdown24h: Optional[Dict[str, Dict[str, float]]] = Field(
-        None,
-        description="24h breakdown by chain"
+        None, description="24h breakdown by chain"
     )
     breakdown30d: Optional[Dict[str, Dict[str, float]]] = Field(
-        None,
-        description="30d breakdown by chain"
+        None, description="30d breakdown by chain"
     )
-    chain: Optional[str] = Field(
-        None,
-        description="Specific chain"
-    )
-    allChains: List[str] = Field(
-        ...,
-        description="List of all chains"
-    )
-    total24h: float = Field(
-        ...,
-        description="24h total"
-    )
-    total48hto24h: float = Field(
-        ...,
-        description="48h to 24h total"
-    )
-    total7d: float = Field(
-        ...,
-        description="7d total"
-    )
-    total14dto7d: float = Field(
-        ...,
-        description="14d to 7d total"
-    )
-    total60dto30d: float = Field(
-        ...,
-        description="60d to 30d total"
-    )
-    total30d: float = Field(
-        ...,
-        description="30d total"
-    )
-    total1y: float = Field(
-        ...,
-        description="1y total"
-    )
-    change_1d: float = Field(
-        ...,
-        description="1d change"
-    )
-    change_7d: float = Field(
-        ...,
-        description="7d change"
-    )
-    change_1m: float = Field(
-        ...,
-        description="1m change"
-    )
-    change_7dover7d: float = Field(
-        ...,
-        description="7d over 7d change"
-    )
-    change_30dover30d: float = Field(
-        ...,
-        description="30d over 30d change"
-    )
-    total7DaysAgo: float = Field(
-        ...,
-        description="Total 7 days ago"
-    )
-    total30DaysAgo: float = Field(
-        ...,
-        description="Total 30 days ago"
-    )
-    protocols: List[ProtocolInfo] = Field(
-        ...,
-        description="List of protocol data"
-    )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    chain: Optional[str] = Field(None, description="Specific chain")
+    allChains: List[str] = Field(..., description="List of all chains")
+    total24h: float = Field(..., description="24h total")
+    total48hto24h: float = Field(..., description="48h to 24h total")
+    total7d: float = Field(..., description="7d total")
+    total14dto7d: float = Field(..., description="14d to 7d total")
+    total60dto30d: float = Field(..., description="60d to 30d total")
+    total30d: float = Field(..., description="30d total")
+    total1y: float = Field(..., description="1y total")
+    change_1d: float = Field(..., description="1d change")
+    change_7d: float = Field(..., description="7d change")
+    change_1m: float = Field(..., description="1m change")
+    change_7dover7d: float = Field(..., description="7d over 7d change")
+    change_30dover30d: float = Field(..., description="30d over 30d change")
+    total7DaysAgo: float = Field(..., description="Total 7 days ago")
+    total30DaysAgo: float = Field(..., description="Total 30 days ago")
+    protocols: List[ProtocolInfo] = Field(..., description="List of protocol data")
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchDexOverview(DefiLlamaBaseTool):
     """Tool for fetching DEX overview data from DeFi Llama.
-    
+
     This tool retrieves comprehensive data about DEX protocols, including
     volumes, metrics, and chain breakdowns.
 
@@ -193,14 +140,14 @@ class DefiLlamaFetchDexOverview(DefiLlamaBaseTool):
             FetchDexOverviewResponse containing overview data or error
         """
         try:
-            # Check rate limiting 
+            # Check rate limiting
             is_rate_limited, error_msg = await self.check_rate_limit()
             if is_rate_limited:
                 return FetchDexOverviewResponse(error=error_msg)
 
             # Fetch overview data from API
             result = await fetch_dex_overview()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchDexOverviewResponse(error=result["error"])

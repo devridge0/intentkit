@@ -1,10 +1,11 @@
 """Tool for fetching options overview data via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_options_overview
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_OPTIONS_OVERVIEW_PROMPT = """
 This tool fetches comprehensive overview data for all options protocols from DeFi Llama.
@@ -15,17 +16,27 @@ Returns detailed metrics including:
 - Chain breakdowns
 """
 
+
 class ProtocolMethodology(BaseModel):
     """Model representing protocol methodology data."""
+
     UserFees: Optional[str] = Field(None, description="User fees description")
     Fees: Optional[str] = Field(None, description="Fees description")
     Revenue: Optional[str] = Field(None, description="Revenue description")
-    ProtocolRevenue: Optional[str] = Field(None, description="Protocol revenue description")
-    HoldersRevenue: Optional[str] = Field(None, description="Holders revenue description")
-    SupplySideRevenue: Optional[str] = Field(None, description="Supply side revenue description")
+    ProtocolRevenue: Optional[str] = Field(
+        None, description="Protocol revenue description"
+    )
+    HoldersRevenue: Optional[str] = Field(
+        None, description="Holders revenue description"
+    )
+    SupplySideRevenue: Optional[str] = Field(
+        None, description="Supply side revenue description"
+    )
+
 
 class Protocol(BaseModel):
     """Model representing protocol data."""
+
     name: str = Field(..., description="Protocol name")
     displayName: str = Field(..., description="Display name of protocol")
     defillamaId: str = Field(..., description="DeFi Llama ID")
@@ -41,12 +52,20 @@ class Protocol(BaseModel):
     change_1d: Optional[float] = Field(None, description="24-hour change percentage")
     change_7d: Optional[float] = Field(None, description="7-day change percentage")
     change_1m: Optional[float] = Field(None, description="30-day change percentage")
-    methodology: Optional[ProtocolMethodology] = Field(None, description="Protocol methodology")
-    breakdown24h: Optional[Dict[str, Dict[str, float]]] = Field(None, description="24-hour breakdown by chain")
-    breakdown30d: Optional[Dict[str, Dict[str, float]]] = Field(None, description="30-day breakdown by chain")
+    methodology: Optional[ProtocolMethodology] = Field(
+        None, description="Protocol methodology"
+    )
+    breakdown24h: Optional[Dict[str, Dict[str, float]]] = Field(
+        None, description="24-hour breakdown by chain"
+    )
+    breakdown30d: Optional[Dict[str, Dict[str, float]]] = Field(
+        None, description="30-day breakdown by chain"
+    )
+
 
 class FetchOptionsOverviewResponse(BaseModel):
     """Response schema for options overview data."""
+
     total24h: float = Field(..., description="Total volume in last 24 hours")
     total7d: float = Field(..., description="Total volume in last 7 days")
     total30d: float = Field(..., description="Total volume in last 30 days")
@@ -58,9 +77,10 @@ class FetchOptionsOverviewResponse(BaseModel):
     protocols: List[Protocol] = Field(..., description="List of protocols")
     error: Optional[str] = Field(None, description="Error message if any")
 
+
 class DefiLlamaFetchOptionsOverview(DefiLlamaBaseTool):
     """Tool for fetching options overview data from DeFi Llama.
-    
+
     This tool retrieves comprehensive data about all options protocols,
     including volume metrics, change percentages, and detailed protocol information.
 
@@ -95,7 +115,7 @@ class DefiLlamaFetchOptionsOverview(DefiLlamaBaseTool):
 
             # Fetch overview data from API
             result = await fetch_options_overview()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchOptionsOverviewResponse(error=result["error"])
