@@ -21,11 +21,18 @@ from coinbase_agentkit import (
     AgentKitConfig,
     CdpWalletProvider,
     CdpWalletProviderConfig,
+    basename_action_provider,
     cdp_api_action_provider,
     cdp_wallet_action_provider,
+    erc20_action_provider,
+    morpho_action_provider,
     pyth_action_provider,
+    superfluid_action_provider,
     wallet_action_provider,
+    weth_action_provider,
+    wow_action_provider,
 )
+from coinbase_agentkit.action_providers.erc721 import erc721_action_provider
 from coinbase_agentkit_langchain import get_langchain_tools
 from epyxid import XID
 from fastapi import HTTPException
@@ -46,6 +53,7 @@ from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.agent import AgentStore
 from app.core.graph import create_agent
+from app.core.prompt import agent_prompt
 from app.core.skill import SkillStore
 from app.services.twitter.client import TwitterClient
 from models.agent import Agent, AgentData
@@ -55,6 +63,7 @@ from models.skill import AgentSkillData, ThreadSkillData
 from skill_sets import get_skill_set
 from skills.acolyt import get_Acolyt_skill
 from skills.allora import get_allora_skill
+from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
 from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
@@ -72,53 +81,6 @@ agents: dict[str, CompiledGraph] = {}
 
 # Global dictionaries to cache agent update times
 agents_updated: dict[str, datetime] = {}
-
-
-def agent_prompt(agent: Agent) -> str:
-    prompt = "# SYSTEM PROMPT\n\n"
-    if config.system_prompt:
-        prompt += config.system_prompt + "\n\n"
-    if agent.name:
-        prompt += f"Your name is {agent.name}.\n"
-    if agent.ticker:
-        prompt += f"Your ticker symbol is {agent.ticker}.\n"
-    prompt += "\n"
-    if agent.purpose:
-        prompt += f"## Purpose\n\n{agent.purpose}\n\n"
-    if agent.personality:
-        prompt += f"## Personality\n\n{agent.personality}\n\n"
-    if agent.principles:
-        prompt += f"## Principles\n\n{agent.principles}\n\n"
-    if agent.prompt:
-        prompt += f"## Initial Rules\n\n{agent.prompt}\n\n"
-    elif agent.cdp_enabled:
-        prompt += (
-            "## Coinbase AgentKit Skills Guide\n\n"
-            "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
-            "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
-            "them from the faucet if you are on network ID 'base-mainnet'. If not, you can provide your wallet "
-            "details and request funds from the user. Before executing your first action, get the wallet details "
-            "to see what network you're on. If there is a 5XX (internal) HTTP error code, ask the user to try "
-            "again later. If someone asks you to do something you can't do with your currently available tools, "
-            "you must say so, and encourage them to implement it themselves using the CDP SDK + Agentkit, "
-            "recommend they go to docs.cdp.coinbase.com for more information. Be concise and helpful with your "
-            "responses. Refrain from restating your tools' descriptions unless it is explicitly requested."
-            "\n\nWallet addresses are public information. If someone asks for your default wallet, current wallet, "
-            "personal wallet, crypto wallet, or wallet public address, don't use any address in message history, "
-            "you must use the 'get_wallet_details' tool to retrieve your wallet address every time."
-        )
-    if agent.enso_enabled:
-        prompt += """## ENSO Skills Guide\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
-        including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
-        ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
-        Utilize enso_route_shortcut to find the best swap or deposit route. Set broadcast_request to True only when the 
-        user explicitly requests a transaction broadcast. Insufficient funds or insufficient spending approval can cause 
-        Route Shortcut broadcasts to fail. To avoid this, use the enso_broadcast_wallet_approve tool that requires explicit 
-        user confirmation before broadcasting any approval transactions for security reasons.\n\n"""
-    if agent.goat_enabled:
-        prompt += """## GOAT Skills Guide\n\nYou're using the Great Onchain Agent Toolkit (GOAT) SDK, which provides tools for DeFi, minting, betting, and analytics.
-        GOAT supports EVM blockchains and various wallets, including keypairs, smart wallets, LIT, and MPC.\n\n"""
-    return prompt
 
 
 async def initialize_agent(aid):
@@ -202,10 +164,15 @@ async def initialize_agent(aid):
 
     # Configure CDP Agentkit Langchain Extension.
     cdp_wallet_provider = None
-    if agent.cdp_enabled and agent_data and agent_data.cdp_wallet_data:
+    if (
+        agent.cdp_enabled
+        and agent_data
+        and agent_data.cdp_wallet_data
+        and agent.cdp_skills
+    ):
         cdp_wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=config.cdp_api_key_name,
-            api_key_private=config.cdp_api_key_private_key,
+            api_key_private_key=config.cdp_api_key_private_key,
             network_id=agent.cdp_network_id,
             wallet_data=agent_data.cdp_wallet_data,
         )
@@ -218,11 +185,27 @@ async def initialize_agent(aid):
                     cdp_api_action_provider(cdp_wallet_provider_config),
                     cdp_wallet_action_provider(cdp_wallet_provider_config),
                     pyth_action_provider(),
+                    basename_action_provider(),
+                    erc20_action_provider(),
+                    erc721_action_provider(),
+                    weth_action_provider(),
+                    morpho_action_provider(),
+                    superfluid_action_provider(),
+                    wow_action_provider(),
                 ],
             )
         )
         cdp_tools = get_langchain_tools(agent_kit)
         for skill in agent.cdp_skills:
+            if skill == "get_balance":
+                tools.append(
+                    GetBalance(
+                        wallet=cdp_wallet_provider._wallet,
+                        agent_id=aid,
+                        skill_store=skill_store,
+                    )
+                )
+                continue
             for tool in cdp_tools:
                 if tool.name.endswith(skill):
                     tools.append(tool)
@@ -337,7 +320,6 @@ async def initialize_agent(aid):
             except Exception as e:
                 logger.warning(e)
     # Twitter skills
-    twitter_prompt = ""
     if agent.twitter_skills and len(agent.twitter_skills) > 0:
         if not agent.twitter_config:
             agent.twitter_config = {}
@@ -351,11 +333,6 @@ async def initialize_agent(aid):
                 agent_store,
             )
             tools.append(s)
-        twitter_prompt = (
-            f"\n\nYour twitter id is {agent_data.twitter_id}, never reply or retweet yourself. "
-            f"Your twitter username is {agent_data.twitter_username}. \n"
-            f"Your twitter name is {agent_data.twitter_name}. \n"
-        )
 
     # Crestal skills
     if agent.crestal_skills:
@@ -376,20 +353,13 @@ async def initialize_agent(aid):
     tools = list({tool.name: tool for tool in tools}.values())
 
     # finally, setup the system prompt
-    prompt = agent_prompt(agent)
+    prompt = agent_prompt(agent, agent_data)
     # Escape curly braces in the prompt
     escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
     prompt_array = [
         ("system", escaped_prompt),
         ("placeholder", "{messages}"),
     ]
-    if twitter_prompt:
-        # deepseek only supports system prompt in the beginning
-        if agent.model.startswith("deepseek"):
-            # prompt_array.insert(0, ("system", twitter_prompt))
-            pass
-        else:
-            prompt_array.append(("system", twitter_prompt))
     if agent.prompt_append:
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
