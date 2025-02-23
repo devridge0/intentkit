@@ -1,10 +1,11 @@
 """Tool for fetching DEX protocol summary data via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_dex_summary
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_DEX_SUMMARY_PROMPT = """
 This tool fetches summary data for a specific DEX protocol from DeFi Llama.
@@ -21,10 +22,7 @@ Returns:
 class FetchDexSummaryInput(BaseModel):
     """Input schema for fetching DEX protocol summary."""
 
-    protocol: str = Field(
-        ...,
-        description="Protocol identifier (e.g. 'uniswap')"
-    )
+    protocol: str = Field(..., description="Protocol identifier (e.g. 'uniswap')")
 
 
 class FetchDexSummaryResponse(BaseModel):
@@ -65,14 +63,16 @@ class FetchDexSummaryResponse(BaseModel):
     total7d: Optional[float] = Field(None, description="7d total volume")
     totalAllTime: Optional[float] = Field(None, description="All time total volume")
     totalDataChart: List = Field(default_factory=list, description="Total data chart")
-    totalDataChartBreakdown: List = Field(default_factory=list, description="Chart breakdown")
+    totalDataChartBreakdown: List = Field(
+        default_factory=list, description="Chart breakdown"
+    )
     change_1d: Optional[float] = Field(None, description="1d change percentage")
     error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchDexSummary(DefiLlamaBaseTool):
     """Tool for fetching DEX protocol summary data from DeFi Llama.
-    
+
     This tool retrieves detailed information about a specific DEX protocol,
     including metadata, metrics, and related protocols.
 
@@ -89,15 +89,11 @@ class DefiLlamaFetchDexSummary(DefiLlamaBaseTool):
     description: str = FETCH_DEX_SUMMARY_PROMPT
     args_schema: Type[BaseModel] = FetchDexSummaryInput
 
-    def _run(
-        self, protocol: str
-    ) -> FetchDexSummaryResponse:
+    def _run(self, protocol: str) -> FetchDexSummaryResponse:
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(
-        self, protocol: str
-    ) -> FetchDexSummaryResponse:
+    async def _arun(self, protocol: str) -> FetchDexSummaryResponse:
         """Fetch summary data for the given DEX protocol.
 
         Args:
@@ -114,7 +110,7 @@ class DefiLlamaFetchDexSummary(DefiLlamaBaseTool):
 
             # Fetch protocol data from API
             result = await fetch_dex_summary(protocol=protocol)
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchDexSummaryResponse(error=result["error"])

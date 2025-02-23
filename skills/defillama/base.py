@@ -2,18 +2,17 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Type
+
 from pydantic import BaseModel, Field
 
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import IntentKitSkill, SkillStoreABC
 from skills.defillama.config.chains import (
     get_chain_from_alias,
-    is_valid_chain,
-    get_all_chains,
-    get_chain_aliases,
 )
 
 DEFILLAMA_BASE_URL = "https://api.llama.fi"
+
 
 class DefiLlamaBaseTool(IntentKitSkill):
     """Base class for DeFi Llama tools.
@@ -29,9 +28,15 @@ class DefiLlamaBaseTool(IntentKitSkill):
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
     agent_id: str = Field(description="The ID of the agent")
-    agent_store: AgentStoreABC = Field(description="The agent store for persisting data")
-    skill_store: SkillStoreABC = Field(description="The skill store for persisting data")
-    base_url: str = Field(default=DEFILLAMA_BASE_URL, description="Base URL for DeFi Llama API")
+    agent_store: AgentStoreABC = Field(
+        description="The agent store for persisting data"
+    )
+    skill_store: SkillStoreABC = Field(
+        description="The skill store for persisting data"
+    )
+    base_url: str = Field(
+        default=DEFILLAMA_BASE_URL, description="Base URL for DeFi Llama API"
+    )
 
     async def check_rate_limit(
         self, max_requests: int = 30, interval: int = 1
@@ -58,7 +63,7 @@ class DefiLlamaBaseTool(IntentKitSkill):
         ):
             if rate_limit["count"] >= max_requests:
                 return True, "Rate limit exceeded"
-            
+
             rate_limit["count"] += 1
             await self.skill_store.save_agent_skill_data(
                 self.agent_id, self.name, "rate_limit", rate_limit
@@ -117,7 +122,7 @@ class DefiLlamaBaseTool(IntentKitSkill):
             "error": True,
             "status_code": status_code,
             "message": message,
-            "timestamp": datetime.now(tz=timezone.utc).isoformat()
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
         }
 
     def get_current_timestamp(self) -> int:

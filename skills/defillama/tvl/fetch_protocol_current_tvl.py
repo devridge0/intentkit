@@ -1,10 +1,11 @@
 """Tool for fetching protocol TVL via DeFiLlama API."""
 
 from typing import Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_protocol_current_tvl
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_TVL_PROMPT = """
 This tool fetches the current Total Value Locked (TVL) for a specific DeFi protocol.
@@ -15,36 +16,26 @@ Returns the normalized protocol name and its TVL value.
 
 class FetchProtocolCurrentTVLInput(BaseModel):
     """Input schema for fetching current protocol TVL."""
-    
+
     protocol: str = Field(
-        ..., 
-        description="Protocol slug to fetch TVL for (e.g., 'aave', 'curve')"
+        ..., description="Protocol slug to fetch TVL for (e.g., 'aave', 'curve')"
     )
 
 
 class FetchProtocolCurrentTVLResponse(BaseModel):
     """Response schema for current protocol TVL."""
-    
-    protocol: str = Field(
-        ...,
-        description="Normalized protocol slug"
-    )
-    tvl: float = Field(
-        ...,
-        description="Current Total Value Locked in USD"
-    )
-    error: str | None = Field(
-        default=None,
-        description="Error message if any"
-    )
+
+    protocol: str = Field(..., description="Normalized protocol slug")
+    tvl: float = Field(..., description="Current Total Value Locked in USD")
+    error: str | None = Field(default=None, description="Error message if any")
 
 
 class DefiLlamaFetchProtocolCurrentTvl(DefiLlamaBaseTool):
     """Tool for fetching current TVL of a specific DeFi protocol.
-    
+
     This tool fetches the current Total Value Locked (TVL) for a given protocol
     using the DeFiLlama API. It includes rate limiting to avoid API abuse.
-    
+
     Example:
         tvl_tool = DefiLlamaFetchProtocolCurrentTvl(
             skill_store=store,
@@ -76,9 +67,7 @@ class DefiLlamaFetchProtocolCurrentTvl(DefiLlamaBaseTool):
             is_rate_limited, error_msg = await self.check_rate_limit()
             if is_rate_limited:
                 return FetchProtocolCurrentTVLResponse(
-                    protocol=protocol,
-                    tvl=0,
-                    error=error_msg
+                    protocol=protocol, tvl=0, error=error_msg
                 )
 
             # Normalize protocol slug
@@ -90,19 +79,14 @@ class DefiLlamaFetchProtocolCurrentTvl(DefiLlamaBaseTool):
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchProtocolCurrentTVLResponse(
-                    protocol=normalized_protocol,
-                    tvl=0,
-                    error=result["error"]
+                    protocol=normalized_protocol, tvl=0, error=result["error"]
                 )
 
             return FetchProtocolCurrentTVLResponse(
-                protocol=normalized_protocol,
-                tvl=float(result)
+                protocol=normalized_protocol, tvl=float(result)
             )
 
         except Exception as e:
             return FetchProtocolCurrentTVLResponse(
-                protocol=protocol,
-                tvl=0,
-                error=str(e)
+                protocol=protocol, tvl=0, error=str(e)
             )

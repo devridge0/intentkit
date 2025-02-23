@@ -1,10 +1,11 @@
 """Tool for fetching token price percentage changes via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_price_percentage
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_PRICE_PERCENTAGE_PROMPT = """
 This tool fetches 24-hour price percentage changes from DeFi Llama for multiple tokens.
@@ -23,8 +24,7 @@ class FetchPricePercentageInput(BaseModel):
     """Input schema for fetching token price percentage changes."""
 
     coins: List[str] = Field(
-        ...,
-        description="List of token identifiers to fetch price changes for"
+        ..., description="List of token identifiers to fetch price changes for"
     )
 
 
@@ -33,17 +33,14 @@ class FetchPricePercentageResponse(BaseModel):
 
     coins: Dict[str, float] = Field(
         default_factory=dict,
-        description="Price percentage changes keyed by token identifier"
+        description="Price percentage changes keyed by token identifier",
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchPricePercentage(DefiLlamaBaseTool):
     """Tool for fetching token price percentage changes from DeFi Llama.
-    
+
     This tool retrieves 24-hour price percentage changes for multiple tokens,
     calculated from the current time.
 
@@ -62,15 +59,11 @@ class DefiLlamaFetchPricePercentage(DefiLlamaBaseTool):
     description: str = FETCH_PRICE_PERCENTAGE_PROMPT
     args_schema: Type[BaseModel] = FetchPricePercentageInput
 
-    def _run(
-        self, coins: List[str]
-    ) -> FetchPricePercentageResponse:
+    def _run(self, coins: List[str]) -> FetchPricePercentageResponse:
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(
-        self, coins: List[str]
-    ) -> FetchPricePercentageResponse:
+    async def _arun(self, coins: List[str]) -> FetchPricePercentageResponse:
         """Fetch price percentage changes for the given tokens.
 
         Args:
@@ -87,7 +80,7 @@ class DefiLlamaFetchPricePercentage(DefiLlamaBaseTool):
 
             # Fetch price percentage data from API
             result = await fetch_price_percentage(coins=coins)
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchPricePercentageResponse(error=result["error"])

@@ -1,10 +1,11 @@
 """Tool for fetching total historical TVL via DeFiLlama API."""
 
 from typing import List, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_historical_tvl
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_TOTAL_HISTORICAL_TVL_PROMPT = """
 This tool fetches historical Total Value Locked (TVL) data across all blockchains.
@@ -16,22 +17,17 @@ No input parameters are required as this endpoint returns global DeFi TVL data.
 class HistoricalTVLDataPoint(BaseModel):
     """Model representing a single TVL data point."""
 
-    date: int = Field(
-        ...,
-        description="Unix timestamp of the TVL measurement"
-    )
-    tvl: float = Field(
-        ...,
-        description="Total Value Locked in USD at this timestamp"
-    )
+    date: int = Field(..., description="Unix timestamp of the TVL measurement")
+    tvl: float = Field(..., description="Total Value Locked in USD at this timestamp")
 
 
 class FetchHistoricalTVLInput(BaseModel):
     """Input schema for fetching historical TVL data.
-    
+
     This endpoint doesn't require any parameters as it returns
     global TVL data across all chains.
     """
+
     pass
 
 
@@ -40,21 +36,18 @@ class FetchHistoricalTVLResponse(BaseModel):
 
     data: List[HistoricalTVLDataPoint] = Field(
         default_factory=list,
-        description="List of historical TVL data points across all chains"
+        description="List of historical TVL data points across all chains",
     )
-    error: str | None = Field(
-        default=None,
-        description="Error message if any"
-    )
+    error: str | None = Field(default=None, description="Error message if any")
 
 
 class DefiLlamaFetchHistoricalTvl(DefiLlamaBaseTool):
     """Tool for fetching historical TVL data across all blockchains.
-    
+
     This tool fetches the complete Total Value Locked (TVL) history aggregated
     across all chains using the DeFiLlama API. It includes rate limiting to
     ensure reliable data retrieval.
-    
+
     Example:
         tvl_tool = DefiLlamaFetchHistoricalTvl(
             skill_store=store,
@@ -86,16 +79,13 @@ class DefiLlamaFetchHistoricalTvl(DefiLlamaBaseTool):
 
             # Fetch TVL history from API
             result = await fetch_historical_tvl()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchHistoricalTVLResponse(error=result["error"])
 
             # Parse response into our schema
-            data_points = [
-                HistoricalTVLDataPoint(**point) 
-                for point in result
-            ]
+            data_points = [HistoricalTVLDataPoint(**point) for point in result]
 
             return FetchHistoricalTVLResponse(data=data_points)
 

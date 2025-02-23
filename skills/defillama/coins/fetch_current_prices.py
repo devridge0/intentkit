@@ -1,10 +1,11 @@
 """Tool for fetching token prices via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_current_prices
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_PRICES_PROMPT = """
 This tool fetches current token prices from DeFi Llama with a 4-hour search window.
@@ -24,34 +25,19 @@ Returns price data including:
 class TokenPrice(BaseModel):
     """Model representing token price data."""
 
-    price: float = Field(
-        ...,
-        description="Current token price in USD"
-    )
-    symbol: str = Field(
-        ...,
-        description="Token symbol"
-    )
-    timestamp: int = Field(
-        ...,
-        description="Unix timestamp of last price update"
-    )
-    confidence: float = Field(
-        ...,
-        description="Confidence score for the price data"
-    )
-    decimals: Optional[int] = Field(
-        None,
-        description="Token decimals, if available"
-    )
+    price: float = Field(..., description="Current token price in USD")
+    symbol: str = Field(..., description="Token symbol")
+    timestamp: int = Field(..., description="Unix timestamp of last price update")
+    confidence: float = Field(..., description="Confidence score for the price data")
+    decimals: Optional[int] = Field(None, description="Token decimals, if available")
 
 
 class FetchCurrentPricesInput(BaseModel):
     """Input schema for fetching current token prices with a 4-hour search window."""
 
     coins: List[str] = Field(
-        ..., 
-        description="List of token identifiers (e.g. 'ethereum:0x...', 'coingecko:ethereum')"
+        ...,
+        description="List of token identifiers (e.g. 'ethereum:0x...', 'coingecko:ethereum')",
     )
 
 
@@ -59,18 +45,14 @@ class FetchCurrentPricesResponse(BaseModel):
     """Response schema for current token prices."""
 
     coins: Dict[str, TokenPrice] = Field(
-        default_factory=dict,
-        description="Token prices keyed by token identifier"
+        default_factory=dict, description="Token prices keyed by token identifier"
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchCurrentPrices(DefiLlamaBaseTool):
     """Tool for fetching current token prices from DeFi Llama.
-    
+
     This tool retrieves current prices for multiple tokens in a single request,
     using a 4-hour search window to ensure fresh data.
 
@@ -110,7 +92,7 @@ class DefiLlamaFetchCurrentPrices(DefiLlamaBaseTool):
 
             # Fetch prices from API
             result = await fetch_current_prices(coins=coins)
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchCurrentPricesResponse(error=result["error"])
