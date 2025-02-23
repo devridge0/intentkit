@@ -1,11 +1,11 @@
 """Tool for fetching specific protocol details via DeFi Llama API."""
 
-from typing import Dict, List, Optional, Union, Type
-from datetime import datetime
+from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_protocol
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_PROTOCOL_PROMPT = """
 This tool fetches comprehensive details about a specific DeFi protocol.
@@ -19,24 +19,36 @@ Provide the protocol identifier (e.g., "aave", "curve") to get detailed informat
 Returns complete protocol details or an error if the protocol is not found.
 """
 
+
 class TokenAmount(BaseModel):
     """Model representing token amounts at a specific date."""
+
     date: int = Field(..., description="Unix timestamp")
     tokens: Dict[str, float] = Field(..., description="Token amounts keyed by symbol")
 
+
 class ChainTVLData(BaseModel):
     """Model representing TVL data for a specific chain."""
+
     tvl: List[Dict[str, float]] = Field(..., description="Historical TVL data points")
-    tokens: Optional[Dict[str, float]] = Field(None, description="Current token amounts")
-    tokensInUsd: Optional[Dict[str, float]] = Field(None, description="Current token amounts in USD")
+    tokens: Optional[Dict[str, float]] = Field(
+        None, description="Current token amounts"
+    )
+    tokensInUsd: Optional[Dict[str, float]] = Field(
+        None, description="Current token amounts in USD"
+    )
+
 
 class HistoricalTVL(BaseModel):
     """Model representing a historical TVL data point."""
+
     date: int = Field(..., description="Unix timestamp")
     totalLiquidityUSD: float = Field(..., description="Total TVL in USD")
 
+
 class Raise(BaseModel):
     """Model representing a funding round."""
+
     date: int = Field(..., description="Funding date")
     name: str = Field(..., description="Protocol name")
     round: str = Field(..., description="Funding round type")
@@ -47,17 +59,23 @@ class Raise(BaseModel):
     categoryGroup: str = Field(..., description="Category group")
     source: str = Field(..., description="Information source")
     leadInvestors: List[str] = Field(default_factory=list, description="Lead investors")
-    otherInvestors: List[str] = Field(default_factory=list, description="Other investors")
+    otherInvestors: List[str] = Field(
+        default_factory=list, description="Other investors"
+    )
     valuation: Optional[float] = Field(None, description="Valuation at time of raise")
     defillamaId: Optional[str] = Field(None, description="DefiLlama ID")
 
+
 class Hallmark(BaseModel):
     """Model representing a significant protocol event."""
+
     timestamp: int
     description: str
 
+
 class ProtocolDetail(BaseModel):
     """Model representing detailed protocol information."""
+
     # Basic Info
     id: str = Field(..., description="Protocol unique identifier")
     name: str = Field(..., description="Protocol name")
@@ -70,24 +88,32 @@ class ProtocolDetail(BaseModel):
     # Chain Info
     chains: List[str] = Field(default_factory=list, description="Supported chains")
     currentChainTvls: Dict[str, float] = Field(..., description="Current TVL by chain")
-    chainTvls: Dict[str, ChainTVLData] = Field(..., description="Historical TVL data by chain")
+    chainTvls: Dict[str, ChainTVLData] = Field(
+        ..., description="Historical TVL data by chain"
+    )
 
     # Identifiers
     gecko_id: Optional[str] = Field(None, description="CoinGecko ID")
     cmcId: Optional[str] = Field(None, description="CoinMarketCap ID")
-    
+
     # Social & Development
     twitter: Optional[str] = Field(None, description="Twitter handle")
     treasury: Optional[str] = Field(None, description="Treasury information")
-    governanceID: Optional[List[str]] = Field(None, description="Governance identifiers")
+    governanceID: Optional[List[str]] = Field(
+        None, description="Governance identifiers"
+    )
     github: Optional[List[str]] = Field(None, description="GitHub repositories")
 
     # Protocol Relationships
-    isParentProtocol: Optional[bool] = Field(None, description="Whether this is a parent protocol")
+    isParentProtocol: Optional[bool] = Field(
+        None, description="Whether this is a parent protocol"
+    )
     otherProtocols: Optional[List[str]] = Field(None, description="Related protocols")
 
     # Historical Data
-    tokens: List[TokenAmount] = Field(default_factory=list, description="Historical token amounts")
+    tokens: List[TokenAmount] = Field(
+        default_factory=list, description="Historical token amounts"
+    )
     tvl: List[HistoricalTVL] = Field(..., description="Historical TVL data points")
     raises: Optional[List[Raise]] = Field(None, description="Funding rounds")
     hallmarks: Optional[List[Hallmark]] = Field(None, description="Significant events")
@@ -96,14 +122,19 @@ class ProtocolDetail(BaseModel):
     mcap: Optional[float] = Field(None, description="Market capitalization")
     metrics: Dict = Field(default_factory=dict, description="Additional metrics")
 
+
 class DefiLlamaProtocolInput(BaseModel):
     """Input model for fetching protocol details."""
+
     protocol: str = Field(..., description="Protocol identifier to fetch")
+
 
 class DefiLlamaProtocolOutput(BaseModel):
     """Output model for the protocol fetching tool."""
+
     protocol: Optional[ProtocolDetail] = Field(None, description="Protocol details")
     error: Optional[str] = Field(None, description="Error message if any")
+
 
 class DefiLlamaFetchProtocol(DefiLlamaBaseTool):
     """Tool for fetching detailed protocol information from DeFi Llama.
@@ -166,7 +197,7 @@ class DefiLlamaFetchProtocol(DefiLlamaBaseTool):
             protocol_detail = ProtocolDetail(
                 **{k: v for k, v in result.items() if k not in ["hallmarks", "raises"]},
                 hallmarks=hallmarks,
-                raises=raises
+                raises=raises,
             )
 
             return DefiLlamaProtocolOutput(protocol=protocol_detail)

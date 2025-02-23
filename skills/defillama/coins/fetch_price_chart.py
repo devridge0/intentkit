@@ -1,10 +1,11 @@
 """Tool for fetching token price charts via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_price_chart
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_PRICE_CHART_PROMPT = """
 This tool fetches price chart data from DeFi Llama for multiple tokens.
@@ -23,43 +24,24 @@ Returns price chart data including:
 class PricePoint(BaseModel):
     """Model representing a single price point in the chart."""
 
-    timestamp: int = Field(
-        ...,
-        description="Unix timestamp of the price data"
-    )
-    price: float = Field(
-        ...,
-        description="Token price in USD at the timestamp"
-    )
+    timestamp: int = Field(..., description="Unix timestamp of the price data")
+    price: float = Field(..., description="Token price in USD at the timestamp")
 
 
 class TokenPriceChart(BaseModel):
     """Model representing price chart data for a single token."""
 
-    symbol: str = Field(
-        ...,
-        description="Token symbol"
-    )
-    confidence: float = Field(
-        ...,
-        description="Confidence score for the price data"
-    )
-    decimals: Optional[int] = Field(
-        None,
-        description="Token decimals"
-    )
-    prices: List[PricePoint] = Field(
-        ...,
-        description="List of historical price points"
-    )
+    symbol: str = Field(..., description="Token symbol")
+    confidence: float = Field(..., description="Confidence score for the price data")
+    decimals: Optional[int] = Field(None, description="Token decimals")
+    prices: List[PricePoint] = Field(..., description="List of historical price points")
 
 
 class FetchPriceChartInput(BaseModel):
     """Input schema for fetching token price charts."""
 
     coins: List[str] = Field(
-        ...,
-        description="List of token identifiers to fetch price charts for"
+        ..., description="List of token identifiers to fetch price charts for"
     )
 
 
@@ -67,18 +49,14 @@ class FetchPriceChartResponse(BaseModel):
     """Response schema for token price charts."""
 
     coins: Dict[str, TokenPriceChart] = Field(
-        default_factory=dict,
-        description="Price chart data keyed by token identifier"
+        default_factory=dict, description="Price chart data keyed by token identifier"
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchPriceChart(DefiLlamaBaseTool):
     """Tool for fetching token price charts from DeFi Llama.
-    
+
     This tool retrieves price chart data for multiple tokens over the last 24 hours,
     including historical price points and token metadata.
 
@@ -97,15 +75,11 @@ class DefiLlamaFetchPriceChart(DefiLlamaBaseTool):
     description: str = FETCH_PRICE_CHART_PROMPT
     args_schema: Type[BaseModel] = FetchPriceChartInput
 
-    def _run(
-        self, coins: List[str]
-    ) -> FetchPriceChartResponse:
+    def _run(self, coins: List[str]) -> FetchPriceChartResponse:
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(
-        self, coins: List[str]
-    ) -> FetchPriceChartResponse:
+    async def _arun(self, coins: List[str]) -> FetchPriceChartResponse:
         """Fetch price charts for the given tokens.
 
         Args:
@@ -122,7 +96,7 @@ class DefiLlamaFetchPriceChart(DefiLlamaBaseTool):
 
             # Fetch price chart data from API
             result = await fetch_price_chart(coins=coins)
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchPriceChartResponse(error=result["error"])

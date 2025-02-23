@@ -3,41 +3,58 @@
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
 from skills.defillama.base import DefiLlamaBaseTool
-
-# TVL Tools
-from skills.defillama.tvl.fetch_protocols import DefiLlamaFetchProtocols
-from skills.defillama.tvl.fetch_protocol import DefiLlamaFetchProtocol
-from skills.defillama.tvl.fetch_historical_tvl import DefiLlamaFetchHistoricalTvl
-from skills.defillama.tvl.fetch_chain_historical_tvl import DefiLlamaFetchChainHistoricalTvl
-from skills.defillama.tvl.fetch_protocol_current_tvl import DefiLlamaFetchProtocolCurrentTvl
-from skills.defillama.tvl.fetch_chains import DefiLlamaFetchChains
+from skills.defillama.coins.fetch_batch_historical_prices import (
+    DefiLlamaFetchBatchHistoricalPrices,
+)
+from skills.defillama.coins.fetch_block import DefiLlamaFetchBlock
 
 # Coins Tools
 from skills.defillama.coins.fetch_current_prices import DefiLlamaFetchCurrentPrices
-from skills.defillama.coins.fetch_historical_prices import DefiLlamaFetchHistoricalPrices
-from skills.defillama.coins.fetch_batch_historical_prices import DefiLlamaFetchBatchHistoricalPrices
+from skills.defillama.coins.fetch_first_price import DefiLlamaFetchFirstPrice
+from skills.defillama.coins.fetch_historical_prices import (
+    DefiLlamaFetchHistoricalPrices,
+)
 from skills.defillama.coins.fetch_price_chart import DefiLlamaFetchPriceChart
 from skills.defillama.coins.fetch_price_percentage import DefiLlamaFetchPricePercentage
-from skills.defillama.coins.fetch_first_price import DefiLlamaFetchFirstPrice
-from skills.defillama.coins.fetch_block import DefiLlamaFetchBlock
+
+# Fees Tools
+from skills.defillama.fees.fetch_fees_overview import DefiLlamaFetchFeesOverview
+from skills.defillama.stablecoins.fetch_stablecoin_chains import (
+    DefiLlamaFetchStablecoinChains,
+)
+from skills.defillama.stablecoins.fetch_stablecoin_charts import (
+    DefiLlamaFetchStablecoinCharts,
+)
+from skills.defillama.stablecoins.fetch_stablecoin_prices import (
+    DefiLlamaFetchStablecoinPrices,
+)
 
 # Stablecoins Tools
 from skills.defillama.stablecoins.fetch_stablecoins import DefiLlamaFetchStablecoins
-from skills.defillama.stablecoins.fetch_stablecoin_charts import DefiLlamaFetchStablecoinCharts
-from skills.defillama.stablecoins.fetch_stablecoin_chains import DefiLlamaFetchStablecoinChains
-from skills.defillama.stablecoins.fetch_stablecoin_prices import DefiLlamaFetchStablecoinPrices
+from skills.defillama.tvl.fetch_chain_historical_tvl import (
+    DefiLlamaFetchChainHistoricalTvl,
+)
+from skills.defillama.tvl.fetch_chains import DefiLlamaFetchChains
+from skills.defillama.tvl.fetch_historical_tvl import DefiLlamaFetchHistoricalTvl
+from skills.defillama.tvl.fetch_protocol import DefiLlamaFetchProtocol
+from skills.defillama.tvl.fetch_protocol_current_tvl import (
+    DefiLlamaFetchProtocolCurrentTvl,
+)
 
-# Yields Tools
-from skills.defillama.yields.fetch_pools import DefiLlamaFetchPools
-from skills.defillama.yields.fetch_pool_chart import DefiLlamaFetchPoolChart
+# TVL Tools
+from skills.defillama.tvl.fetch_protocols import DefiLlamaFetchProtocols
 
 # Volumes Tools
 from skills.defillama.volumes.fetch_dex_overview import DefiLlamaFetchDexOverview
 from skills.defillama.volumes.fetch_dex_summary import DefiLlamaFetchDexSummary
-from skills.defillama.volumes.fetch_options_overview import DefiLlamaFetchOptionsOverview
+from skills.defillama.volumes.fetch_options_overview import (
+    DefiLlamaFetchOptionsOverview,
+)
+from skills.defillama.yields.fetch_pool_chart import DefiLlamaFetchPoolChart
 
-# Fees Tools
-from skills.defillama.fees.fetch_fees_overview import DefiLlamaFetchFeesOverview
+# Yields Tools
+from skills.defillama.yields.fetch_pools import DefiLlamaFetchPools
+
 
 def get_defillama_skill(
     name: str,
@@ -77,19 +94,19 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    elif name == "fetch_historical_tvl":  
+    elif name == "fetch_historical_tvl":
         return DefiLlamaFetchHistoricalTvl(
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    elif name == "fetch_chain_historical_tvl":  
+    elif name == "fetch_chain_historical_tvl":
         return DefiLlamaFetchChainHistoricalTvl(
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    elif name == "fetch_protocol_current_tvl": 
+    elif name == "fetch_protocol_current_tvl":
         return DefiLlamaFetchProtocolCurrentTvl(
             skill_store=store,
             agent_id=agent_id,
@@ -101,7 +118,7 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    
+
     # Coins Skills
     elif name == "fetch_current_prices":
         return DefiLlamaFetchCurrentPrices(
@@ -145,7 +162,7 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    
+
     # Stablecoins Skills
     elif name == "fetch_stablecoins":
         return DefiLlamaFetchStablecoins(
@@ -153,7 +170,9 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    elif name == "fetch_stablecoin_charts":  # Handles both all and chain-specific charts
+    elif (
+        name == "fetch_stablecoin_charts"
+    ):  # Handles both all and chain-specific charts
         return DefiLlamaFetchStablecoinCharts(
             skill_store=store,
             agent_id=agent_id,
@@ -171,7 +190,7 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    
+
     # Yields Skills
     elif name == "fetch_pools":
         return DefiLlamaFetchPools(
@@ -185,7 +204,7 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    
+
     # Volumes Skills
     elif name == "fetch_dex_overview":  # Handles both base and chain-specific overviews
         return DefiLlamaFetchDexOverview(
@@ -199,15 +218,19 @@ def get_defillama_skill(
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    elif name == "fetch_options_overview":  # Handles both base and chain-specific overviews
+    elif (
+        name == "fetch_options_overview"
+    ):  # Handles both base and chain-specific overviews
         return DefiLlamaFetchOptionsOverview(
             skill_store=store,
             agent_id=agent_id,
             agent_store=agent_store,
         )
-    
+
     # Fees Skills
-    elif name == "fetch_fees_overview":  # Handles both base and chain-specific overviews
+    elif (
+        name == "fetch_fees_overview"
+    ):  # Handles both base and chain-specific overviews
         return DefiLlamaFetchFeesOverview(
             skill_store=store,
             agent_id=agent_id,

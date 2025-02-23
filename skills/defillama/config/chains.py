@@ -372,8 +372,9 @@ VALID_CHAINS: Dict[str, List[str]] = {
     "lung": ["lung"],
     "bone": ["bone"],
     "lukso": ["lukso"],
-    "joltify": ["joltify"]
+    "joltify": ["joltify"],
 }
+
 
 def get_chain_from_alias(alias: str) -> str | None:
     """Get the main chain identifier from an alias.
@@ -385,17 +386,18 @@ def get_chain_from_alias(alias: str) -> str | None:
         The main chain identifier if found, None otherwise
     """
     normalized_alias = alias.lower().strip()
-    
+
     # Check if it's a main chain name
     if normalized_alias in VALID_CHAINS:
         return normalized_alias
-    
+
     # Check aliases
     for chain, aliases in VALID_CHAINS.items():
         if normalized_alias in [a.lower() for a in aliases]:
             return chain
-    
+
     return None
+
 
 def is_valid_chain(chain: str) -> bool:
     """Check if a chain identifier is valid.
@@ -408,6 +410,7 @@ def is_valid_chain(chain: str) -> bool:
     """
     return get_chain_from_alias(chain) is not None
 
+
 def get_all_chains() -> list[str]:
     """Get a list of all valid main chain identifiers.
 
@@ -415,6 +418,7 @@ def get_all_chains() -> list[str]:
         List of all main chain identifiers
     """
     return list(VALID_CHAINS.keys())
+
 
 def get_chain_aliases(chain: str) -> list[str]:
     """Get all aliases for a given chain.
