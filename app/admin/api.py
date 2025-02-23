@@ -16,6 +16,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
@@ -390,7 +391,10 @@ async def export_agent(
 
 
 @admin_router.put(
-    "/agents/{agent_id}/import", tags=["Agent"], operation_id="import_agent"
+    "/agents/{agent_id}/import",
+    tags=["Agent"],
+    operation_id="import_agent",
+    response_class=PlainTextResponse,
 )
 async def import_agent(
     agent_id: str = Path(...),
@@ -398,7 +402,7 @@ async def import_agent(
         ..., description="YAML file containing agent configuration"
     ),
     subject: str = Depends(verify_jwt),
-) -> AgentResponse:
+) -> str:
     """Import agent configuration from YAML file.
     Only updates existing agents, will not create new ones.
 
@@ -409,7 +413,7 @@ async def import_agent(
         db: Database session
 
     Returns:
-        AgentResponse: Updated agent configuration
+        str: Success message
 
     Raises:
         HTTPException:
@@ -445,11 +449,11 @@ async def import_agent(
             )
 
         # Process the agent
-        latest_agent, agent_data = await _process_agent(
+        await _process_agent(
             agent, subject, slack_message="Agent Updated via YAML Import"
         )
 
-        return AgentResponse.from_agent(latest_agent, agent_data)
+        return "Agent import successful"
 
     except HTTPException:
         raise

@@ -291,9 +291,7 @@ class EnsoWalletApprove(EnsoBaseTool):
     """
 
     name: str = "enso_wallet_approve"
-    description: str = (
-        "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
-    )
+    description: str = "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token."
     args_schema: Type[BaseModel] = EnsoWalletApproveInput
     response_format: str = "content_and_artifact"
 
