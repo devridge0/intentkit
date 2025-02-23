@@ -1,10 +1,11 @@
 """Tool for fetching chain TVL data via DeFi Llama API."""
 
 from typing import List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_chains
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_CHAINS_PROMPT = """
 This tool fetches current Total Value Locked (TVL) data for all blockchains tracked by DeFi Llama.
@@ -20,41 +21,27 @@ Returns the complete list of chains and total TVL or an error if the request fai
 class ChainTVLData(BaseModel):
     """Model representing TVL data for a single chain."""
 
-    name: str = Field(
-        ...,
-        description="Chain name"
-    )
-    tvl: float = Field(
-        ...,
-        description="Total Value Locked in USD"
-    )
-    gecko_id: Optional[str] = Field(
-        None,
-        description="CoinGecko identifier"
-    )
+    name: str = Field(..., description="Chain name")
+    tvl: float = Field(..., description="Total Value Locked in USD")
+    gecko_id: Optional[str] = Field(None, description="CoinGecko identifier")
     token_symbol: Optional[str] = Field(
-        None,
-        alias="tokenSymbol",
-        description="Native token symbol"
+        None, alias="tokenSymbol", description="Native token symbol"
     )
     cmc_id: Optional[str] = Field(
-        None,
-        alias="cmcId",
-        description="CoinMarketCap identifier"
+        None, alias="cmcId", description="CoinMarketCap identifier"
     )
     chain_id: Optional[int | str] = Field(
-        None,
-        alias="chainId",
-        description="Chain identifier"
+        None, alias="chainId", description="Chain identifier"
     )
 
 
 class FetchChainsInput(BaseModel):
     """Input schema for fetching all chains' TVL data.
-    
+
     This endpoint doesn't require any parameters as it returns
     TVL data for all chains.
     """
+
     pass
 
 
@@ -62,22 +49,15 @@ class FetchChainsResponse(BaseModel):
     """Response schema for all chains' TVL data."""
 
     chains: List[ChainTVLData] = Field(
-        default_factory=list,
-        description="List of chains with their TVL data"
+        default_factory=list, description="List of chains with their TVL data"
     )
-    total_tvl: float = Field(
-        ...,
-        description="Total TVL across all chains in USD"
-    )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    total_tvl: float = Field(..., description="Total TVL across all chains in USD")
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchChains(DefiLlamaBaseTool):
     """Tool for fetching current TVL data for all blockchains.
-    
+
     This tool retrieves the current Total Value Locked (TVL) for all chains
     tracked by DeFi Llama, including chain identifiers and metadata.
 
@@ -108,35 +88,22 @@ class DefiLlamaFetchChains(DefiLlamaBaseTool):
             # Check rate limiting
             is_rate_limited, error_msg = await self.check_rate_limit()
             if is_rate_limited:
-                return FetchChainsResponse(
-                    chains=[],
-                    total_tvl=0,
-                    error=error_msg
-                )
+                return FetchChainsResponse(chains=[], total_tvl=0, error=error_msg)
 
             # Fetch chains data from API
             result = await fetch_chains()
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchChainsResponse(
-                    chains=[],
-                    total_tvl=0,
-                    error=result["error"]
+                    chains=[], total_tvl=0, error=result["error"]
                 )
 
             # Parse chains data and calculate total TVL
             chains = [ChainTVLData(**chain_data) for chain_data in result]
             total_tvl = sum(chain.tvl for chain in chains)
-            
-            return FetchChainsResponse(
-                chains=chains,
-                total_tvl=total_tvl
-            )
+
+            return FetchChainsResponse(chains=chains, total_tvl=total_tvl)
 
         except Exception as e:
-            return FetchChainsResponse(
-                chains=[],
-                total_tvl=0,
-                error=str(e)
-            )
+            return FetchChainsResponse(chains=[], total_tvl=0, error=str(e))

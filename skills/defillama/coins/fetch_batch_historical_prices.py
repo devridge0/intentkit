@@ -1,10 +1,11 @@
 """Tool for fetching batch historical token prices via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_batch_historical_prices
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_BATCH_HISTORICAL_PRICES_PROMPT = """
 This tool fetches historical token prices from DeFi Llama for multiple tokens at multiple timestamps.
@@ -23,30 +24,17 @@ Uses a 4-hour search window around each specified timestamp.
 class HistoricalPricePoint(BaseModel):
     """Model representing a single historical price point."""
 
-    timestamp: int = Field(
-        ...,
-        description="Unix timestamp of the price data"
-    )
-    price: float = Field(
-        ...,
-        description="Token price in USD at the timestamp"
-    )
-    confidence: float = Field(
-        ...,
-        description="Confidence score for the price data"
-    )
+    timestamp: int = Field(..., description="Unix timestamp of the price data")
+    price: float = Field(..., description="Token price in USD at the timestamp")
+    confidence: float = Field(..., description="Confidence score for the price data")
 
 
 class TokenPriceHistory(BaseModel):
     """Model representing historical price data for a single token."""
 
-    symbol: str = Field(
-        ...,
-        description="Token symbol"
-    )
+    symbol: str = Field(..., description="Token symbol")
     prices: List[HistoricalPricePoint] = Field(
-        ...,
-        description="List of historical price points"
+        ..., description="List of historical price points"
     )
 
 
@@ -54,8 +42,7 @@ class FetchBatchHistoricalPricesInput(BaseModel):
     """Input schema for fetching batch historical token prices."""
 
     coins_timestamps: Dict[str, List[int]] = Field(
-        ...,
-        description="Dictionary mapping token identifiers to lists of timestamps"
+        ..., description="Dictionary mapping token identifiers to lists of timestamps"
     )
 
 
@@ -64,17 +51,14 @@ class FetchBatchHistoricalPricesResponse(BaseModel):
 
     coins: Dict[str, TokenPriceHistory] = Field(
         default_factory=dict,
-        description="Historical token prices keyed by token identifier"
+        description="Historical token prices keyed by token identifier",
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchBatchHistoricalPrices(DefiLlamaBaseTool):
     """Tool for fetching batch historical token prices from DeFi Llama.
-    
+
     This tool retrieves historical prices for multiple tokens at multiple
     timestamps, using a 4-hour search window around each requested time.
 
@@ -123,7 +107,7 @@ class DefiLlamaFetchBatchHistoricalPrices(DefiLlamaBaseTool):
             result = await fetch_batch_historical_prices(
                 coins_timestamps=coins_timestamps
             )
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchBatchHistoricalPricesResponse(error=result["error"])

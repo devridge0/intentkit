@@ -1,10 +1,11 @@
 """Tool for fetching first recorded token prices via DeFi Llama API."""
 
 from typing import Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field
 
-from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.api import fetch_first_price
+from skills.defillama.base import DefiLlamaBaseTool
 
 FETCH_FIRST_PRICE_PROMPT = """
 This tool fetches the first recorded price data from DeFi Llama for multiple tokens.
@@ -22,26 +23,16 @@ Returns first price data including:
 class FirstPriceData(BaseModel):
     """Model representing first price data for a single token."""
 
-    symbol: str = Field(
-        ...,
-        description="Token symbol"
-    )
-    price: float = Field(
-        ...,
-        description="First recorded price in USD"
-    )
-    timestamp: int = Field(
-        ...,
-        description="Unix timestamp of first recorded price"
-    )
+    symbol: str = Field(..., description="Token symbol")
+    price: float = Field(..., description="First recorded price in USD")
+    timestamp: int = Field(..., description="Unix timestamp of first recorded price")
 
 
 class FetchFirstPriceInput(BaseModel):
     """Input schema for fetching first token prices."""
 
     coins: List[str] = Field(
-        ...,
-        description="List of token identifiers to fetch first prices for"
+        ..., description="List of token identifiers to fetch first prices for"
     )
 
 
@@ -49,18 +40,14 @@ class FetchFirstPriceResponse(BaseModel):
     """Response schema for first token prices."""
 
     coins: Dict[str, FirstPriceData] = Field(
-        default_factory=dict,
-        description="First price data keyed by token identifier"
+        default_factory=dict, description="First price data keyed by token identifier"
     )
-    error: Optional[str] = Field(
-        None,
-        description="Error message if any"
-    )
+    error: Optional[str] = Field(None, description="Error message if any")
 
 
 class DefiLlamaFetchFirstPrice(DefiLlamaBaseTool):
     """Tool for fetching first recorded token prices from DeFi Llama.
-    
+
     This tool retrieves the first price data recorded for multiple tokens,
     including the initial price, symbol, and timestamp.
 
@@ -79,15 +66,11 @@ class DefiLlamaFetchFirstPrice(DefiLlamaBaseTool):
     description: str = FETCH_FIRST_PRICE_PROMPT
     args_schema: Type[BaseModel] = FetchFirstPriceInput
 
-    def _run(
-        self, coins: List[str]
-    ) -> FetchFirstPriceResponse:
+    def _run(self, coins: List[str]) -> FetchFirstPriceResponse:
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(
-        self, coins: List[str]
-    ) -> FetchFirstPriceResponse:
+    async def _arun(self, coins: List[str]) -> FetchFirstPriceResponse:
         """Fetch first recorded prices for the given tokens.
 
         Args:
@@ -104,7 +87,7 @@ class DefiLlamaFetchFirstPrice(DefiLlamaBaseTool):
 
             # Fetch first price data from API
             result = await fetch_first_price(coins=coins)
-            
+
             # Check for API errors
             if isinstance(result, dict) and "error" in result:
                 return FetchFirstPriceResponse(error=result["error"])
