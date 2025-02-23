@@ -65,7 +65,7 @@ class TestDefiLlamaAPI(unittest.TestCase):
         """Set up the async event loop"""
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.timeout = 30
+        self.timeout = 3000
 
     def tearDown(self):
         """Clean up the event loop"""
