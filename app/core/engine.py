@@ -56,7 +56,7 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
-from app.services.twitter.client import TwitterClient
+from clients import TwitterClient
 from models.agent import Agent, AgentData
 from models.chat import AuthorType, ChatMessage, ChatMessageSkillCall
 from models.db import get_pool, get_session
@@ -435,7 +435,7 @@ async def agent_executor(agent_id: str, is_private: bool) -> (CompiledGraph, flo
     # cold start or needs reinitialization
     cold_start_cost = 0.0
     if (agent_id not in agents) or needs_reinit:
-        await initialize_agent(agent_id)
+        await initialize_agent(agent_id, is_private)
         cold_start_cost = time.perf_counter() - start
     return agents[agent_id], cold_start_cost
 
