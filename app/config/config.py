@@ -88,6 +88,7 @@ class Config:
         self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")
         self.xai_api_key = self.load("XAI_API_KEY")
         self.system_prompt = self.load("SYSTEM_PROMPT")
+        self.input_token_limit = int(self.load("INPUT_TOKEN_LIMIT", "60000"))
         # Telegram server settings
         self.tg_base_url = self.load("TG_BASE_URL")
         self.tg_server_host = self.load("TG_SERVER_HOST", "127.0.0.1")
