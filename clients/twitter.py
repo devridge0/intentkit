@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Dict, NotRequired, Optional, TypedDict
 
 from tweepy.asynchronous import AsyncClient
 
@@ -9,6 +9,13 @@ from abstracts.twitter import TwitterABC
 from models.agent import AgentData
 
 logger = logging.getLogger(__name__)
+
+
+class TwitterClientConfig(TypedDict):
+    consumer_key: NotRequired[str]
+    consumer_secret: NotRequired[str]
+    access_token: NotRequired[str]
+    access_token_secret: NotRequired[str]
 
 
 class TwitterClient(TwitterABC):

@@ -69,5 +69,5 @@
       }
     }
   },
-  "required": ["public_skills", "private_skills"]
+  "required": ["public_skills"]
 }
