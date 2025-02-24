@@ -88,3 +88,6 @@ class SkillStore(SkillStoreABC):
             data=data,
         )
         await skill_data.save()
+
+
+skill_store = SkillStore()

@@ -166,7 +166,6 @@ TELEGRAM_SKILLS='[]'
 # Skill settings (optional)
 CRESTAL_SKILLS='[]'
 COMMON_SKILLS='[]'
-SKILL_SETS='{}'
 
 #####################
 # Do not edit below #
@@ -217,8 +216,7 @@ JSON_DATA=$(cat << EOF
   "telegram_config": $TELEGRAM_CONFIG,
   "telegram_skills": $TELEGRAM_SKILLS,
   "crestal_skills": $CRESTAL_SKILLS,
-  "common_skills": $COMMON_SKILLS,
-  "skill_sets": $SKILL_SETS
+  "common_skills": $COMMON_SKILLS
 }
 EOF
 )

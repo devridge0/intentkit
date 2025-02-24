@@ -54,18 +54,16 @@ from app.config.config import config
 from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
-from app.core.skill import SkillStore
+from app.core.skill import skill_store
 from app.services.twitter.client import TwitterClient
 from models.agent import Agent, AgentData
 from models.chat import AuthorType, ChatMessage, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
-from skill_sets import get_skill_set
 from skills.acolyt import get_Acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
-from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
     create_smart_wallets_if_not_exist,
@@ -103,8 +101,6 @@ async def initialize_agent(aid):
         HTTPException: If agent not found (404) or database error (500)
     """
     """Initialize the agent with CDP Agentkit."""
-    # init skill store first
-    skill_store = SkillStore()
     # init agent store
     agent_store = AgentStore(aid)
 
@@ -201,6 +197,8 @@ async def initialize_agent(aid):
             )
         )
         cdp_tools = get_langchain_tools(agent_kit)
+        for tool in cdp_tools:
+            logger.debug(tool.name)
         for skill in agent.cdp_skills:
             if skill == "get_balance":
                 tools.append(
@@ -339,20 +337,10 @@ async def initialize_agent(aid):
             )
             tools.append(s)
 
-    # Crestal skills
-    if agent.crestal_skills:
-        for skill in agent.crestal_skills:
-            tools.append(get_crestal_skill(skill))
-
     # Common skills
     if agent.common_skills:
         for skill in agent.common_skills:
             tools.append(get_common_skill(skill))
-
-    # Skill sets
-    if agent.skill_sets:
-        for skill_set, opts in agent.skill_sets.items():
-            tools.extend(get_skill_set(skill_set, opts))
 
     # filter the duplicate tools
     tools = list({tool.name: tool for tool in tools}.values())
