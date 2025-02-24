@@ -124,7 +124,7 @@ async def initialize_agent(aid):
         raise HTTPException(status_code=500, detail=str(e))
 
     # ==== Initialize LLM.
-    input_token_limit = 120000
+    input_token_limit = config.input_token_limit
     # TODO: model name whitelist
     if agent.model.startswith("deepseek"):
         llm = ChatOpenAI(
@@ -136,7 +136,8 @@ async def initialize_agent(aid):
             temperature=agent.temperature,
             timeout=300,
         )
-        input_token_limit = 60000
+        if input_token_limit > 60000:
+            input_token_limit = 60000
     elif agent.model.startswith("grok"):
         llm = ChatXAI(
             model_name=agent.model,
@@ -146,6 +147,8 @@ async def initialize_agent(aid):
             temperature=agent.temperature,
             timeout=180,
         )
+        if input_token_limit > 120000:
+            input_token_limit = 120000
     else:
         llm = ChatOpenAI(
             model_name=agent.model,
@@ -155,6 +158,8 @@ async def initialize_agent(aid):
             temperature=agent.temperature,
             timeout=180,
         )
+        if input_token_limit > 120000:
+            input_token_limit = 120000
 
     # ==== Store buffered conversation history in memory.
     memory = AsyncPostgresSaver(get_pool())
