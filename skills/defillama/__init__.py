@@ -69,14 +69,16 @@ def get_skills(
 ) -> list[DefiLlamaBaseTool]:
     """Get all DeFi Llama skills."""
     # always return public skills
-    resp = [get_defillama_skill(name, store, agent_id) for name in config.public_skills]
+    resp = [
+        get_defillama_skill(name, store, agent_id) for name in config["public_skills"]
+    ]
     # return private skills only if is_private
     if is_private:
         resp.extend(
             get_defillama_skill(name, store, agent_id)
-            for name in config.private_skills
+            for name in config["private_skills"]
             # remove duplicates
-            if name not in config.public_skills
+            if name not in config["public_skills"]
         )
     return resp
 
