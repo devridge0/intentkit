@@ -66,6 +66,8 @@ async def _process_agent(
         if agent_data and agent_data.cdp_wallet_data:
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
+        # Clean agent memory
+        await clean_agent_memory(latest_agent.id, clean_agent_memory=True)
 
     if not has_wallet:
         # create the wallet
@@ -131,9 +133,9 @@ async def _process_agent(
                     {"title": "Name", "short": True, "value": latest_agent.name},
                     {"title": "Model", "short": True, "value": latest_agent.model},
                     {
-                        "title": "Enso Enabled",
+                        "title": "GOAT Enabled",
                         "short": True,
-                        "value": str(latest_agent.enso_enabled),
+                        "value": str(latest_agent.goat_enabled),
                     },
                     {
                         "title": "CDP Enabled",
