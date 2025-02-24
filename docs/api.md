@@ -47,11 +47,7 @@ Create or update an agent.
   "cdp_enabled": false,
   "twitter_enabled": false,
   "crestal_skills": ["skill1", "skill2"],
-  "common_skills": ["skill3"],
-  "skill_sets": {
-    "set1": {
-      "option1": "value1"
-    }
+  "common_skills": ["skill3"]
   }
 }
 ```

@@ -83,7 +83,7 @@
       "type": "string",
       "description": "AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
       "default": "gpt-4o-mini",
-      "enum": ["gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest", "deepseek-chat", "deepseek-reasoner", "grok-2"],
+      "enum": ["gpt-4o", "gpt-4o-mini", "deepseek-chat", "deepseek-reasoner", "grok-2"],
       "x-group": "ai"
     },
     "prompt": {
@@ -230,7 +230,12 @@
     "skills": {
       "type": "object",
       "description": "Dict of skills and their corresponding configurations",
-      "x-group": "skills"
+      "x-group": "skills",
+      "properties": {
+        "defillama": {
+          "$ref": "../skills/defillama/schema.json"
+        }
+      }
     },
     "enso_enabled": {
       "type": "boolean",
@@ -276,15 +281,6 @@
       "type": "object",
       "description": "Allora integration configuration settings",
       "x-group": "onchain"
-    },
-    "skill_sets": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "description": "Mapping of skill set configurations for different platforms and capabilities",
-      "x-group": "skills"
     }
   },
   "required": ["id"],
