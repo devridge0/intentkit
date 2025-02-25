@@ -67,6 +67,7 @@ python-multipart = "^0.0.20"
 langchain-xai = "^0.2.1"
 coinbase-agentkit = "^0.1.2"
 coinbase-agentkit-langchain = "^0.1.0"
+jsonref = "^1.1.0"
 
 [tool.poetry.group.dev] 
 optional = true
