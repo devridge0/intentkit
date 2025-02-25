@@ -460,7 +460,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     await message.save()
 
     is_private = False
-    if message.chat_id == "owner" or message.chat_id == "autonomous":
+    if message.chat_id.startswith("owner") or message.chat_id.startswith("autonomous"):
         is_private = True
 
     thread_id = f"{message.agent_id}-{message.chat_id}"
