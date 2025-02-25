@@ -10,6 +10,7 @@ This module provides functionality for initializing and executing AI agents. It 
 The module uses a global cache to store initialized agents for better performance.
 """
 
+import importlib
 import logging
 import textwrap
 import time
@@ -54,18 +55,16 @@ from app.config.config import config
 from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
-from app.core.skill import SkillStore
-from app.services.twitter.client import TwitterClient
+from app.core.skill import skill_store
+from clients import TwitterClient
 from models.agent import Agent, AgentData
 from models.chat import AuthorType, ChatMessage, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
-from skill_sets import get_skill_set
 from skills.acolyt import get_Acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
-from skills.crestal import get_crestal_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
     create_smart_wallets_if_not_exist,
@@ -77,13 +76,15 @@ from skills.twitter import get_twitter_skill
 logger = logging.getLogger(__name__)
 
 # Global variable to cache all agent executors
-agents: dict[str, CompiledGraph] = {}
+_agents: dict[str, CompiledGraph] = {}
+_private_agents: dict[str, CompiledGraph] = {}
 
 # Global dictionaries to cache agent update times
-agents_updated: dict[str, datetime] = {}
+_agents_updated: dict[str, datetime] = {}
+_private_agents_updated: dict[str, datetime] = {}
 
 
-async def initialize_agent(aid):
+async def initialize_agent(aid, is_private=False):
     """Initialize an AI agent with specified configuration and tools.
 
     This function:
@@ -95,6 +96,7 @@ async def initialize_agent(aid):
 
     Args:
         aid (str): Agent ID to initialize
+        is_private (bool, optional): Flag indicating whether the agent is private. Defaults to False.
 
     Returns:
         Agent: Initialized LangChain agent
@@ -103,8 +105,6 @@ async def initialize_agent(aid):
         HTTPException: If agent not found (404) or database error (500)
     """
     """Initialize the agent with CDP Agentkit."""
-    # init skill store first
-    skill_store = SkillStore()
     # init agent store
     agent_store = AgentStore(aid)
 
@@ -113,8 +113,6 @@ async def initialize_agent(aid):
         agent: Agent = await agent_store.get_config()
         agent_data: AgentData = await agent_store.get_data()
 
-        # Cache the update times
-        agents_updated[aid] = agent.updated_at
     except NoResultFound:
         # Handle the case where the user is not found
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -166,6 +164,21 @@ async def initialize_agent(aid):
 
     # ==== Load skills
     tools: list[BaseTool] = []
+
+    if agent.skills:
+        for k, v in agent.skills.items():
+            try:
+                skill_module = importlib.import_module(f"skills.{k}")
+                if hasattr(skill_module, "get_skills"):
+                    skill_tools = skill_module.get_skills(
+                        v, aid, is_private, skill_store, agent_store=agent_store
+                    )
+                    if skill_tools and len(skill_tools) > 0:
+                        tools.extend(skill_tools)
+                else:
+                    logger.warning(f"Skill {k} does not have get_skills function")
+            except ImportError:
+                logger.warning(f"Could not import skill module: {k}")
 
     # Configure CDP Agentkit Langchain Extension.
     cdp_wallet_provider = None
@@ -339,25 +352,15 @@ async def initialize_agent(aid):
             )
             tools.append(s)
 
-    # Crestal skills
-    if agent.crestal_skills:
-        for skill in agent.crestal_skills:
-            tools.append(get_crestal_skill(skill))
-
     # Common skills
     if agent.common_skills:
         for skill in agent.common_skills:
             tools.append(get_common_skill(skill))
 
-    # Skill sets
-    if agent.skill_sets:
-        for skill_set, opts in agent.skill_sets.items():
-            tools.extend(get_skill_set(skill_set, opts))
-
     # filter the duplicate tools
     tools = list({tool.name: tool for tool in tools}.values())
 
-    # finally, setup the system prompt
+    # finally, set up the system prompt
     prompt = agent_prompt(agent, agent_data)
     # Escape curly braces in the prompt
     escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
@@ -374,7 +377,7 @@ async def initialize_agent(aid):
             prompt_array.append(("system", escaped_append))
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
-    def formatted_prompt(state: AgentState):
+    def formatted_prompt(state: AgentState) -> list[BaseMessage]:
         # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
@@ -384,12 +387,15 @@ async def initialize_agent(aid):
 
     # log all tools
     for tool in tools:
-        logger.info(f"[{aid}] loaded tool: {tool.name}")
-
-    logger.info(f"[{aid}] init prompt: {escaped_prompt}")
+        logger.info(
+            f"[{aid}{'-private' if is_private else ''}] loaded tool: {tool.name}"
+        )
+    logger.info(
+        f"[{aid}{'-private' if is_private else ''}] init prompt: {escaped_prompt}"
+    )
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
-    agents[aid] = create_agent(
+    executor = create_agent(
         aid,
         llm,
         tools=tools,
@@ -398,13 +404,21 @@ async def initialize_agent(aid):
         debug=config.debug_checkpoint,
         input_token_limit=input_token_limit,
     )
+    if is_private:
+        _private_agents[aid] = executor
+        _private_agents_updated[aid] = agent.updated_at
+    else:
+        _agents[aid] = executor
+        _agents_updated[aid] = agent.updated_at
 
 
-async def agent_executor(agent_id: str) -> (CompiledGraph, float):
+async def agent_executor(agent_id: str, is_private: bool) -> (CompiledGraph, float):
     start = time.perf_counter()
     agent = await Agent.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    agents = _private_agents if is_private else _agents
+    agents_updated = _private_agents_updated if is_private else _agents_updated
 
     # Check if agent needs reinitialization due to updates
     needs_reinit = False
@@ -414,12 +428,14 @@ async def agent_executor(agent_id: str) -> (CompiledGraph, float):
             or agent.updated_at != agents_updated[agent_id]
         ):
             needs_reinit = True
-            logger.info(f"Reinitializing agent {agent_id} due to updates")
+            logger.info(
+                f"Reinitializing agent {agent_id} due to updates, private mode: {is_private}"
+            )
 
     # cold start or needs reinitialization
     cold_start_cost = 0.0
     if (agent_id not in agents) or needs_reinit:
-        await initialize_agent(agent_id)
+        await initialize_agent(agent_id, is_private)
         cold_start_cost = time.perf_counter() - start
     return agents[agent_id], cold_start_cost
 
@@ -443,13 +459,17 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     """
     await message.save()
 
+    is_private = False
+    if message.chat_id.startswith("owner") or message.chat_id.startswith("autonomous"):
+        is_private = True
+
     thread_id = f"{message.agent_id}-{message.chat_id}"
 
     stream_config = {"configurable": {"thread_id": thread_id}}
     resp = []
     start = time.perf_counter()
 
-    executor, cold_start_cost = await agent_executor(message.agent_id)
+    executor, cold_start_cost = await agent_executor(message.agent_id, is_private)
     last = start + cold_start_cost
 
     # Extract images from attachments

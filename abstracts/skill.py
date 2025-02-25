@@ -8,6 +8,8 @@ from pydantic import (
 )
 from pydantic.v1 import ValidationError as ValidationErrorV1
 
+from models.skill import SkillConfig
+
 
 class IntentKitSkill(BaseTool):
     """Abstract base class for IntentKit skills.
@@ -99,3 +101,8 @@ class SkillStoreABC(ABC):
             data: JSON data to store
         """
         pass
+
+
+GetSkillCallable = Callable[
+    [SkillConfig, str, bool, SkillStoreABC, ...], list[IntentKitSkill]
+]

@@ -101,7 +101,7 @@ def format_debug_messages(messages: list[ChatMessage]) -> str:
     return resp
 
 
-@chat_router.get(
+@chat_router_readonly.get(
     "/debug/{agent_id}/chats/{chat_id}/memory",
     tags=["Debug"],
     response_class=Response,
@@ -122,7 +122,7 @@ async def debug_chat_memory(
     return Response(content=formatted_json, media_type="application/json")
 
 
-@chat_router.get(
+@chat_router_readonly.get(
     "/debug/{agent_id}/chats/{chat_id}",
     tags=["Debug"],
     response_class=PlainTextResponse,
@@ -231,7 +231,7 @@ async def debug_chat(
     return resp
 
 
-@chat_router.get(
+@chat_router_readonly.get(
     "/debug/{agent_id}/prompt",
     tags=["Debug"],
     response_class=PlainTextResponse,
@@ -484,6 +484,9 @@ async def create_chat_deprecated(
     * `429` - Quota exceeded
     * `500` - Internal server error
     """
+    # Check chat ID
+    if request.chat_id.startswith("owner") or request.chat_id.startswith("autonomous"):
+        raise HTTPException(status_code=400, detail="Invalid chat ID")
     # Get agent and validate quota
     agent = await Agent.get(aid)
     if not agent:
@@ -531,6 +534,7 @@ async def create_chat_deprecated(
 async def create_chat(
     request: ChatMessageRequest,
     aid: str = Path(..., description="Agent ID"),
+    owner_mode: bool = Query(False, description="Enable owner mode"),
 ) -> list[ChatMessage]:
     """Create a chat message and get agent's response.
 
@@ -556,6 +560,15 @@ async def create_chat(
     * `429` - Quota exceeded
     * `500` - Internal server error
     """
+    # Check owner mode
+    if owner_mode:
+        if not request.chat_id.startswith("owner"):
+            raise HTTPException(status_code=400, detail="Invalid owner chat ID")
+    else:
+        if request.chat_id.startswith("owner") or request.chat_id.startswith(
+            "autonomous"
+        ):
+            raise HTTPException(status_code=400, detail="Invalid chat ID")
     # Get agent and validate quota
     agent = await Agent.get(aid)
     if not agent:
