@@ -69,7 +69,7 @@ async def get_skill_schema(
     schema_path = base_path / skill / "schema.json"
     normalized_path = schema_path.resolve()
 
-    if not str(normalized_path).startswith(str(base_path)):
+    if not normalized_path.is_relative_to(base_path):
         raise HTTPException(status_code=400, detail="Invalid skill name")
 
     try:
