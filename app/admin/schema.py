@@ -51,7 +51,7 @@ async def get_skill_schema(
     skill: str = PathParam(
         ...,
         description="Skill name (alphanumeric and dash only)",
-        regex="^[a-zA-Z0-9-]+$"
+        regex="^[a-zA-Z0-9-]+$",
     ),
 ) -> JSONResponse:
     """Get the JSON schema for a skill.
