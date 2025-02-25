@@ -44,21 +44,26 @@ async def get_agent_schema() -> JSONResponse:
     responses={
         200: {"description": "Success"},
         404: {"description": "Skill not found"},
+        400: {"description": "Invalid skill name"},
     },
 )
 async def get_skill_schema(
-    skill: str = PathParam(..., description="Skill name"),
+    skill: str = PathParam(
+        ...,
+        description="Skill name (alphanumeric and dash only)",
+        regex="^[a-zA-Z0-9-]+$"
+    ),
 ) -> JSONResponse:
     """Get the JSON schema for a skill.
 
     Args:
-        skill: The name of the skill to get the schema for
+        skill: The name of the skill to get the schema for (alphanumeric and dash only)
 
     Returns:
         JSONResponse: The JSON schema for the skill with application/json content type
 
     Raises:
-        HTTPException: If the skill is not found
+        HTTPException: If the skill is not found or name is invalid
     """
     base_path = PROJECT_ROOT / "skills"
     schema_path = base_path / skill / "schema.json"
