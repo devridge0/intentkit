@@ -10,7 +10,7 @@ A skill in IntentKit is a specialized tool that inherits from `IntentKitSkill` (
 
 ## Where to add skills
 
-The skills are all in the `skills/` or `skill_sets/` directory. In the future, it may also be in the `skills/` or `skill_sets/` directory of the plugin root. Overall, we categorize as follows:
+The skills are all in the `skills/` directory. In the future, it may also be in the `skills/` directory of the plugin root. Overall, we categorize as follows:
 * Common Skills: Skills located in the skills/common/ directory
 * First Class Skills: Skills found in other folders under skills/
 * Skill Sets: Located in the skill-sets directory

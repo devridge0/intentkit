@@ -32,9 +32,17 @@ class Agent(SQLModel, table=True):
         description="Auto-incrementing number assigned by the system for easy reference",
     )
     name: Optional[str] = Field(default=None, description="Display name of the agent")
+    slug: Optional[str] = Field(
+        default=None,
+        description="Slug of the agent, used for URL generation",
+    )
     ticker: Optional[str] = Field(
         default=None,
         description="Ticker symbol of the agent",
+    )
+    token_address: Optional[str] = Field(
+        default=None,
+        description="Token address of the agent",
     )
     purpose: Optional[str] = Field(
         default=None,
@@ -66,7 +74,7 @@ class Agent(SQLModel, table=True):
     )
     prompt_append: Optional[str] = Field(
         default=None,
-        description="Additional system prompt that overrides or extends the base prompt",
+        description="Additional system prompt that has higher priority than the base prompt",
     )
     temperature: Optional[float] = Field(
         default=0.7,
@@ -157,13 +165,7 @@ class Agent(SQLModel, table=True):
         sa_column=Column(JSONB, nullable=True),
         description="Dict of skills and their corresponding configurations",
     )
-    # crestal skills
-    crestal_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Crestal platform-specific skills available to this agent",
-    )
-    # skills not require config
+    # skills have no category
     common_skills: Optional[List[str]] = Field(
         default=None,
         sa_column=Column(ARRAY(String)),
@@ -216,12 +218,6 @@ class Agent(SQLModel, table=True):
         default=None,
         sa_column=Column(JSONB, nullable=True),
         description="Elfa integration configuration settings",
-    )
-    # skill set
-    skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Mapping of skill set configurations for different platforms and capabilities",
     )
     # auto timestamp
     created_at: SkipJsonSchema[datetime] = Field(
@@ -430,6 +426,30 @@ class AgentResponse(BaseModel):
         description="Auto-incrementing number assigned by the system for easy reference"
     )
     name: Optional[str] = Field(default=None, description="Display name of the agent")
+    slug: Optional[str] = Field(
+        default=None,
+        description="Slug of the agent, used for URL generation",
+    )
+    ticker: Optional[str] = Field(
+        default=None,
+        description="Ticker symbol of the agent",
+    )
+    token_address: Optional[str] = Field(
+        default=None,
+        description="Token address of the agent",
+    )
+    purpose: Optional[str] = Field(
+        default=None,
+        description="Purpose or role of the agent",
+    )
+    personality: Optional[str] = Field(
+        default=None,
+        description="Personality traits of the agent",
+    )
+    principles: Optional[str] = Field(
+        default=None,
+        description="Principles or values of the agent",
+    )
     owner: Optional[str] = Field(
         default=None,
         description="Owner identifier of the agent, used for access control",
@@ -451,6 +471,14 @@ class AgentResponse(BaseModel):
     temperature: float = Field(
         description="AI model temperature parameter controlling response randomness (0.0-1.0)"
     )
+    frequency_penalty: Optional[float] = Field(
+        default=0.0,
+        description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+    )
+    presence_penalty: Optional[float] = Field(
+        default=0.0,
+        description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+    )
     autonomous_enabled: bool = Field(
         description="Whether the agent can operate autonomously without user input"
     )
@@ -469,11 +497,21 @@ class AgentResponse(BaseModel):
     cdp_network_id: Optional[str] = Field(
         description="Network identifier for CDP integration"
     )
+    crossmint_config: Optional[dict] = Field(
+        description="Dict of Crossmint wallet configurations",
+    )
+    goat_enabled: Optional[bool] = Field(
+        default=False,
+        description="Whether GOAT integration is enabled",
+    )
+    goat_skills: Optional[dict] = Field(
+        description="Dict of GOAT skills and their corresponding configurations",
+    )
     twitter_entrypoint_enabled: bool = Field(
         description="Whether the agent can receive events from Twitter"
     )
     twitter_config: Optional[dict] = Field(
-        description="Twitter integration configuration settings"
+        description="Twitter integration configuration settings",
     )
     twitter_skills: Optional[List[str]] = Field(
         description="List of Twitter-specific skills available to this agent"
@@ -482,7 +520,7 @@ class AgentResponse(BaseModel):
         description="Whether the agent can receive events from Telegram"
     )
     telegram_config: Optional[dict] = Field(
-        description="Telegram integration configuration settings"
+        description="Telegram integration configuration settings",
     )
     telegram_skills: Optional[List[str]] = Field(
         description="List of Telegram-specific skills available to this agent"
@@ -492,13 +530,35 @@ class AgentResponse(BaseModel):
     )
     enso_enabled: bool = Field(description="Whether Enso integration is enabled")
     enso_skills: Optional[List[str]] = Field(
-        description="List of Enso-specific skills available to this agent"
+        description="List of Enso-specific skills available to this agent",
     )
     enso_config: Optional[dict] = Field(
-        description="Enso integration configuration settings"
+        description="Enso integration configuration settings",
     )
-    skill_sets: Optional[Dict[str, Dict[str, Any]]] = Field(
-        description="Mapping of skill set configurations for different platforms and capabilities"
+    acolyt_skills: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String)),
+        description="List of Acolyt-specific skills available to this agent",
+    )
+    acolyt_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Acolyt integration configuration settings",
+    )
+    allora_skills: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String)),
+        description="List of Allora-specific skills available to this agent",
+    )
+    allora_config: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Allora integration configuration settings",
+    )
+    skills: Optional[Dict[str, SkillConfig]] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Dict of skills and their corresponding configurations",
     )
     created_at: datetime | None = Field(
         description="Timestamp when this agent was created"

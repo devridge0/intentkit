@@ -65,8 +65,9 @@ goat-sdk-plugin-uniswap = "*"
 pyyaml = "^6.0.2"
 python-multipart = "^0.0.20"
 langchain-xai = "^0.2.1"
-coinbase-agentkit = "^0.1.2"
+coinbase-agentkit = "0.1.4.dev202502250"
 coinbase-agentkit-langchain = "^0.1.0"
+jsonref = "^1.1.0"
 
 [tool.poetry.group.dev] 
 optional = true

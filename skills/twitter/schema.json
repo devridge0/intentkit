@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "public_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "follow_user",
+          "get_mentions",
+          "get_timeline",
+          "like_tweet",
+          "post_tweet",
+          "reply_tweet",
+          "retweet",
+          "search_tweets"
+        ]
+      },
+      "description": "List of public skills that are available to all users"
+    },
+    "private_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "follow_user",
+          "get_mentions",
+          "get_timeline",
+          "like_tweet",
+          "post_tweet",
+          "reply_tweet",
+          "retweet",
+          "search_tweets"
+        ]
+      },
+      "description": "List of private skills that are only available to privileged users"
+    },
+    "consumer_key": {
+      "type": "string",
+      "description": "Twitter API consumer key"
+    },
+    "consumer_secret": {
+      "type": "string",
+      "description": "Twitter API consumer secret"
+    },
+    "access_token": {
+      "type": "string",
+      "description": "Twitter API access token"
+    },
+    "access_token_secret": {
+      "type": "string",
+      "description": "Twitter API access token secret"
+    }
+  },
+  "required": [
+    "public_skills"
+  ],
+  "additionalProperties": true
+}

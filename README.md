@@ -71,11 +71,13 @@ Check out [Documentation](docs/) before you start.
   - [config/](app/config/): Configurations
   - [api.py](app/api.py): REST API server
   - [autonomous.py](app/autonomous.py): Autonomous agent scheduler
+  - [singleton.py](app/singleton.py): Singleton agent scheduler
+  - [scheduler.py](app/scheduler.py): Scheduler for periodic tasks
+  - [readonly.py](app/readonly.py): Readonly entrypoint
   - [twitter.py](app/twitter.py): Twitter listener
   - [telegram.py](app/telegram.py): Telegram listener
 - [models/](models/): Database models
 - [skills/](skills/): Skill implementations
-- [skill_sets/](skill_sets/): Predefined skill set collections
 - [plugins/](plugins/): Reserved for Plugin implementations
 - [utils/](utils/): Utility functions
 

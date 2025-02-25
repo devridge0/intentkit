@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "DeFi Llama Skills Configuration",
+  "description": "Configuration schema for DeFi Llama skills",
+  "properties": {
+    "public_skills": {
+      "type": "array",
+      "description": "List of public DeFi Llama skills available to all agents",
+      "items": {
+        "type": "string",
+        "enum": [
+          "fetch_batch_historical_prices",
+          "fetch_block",
+          "fetch_current_prices",
+          "fetch_first_price",
+          "fetch_historical_prices",
+          "fetch_price_chart",
+          "fetch_price_percentage",
+          "fetch_fees_overview",
+          "fetch_stablecoin_chains",
+          "fetch_stablecoin_charts",
+          "fetch_stablecoin_prices",
+          "fetch_stablecoins",
+          "fetch_chain_historical_tvl",
+          "fetch_chains",
+          "fetch_historical_tvl",
+          "fetch_protocol",
+          "fetch_protocol_current_tvl",
+          "fetch_protocols",
+          "fetch_dex_overview",
+          "fetch_dex_summary",
+          "fetch_options_overview",
+          "fetch_pool_chart",
+          "fetch_pools"
+        ]
+      }
+    },
+    "private_skills": {
+      "type": "array",
+      "description": "List of private DeFi Llama skills available only to private agents",
+      "items": {
+        "type": "string",
+        "enum": [
+          "fetch_batch_historical_prices",
+          "fetch_block",
+          "fetch_current_prices",
+          "fetch_first_price",
+          "fetch_historical_prices",
+          "fetch_price_chart",
+          "fetch_price_percentage",
+          "fetch_fees_overview",
+          "fetch_stablecoin_chains",
+          "fetch_stablecoin_charts",
+          "fetch_stablecoin_prices",
+          "fetch_stablecoins",
+          "fetch_chain_historical_tvl",
+          "fetch_chains",
+          "fetch_historical_tvl",
+          "fetch_protocol",
+          "fetch_protocol_current_tvl",
+          "fetch_protocols",
+          "fetch_dex_overview",
+          "fetch_dex_summary",
+          "fetch_options_overview",
+          "fetch_pool_chart",
+          "fetch_pools"
+        ]
+      }
+    }
+  },
+  "required": ["public_skills"]
+}
