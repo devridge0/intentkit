@@ -992,14 +992,14 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "coinbase-agentkit"
-version = "0.1.3"
+version = "0.1.4.dev202502250"
 description = "Coinbase AgentKit"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "coinbase_agentkit-0.1.3-py3-none-any.whl", hash = "sha256:78b45cc830efb64080e60c7a50f207a105434effe9029e1f7321360bcc522052"},
-    {file = "coinbase_agentkit-0.1.3.tar.gz", hash = "sha256:9dd15229eda9caf68a68d9834bed0dc0106a4b3d5f0664372ac69402fbbf4fce"},
+    {file = "coinbase_agentkit-0.1.4.dev202502250-py3-none-any.whl", hash = "sha256:a3f1d84237c41ec9e070bf610832e9323053e21aa77f410855b73c81cc65dc6d"},
+    {file = "coinbase_agentkit-0.1.4.dev202502250.tar.gz", hash = "sha256:07b2cb53f9899b8b287471e301a7858d59b82979b4d8b6568ec810c985acba71"},
 ]
 
 [package.dependencies]
@@ -5243,4 +5243,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "8be88f6d556ba381a720d91dd2699bd7171c0719d20b0119a54f1c5cbfd9988f"
+content-hash = "f77151452236b3866c319a27d52d425000e6d112f2f6069f8dc145aa80dea01f"
