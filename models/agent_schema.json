@@ -234,6 +234,21 @@
       "properties": {
         "defillama": {
           "$ref": "../skills/defillama/schema.json"
+        },
+        "twitter": {
+          "$ref": "../skills/twitter/schema.json"
+        },
+        "acolyt": {
+          "$ref": "../skills/acolyt/schema.json"
+        },
+        "allora": {
+          "$ref": "../skills/allora/schema.json"
+        },
+        "enso": {
+          "$ref": "../skills/enso/schema.json"
+        },
+        "cryptocompare": {
+          "$ref": "../skills/cryptocompare/schema.json"
         }
       }
     },
