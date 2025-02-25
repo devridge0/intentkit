@@ -68,8 +68,9 @@ async def _process_agent(
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
         # Run clean_agent_memory in background
-        import asyncio
-        asyncio.create_task(clean_agent_memory(latest_agent.id, clean_agent_memory=True))
+        asyncio.create_task(
+            clean_agent_memory(latest_agent.id, clean_agent_memory=True)
+        )
 
     if not has_wallet:
         # create the wallet
