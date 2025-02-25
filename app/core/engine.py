@@ -699,6 +699,7 @@ async def clean_agent_memory(
 
             await db.commit()
 
+            logger.info(f"Agent [{agent_id}] data cleaned up successfully.")
             return "Agent data cleaned up successfully."
         except SQLAlchemyError as e:
             # Handle other SQLAlchemy-related errors
