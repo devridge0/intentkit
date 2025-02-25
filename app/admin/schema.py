@@ -60,10 +60,15 @@ async def get_skill_schema(
     Raises:
         HTTPException: If the skill is not found
     """
-    schema_path = PROJECT_ROOT / "skills" / skill / "schema.json"
+    base_path = PROJECT_ROOT / "skills"
+    schema_path = base_path / skill / "schema.json"
+    normalized_path = schema_path.resolve()
+
+    if not str(normalized_path).startswith(str(base_path)):
+        raise HTTPException(status_code=400, detail="Invalid skill name")
 
     try:
-        with open(schema_path) as f:
+        with open(normalized_path) as f:
             schema = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         raise HTTPException(status_code=404, detail="Skill schema not found")
