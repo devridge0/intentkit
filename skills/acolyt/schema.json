@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "public_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ask_gpt"
+        ]
+      },
+      "description": "List of public skills that are available to all users"
+    },
+    "private_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ask_gpt"
+        ]
+      },
+      "description": "List of private skills that are only available to privileged users"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "Acolyt API key"
+    }
+  },
+  "required": [
+    "public_skills",
+    "api_key"
+  ],
+  "additionalProperties": true
+}

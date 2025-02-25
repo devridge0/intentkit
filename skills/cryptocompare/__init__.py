@@ -1,7 +1,10 @@
 """CryptoCompare skills."""
 
+from typing import NotRequired
+
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
+from models.skill import SkillConfig
 from skills.cryptocompare.base import CryptoCompareBaseTool
 from skills.cryptocompare.fetch_news import CryptoCompareFetchNews
 from skills.cryptocompare.fetch_price import CryptoCompareFetchPrice
@@ -9,6 +12,51 @@ from skills.cryptocompare.fetch_top_exchanges import CryptoCompareFetchTopExchan
 from skills.cryptocompare.fetch_top_market_cap import CryptoCompareFetchTopMarketCap
 from skills.cryptocompare.fetch_top_volume import CryptoCompareFetchTopVolume
 from skills.cryptocompare.fetch_trading_signals import CryptoCompareFetchTradingSignals
+
+
+class Config(SkillConfig):
+    """Configuration for CryptoCompare skills."""
+
+    api_key: str
+    public_skills: NotRequired[list[str]] = []
+    private_skills: NotRequired[list[str]] = []
+
+
+def get_skills(
+    config: Config,
+    agent_id: str,
+    is_private: bool,
+    store: SkillStoreABC,
+    agent_store: AgentStoreABC,
+    **_,
+) -> list[CryptoCompareBaseTool]:
+    """Get all CryptoCompare skills."""
+    # always return public skills
+    resp = [
+        get_cryptocompare_skill(
+            name,
+            config["api_key"],
+            store,
+            agent_id,
+            agent_store,
+        )
+        for name in config.get("public_skills", [])
+    ]
+    # return private skills only if is_private
+    if is_private and "private_skills" in config:
+        resp.extend(
+            get_cryptocompare_skill(
+                name,
+                config["api_key"],
+                store,
+                agent_id,
+                agent_store,
+            )
+            for name in config["private_skills"]
+            # remove duplicates
+            if name not in config.get("public_skills", [])
+        )
+    return resp
 
 
 def get_cryptocompare_skill(

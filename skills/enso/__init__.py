@@ -1,8 +1,12 @@
 """Enso skills."""
 
+from typing import List, NotRequired
+
 from cdp import Wallet
 
+from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
+from models.skill import SkillConfig
 from skills.enso.base import EnsoBaseTool
 from skills.enso.networks import EnsoGetNetworks
 from skills.enso.prices import EnsoGetPrices
@@ -16,6 +20,60 @@ from skills.enso.wallet import (
 from utils.chain import ChainProvider
 
 
+class Config(SkillConfig):
+    """Configuration for Enso skills."""
+
+    api_token: str
+    main_tokens: List[str]
+    public_skills: List[str]
+    private_skills: NotRequired[List[str]]
+
+
+def get_skills(
+    config: Config,
+    agent_id: str,
+    is_private: bool,
+    store: SkillStoreABC,
+    agent_store: AgentStoreABC,
+    wallet: Wallet = None,
+    chain_provider: ChainProvider = None,
+    **_,
+) -> list[EnsoBaseTool]:
+    """Get all Enso skills."""
+    # always return public skills
+    resp = [
+        get_enso_skill(
+            name,
+            config["api_token"],
+            config["main_tokens"],
+            wallet,
+            chain_provider,
+            store,
+            agent_store,
+            agent_id,
+        )
+        for name in config["public_skills"]
+    ]
+    # return private skills only if is_private
+    if is_private and "private_skills" in config:
+        resp.extend(
+            get_enso_skill(
+                name,
+                config["api_token"],
+                config["main_tokens"],
+                wallet,
+                chain_provider,
+                store,
+                agent_store,
+                agent_id,
+            )
+            for name in config["private_skills"]
+            # remove duplicates
+            if name not in config["public_skills"]
+        )
+    return resp
+
+
 def get_enso_skill(
     name: str,
     api_token: str,
@@ -23,7 +81,7 @@ def get_enso_skill(
     wallet: Wallet,
     chain_provider: ChainProvider,
     skill_store: SkillStoreABC,
-    agent_store: SkillStoreABC,
+    agent_store: AgentStoreABC,
     agent_id: str,
 ) -> EnsoBaseTool:
     if not api_token:
