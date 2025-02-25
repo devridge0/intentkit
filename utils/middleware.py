@@ -41,6 +41,7 @@ def create_jwt_middleware(enable: bool, jwt_secret: str):
             or host == "127.0.0.1"
             or host == "intent-api"
             or host == "intent-readonly"
+            or host == "intent-singleton"
         ):
             return ""
 
