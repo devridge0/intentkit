@@ -1,8 +1,13 @@
 import json
+import logging
 from pathlib import Path
 
-from fastapi import APIRouter
+import jsonref
+from fastapi import APIRouter, HTTPException
+from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 # Create readonly router
 schema_router_readonly = APIRouter()
@@ -18,11 +23,49 @@ AGENT_SCHEMA_PATH = PROJECT_ROOT / "models" / "agent_schema.json"
     "/schema/agent", tags=["Schema"], operation_id="get_agent_schema"
 )
 async def get_agent_schema() -> JSONResponse:
-    """Get the JSON schema for Agent model.
+    """Get the JSON schema for Agent model with all $ref references resolved.
 
     Returns:
         JSONResponse: The complete JSON schema for the Agent model with application/json content type
     """
+    base_uri = f"file://{AGENT_SCHEMA_PATH}"
     with open(AGENT_SCHEMA_PATH) as f:
-        schema = json.load(f)
+        schema = jsonref.load(f, base_uri=base_uri, proxies=False, lazy_load=False)
+        return JSONResponse(
+            content=schema,
+            media_type="application/json",
+        )
+
+
+@schema_router_readonly.get(
+    "/skills/{skill}/schema.json",
+    tags=["Schema"],
+    operation_id="get_skill_schema",
+    responses={
+        200: {"description": "Success"},
+        404: {"description": "Skill not found"},
+    },
+)
+async def get_skill_schema(
+    skill: str = PathParam(..., description="Skill name"),
+) -> JSONResponse:
+    """Get the JSON schema for a skill.
+
+    Args:
+        skill: The name of the skill to get the schema for
+
+    Returns:
+        JSONResponse: The JSON schema for the skill with application/json content type
+
+    Raises:
+        HTTPException: If the skill is not found
+    """
+    schema_path = PROJECT_ROOT / "skills" / skill / "schema.json"
+
+    try:
+        with open(schema_path) as f:
+            schema = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        raise HTTPException(status_code=404, detail="Skill schema not found")
+
     return JSONResponse(content=schema, media_type="application/json")
