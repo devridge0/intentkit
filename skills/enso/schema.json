@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "public_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "get_networks",
+          "get_tokens",
+          "get_prices",
+          "route_shortcut",
+          "get_wallet_approvals",
+          "get_wallet_balances",
+          "wallet_approve"
+        ]
+      },
+      "description": "List of public skills that are available to all users"
+    },
+    "private_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "get_networks",
+          "get_tokens",
+          "get_prices",
+          "route_shortcut",
+          "get_wallet_approvals",
+          "get_wallet_balances",
+          "wallet_approve"
+        ]
+      },
+      "description": "List of private skills that are only available to privileged users"
+    },
+    "api_token": {
+      "type": "string",
+      "description": "Enso API token"
+    },
+    "main_tokens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of main tokens to use"
+    }
+  },
+  "required": [
+    "public_skills",
+    "api_token",
+    "main_tokens"
+  ],
+  "additionalProperties": true
+}

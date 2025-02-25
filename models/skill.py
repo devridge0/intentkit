@@ -12,7 +12,7 @@ class SkillConfig(TypedDict):
     """Abstract base class for skill configuration."""
 
     public_skills: List[str]
-    private_skills: List[str]
+    private_skills: NotRequired[List[str]]
     __extra__: NotRequired[Dict[str, Any]]
 
 
