@@ -555,6 +555,14 @@ class AgentResponse(BaseModel):
         sa_column=Column(JSONB, nullable=True),
         description="Allora integration configuration settings",
     )
+    elfa_skills: Optional[List[str]] = Field(
+        default=None,
+        description="List of Elfa-specific skills available to this agent",
+    )
+    elfa_config: Optional[dict] = Field(
+        default=None,
+        description="Elfa integration configuration settings",
+    )
     skills: Optional[Dict[str, SkillConfig]] = Field(
         default=None,
         sa_column=Column(JSONB, nullable=True),
