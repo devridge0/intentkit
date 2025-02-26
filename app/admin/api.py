@@ -360,7 +360,10 @@ async def clean_memory(
 
 
 @admin_router_readonly.get(
-    "/agents/{agent_id}/export", tags=["Agent"], operation_id="export_agent"
+    "/agents/{agent_id}/export",
+    tags=["Agent"],
+    operation_id="export_agent",
+    dependencies=[Depends(verify_jwt)],
 )
 async def export_agent(
     agent_id: str,
