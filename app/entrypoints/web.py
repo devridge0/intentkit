@@ -82,7 +82,7 @@ def format_debug_messages(messages: list[ChatMessage]) -> str:
             resp += "[ Agent cold start ... ]\n"
             resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
         if message.author_type == AuthorType.SKILL:
-            resp += "[ Skill Calls: ]\n\n"
+            resp += f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ Skill Calls: ]\n\n"
             for skill_call in message.skill_calls:
                 resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
                 if skill_call["success"]:
@@ -92,11 +92,19 @@ def format_debug_messages(messages: list[ChatMessage]) -> str:
             resp += (
                 f"\n------------------- skill cost: {message.time_cost:.3f} seconds\n\n"
             )
-        if message.author_type == AuthorType.AGENT:
-            resp += "[ Agent: ]\n\n"
+        elif message.author_type == AuthorType.AGENT:
+            resp += (
+                f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ Agent: ]\n\n"
+            )
             resp += f" {message.message}\n"
             resp += (
                 f"\n------------------- agent cost: {message.time_cost:.3f} seconds\n\n"
+            )
+        else:
+            resp += f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ {message.author_type}: {message.author_id} ]\n\n"
+            resp += f" {message.message}\n"
+            resp += (
+                f"\n------------------- user cost: {message.time_cost:.3f} seconds\n\n"
             )
     return resp
 
@@ -147,6 +155,12 @@ async def debug_chat_history(
 @chat_router.get(
     "/{aid}/chat", tags=["Debug"], response_class=PlainTextResponse, deprecated=True
 )
+async def debug_chat_deprecated(
+    aid: str = Path(..., description="Agent ID"),
+) -> str:
+    return f"Deprecated: /{aid}/chat\n\nPlease use /debug/{aid}/chat instead"
+
+
 @chat_router.get(
     "/debug/{aid}/chat",
     tags=["Debug"],
