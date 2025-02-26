@@ -34,11 +34,11 @@ class BotPoolItem:
         self._whitelist_chat_ids = cfg.get("whitelist_chat_ids")
         self._greeting_group = cfg.get(
             "greeting_group",
-            "🤖 Hi Everybody, 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
+            "Glory to the Nation!\nFind me on https://nation.fun",
         )
         self._greeting_user = cfg.get(
             "greeting_user",
-            "🤖 Hi, 🎉\nGreetings, traveler of the digital realm! You've just awakened the mighty powers of this chat bot. Brace yourself for an adventure filled with wit, wisdom, and possibly a few jokes.",
+            "Glory to the Nation!\nFind me on https://nation.fun",
         )
 
     @property

@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 from abstracts.skill import SkillStoreABC
+from app.config.config import config
 from models.skill import AgentSkillData, ThreadSkillData
 
 
@@ -9,10 +10,14 @@ class SkillStore(SkillStoreABC):
 
     This class provides concrete implementations for storing and retrieving
     skill-related data for both agents and threads using SQLModel-based storage.
-
-    Args:
-        get_session: A callable that returns an async database session
     """
+
+    @staticmethod
+    def get_system_config(key: str) -> Any:
+        # TODO: maybe need a whitelist here
+        if hasattr(config, key):
+            return getattr(config, key)
+        return None
 
     async def get_agent_skill_data(
         self, agent_id: str, skill: str, key: str
