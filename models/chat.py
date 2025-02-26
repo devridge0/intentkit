@@ -2,11 +2,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, NotRequired, Optional, TypedDict
 
+from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field as SQLModelField
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, desc, select, update
 
 from models.db import get_session
 
@@ -190,3 +191,103 @@ class ChatMessage(SQLModel, table=True):
             db.add(self)
             await db.commit()
             await db.refresh(self)
+
+
+class Chat(SQLModel, table=True):
+    """Chat model."""
+
+    __tablename__ = "chats"
+    __table_args__ = (Index("ix_chats_agent_user", "agent_id", "user_id"),)
+
+    id: str = SQLModelField(
+        primary_key=True,
+        description="Unique identifier for the chat",
+    )
+    agent_id: str = SQLModelField(
+        description="ID of the agent this chat belongs to",
+    )
+    user_id: str = SQLModelField(
+        description="User ID of the chat",
+    )
+    summary: str = SQLModelField(
+        default="",
+        description="Summary of the chat",
+    )
+    rounds: int = SQLModelField(
+        default=0,
+        description="Number of rounds in the chat",
+    )
+    created_at: datetime = SQLModelField(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+        nullable=False,
+        description="Timestamp when this chat was created",
+    )
+    updated_at: datetime = SQLModelField(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": lambda: datetime.now(timezone.utc),
+        },
+        nullable=False,
+        description="Timestamp when this chat was updated",
+    )
+
+    @classmethod
+    async def get(cls, id: str) -> "Chat":
+        async with get_session() as db:
+            chat = await db.get(cls, id)
+            if not chat:
+                raise HTTPException(status_code=404, detail="Chat not found")
+            return chat
+
+    async def create(self):
+        async with get_session() as db:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+
+    async def delete(self):
+        async with get_session() as db:
+            db.delete(self)
+            await db.commit()
+
+    async def add_round(self):
+        """Increment the number of rounds in the chat on the database server.
+
+        Uses a direct SQL UPDATE statement to increment the rounds counter
+        on the server side, avoiding potential race conditions.
+        """
+        async with get_session() as db:
+            stmt = update(Chat).where(Chat.id == self.id).values(rounds=Chat.rounds + 1)
+            await db.exec(stmt)
+            await db.commit()
+
+    async def update_summary(self, summary: str) -> "Chat":
+        """Update the chat summary in the database.
+
+        Uses a direct SQL UPDATE statement to set the summary field.
+
+        Args:
+            summary: New summary text for the chat
+        """
+        async with get_session() as db:
+            stmt = update(Chat).where(Chat.id == self.id).values(summary=summary)
+            await db.exec(stmt)
+            await db.commit()
+            # Refresh the local object to reflect the database change
+            self.summary = summary
+            return self
+
+    @classmethod
+    async def get_by_agent_user(cls, agent_id: str, user_id: str) -> List["Chat"]:
+        async with get_session() as db:
+            return (
+                await db.exec(
+                    select(cls)
+                    .order_by(desc(cls.updated_at))
+                    .limit(10)
+                    .where(cls.agent_id == agent_id, cls.user_id == user_id)
+                )
+            ).all()
