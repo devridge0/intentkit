@@ -53,8 +53,7 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
     """
 
     name: str = "elfa_get_trending_tokens"
-    description: str = (
-        """This tool ranks the most discussed tokens based on smart mentions count for a given period, with updates every 5 minutes via the Elfa API.  Smart mentions provide a more sophisticated measure of discussion volume than simple keyword counts.
+    description: str = """This tool ranks the most discussed tokens based on smart mentions count for a given period, with updates every 5 minutes via the Elfa API.  Smart mentions provide a more sophisticated measure of discussion volume than simple keyword counts.
 
         **Use Cases:**
 
@@ -65,7 +64,6 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
         **Example Usage:**
 
         To use this tool, you would typically specify a time window (e.g., the last hour, the last 24 hours). The tool will then return a ranked list of tokens, along with their corresponding smart mention counts."""
-    )
     args_schema: Type[BaseModel] = ElfaGetTrendingTokensInput
 
     def _run(
