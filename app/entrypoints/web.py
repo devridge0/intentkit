@@ -3,6 +3,7 @@
 import json
 import logging
 import secrets
+import textwrap
 from typing import List
 
 from epyxid import XID
@@ -535,19 +536,27 @@ async def create_chat_deprecated(
         attachments=request.attachments,
     )
 
-    try:
-        # Execute agent
-        response_messages = await execute_agent(user_message)
+    # Execute agent
+    response_messages = await execute_agent(user_message)
 
-        # Update quota
-        await quota.add_message()
+    # Create or active chat
+    chat = await Chat.get(request.chat_id)
+    if chat:
+        await chat.add_round()
+    else:
+        chat = Chat(
+            id=request.chat_id,
+            agent_id=aid,
+            user_id=request.user_id,
+            summary=textwrap.shorten(request.message, width=20, placeholder="..."),
+            rounds=1,
+        )
+        await chat.create()
 
-        return response_messages[-1]
+    # Update quota
+    await quota.add_message()
 
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise
-        raise HTTPException(status_code=500, detail=str(e))
+    return response_messages[-1]
 
 
 @chat_router.post(
@@ -622,19 +631,27 @@ async def create_chat(
         attachments=request.attachments,
     )
 
-    try:
-        # Execute agent
-        response_messages = await execute_agent(user_message)
+    # Execute agent
+    response_messages = await execute_agent(user_message)
 
-        # Update quota
-        await quota.add_message()
+    # Create or active chat
+    chat = await Chat.get(request.chat_id)
+    if chat:
+        await chat.add_round()
+    else:
+        chat = Chat(
+            id=request.chat_id,
+            agent_id=aid,
+            user_id=request.user_id,
+            summary=textwrap.shorten(request.message, width=20, placeholder="..."),
+            rounds=1,
+        )
+        await chat.create()
 
-        return response_messages
+    # Update quota
+    await quota.add_message()
 
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise
-        raise HTTPException(status_code=500, detail=str(e))
+    return response_messages
 
 
 @chat_router_readonly.get(
