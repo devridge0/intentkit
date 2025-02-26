@@ -156,7 +156,7 @@ ALLORA_SKILLS='["get_price_prediction"]'
 ELFA_CONFIG='{
   "api_key": ""
 }'
-Elfa_SKILLS='["get_mentions","get_top_mentions","search_mentions","get_trending_tokens","get_smart_stats"]'
+ELFA_SKILLS='["get_mentions","get_top_mentions","search_mentions","get_trending_tokens","get_smart_stats"]'
 
 # Twitter settings (optional)
 # If you don't need to use the twitter skills, you can remove it in TWITTER_SKILLS
