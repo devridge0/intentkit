@@ -296,6 +296,19 @@
       "type": "object",
       "description": "Allora integration configuration settings",
       "x-group": "onchain"
+    },
+    "elfa_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of Elfa-specific skills available to this agent",
+      "x-group": "skills"
+    },
+    "elfa_config": {
+      "type": "object",
+      "description": "Elfa integration configuration settings",
+      "x-group": "onchain"
     }
   },
   "required": ["id"],
