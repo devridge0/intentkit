@@ -114,8 +114,7 @@ class ElfaGetMentions(ElfaBaseTool):
     """
 
     name: str = "elfa_get_mentions"
-    description: str = (
-        """This tool uses the Elfa AI API to query hourly-updated tweets from "smart accounts" – accounts identified as influential or relevant – that have received at least 10 interactions (comments, retweets, quote tweets).
+    description: str = """This tool uses the Elfa AI API to query hourly-updated tweets from "smart accounts" – accounts identified as influential or relevant – that have received at least 10 interactions (comments, retweets, quote tweets).
 
         This tool is useful for:
 
@@ -125,7 +124,6 @@ class ElfaGetMentions(ElfaBaseTool):
         * **Reputation Management:**  Identify and address potential PR issues.
 
         The data returned includes the tweet content, timestamp, and potentially other relevant metadata."""
-    )
     args_schema: Type[BaseModel] = ElfaGetMentionsInput
 
     def _run(self) -> ElfaGetMentionsOutput:
@@ -255,8 +253,7 @@ class ElfaGetTopMentions(ElfaBaseTool):
     """
 
     name: str = "elfa_get_top_mentions"
-    description: str = (
-        """This tool uses the Elfa API to query tweets mentioning a specific stock ticker. The tweets are ranked by view count, providing insight into the most visible and potentially influential discussions surrounding the stock. The results are updated hourly, allowing for real-time monitoring of market sentiment.
+    description: str = """This tool uses the Elfa API to query tweets mentioning a specific stock ticker. The tweets are ranked by view count, providing insight into the most visible and potentially influential discussions surrounding the stock. The results are updated hourly, allowing for real-time monitoring of market sentiment.
 
         This tool is useful for:
 
@@ -265,7 +262,6 @@ class ElfaGetTopMentions(ElfaBaseTool):
         * **Investor Insights:** Monitor the conversations and opinions of investors and traders.
 
         To use this tool, simply provide the stock ticker symbol (e.g., "AAPL", "TSLA"). The tool will return a list of tweets, ranked by view count."""
-    )
     args_schema: Type[BaseModel] = ElfaGetTopMentionsInput
 
     def _run(
@@ -409,8 +405,7 @@ class ElfaSearchMentions(ElfaBaseTool):
     """
 
     name: str = "elfa_search_mentions"
-    description: str = (
-        """This tool uses the Elfa API to search tweets mentioning up to five keywords.  It can search within the past 30 days of data, which is updated every 5 minutes, or access up to six months of historical tweet data.
+    description: str = """This tool uses the Elfa API to search tweets mentioning up to five keywords.  It can search within the past 30 days of data, which is updated every 5 minutes, or access up to six months of historical tweet data.
 
         This tool is useful for:
 
@@ -420,7 +415,6 @@ class ElfaSearchMentions(ElfaBaseTool):
         * **Competitive Analysis:**  See what people are saying about your competitors.
 
         To use this tool, provide up to five keywords.  You can also specify whether you want to search recent or historical tweets."""
-    )
     args_schema: Type[BaseModel] = ElfaSearchMentionsInput
 
     def _run(
