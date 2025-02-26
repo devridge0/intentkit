@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 
@@ -66,8 +67,10 @@ async def _process_agent(
         if agent_data and agent_data.cdp_wallet_data:
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
-        # Clean agent memory
-        await clean_agent_memory(latest_agent.id, clean_agent_memory=True)
+        # Run clean_agent_memory in background
+        asyncio.create_task(
+            clean_agent_memory(latest_agent.id, clean_agent_memory=True)
+        )
 
     if not has_wallet:
         # create the wallet
@@ -357,7 +360,10 @@ async def clean_memory(
 
 
 @admin_router_readonly.get(
-    "/agents/{agent_id}/export", tags=["Agent"], operation_id="export_agent"
+    "/agents/{agent_id}/export",
+    tags=["Agent"],
+    operation_id="export_agent",
+    dependencies=[Depends(verify_jwt)],
 )
 async def export_agent(
     agent_id: str,

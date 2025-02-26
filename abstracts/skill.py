@@ -36,6 +36,12 @@ class SkillStoreABC(ABC):
     for both agents and threads.
     """
 
+    @staticmethod
+    @abstractmethod
+    def get_system_config(key: str) -> Any:
+        """Get system configuration value by key."""
+        pass
+
     @abstractmethod
     async def get_agent_skill_data(
         self, agent_id: str, skill: str, key: str
