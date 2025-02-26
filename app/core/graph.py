@@ -317,9 +317,8 @@ def create_agent(
 
         # Count total tokens
         total_tokens = _count_tokens(messages)
-        token_limit = (
-            state.get("input_token_limit", 120000) // 2
-        )  # Half of the input token limit
+        # Half of the input token limit will be reserved
+        token_limit = input_token_limit // 2
 
         # If over token limit, remove messages from front
         if total_tokens > token_limit:
