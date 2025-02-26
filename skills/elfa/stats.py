@@ -51,8 +51,7 @@ class ElfaGetSmartStats(ElfaBaseTool):
     """
 
     name: str = "elfa_get_smart_stats"
-    description: str = (
-        """This tool uses the Elfa API to retrieve key social media metrics for a given username.  These metrics include:
+    description: str = """This tool uses the Elfa API to retrieve key social media metrics for a given username.  These metrics include:
 
         * **Smart Following Count:** A metric representing the number of high-quality or influential followers.
         * **Engagement Score:** A composite score reflecting the level of interaction with the user's content.
@@ -64,7 +63,6 @@ class ElfaGetSmartStats(ElfaBaseTool):
         * **Influencer Identification:** Identify influential users in your niche.
         * **Social Media Audits:**  Assess the overall health and effectiveness of a social media presence.
         """
-    )
     args_schema: Type[BaseModel] = ElfaGetSmartStatsInput
 
     def _run(self, username: str) -> ElfaGetSmartStatsOutput:

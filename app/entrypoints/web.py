@@ -18,6 +18,7 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from pydantic import BaseModel, Field
 from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -27,6 +28,7 @@ from app.core.prompt import agent_prompt
 from models.agent import Agent, AgentData, AgentQuota
 from models.chat import (
     AuthorType,
+    Chat,
     ChatMessage,
     ChatMessageRequest,
 )
@@ -617,3 +619,130 @@ async def create_chat(
         if isinstance(e, HTTPException):
             raise
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@chat_router_readonly.get(
+    "/agents/{aid}/chats",
+    response_model=List[Chat],
+    summary="Get chat list by agent and user",
+    tags=["Chat"],
+)
+async def get_agent_chats(
+    aid: str = Path(..., description="Agent ID"),
+    user_id: str = Query(..., description="User ID"),
+):
+    """Get chat list for a specific agent and user.
+
+    **Parameters:**
+    * `aid` - Agent ID
+    * `user_id` - User ID
+
+    **Returns:**
+    * `List[Chat]` - List of chats for the specified agent and user
+
+    **Raises:**
+    * `404` - Agent not found
+    """
+    # Verify agent exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get chats by agent and user
+    chats = await Chat.get_by_agent_user(aid, user_id)
+    return chats
+
+
+class ChatSummaryUpdate(BaseModel):
+    """Request model for updating chat summary."""
+
+    summary: str = Field(
+        ...,
+        description="New summary text for the chat",
+        examples=["User asked about product features and pricing"],
+        min_length=1,
+    )
+
+
+@chat_router.put(
+    "/agents/{aid}/chats/{chat_id}",
+    response_model=Chat,
+    summary="Update chat summary",
+    tags=["Chat"],
+)
+async def update_chat_summary(
+    update_data: ChatSummaryUpdate,
+    aid: str = Path(..., description="Agent ID"),
+    chat_id: str = Path(..., description="Chat ID"),
+):
+    """Update the summary of a specific chat.
+
+    **Parameters:**
+    * `aid` - Agent ID
+    * `chat_id` - Chat ID
+    * `update_data` - Summary update data (in request body)
+
+    **Returns:**
+    * `Chat` - Updated chat object
+
+    **Raises:**
+    * `404` - Agent or chat not found
+    """
+    # Verify agent exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get chat
+    chat = await Chat.get(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    # Verify chat belongs to agent
+    if chat.agent_id != aid:
+        raise HTTPException(status_code=404, detail="Chat not found for this agent")
+
+    # Update summary
+    updated_chat = await chat.update_summary(update_data.summary)
+    return updated_chat
+
+
+@chat_router.delete(
+    "/agents/{aid}/chats/{chat_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a chat",
+    tags=["Chat"],
+)
+async def delete_chat(
+    aid: str = Path(..., description="Agent ID"),
+    chat_id: str = Path(..., description="Chat ID"),
+):
+    """Delete a specific chat.
+
+    **Parameters:**
+    * `aid` - Agent ID
+    * `chat_id` - Chat ID
+
+    **Returns:**
+    * `204 No Content` - Success
+
+    **Raises:**
+    * `404` - Agent or chat not found
+    """
+    # Verify agent exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get chat
+    chat = await Chat.get(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    # Verify chat belongs to agent
+    if chat.agent_id != aid:
+        raise HTTPException(status_code=404, detail="Chat not found for this agent")
+
+    # Delete chat
+    await chat.delete()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
