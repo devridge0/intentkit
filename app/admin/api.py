@@ -201,17 +201,16 @@ async def create_agent(
     3. Reinitializes agent if already in cache
     4. Masks sensitive data in response
 
-    Args:
-      - agent: Agent configuration
-      - db: Database session
+    **Request Body:**
+    * `agent` - Agent configuration
 
-    Returns:
-      - AgentResponse: Updated agent configuration with additional processed data
+    **Returns:**
+    * `AgentResponse` - Updated agent configuration with additional processed data
 
-    Raises:
-      - HTTPException:
-          - 400: Invalid agent ID format
-          - 500: Database error
+    **Raises:**
+    * `HTTPException`:
+        - 400: Invalid agent ID format
+        - 500: Database error
     """
     latest_agent, agent_data = await _process_agent(agent, subject)
     return AgentResponse.from_agent(latest_agent, agent_data)
@@ -226,11 +225,8 @@ async def create_agent(
 async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     """Get all agents with their quota information.
 
-    Args:
-        db: Database session
-
-    Returns:
-        list[AgentResponse]: List of agents with their quota information and additional processed data
+    **Returns:**
+    * `list[AgentResponse]` - List of agents with their quota information and additional processed data
     """
     # Query all agents first
     agents = (await db.exec(select(Agent))).all()
@@ -255,19 +251,21 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     dependencies=[Depends(verify_jwt)],
     operation_id="get_agent",
 )
-async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)) -> AgentResponse:
+async def get_agent(
+    agent_id: str = Path(..., description="ID of the agent to retrieve"),
+    db: AsyncSession = Depends(get_db),
+) -> AgentResponse:
     """Get a single agent by ID.
 
-    Args:
-        agent_id: ID of the agent to retrieve
-        db: Database session
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to retrieve
 
-    Returns:
-        AgentResponse: Agent configuration with additional processed data
+    **Returns:**
+    * `AgentResponse` - Agent configuration with additional processed data
 
-    Raises:
-        HTTPException:
-            - 404: Agent not found
+    **Raises:**
+    * `HTTPException`:
+        - 404: Agent not found
     """
     agent = (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
     if not agent:
@@ -309,23 +307,23 @@ class MemCleanRequest(BaseModel):
 )
 async def clean_memory(
     request: MemCleanRequest = Body(
-        MemCleanRequest, description="Agent memory cleanup requestd"
+        MemCleanRequest, description="Agent memory cleanup request"
     ),
     db: AsyncSession = Depends(get_db),
 ) -> str:
     """Clear an agent memory.
 
-    Args:
-        request (MemCleanRequest): The execution request containing agent ID, message, and thread ID
+    **Request Body:**
+    * `request` - The execution request containing agent ID, message, and thread ID
 
-    Returns:
-        str: Formatted response lines from agent memory cleanup
+    **Returns:**
+    * `str` - Formatted response lines from agent memory cleanup
 
-    Raises:
-        HTTPException:
-            - 400: If input parameters are invalid (empty agent_id, thread_id, or message text)
-            - 404: If agent not found
-            - 500: For other server-side errors
+    **Raises:**
+    * `HTTPException`:
+        - 400: If input parameters are invalid (empty agent_id, thread_id, or message text)
+        - 404: If agent not found
+        - 500: For other server-side errors
     """
     # Validate input parameters
     if not request.agent_id or not request.agent_id.strip():
@@ -366,19 +364,19 @@ async def clean_memory(
     dependencies=[Depends(verify_jwt)],
 )
 async def export_agent(
-    agent_id: str,
+    agent_id: str = Path(..., description="ID of the agent to export"),
 ) -> str:
     """Export agent configuration as YAML.
 
-    Args:
-        agent_id: ID of the agent to export
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to export
 
-    Returns:
-        str: YAML configuration of the agent
+    **Returns:**
+    * `str` - YAML configuration of the agent
 
-    Raises:
-        HTTPException:
-            - 404: Agent not found
+    **Raises:**
+    * `HTTPException`:
+        - 404: Agent not found
     """
     try:
         agent = await Agent.get(agent_id)
@@ -414,20 +412,20 @@ async def import_agent(
     """Import agent configuration from YAML file.
     Only updates existing agents, will not create new ones.
 
-    Args:
-        agent_id: ID of the agent to update
-        file: YAML file containing agent configuration
-        subject: JWT subject for authorization
-        db: Database session
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to update
 
-    Returns:
-        str: Success message
+    **Request Body:**
+    * `file` - YAML file containing agent configuration
 
-    Raises:
-        HTTPException:
-            - 400: Invalid YAML or agent configuration
-            - 404: Agent not found
-            - 500: Server error
+    **Returns:**
+    * `str` - Success message
+
+    **Raises:**
+    * `HTTPException`:
+        - 400: Invalid YAML or agent configuration
+        - 404: Agent not found
+        - 500: Server error
     """
     try:
         # First check if agent exists
