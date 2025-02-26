@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.exception_handlers import http_exception_handler
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.admin import (
@@ -73,6 +74,14 @@ async def global_exception_handler(request, exc):
         logger.error(f"Internal Server Error for request {request.url}: {str(exc)}")
     return await http_exception_handler(request, exc)
 
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 app.include_router(chat_router)
 app.include_router(chat_router_readonly)
