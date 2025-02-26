@@ -189,11 +189,14 @@ async def debug_chat(
     3. Executes the agent with the query
     4. Updates quota usage
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
     * `q` - User's input query
     * `debug` - Enable debug mode (show whole skill response)
     * `thread` - Thread ID for conversation tracking
+    * `chat_id` - Chat ID for conversation tracking
 
     **Returns:**
     * `str` - Formatted chat response
@@ -291,8 +294,10 @@ async def get_chat_history(
     * `public` - Public chat history in X and TG groups
     * `owner` - Owner chat history (coming soon)
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
     * `chat_id` - Chat ID to get history for
 
     **Returns:**
@@ -340,8 +345,10 @@ async def retry_chat_deprecated(
     If the last message is from the agent, return it directly.
     If the last message is from a user, generate a new agent response.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
     * `chat_id` - Chat ID to retry
 
     **Returns:**
@@ -411,8 +418,10 @@ async def retry_chat(
     If the last message is from the agent, return it directly.
     If the last message is from a user, generate a new agent response.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
     * `chat_id` - Chat ID to retry
 
     **Returns:**
@@ -488,12 +497,14 @@ async def create_chat_deprecated(
     > **Note:** This is for internal/private use and may have additional features or fewer
     > restrictions compared to the public endpoint.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Request Body:**
     * `request` - Chat message request object
 
     **Returns:**
-    * `List[ChatMessage]` - List of chat messages including both user input and agent response
+    * `ChatMessage` - Agent's response message
 
     **Raises:**
     * `404` - Agent not found
@@ -564,8 +575,13 @@ async def create_chat(
     > **Note:** This is the public-facing endpoint with appropriate rate limiting
     > and security measures.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
+    * `owner_mode` - Enable owner mode
+
+    **Request Body:**
     * `request` - Chat message request object
 
     **Returns:**
@@ -624,8 +640,9 @@ async def create_chat(
 @chat_router_readonly.get(
     "/agents/{aid}/chats",
     response_model=List[Chat],
-    summary="Get chat list by agent and user",
+    summary="User Chat List",
     tags=["Chat"],
+    operation_id="get_agent_chats",
 )
 async def get_agent_chats(
     aid: str = Path(..., description="Agent ID"),
@@ -633,8 +650,10 @@ async def get_agent_chats(
 ):
     """Get chat list for a specific agent and user.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
+
+    **Query Parameters:**
     * `user_id` - User ID
 
     **Returns:**
@@ -667,8 +686,9 @@ class ChatSummaryUpdate(BaseModel):
 @chat_router.put(
     "/agents/{aid}/chats/{chat_id}",
     response_model=Chat,
-    summary="Update chat summary",
+    summary="Update Chat Summary",
     tags=["Chat"],
+    operation_id="update_chat_summary",
 )
 async def update_chat_summary(
     update_data: ChatSummaryUpdate,
@@ -677,9 +697,11 @@ async def update_chat_summary(
 ):
     """Update the summary of a specific chat.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
     * `chat_id` - Chat ID
+
+    **Request Body:**
     * `update_data` - Summary update data (in request body)
 
     **Returns:**
@@ -710,8 +732,9 @@ async def update_chat_summary(
 @chat_router.delete(
     "/agents/{aid}/chats/{chat_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a chat",
+    summary="Delete a Chat",
     tags=["Chat"],
+    operation_id="delete_chat",
 )
 async def delete_chat(
     aid: str = Path(..., description="Agent ID"),
@@ -719,7 +742,7 @@ async def delete_chat(
 ):
     """Delete a specific chat.
 
-    **Parameters:**
+    **Path Parameters:**
     * `aid` - Agent ID
     * `chat_id` - Chat ID
 
