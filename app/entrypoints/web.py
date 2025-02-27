@@ -288,7 +288,7 @@ async def get_chat_history(
     chat_id: str = Query(..., description="Chat ID to get history for"),
     db: AsyncSession = Depends(get_db),
 ) -> List[ChatMessage]:
-    """Get chat history for a specific chat.
+    """Get last 50 messages for a specific chat.
 
     **Special Chat IDs:**
     * `autonomous` - Autonomous log
@@ -402,6 +402,15 @@ async def retry_chat_deprecated(
 
 
 @chat_router.put(
+    "/agents/{aid}/chat/retry/v2",
+    tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
+    response_model=list[ChatMessage],
+    operation_id="retry_chat",
+    summary="Retry Chat",
+    deprecated=True,
+)
+@chat_router.post(
     "/agents/{aid}/chat/retry/v2",
     tags=["Chat"],
     dependencies=[Depends(verify_jwt)],
@@ -701,6 +710,14 @@ class ChatSummaryUpdate(BaseModel):
 
 
 @chat_router.put(
+    "/agents/{aid}/chats/{chat_id}",
+    response_model=Chat,
+    summary="Update Chat Summary",
+    tags=["Chat"],
+    deprecated=True,
+    operation_id="update_chat_summary",
+)
+@chat_router.patch(
     "/agents/{aid}/chats/{chat_id}",
     response_model=Chat,
     summary="Update Chat Summary",
