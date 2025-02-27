@@ -27,7 +27,7 @@ async def get_agent_schema() -> JSONResponse:
 
     **Returns:**
     * `JSONResponse` - The complete JSON schema for the Agent model with application/json content type
-"""
+    """
     base_uri = f"file://{AGENT_SCHEMA_PATH}"
     with open(AGENT_SCHEMA_PATH) as f:
         schema = jsonref.load(f, base_uri=base_uri, proxies=False, lazy_load=False)
@@ -48,9 +48,7 @@ async def get_agent_schema() -> JSONResponse:
     },
 )
 async def get_skill_schema(
-    skill: str = PathParam(
-        ..., description="Skill name", regex="^[a-zA-Z0-9_-]+$"
-    ),
+    skill: str = PathParam(..., description="Skill name", regex="^[a-zA-Z0-9_-]+$"),
 ) -> JSONResponse:
     """Get the JSON schema for a specific skill.
 
@@ -62,7 +60,7 @@ async def get_skill_schema(
 
     **Raises:**
     * `HTTPException` - If the skill is not found or name is invalid
-"""
+    """
     base_path = PROJECT_ROOT / "skills"
     schema_path = base_path / skill / "schema.json"
     normalized_path = schema_path.resolve()

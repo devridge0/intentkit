@@ -50,7 +50,7 @@ async def twitter_oauth_callback(
 
     **Returns:**
     * JSONResponse or RedirectResponse depending on redirect_uri
-"""
+    """
     if not state:
         raise HTTPException(status_code=400, detail="Missing state parameter")
 

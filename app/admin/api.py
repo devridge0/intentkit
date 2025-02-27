@@ -68,9 +68,7 @@ async def _process_agent(
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
         # Run clean_agent_memory in background
-        asyncio.create_task(
-            clean_agent_memory(latest_agent.id, clean_agent_memory=True)
-        )
+        asyncio.create_task(clean_agent_memory(latest_agent.id, clean_agent=True))
 
     if not has_wallet:
         # create the wallet
@@ -287,7 +285,7 @@ class MemCleanRequest(BaseModel):
 
     Attributes:
         agent_id (str): Agent ID to clean
-        thread_id (str): Thread ID to clean
+        chat_id (str): Chat ID to clean
         clean_skills_memory (bool): To clean the skills data.
         clean_agent_memory (bool): To clean the agent memory.
     """
@@ -295,7 +293,7 @@ class MemCleanRequest(BaseModel):
     agent_id: str
     clean_agent_memory: bool
     clean_skills_memory: bool
-    thread_id: str | None = Field("")
+    chat_id: str | None = Field("")
 
 
 @admin_router.post(
@@ -330,9 +328,7 @@ async def clean_memory(
         raise HTTPException(status_code=400, detail="Agent ID cannot be empty")
 
     try:
-        agent = (
-            await db.exec(select(Agent).where(Agent.id == request.agent_id))
-        ).first()
+        agent = await Agent.get(request.agent_id)
         if not agent:
             raise HTTPException(
                 status_code=404,
@@ -341,9 +337,9 @@ async def clean_memory(
 
         return await clean_agent_memory(
             request.agent_id,
-            request.thread_id,
-            clean_agent_memory=request.clean_agent_memory,
-            clean_skills_memory=request.clean_skills_memory,
+            request.chat_id,
+            clean_agent=request.clean_agent_memory,
+            clean_skill=request.clean_skills_memory,
         )
     except NoResultFound:
         raise HTTPException(
