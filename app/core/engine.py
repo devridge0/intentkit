@@ -149,6 +149,19 @@ async def initialize_agent(aid, is_private=False):
         )
         if input_token_limit > 120000:
             input_token_limit = 120000
+    elif agent.model == "eternalai":
+        agent.model = "unsloth/Llama-3.3-70B-Instruct-bnb-4bit"
+        llm = ChatOpenAI(
+            model_name=agent.model,
+            openai_api_key=config.eternal_api_key,
+            openai_api_base="https://api.eternalai.org/v1",
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
+            timeout=300,
+        )
+        if input_token_limit > 60000:
+            input_token_limit = 60000
     else:
         llm = ChatOpenAI(
             model_name=agent.model,
