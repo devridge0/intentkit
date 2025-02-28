@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "public_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "current_time"
+        ]
+      },
+      "description": "List of common public utility skills that are available to all users"
+    },
+    "private_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "current_time"
+        ]
+      },
+      "description": "List of common private utility skills that are only available to privileged users"
+    }
+  },
+  "required": ["public_skills"]
+}
