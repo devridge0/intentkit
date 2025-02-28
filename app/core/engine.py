@@ -494,7 +494,14 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
 
     thread_id = f"{message.agent_id}-{message.chat_id}"
 
-    stream_config = {"configurable": {"thread_id": thread_id}}
+    stream_config = {
+        "configurable": {
+            "thread_id": thread_id,
+            "agent_id": message.agent_id,
+            "user_id": message.author_id,
+            "entrypoint": message.author_type,
+        }
+    }
     resp = []
     start = time.perf_counter()
 
