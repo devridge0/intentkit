@@ -8,11 +8,11 @@ from typing import Dict
 import sentry_sdk
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlmodel import select
+from sqlalchemy import select
 
 from app.config.config import config
 from app.entrypoints.autonomous import run_autonomous_agents, run_autonomous_task
-from models.agent import Agent
+from models.agent import Agent, AgentTable
 from models.db import get_session, init_db
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,12 @@ async def schedule_agent_autonomous_tasks(scheduler: AsyncIOScheduler):
 
     async with get_session() as db:
         # Get all agents with autonomous configuration
-        query = select(Agent).where(Agent.autonomous != None)  # noqa: E711
+        query = select(AgentTable).where(AgentTable.autonomous != None)  # noqa: E711
         result = await db.exec(query)
         agents = result.all()
 
-        for agent in agents:
+        for item in agents:
+            agent = Agent.model_validate(item)
             if not agent.autonomous or len(agent.autonomous) == 0:
                 continue
 

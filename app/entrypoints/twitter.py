@@ -3,10 +3,10 @@ from datetime import datetime, timedelta, timezone
 
 import tweepy
 from epyxid import XID
-from sqlmodel import select
+from sqlalchemy import select
 
 from app.core.engine import execute_agent
-from models.agent import Agent, AgentPluginData, AgentQuota
+from models.agent import Agent, AgentPluginData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage
 from models.db import get_session
 
@@ -37,14 +37,15 @@ async def run_twitter_agents():
     async with get_session() as db:
         # Get all twitter-enabled agents
         result = await db.exec(
-            select(Agent).where(
-                Agent.twitter_entrypoint_enabled == True,  # noqa: E712
-                Agent.twitter_config != None,  # noqa: E711
+            select(AgentTable).where(
+                AgentTable.twitter_entrypoint_enabled == True,  # noqa: E712
+                AgentTable.twitter_config != None,  # noqa: E711
             )
         )
         agents = result.all()
 
-        for agent in agents:
+        for item in agents:
+            agent = Agent.model_validate(item)
             try:
                 # Get agent quota
                 quota = await AgentQuota.get(agent.id)

@@ -2,10 +2,10 @@ import logging
 from datetime import datetime, timedelta
 
 from epyxid import XID
-from sqlmodel import select
+from sqlalchemy import select
 
 from app.core.engine import execute_agent
-from models.agent import Agent, AgentQuota
+from models.agent import Agent, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage
 from models.db import get_session
 
@@ -20,14 +20,15 @@ async def run_autonomous_agents():
     async with get_session() as db:
         # Get all autonomous agents
         agents = await db.exec(
-            select(Agent).where(
-                Agent.autonomous_enabled == True,  # noqa: E712
-                Agent.autonomous_prompt != None,  # noqa: E711
-                Agent.autonomous_minutes != None,  # noqa: E711
+            select(AgentTable).where(
+                AgentTable.autonomous_enabled == True,  # noqa: E712
+                AgentTable.autonomous_prompt != None,  # noqa: E711
+                AgentTable.autonomous_minutes != None,  # noqa: E711
             )
         )
 
-        for agent in agents.all():
+        for item in agents.all():
+            agent = Agent.model_validate(item)
             try:
                 # Get agent quota
                 quota = await AgentQuota.get(agent.id)
