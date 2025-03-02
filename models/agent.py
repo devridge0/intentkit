@@ -12,14 +12,12 @@ from pydantic import Field as PydanticField
 from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func, select
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import declarative_base
 
+from models.base import Base
 from models.db import get_session
 from models.skill import SkillConfig
 
 logger = logging.getLogger(__name__)
-
-Base = declarative_base()
 
 
 class AgentAutonomous(BaseModel):

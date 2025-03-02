@@ -16,11 +16,9 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
 
+from models.base import Base
 from models.db import get_session
-
-Base = declarative_base()
 
 
 class ChatMessageAttachmentType(str, Enum):
