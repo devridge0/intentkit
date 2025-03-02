@@ -265,17 +265,10 @@ async def get_agent(
     * `HTTPException`:
         - 404: Agent not found
     """
-    agent = (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
-    if not agent:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Agent with id {agent_id} not found",
-        )
+    agent = await Agent.get(agent_id)
 
     # Get agent data
-    agent_data = (
-        await db.exec(select(AgentData).where(AgentData.id == agent_id))
-    ).first()
+    agent_data = await AgentData.get(agent_id)
 
     return AgentResponse.from_agent(agent, agent_data)
 
