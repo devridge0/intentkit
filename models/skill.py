@@ -4,11 +4,9 @@ from typing import Annotated, Any, Dict, List, NotRequired, Optional, TypedDict
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Column, DateTime, String, delete, func, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.declarative import declarative_base
 
+from models.base import Base
 from models.db import get_session
-
-Base = declarative_base()
 
 
 class SkillConfig(TypedDict):
