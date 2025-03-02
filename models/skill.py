@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List, NotRequired, Optional, TypedDict
+from typing import Annotated, Any, Dict, List, NotRequired, Optional, TypedDict
 
-from sqlalchemy import Column, DateTime, delete, func
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import Column, DateTime, String, delete, func, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field, SQLModel, select
+from sqlalchemy.ext.declarative import declarative_base
 
 from models.db import get_session
+
+Base = declarative_base()
 
 
 class SkillConfig(TypedDict):
@@ -16,39 +19,91 @@ class SkillConfig(TypedDict):
     __extra__: NotRequired[Dict[str, Any]]
 
 
-class AgentSkillData(SQLModel, table=True):
+class AgentSkillDataTable(Base):
+    """Database table model for storing skill-specific data for agents."""
+
+    __tablename__ = "agent_skill_data"
+
+    agent_id = Column(String, primary_key=True)
+    skill = Column(String, primary_key=True)
+    key = Column(String, primary_key=True)
+    data = Column(JSONB, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class AgentSkillDataCreate(BaseModel):
+    """Base model for creating agent skill data records."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    agent_id: Annotated[str, Field(description="ID of the agent this data belongs to")]
+    skill: Annotated[str, Field(description="Name of the skill this data is for")]
+    key: Annotated[str, Field(description="Key for this specific piece of data")]
+    data: Annotated[Dict[str, Any], Field(description="JSON data stored for this key")]
+
+    async def save(self) -> "AgentSkillData":
+        """Save or update skill data.
+
+        Returns:
+            AgentSkillData: The saved agent skill data instance
+        """
+        async with get_session() as db:
+            existing = (
+                await db.exec(
+                    select(AgentSkillDataTable).where(
+                        AgentSkillDataTable.agent_id == self.agent_id,
+                        AgentSkillDataTable.skill == self.skill,
+                        AgentSkillDataTable.key == self.key,
+                    )
+                )
+            ).first()
+
+            now = datetime.now(timezone.utc)
+
+            if existing:
+                # Update existing record
+                existing.data = self.data
+                existing.updated_at = now
+                db.add(existing)
+                await db.commit()
+                await db.refresh(existing)
+                return AgentSkillData.model_validate(existing)
+            else:
+                # Create new record
+                record = AgentSkillDataTable(**self.model_dump())
+                db.add(record)
+                await db.commit()
+                await db.refresh(record)
+                return AgentSkillData.model_validate(record)
+
+
+class AgentSkillData(AgentSkillDataCreate):
     """Model for storing skill-specific data for agents.
 
     This model uses a composite primary key of (agent_id, skill, key) to store
     skill-specific data for agents in a flexible way.
-
-    Attributes:
-        agent_id: ID of the agent this data belongs to
-        skill: Name of the skill this data is for
-        key: Key for this specific piece of data
-        data: JSON data stored for this key
     """
 
-    __tablename__ = "agent_skill_data"
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
+    )
 
-    agent_id: str = Field(primary_key=True)
-    skill: str = Field(primary_key=True)
-    key: str = Field(primary_key=True)
-    data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
-    created_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={"server_default": func.now()},
-        nullable=False,
-    )
-    updated_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={
-            "onupdate": lambda: datetime.now(timezone.utc),
-        },
-        nullable=False,
-    )
+    created_at: Annotated[
+        datetime, Field(description="Timestamp when this data was created")
+    ]
+    updated_at: Annotated[
+        datetime, Field(description="Timestamp when this data was updated")
+    ]
 
     @classmethod
     async def get(cls, agent_id: str, skill: str, key: str) -> Optional[dict]:
@@ -65,76 +120,122 @@ class AgentSkillData(SQLModel, table=True):
         async with get_session() as db:
             result = (
                 await db.exec(
-                    select(cls).where(
-                        cls.agent_id == agent_id,
-                        cls.skill == skill,
-                        cls.key == key,
+                    select(AgentSkillDataTable).where(
+                        AgentSkillDataTable.agent_id == agent_id,
+                        AgentSkillDataTable.skill == skill,
+                        AgentSkillDataTable.key == key,
                     )
                 )
             ).first()
         return result.data if result else None
 
-    async def save(self) -> None:
-        """Save or update skill data."""
+    @classmethod
+    async def clean_data(cls, agent_id: str):
+        """Clean all skill data for an agent.
+
+        Args:
+            agent_id: ID of the agent
+        """
+        async with get_session() as db:
+            await db.exec(
+                delete(AgentSkillDataTable).where(
+                    AgentSkillDataTable.agent_id == agent_id
+                )
+            )
+            await db.commit()
+
+
+class ThreadSkillDataTable(Base):
+    """Database table model for storing skill-specific data for threads."""
+
+    __tablename__ = "thread_skill_data"
+
+    thread_id = Column(String, primary_key=True)
+    skill = Column(String, primary_key=True)
+    key = Column(String, primary_key=True)
+    agent_id = Column(String, nullable=False)
+    data = Column(JSONB, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ThreadSkillDataCreate(BaseModel):
+    """Base model for creating thread skill data records."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    thread_id: Annotated[
+        str, Field(description="ID of the thread this data belongs to")
+    ]
+    skill: Annotated[str, Field(description="Name of the skill this data is for")]
+    key: Annotated[str, Field(description="Key for this specific piece of data")]
+    agent_id: Annotated[str, Field(description="ID of the agent that owns this thread")]
+    data: Annotated[Dict[str, Any], Field(description="JSON data stored for this key")]
+
+    async def save(self) -> "ThreadSkillData":
+        """Save or update skill data.
+
+        Returns:
+            ThreadSkillData: The saved thread skill data instance
+        """
         async with get_session() as db:
             existing = (
                 await db.exec(
-                    select(self.__class__).where(
-                        self.__class__.agent_id == self.agent_id,
-                        self.__class__.skill == self.skill,
-                        self.__class__.key == self.key,
+                    select(ThreadSkillDataTable).where(
+                        ThreadSkillDataTable.thread_id == self.thread_id,
+                        ThreadSkillDataTable.skill == self.skill,
+                        ThreadSkillDataTable.key == self.key,
                     )
                 )
             ).first()
+
+            now = datetime.now(timezone.utc)
+
             if existing:
+                # Update existing record
                 existing.data = self.data
+                existing.agent_id = self.agent_id
+                existing.updated_at = now
                 db.add(existing)
+                await db.commit()
+                await db.refresh(existing)
+                return ThreadSkillData.model_validate(existing)
             else:
-                db.add(self)
-            await db.commit()
+                # Create new record
+                record = ThreadSkillDataTable(**self.model_dump())
+                db.add(record)
+                await db.commit()
+                await db.refresh(record)
+                return ThreadSkillData.model_validate(record)
 
-    @classmethod
-    async def clean_data(cls, agent_id: str):
-        async with get_session() as db:
-            await db.exec(delete(cls).where(cls.agent_id == agent_id))
 
-
-class ThreadSkillData(SQLModel, table=True):
+class ThreadSkillData(ThreadSkillDataCreate):
     """Model for storing skill-specific data for threads.
 
     This model uses a composite primary key of (thread_id, skill, key) to store
     skill-specific data for threads in a flexible way. It also includes agent_id
     as a required field for tracking ownership.
-
-    Attributes:
-        thread_id: ID of the thread this data belongs to
-        agent_id: ID of the agent that owns this thread
-        skill: Name of the skill this data is for
-        key: Key for this specific piece of data
-        data: JSON data stored for this key
     """
 
-    __tablename__ = "thread_skill_data"
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
+    )
 
-    thread_id: str = Field(primary_key=True)
-    skill: str = Field(primary_key=True)
-    key: str = Field(primary_key=True)
-    agent_id: str = Field(nullable=False)
-    data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
-    created_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={"server_default": func.now()},
-        nullable=False,
-    )
-    updated_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={
-            "onupdate": lambda: datetime.now(timezone.utc),
-        },
-        nullable=False,
-    )
+    created_at: Annotated[
+        datetime, Field(description="Timestamp when this data was created")
+    ]
+    updated_at: Annotated[
+        datetime, Field(description="Timestamp when this data was updated")
+    ]
 
     @classmethod
     async def get(cls, thread_id: str, skill: str, key: str) -> Optional[dict]:
@@ -144,7 +245,6 @@ class ThreadSkillData(SQLModel, table=True):
             thread_id: ID of the thread
             skill: Name of the skill
             key: Data key
-            db: Database session
 
         Returns:
             Dictionary containing the skill data if found, None otherwise
@@ -152,47 +252,36 @@ class ThreadSkillData(SQLModel, table=True):
         async with get_session() as db:
             result = (
                 await db.exec(
-                    select(cls).where(
-                        cls.thread_id == thread_id,
-                        cls.skill == skill,
-                        cls.key == key,
+                    select(ThreadSkillDataTable).where(
+                        ThreadSkillDataTable.thread_id == thread_id,
+                        ThreadSkillDataTable.skill == skill,
+                        ThreadSkillDataTable.key == key,
                     )
                 )
             ).first()
         return result.data if result else None
 
-    async def save(self) -> None:
-        """Save or update skill data.
+    @classmethod
+    async def clean_data(cls, agent_id: str, thread_id: str = ""):
+        """Clean all skill data for a thread or agent.
 
         Args:
-            db: Database session
+            agent_id: ID of the agent
+            thread_id: Optional ID of the thread. If provided, only cleans data for that thread.
+                      If empty, cleans all data for the agent.
         """
-        async with get_session() as db:
-            existing = (
-                await db.exec(
-                    select(self.__class__).where(
-                        self.__class__.thread_id == self.thread_id,
-                        self.__class__.skill == self.skill,
-                        self.__class__.key == self.key,
-                    )
-                )
-            ).first()
-            if existing:
-                existing.data = self.data
-                existing.agent_id = self.agent_id
-                db.add(existing)
-            else:
-                db.add(self)
-            await db.commit()
-
-    @classmethod
-    async def clean_data(cls, agent_id: str, thread_id: str):
         async with get_session() as db:
             if thread_id and thread_id != "":
                 await db.exec(
-                    delete(cls).where(
-                        cls.agent_id == agent_id, cls.thread_id == thread_id
+                    delete(ThreadSkillDataTable).where(
+                        ThreadSkillDataTable.agent_id == agent_id,
+                        ThreadSkillDataTable.thread_id == thread_id,
                     )
                 )
             else:
-                await db.exec(delete(cls).where(cls.agent_id == agent_id))
+                await db.exec(
+                    delete(ThreadSkillDataTable).where(
+                        ThreadSkillDataTable.agent_id == agent_id
+                    )
+                )
+            await db.commit()
