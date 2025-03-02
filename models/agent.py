@@ -1,239 +1,850 @@
 import json
 import logging
+import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 import yaml
 from epyxid import XID
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, constr, field_validator, model_validator
+from pydantic import Field as PydanticField
 from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlmodel import Field, SQLModel, select
+from sqlalchemy.orm import declarative_base
+from sqlmodel import Field as SQLModelField
+from sqlmodel import SQLModel, select
 
 from models.db import get_session
 from models.skill import SkillConfig
 
 logger = logging.getLogger(__name__)
 
+Base = declarative_base()
 
-class Agent(SQLModel, table=True):
-    """Agent model."""
+
+class AgentAutonomous(BaseModel):
+    """Autonomous agent configuration."""
+
+    id: Annotated[
+        str,
+        PydanticField(description="Unique identifier for the autonomous configuration"),
+    ]
+    name: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None, description="Display name of the autonomous configuration"
+        ),
+    ]
+    description: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None, description="Description of the autonomous configuration"
+        ),
+    ]
+    minutes: Annotated[
+        Optional[int],
+        PydanticField(
+            default=None,
+            description="Interval in minutes between operations, mutually exclusive with cron",
+        ),
+    ]
+    cron: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Cron expression for scheduling operations, mutually exclusive with minutes",
+        ),
+    ]
+    prompt: Annotated[
+        str,
+        PydanticField(description="Special prompt used during autonomous operation"),
+    ]
+    enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=True, description="Whether the autonomous configuration is enabled"
+        ),
+    ]
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, v: str) -> str:
+        if not v:
+            raise ValueError("id cannot be empty")
+        if len(v.encode()) > 20:
+            raise ValueError("id must be at most 20 bytes")
+        if not re.match(r"^[a-z0-9-]+$", v):
+            raise ValueError(
+                "id must contain only lowercase letters, numbers, and dashes"
+            )
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v.encode()) > 50:
+            raise ValueError("name must be at most 50 bytes")
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v.encode()) > 200:
+            raise ValueError("description must be at most 200 bytes")
+        return v
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v.encode()) > 2000:
+            raise ValueError("prompt must be at most 2000 bytes")
+        return v
+
+    @model_validator(mode="after")
+    def validate_schedule(self) -> "AgentAutonomous":
+        if self.minutes is None and self.cron is None:
+            raise ValueError("either minutes or cron must have a value")
+        return self
+
+
+class AgentTable(Base):
+    """Agent table db model."""
 
     __tablename__ = "agents"
 
-    id: str = Field(
+    id = Column(
+        String,
         primary_key=True,
-        description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
+        comment="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
     )
-    number: SkipJsonSchema[int] = Field(
-        sa_column=Column(BigInteger, Identity(start=1, increment=1), nullable=False),
-        description="Auto-incrementing number assigned by the system for easy reference",
+    number = Column(
+        BigInteger,
+        Identity(start=1, increment=1),
+        nullable=False,
+        comment="Auto-incrementing number assigned by the system for easy reference",
     )
-    name: Optional[str] = Field(default=None, description="Display name of the agent")
-    slug: Optional[str] = Field(
-        default=None,
-        description="Slug of the agent, used for URL generation",
+    name = Column(
+        String,
+        nullable=True,
+        comment="Display name of the agent",
     )
-    ticker: Optional[str] = Field(
-        default=None,
-        description="Ticker symbol of the agent",
+    slug = Column(
+        String,
+        nullable=True,
+        comment="Slug of the agent, used for URL generation",
     )
-    token_address: Optional[str] = Field(
-        default=None,
-        description="Token address of the agent",
+    ticker = Column(
+        String,
+        nullable=True,
+        comment="Ticker symbol of the agent",
     )
-    purpose: Optional[str] = Field(
-        default=None,
-        description="Purpose or role of the agent",
+    token_address = Column(
+        String,
+        nullable=True,
+        comment="Token address of the agent",
     )
-    personality: Optional[str] = Field(
-        default=None,
-        description="Personality traits of the agent",
+    purpose = Column(
+        String,
+        nullable=True,
+        comment="Purpose or role of the agent",
     )
-    principles: Optional[str] = Field(
-        default=None,
-        description="Principles or values of the agent",
+    personality = Column(
+        String,
+        nullable=True,
+        comment="Personality traits of the agent",
     )
-    owner: Optional[str] = Field(
-        default=None,
-        description="Owner identifier of the agent, used for access control",
+    principles = Column(
+        String,
+        nullable=True,
+        comment="Principles or values of the agent",
     )
-    upstream_id: Optional[str] = Field(
-        default=None, description="External reference ID for idempotent operations"
+    owner = Column(
+        String,
+        nullable=True,
+        comment="Owner identifier of the agent, used for access control",
+    )
+    upstream_id = Column(
+        String,
+        nullable=True,
+        comment="External reference ID for idempotent operations",
     )
     # AI part
-    model: Optional[str] = Field(
+    model = Column(
+        String,
+        nullable=True,
         default="gpt-4o-mini",
-        description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
+        comment="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
     )
-    prompt: Optional[str] = Field(
-        default=None,
-        description="Base system prompt that defines the agent's behavior and capabilities",
+    prompt = Column(
+        String,
+        nullable=True,
+        comment="Base system prompt that defines the agent's behavior and capabilities",
     )
-    prompt_append: Optional[str] = Field(
-        default=None,
-        description="Additional system prompt that has higher priority than the base prompt",
+    prompt_append = Column(
+        String,
+        nullable=True,
+        comment="Additional system prompt that has higher priority than the base prompt",
     )
-    temperature: Optional[float] = Field(
+    temperature = Column(
+        JSONB,
+        nullable=True,
         default=0.7,
-        description="AI model temperature parameter controlling response randomness (0.0~1.0)",
+        comment="AI model temperature parameter controlling response randomness (0.0~1.0)",
     )
-    frequency_penalty: Optional[float] = Field(
+    frequency_penalty = Column(
+        JSONB,
+        nullable=True,
         default=0.0,
-        description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+        comment="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
     )
-    presence_penalty: Optional[float] = Field(
+    presence_penalty = Column(
+        JSONB,
+        nullable=True,
         default=0.0,
-        description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+        comment="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
     )
     # autonomous mode
-    autonomous_enabled: Optional[bool] = Field(
+    autonomous = Column(
+        JSONB,
+        nullable=True,
+        comment="Autonomous agent configurations",
+    )
+    autonomous_enabled = Column(
+        JSONB,
+        nullable=True,
         default=False,
-        description="Whether the agent can operate autonomously without user input",
+        comment="Whether the agent can operate autonomously without user input",
     )
-    autonomous_minutes: Optional[int] = Field(
+    autonomous_minutes = Column(
+        JSONB,
+        nullable=True,
         default=240,
-        description="Interval in minutes between autonomous operations when enabled",
+        comment="Interval in minutes between autonomous operations when enabled",
     )
-    autonomous_prompt: Optional[str] = Field(
-        default=None, description="Special prompt used during autonomous operation mode"
+    autonomous_prompt = Column(
+        String,
+        nullable=True,
+        comment="Special prompt used during autonomous operation mode",
+    )
+    # skills
+    skills = Column(
+        JSONB,
+        nullable=True,
+        comment="Dict of skills and their corresponding configurations",
     )
     # if cdp_enabled, agent will have a cdp wallet
-    cdp_enabled: Optional[bool] = Field(
+    cdp_enabled = Column(
+        JSONB,
+        nullable=True,
         default=False,
-        description="Whether CDP (Crestal Development Platform) integration is enabled",
+        comment="Whether CDP (Crestal Development Platform) integration is enabled",
     )
-    cdp_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of CDP skills available to this agent",
+    cdp_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of CDP skills available to this agent",
     )
-    cdp_network_id: Optional[str] = Field(
-        default="base-mainnet", description="Network identifier for CDP integration"
+    cdp_network_id = Column(
+        String,
+        nullable=True,
+        default="base-mainnet",
+        comment="Network identifier for CDP integration",
     )
     # if goat_enabled, will load goat skills
-    crossmint_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Dict of Crossmint wallet configurations",
+    crossmint_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Dict of Crossmint wallet configurations",
     )
-    goat_enabled: Optional[bool] = Field(
+    goat_enabled = Column(
+        JSONB,
+        nullable=True,
         default=False,
-        description="Whether GOAT integration is enabled",
+        comment="Whether GOAT integration is enabled",
     )
-    goat_skills: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Dict of GOAT skills and their corresponding configurations",
+    goat_skills = Column(
+        JSONB,
+        nullable=True,
+        comment="Dict of GOAT skills and their corresponding configurations",
     )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
-    twitter_entrypoint_enabled: Optional[bool] = Field(
-        default=False, description="Whether the agent can receive events from Twitter"
+    twitter_entrypoint_enabled = Column(
+        JSONB,
+        nullable=True,
+        default=False,
+        comment="Whether the agent can receive events from Twitter",
     )
-    twitter_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Twitter integration configuration settings",
+    twitter_config = Column(
+        JSONB,
+        nullable=True,
+        comment="This configuration will be used for entrypoint only",
     )
     # twitter skills require config, but not require twitter_enabled flag.
     # As long as twitter_skills is not empty, the corresponding skills will be loaded.
-    twitter_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Twitter-specific skills available to this agent",
+    twitter_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Twitter-specific skills available to this agent",
     )
     # if telegram_entrypoint_enabled, the telegram_entrypoint_enabled will be enabled, telegram_config will be checked
-    telegram_entrypoint_enabled: Optional[bool] = Field(
-        default=False, description="Whether the agent can receive events from Telegram"
+    telegram_entrypoint_enabled = Column(
+        JSONB,
+        nullable=True,
+        default=False,
+        comment="Whether the agent can receive events from Telegram",
     )
-    telegram_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Telegram integration configuration settings",
+    telegram_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Telegram integration configuration settings",
     )
     # telegram skills not used for now
-    telegram_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Telegram-specific skills available to this agent",
-    )
-    # skills
-    skills: Optional[Dict[str, SkillConfig]] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Dict of skills and their corresponding configurations",
+    telegram_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Telegram-specific skills available to this agent",
     )
     # skills have no category
-    common_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of general-purpose skills available to this agent",
+    common_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of general-purpose skills available to this agent",
     )
     # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
-    enso_enabled: Optional[bool] = Field(
-        default=False, description="Whether Enso integration is enabled"
+    enso_enabled = Column(
+        JSONB,
+        nullable=True,
+        default=False,
+        comment="Whether Enso integration is enabled",
     )
     # enso skills
-    enso_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Enso-specific skills available to this agent",
+    enso_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Enso-specific skills available to this agent",
     )
-    enso_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Enso integration configuration settings",
+    enso_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Enso integration configuration settings",
     )
     # Acolyt skills
-    acolyt_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Acolyt-specific skills available to this agent",
+    acolyt_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Acolyt-specific skills available to this agent",
     )
-    acolyt_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Acolyt integration configuration settings",
+    acolyt_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Acolyt integration configuration settings",
     )
     # Allora skills
-    allora_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Allora-specific skills available to this agent",
+    allora_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Allora-specific skills available to this agent",
     )
-    allora_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Allora integration configuration settings",
+    allora_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Allora integration configuration settings",
     )
     # ELFA skills
-    elfa_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Elfa-specific skills available to this agent",
+    elfa_skills = Column(
+        ARRAY(String),
+        nullable=True,
+        comment="List of Elfa-specific skills available to this agent",
     )
-    elfa_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Elfa integration configuration settings",
+    elfa_config = Column(
+        JSONB,
+        nullable=True,
+        comment="Elfa integration configuration settings",
     )
     # auto timestamp
-    created_at: SkipJsonSchema[datetime] = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={"server_default": func.now()},
+    created_at = Column(
+        DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
+        comment="Timestamp when the agent was created",
     )
-    updated_at: SkipJsonSchema[datetime] = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={
-            "onupdate": lambda: datetime.now(timezone.utc),
-        },
+    updated_at = Column(
+        DateTime(timezone=True),
         nullable=False,
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="Timestamp when the agent was last updated",
     )
+
+
+class AgentUpdate(BaseModel):
+    """Agent update model."""
+
+    name: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Display name of the agent",
+        ),
+    ]
+    slug: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Slug of the agent, used for URL generation",
+        ),
+    ]
+    ticker: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Ticker symbol of the agent",
+        ),
+    ]
+    token_address: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Token address of the agent",
+        ),
+    ]
+    purpose: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Purpose or role of the agent",
+        ),
+    ]
+    personality: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Personality traits of the agent",
+        ),
+    ]
+    principles: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Principles or values of the agent",
+        ),
+    ]
+    owner: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Owner identifier of the agent, used for access control",
+        ),
+    ]
+    upstream_id: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            index=True,
+            description="External reference ID for idempotent operations",
+        ),
+    ]
+    # AI part
+    model: Annotated[
+        Optional[str],
+        PydanticField(
+            default="gpt-4o-mini",
+            description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
+        ),
+    ]
+    prompt: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Base system prompt that defines the agent's behavior and capabilities",
+        ),
+    ]
+    prompt_append: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Additional system prompt that has higher priority than the base prompt",
+        ),
+    ]
+    temperature: Annotated[
+        Optional[float],
+        PydanticField(
+            default=0.7,
+            description="AI model temperature parameter controlling response randomness (0.0~1.0)",
+        ),
+    ]
+    frequency_penalty: Annotated[
+        Optional[float],
+        PydanticField(
+            default=0.0,
+            description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+        ),
+    ]
+    presence_penalty: Annotated[
+        Optional[float],
+        PydanticField(
+            default=0.0,
+            description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+        ),
+    ]
+    # autonomous mode
+    autonomous: Annotated[
+        Optional[List[AgentAutonomous]],
+        PydanticField(
+            default=None,
+            description="Autonomous agent configurations",
+        ),
+    ]
+    autonomous_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            deprecated="Please use autonomous instead",
+            description="Whether the agent can operate autonomously without user input",
+        ),
+    ]
+    autonomous_minutes: Annotated[
+        Optional[int],
+        PydanticField(
+            default=240,
+            deprecated=True,
+            description="Interval in minutes between autonomous operations when enabled",
+        ),
+    ]
+    autonomous_prompt: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="Special prompt used during autonomous operation mode",
+        ),
+    ]
+    # skills
+    skills: Annotated[
+        Optional[Dict[str, SkillConfig]],
+        PydanticField(
+            default=None,
+            description="Dict of skills and their corresponding configurations",
+        ),
+    ]
+    # if cdp_enabled, agent will have a cdp wallet
+    cdp_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            description="Whether CDP (Crestal Development Platform) integration is enabled",
+        ),
+    ]
+    cdp_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of CDP skills available to this agent",
+        ),
+    ]
+    cdp_network_id: Annotated[
+        Optional[str],
+        PydanticField(
+            default="base-mainnet",
+            description="Network identifier for CDP integration",
+        ),
+    ]
+    # if goat_enabled, will load goat skills
+    crossmint_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            description="Dict of Crossmint wallet configurations",
+        ),
+    ]
+    goat_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            description="Whether GOAT integration is enabled",
+        ),
+    ]
+    goat_skills: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            description="Dict of GOAT skills and their corresponding configurations",
+        ),
+    ]
+    # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
+    twitter_entrypoint_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            description="Whether the agent can receive events from Twitter",
+        ),
+    ]
+    twitter_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            description="This configuration will be used for entrypoint only",
+        ),
+    ]
+    # twitter skills require config, but not require twitter_enabled flag.
+    # As long as twitter_skills is not empty, the corresponding skills will be loaded.
+    twitter_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Twitter-specific skills available to this agent",
+        ),
+    ]
+    # if telegram_entrypoint_enabled, the telegram_entrypoint_enabled will be enabled, telegram_config will be checked
+    telegram_entrypoint_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            description="Whether the agent can receive events from Telegram",
+        ),
+    ]
+    telegram_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            description="Telegram integration configuration settings",
+        ),
+    ]
+    # telegram skills not used for now
+    telegram_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Telegram-specific skills available to this agent",
+        ),
+    ]
+    # skills have no category
+    common_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            description="List of general-purpose skills available to this agent",
+        ),
+    ]
+    # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
+    enso_enabled: Annotated[
+        Optional[bool],
+        PydanticField(
+            default=False,
+            description="Whether Enso integration is enabled",
+        ),
+    ]
+    # enso skills
+    enso_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Enso-specific skills available to this agent",
+        ),
+    ]
+    enso_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="Enso integration configuration settings",
+        ),
+    ]
+    # Acolyt skills
+    acolyt_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Acolyt-specific skills available to this agent",
+        ),
+    ]
+    acolyt_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="Acolyt integration configuration settings",
+        ),
+    ]
+    # Allora skills
+    allora_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Allora-specific skills available to this agent",
+        ),
+    ]
+    allora_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="Allora integration configuration settings",
+        ),
+    ]
+    # ELFA skills
+    elfa_skills: Annotated[
+        Optional[List[str]],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="List of Elfa-specific skills available to this agent",
+        ),
+    ]
+    elfa_config: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            deprecated=True,
+            description="Elfa integration configuration settings",
+        ),
+    ]
+
+    def check_prompt(self):
+        # Check for markdown headers in text fields
+        fields_to_check = [
+            "purpose",
+            "personality",
+            "principles",
+            "prompt",
+            "prompt_append",
+        ]
+        for field in fields_to_check:
+            value = getattr(self, field)
+            if value and isinstance(value, str):
+                for line_num, line in enumerate(value.split("\n"), 1):
+                    line = line.strip()
+                    if line.startswith("# ") or line.startswith("## "):
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Field '{field}' contains markdown level 1/2 header at line {line_num}. You can use level 3 (### ) instead.",
+                        )
+
+    async def update(self, id: str) -> "Agent":
+        self.check_prompt()
+        async with get_session() as db:
+            db_agent = (
+                await db.exec(select(AgentTable).where(AgentTable.id == id))
+            ).first()
+            if not db_agent:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Agent not found",
+                )
+            # check onwer
+            if self.owner and db_agent.owner != self.owner:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You do not have permission to update this agent",
+                )
+            # update
+            for key, value in self.model_dump(exclude_unset=True).items():
+                setattr(db_agent, key, value)
+            await db.commit()
+            await db.refresh(db_agent)
+            return Agent.model_validate(db_agent)
+
+
+class AgentCreate(AgentUpdate):
+    """Agent create model."""
+
+    id: Annotated[
+        str,
+        PydanticField(
+            default_factory=lambda: str(XID()),
+            primary_key=True,
+            description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
+        ),
+        constr(pattern=r"^[a-z][a-z0-9-]*$"),
+    ]
+
+    async def check_upstream_id(self) -> None:
+        if self.upstream_id:
+            async with get_session() as db:
+                ok = await db.exec(
+                    select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
+                ).first()
+                if ok:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Upstream id already in use",
+                    )
+
+    async def create(self) -> "Agent":
+        self.check_prompt()
+        await self.check_upstream_id()
+        async with get_session() as db:
+            db_agent = AgentTable(**self.model_dump())
+            db.add(db_agent)
+            await db.commit()
+            await db.refresh(db_agent)
+            return Agent.model_validate(db_agent)
+
+    async def create_or_update(self) -> ("Agent", bool):
+        self.check_prompt()
+        is_new = False
+        async with get_session() as db:
+            db_agent = (
+                await db.exec(select(AgentTable).where(AgentTable.id == self.id))
+            ).first()
+            if not db_agent:
+                upstream = await db.exec(
+                    select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
+                ).first()
+                if upstream:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Upstream id already in use",
+                    )
+                db_agent = AgentTable(**self.model_dump())
+                db.add(db_agent)
+                is_new = True
+            else:
+                # check onwer
+                if self.owner and db_agent.owner != self.owner:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="You do not have permission to update this agent",
+                    )
+                for key, value in self.model_dump(exclude_unset=True).items():
+                    setattr(db_agent, key, value)
+            await db.commit()
+            await db.refresh(db_agent)
+            return (Agent.model_validate(db_agent), is_new)
+
+
+class Agent(AgentCreate):
+    """Agent model."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # auto increment number by db
+    number: Annotated[
+        int,
+        PydanticField(
+            description="Auto-incrementing number assigned by the system for easy reference",
+        ),
+    ]
+    # auto timestamp
+    created_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when the agent was created, will ignore when importing"
+        ),
+    ]
+    updated_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when the agent was last updated, will ignore when importing"
+        ),
+    ]
 
     def to_yaml(self) -> str:
         """
@@ -295,311 +906,60 @@ class Agent(SQLModel, table=True):
 
         return "\n".join(yaml_lines) + "\n"
 
+    @staticmethod
     @classmethod
-    async def count(cls) -> int:
+    async def count() -> int:
         async with get_session() as db:
-            return (await db.exec(select(func.count(Agent.id)))).one()
+            return (await db.exec(select(func.count(AgentTable.id)))).one()
 
     @classmethod
-    async def get(cls, agent_id: str) -> "Agent | None":
+    async def get(cls, agent_id: str) -> Optional["Agent"]:
         async with get_session() as db:
-            return (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
-
-    async def create_or_update(self) -> ("Agent", bool):
-        """Create the agent if not exists, otherwise update it.
-
-        Returns:
-            Agent: The created or updated agent
-
-        Raises:
-            HTTPException: If there are permission or validation errors
-            SQLAlchemyError: If there are database errors
-        """
-        try:
-            # Generate ID if not provided
-            if not self.id:
-                self.id = str(XID())
-
-            # input check
-            self.number = None
-            self.created_at = None
-            self.updated_at = None
-
-            # Check for markdown headers in text fields
-            fields_to_check = [
-                "purpose",
-                "personality",
-                "principles",
-                "prompt",
-                "prompt_append",
-            ]
-            for field in fields_to_check:
-                value = getattr(self, field)
-                if value and isinstance(value, str):
-                    for line_num, line in enumerate(value.split("\n"), 1):
-                        line = line.strip()
-                        if line.startswith("# ") or line.startswith("## "):
-                            raise HTTPException(
-                                status_code=400,
-                                detail=f"Field '{field}' contains markdown level 1/2 header at line {line_num}. You can use level 3 (### ) instead.",
-                            )
-
-            if not all(c.islower() or c.isdigit() or c == "-" for c in self.id):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Agent ID must contain only lowercase letters, numbers, and hyphens.",
-                )
-
-            # Check if agent exists
-            existing_agent = await self.__class__.get(self.id)
-            if existing_agent:
-                # Check owner
-                if (
-                    existing_agent.owner
-                    and self.owner  # if no owner, the request is coming from internal call, so skip the check
-                    and existing_agent.owner != self.owner
-                ):
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Your JWT token does not match the agent owner",
-                    )
-                # Check upstream_id
-                if (
-                    existing_agent.upstream_id
-                    and self.upstream_id
-                    and existing_agent.upstream_id != self.upstream_id
-                ):
-                    raise HTTPException(
-                        status_code=400,
-                        detail="upstream_id cannot be changed after creation",
-                    )
-                # Update existing agent
-                for field in self.model_fields:
-                    if field != "id":  # Skip the primary key
-                        if getattr(self, field) is not None:
-                            setattr(existing_agent, field, getattr(self, field))
-                async with get_session() as db:
-                    db.add(existing_agent)
-                    await db.commit()
-                    await db.refresh(existing_agent)
-                return existing_agent, False
-            else:
-                # Check upstream_id for idempotent
-                async with get_session() as db:
-                    if self.upstream_id:
-                        upstream_match = (
-                            await db.exec(
-                                select(Agent).where(
-                                    Agent.upstream_id == self.upstream_id
-                                )
-                            )
-                        ).first()
-                        if upstream_match:
-                            raise HTTPException(
-                                status_code=400,
-                                detail="upstream_id already exists",
-                            )
-                    # Create new agent
-                    db.add(self)
-                    await db.commit()
-                    await db.refresh(self)
-                return self, True
-        except HTTPException:
-            await db.rollback()
-            raise
-        except Exception as e:
-            await db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail=f"Database error: {str(e)}",
-            ) from e
+            res = (
+                await db.exec(select(AgentTable).where(AgentTable.id == agent_id))
+            ).first()
+            return cls.model_validate(res)
 
 
-class AgentResponse(BaseModel):
+class AgentResponse(Agent):
     """Response model for Agent API."""
 
-    # config part
-    id: str = Field(
-        description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens"
-    )
-    number: int = Field(
-        description="Auto-incrementing number assigned by the system for easy reference"
-    )
-    name: Optional[str] = Field(default=None, description="Display name of the agent")
-    slug: Optional[str] = Field(
-        default=None,
-        description="Slug of the agent, used for URL generation",
-    )
-    ticker: Optional[str] = Field(
-        default=None,
-        description="Ticker symbol of the agent",
-    )
-    token_address: Optional[str] = Field(
-        default=None,
-        description="Token address of the agent",
-    )
-    purpose: Optional[str] = Field(
-        default=None,
-        description="Purpose or role of the agent",
-    )
-    personality: Optional[str] = Field(
-        default=None,
-        description="Personality traits of the agent",
-    )
-    principles: Optional[str] = Field(
-        default=None,
-        description="Principles or values of the agent",
-    )
-    owner: Optional[str] = Field(
-        default=None,
-        description="Owner identifier of the agent, used for access control",
-    )
-    upstream_id: Optional[str] = Field(
-        default=None, description="External reference ID for idempotent operations"
-    )
-    model: str = Field(
-        description="AI model identifier to be used by this agent for processing requests"
-    )
-    prompt: Optional[str] = Field(
-        default=None,
-        description="Base system prompt that defines the agent's behavior and capabilities",
-    )
-    prompt_append: Optional[str] = Field(
-        default=None,
-        description="Additional system prompt that overrides or extends the base prompt",
-    )
-    temperature: float = Field(
-        description="AI model temperature parameter controlling response randomness (0.0-1.0)"
-    )
-    frequency_penalty: Optional[float] = Field(
-        default=0.0,
-        description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
-    )
-    presence_penalty: Optional[float] = Field(
-        default=0.0,
-        description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
-    )
-    autonomous_enabled: bool = Field(
-        description="Whether the agent can operate autonomously without user input"
-    )
-    autonomous_minutes: Optional[int] = Field(
-        description="Interval in minutes between autonomous operations when enabled"
-    )
-    autonomous_prompt: Optional[str] = Field(
-        description="Special prompt used during autonomous operation mode"
-    )
-    cdp_enabled: bool = Field(
-        description="Whether CDP (Crestal Development Platform) integration is enabled"
-    )
-    cdp_skills: Optional[List[str]] = Field(
-        description="List of CDP skills available to this agent"
-    )
-    cdp_network_id: Optional[str] = Field(
-        description="Network identifier for CDP integration"
-    )
-    crossmint_config: Optional[dict] = Field(
-        description="Dict of Crossmint wallet configurations",
-    )
-    goat_enabled: Optional[bool] = Field(
-        default=False,
-        description="Whether GOAT integration is enabled",
-    )
-    goat_skills: Optional[dict] = Field(
-        description="Dict of GOAT skills and their corresponding configurations",
-    )
-    twitter_entrypoint_enabled: bool = Field(
-        description="Whether the agent can receive events from Twitter"
-    )
-    twitter_config: Optional[dict] = Field(
-        description="Twitter integration configuration settings",
-    )
-    twitter_skills: Optional[List[str]] = Field(
-        description="List of Twitter-specific skills available to this agent"
-    )
-    telegram_entrypoint_enabled: bool = Field(
-        description="Whether the agent can receive events from Telegram"
-    )
-    telegram_config: Optional[dict] = Field(
-        description="Telegram integration configuration settings",
-    )
-    telegram_skills: Optional[List[str]] = Field(
-        description="List of Telegram-specific skills available to this agent"
-    )
-    common_skills: Optional[List[str]] = Field(
-        description="List of general-purpose skills available to this agent"
-    )
-    enso_enabled: bool = Field(description="Whether Enso integration is enabled")
-    enso_skills: Optional[List[str]] = Field(
-        description="List of Enso-specific skills available to this agent",
-    )
-    enso_config: Optional[dict] = Field(
-        description="Enso integration configuration settings",
-    )
-    acolyt_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Acolyt-specific skills available to this agent",
-    )
-    acolyt_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Acolyt integration configuration settings",
-    )
-    allora_skills: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(ARRAY(String)),
-        description="List of Allora-specific skills available to this agent",
-    )
-    allora_config: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Allora integration configuration settings",
-    )
-    elfa_skills: Optional[List[str]] = Field(
-        default=None,
-        description="List of Elfa-specific skills available to this agent",
-    )
-    elfa_config: Optional[dict] = Field(
-        default=None,
-        description="Elfa integration configuration settings",
-    )
-    skills: Optional[Dict[str, SkillConfig]] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Dict of skills and their corresponding configurations",
-    )
-    created_at: datetime | None = Field(
-        description="Timestamp when this agent was created"
-    )
-    updated_at: datetime | None = Field(
-        description="Timestamp when this agent was last updated"
-    )
-
     # data part
-    cdp_wallet_address: Optional[str] = Field(
-        description="CDP wallet address for the agent"
-    )
-    has_twitter_linked: bool = Field(
-        description="Whether the agent has linked their Twitter account"
-    )
-    linked_twitter_username: Optional[str] = Field(
-        description="The username of the linked Twitter account"
-    )
-    linked_twitter_name: Optional[str] = Field(
-        description="The name of the linked Twitter account"
-    )
-    has_twitter_self_key: bool = Field(
-        description="Whether the agent has self-keyed their Twitter account"
-    )
-    has_telegram_self_key: bool = Field(
-        description="Whether the agent has self-keyed their Telegram account"
-    )
-    linked_telegram_username: Optional[str] = Field(
-        description="The username of the linked Telegram account"
-    )
-    linked_telegram_name: Optional[str] = Field(
-        description="The name of the linked Telegram account"
-    )
+    cdp_wallet_address: Annotated[
+        Optional[str], PydanticField(description="CDP wallet address for the agent")
+    ]
+    has_twitter_linked: Annotated[
+        bool,
+        PydanticField(description="Whether the agent has linked their Twitter account"),
+    ]
+    linked_twitter_username: Annotated[
+        Optional[str],
+        PydanticField(description="The username of the linked Twitter account"),
+    ]
+    linked_twitter_name: Annotated[
+        Optional[str],
+        PydanticField(description="The name of the linked Twitter account"),
+    ]
+    has_twitter_self_key: Annotated[
+        bool,
+        PydanticField(
+            description="Whether the agent has self-keyed their Twitter account"
+        ),
+    ]
+    has_telegram_self_key: Annotated[
+        bool,
+        PydanticField(
+            description="Whether the agent has self-keyed their Telegram account"
+        ),
+    ]
+    linked_telegram_username: Annotated[
+        Optional[str],
+        PydanticField(description="The username of the linked Telegram account"),
+    ]
+    linked_telegram_name: Annotated[
+        Optional[str],
+        PydanticField(description="The name of the linked Telegram account"),
+    ]
 
     @classmethod
     def from_agent(
@@ -682,55 +1042,163 @@ class AgentResponse(BaseModel):
             }
         )
 
-        return cls(**data)
+        return cls.model_validate(**data)
 
 
-class AgentData(SQLModel, table=True):
-    """Agent data model for storing additional data related to the agent."""
+class AgentDataTable(Base):
+    """Agent data model for database storage of additional data related to the agent."""
 
     __tablename__ = "agent_data"
 
-    id: str = Field(primary_key=True)  # Same as Agent.id
-    cdp_wallet_data: Optional[str]
-    crossmint_wallet_data: Optional[dict] = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description="Crossmint wallet information",
+    id = Column(String, primary_key=True, comment="Same as Agent.id")
+    cdp_wallet_data = Column(String, nullable=True, comment="CDP wallet data")
+    crossmint_wallet_data = Column(
+        JSONB, nullable=True, comment="Crossmint wallet information"
     )
-    twitter_id: Optional[str]
-    twitter_username: Optional[str]
-    twitter_name: Optional[str]
-    twitter_access_token: Optional[str]
-    twitter_access_token_expires_at: Optional[datetime] = Field(
-        sa_type=DateTime(timezone=True)
+    twitter_id = Column(String, nullable=True, comment="Twitter user ID")
+    twitter_username = Column(String, nullable=True, comment="Twitter username")
+    twitter_name = Column(String, nullable=True, comment="Twitter display name")
+    twitter_access_token = Column(String, nullable=True, comment="Twitter access token")
+    twitter_access_token_expires_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Twitter access token expiration time",
     )
-    twitter_refresh_token: Optional[str]
-    telegram_id: Optional[str]
-    telegram_username: Optional[str]
-    telegram_name: Optional[str]
-    error_message: Optional[str]
-    created_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={"server_default": func.now()},
+    twitter_refresh_token = Column(
+        String, nullable=True, comment="Twitter refresh token"
+    )
+    telegram_id = Column(String, nullable=True, comment="Telegram user ID")
+    telegram_username = Column(String, nullable=True, comment="Telegram username")
+    telegram_name = Column(String, nullable=True, comment="Telegram display name")
+    error_message = Column(String, nullable=True, comment="Last error message")
+    created_at = Column(
+        DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
+        comment="Timestamp when the agent data was created",
     )
-    updated_at: datetime | None = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_type=DateTime(timezone=True),
-        sa_column_kwargs={
-            "onupdate": lambda: datetime.now(timezone.utc),
-        },
+    updated_at = Column(
+        DateTime(timezone=True),
         nullable=False,
+        onupdate=func.now(),
+        comment="Timestamp when the agent data was last updated",
     )
+
+
+class AgentData(BaseModel):
+    """Agent data model for storing additional data related to the agent."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Annotated[
+        str,
+        PydanticField(
+            description="Same as Agent.id",
+        ),
+    ]
+    cdp_wallet_data: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="CDP wallet data",
+        ),
+    ]
+    crossmint_wallet_data: Annotated[
+        Optional[dict],
+        PydanticField(
+            default=None,
+            description="Crossmint wallet information",
+        ),
+    ]
+    twitter_id: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Twitter user ID",
+        ),
+    ]
+    twitter_username: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Twitter username",
+        ),
+    ]
+    twitter_name: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Twitter display name",
+        ),
+    ]
+    twitter_access_token: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Twitter access token",
+        ),
+    ]
+    twitter_access_token_expires_at: Annotated[
+        Optional[datetime],
+        PydanticField(
+            default=None,
+            description="Twitter access token expiration time",
+        ),
+    ]
+    twitter_refresh_token: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Twitter refresh token",
+        ),
+    ]
+    telegram_id: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Telegram user ID",
+        ),
+    ]
+    telegram_username: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Telegram username",
+        ),
+    ]
+    telegram_name: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Telegram display name",
+        ),
+    ]
+    error_message: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Last error message",
+        ),
+    ]
+    created_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when the agent data was created",
+        ),
+    ]
+    updated_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when the agent data was last updated",
+        ),
+    ]
 
     @classmethod
     async def get(cls, agent_id: str) -> Optional["AgentData"]:
         """Get agent data by ID.
 
         Args:
-            id: Agent ID
-            db: Database session
+            agent_id: Agent ID
 
         Returns:
             AgentData if found, None otherwise
@@ -740,7 +1208,14 @@ class AgentData(SQLModel, table=True):
         """
         try:
             async with get_session() as db:
-                return (await db.exec(select(cls).where(cls.id == agent_id))).first()
+                result = (
+                    await db.exec(
+                        select(AgentDataTable).where(AgentDataTable.id == agent_id)
+                    )
+                ).first()
+                if result:
+                    return cls.model_validate(result)
+                return None
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -750,9 +1225,6 @@ class AgentData(SQLModel, table=True):
     async def save(self) -> None:
         """Save or update agent data.
 
-        Args:
-            db: Database session
-
         Raises:
             HTTPException: If there are database errors
         """
@@ -760,22 +1232,21 @@ class AgentData(SQLModel, table=True):
             async with get_session() as db:
                 existing = (
                     await db.exec(
-                        select(self.__class__).where(self.__class__.id == self.id)
+                        select(AgentDataTable).where(AgentDataTable.id == self.id)
                     )
                 ).first()
 
                 if existing:
                     # Update existing record
-                    for field in self.model_fields:
-                        if getattr(self, field) is not None:
-                            setattr(existing, field, getattr(self, field))
+                    for field, value in self.model_dump(exclude_unset=True).items():
+                        setattr(existing, field, value)
                     db.add(existing)
                 else:
                     # Create new record
-                    db.add(self)
+                    db_agent_data = AgentDataTable(**self.model_dump())
+                    db.add(db_agent_data)
 
                 await db.commit()
-                await db.refresh(self if not existing else existing)
         except Exception as e:
             await db.rollback()
             raise HTTPException(
@@ -789,32 +1260,32 @@ class AgentQuota(SQLModel, table=True):
 
     __tablename__ = "agent_quotas"
 
-    id: str = Field(primary_key=True)
-    plan: str = Field(default="self-hosted")
-    message_count_total: int = Field(default=0)
-    message_limit_total: int = Field(default=99999999)
-    message_count_monthly: int = Field(default=0)
-    message_limit_monthly: int = Field(default=99999999)
-    message_count_daily: int = Field(default=0)
-    message_limit_daily: int = Field(default=99999999)
-    last_message_time: Optional[datetime] = Field(default=None)
-    autonomous_count_total: int = Field(default=0)
-    autonomous_limit_total: int = Field(default=99999999)
-    autonomous_count_monthly: int = Field(default=0)
-    autonomous_limit_monthly: int = Field(default=99999999)
-    last_autonomous_time: Optional[datetime] = Field(default=None)
-    twitter_count_total: int = Field(default=0)
-    twitter_limit_total: int = Field(default=99999999)
-    twitter_count_daily: int = Field(default=0)
-    twitter_limit_daily: int = Field(default=99999999)
-    last_twitter_time: Optional[datetime] = Field(default=None)
-    created_at: datetime | None = Field(
+    id: str = SQLModelField(primary_key=True)
+    plan: str = SQLModelField(default="self-hosted")
+    message_count_total: int = SQLModelField(default=0)
+    message_limit_total: int = SQLModelField(default=99999999)
+    message_count_monthly: int = SQLModelField(default=0)
+    message_limit_monthly: int = SQLModelField(default=99999999)
+    message_count_daily: int = SQLModelField(default=0)
+    message_limit_daily: int = SQLModelField(default=99999999)
+    last_message_time: Optional[datetime] = SQLModelField(default=None)
+    autonomous_count_total: int = SQLModelField(default=0)
+    autonomous_limit_total: int = SQLModelField(default=99999999)
+    autonomous_count_monthly: int = SQLModelField(default=0)
+    autonomous_limit_monthly: int = SQLModelField(default=99999999)
+    last_autonomous_time: Optional[datetime] = SQLModelField(default=None)
+    twitter_count_total: int = SQLModelField(default=0)
+    twitter_limit_total: int = SQLModelField(default=99999999)
+    twitter_count_daily: int = SQLModelField(default=0)
+    twitter_limit_daily: int = SQLModelField(default=99999999)
+    last_twitter_time: Optional[datetime] = SQLModelField(default=None)
+    created_at: datetime | None = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
-    updated_at: datetime | None = Field(
+    updated_at: datetime | None = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={
@@ -987,17 +1458,17 @@ class AgentPluginData(SQLModel, table=True):
 
     __tablename__ = "agent_plugin_data"
 
-    agent_id: str = Field(primary_key=True)
-    plugin: str = Field(primary_key=True)
-    key: str = Field(primary_key=True)
-    data: Dict[str, Any] = Field(sa_column=Column(JSONB, nullable=True))
-    created_at: datetime | None = Field(
+    agent_id: str = SQLModelField(primary_key=True)
+    plugin: str = SQLModelField(primary_key=True)
+    key: str = SQLModelField(primary_key=True)
+    data: Dict[str, Any] = SQLModelField(sa_column=Column(JSONB, nullable=True))
+    created_at: datetime | None = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
-    updated_at: datetime | None = Field(
+    updated_at: datetime | None = SQLModelField(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={
