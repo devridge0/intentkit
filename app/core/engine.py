@@ -693,18 +693,18 @@ async def clean_agent_memory(
         str: Successful response message.
     """
     # get the agent from the database
-    async with get_session() as db:
-        try:
-            if not clean_skill and not clean_agent:
-                raise HTTPException(
-                    status_code=400,
-                    detail="at least one of skills data or agent memory should be true.",
-                )
+    try:
+        if not clean_skill and not clean_agent:
+            raise HTTPException(
+                status_code=400,
+                detail="at least one of skills data or agent memory should be true.",
+            )
 
-            if clean_skill:
-                await AgentSkillData.clean_data(agent_id)
-                await ThreadSkillData.clean_data(agent_id, chat_id)
+        if clean_skill:
+            await AgentSkillData.clean_data(agent_id)
+            await ThreadSkillData.clean_data(agent_id, chat_id)
 
+        async with get_session() as db:
             if clean_agent:
                 chat_id = chat_id.strip()
                 q_suffix = "%"
@@ -737,15 +737,15 @@ async def clean_agent_memory(
             )
             await db.commit()
 
-            logger.info(f"Agent [{agent_id}] data cleaned up successfully.")
-            return "Agent data cleaned up successfully."
-        except SQLAlchemyError as e:
-            # Handle other SQLAlchemy-related errors
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=str(e))
-        except Exception as e:
-            logger.error("failed to cleanup the agent memory: " + str(e))
-            raise e
+        logger.info(f"Agent [{agent_id}] data cleaned up successfully.")
+        return "Agent data cleaned up successfully."
+    except SQLAlchemyError as e:
+        # Handle other SQLAlchemy-related errors
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error("failed to cleanup the agent memory: " + str(e))
+        raise e
 
 
 async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
