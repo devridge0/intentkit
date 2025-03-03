@@ -420,42 +420,31 @@ async def import_agent(
         - 404: Agent not found
         - 500: Server error
     """
+    # First check if agent exists
+    existing_agent = await Agent.get(agent_id)
+    if not existing_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Read and parse YAML
+    content = await file.read()
     try:
-        # First check if agent exists
-        existing_agent = await Agent.get(agent_id)
-        if not existing_agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
+        yaml_data = safe_load(content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
 
-        # Read and parse YAML
-        content = await file.read()
-        try:
-            yaml_data = safe_load(content)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
-
-        # Ensure agent ID matches
-        if yaml_data.get("id") != agent_id:
-            raise HTTPException(
-                status_code=400, detail="Agent ID in YAML does not match URL parameter"
-            )
-
-        # Create Agent instance from YAML
-        try:
-            agent = AgentCreate.model_validate(**yaml_data)
-        except ValidationError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid agent configuration: {e}"
-            )
-
-        # Process the agent
-        await _process_agent(
-            agent, subject, slack_message="Agent Updated via YAML Import"
+    # Ensure agent ID matches
+    if yaml_data.get("id") != agent_id:
+        raise HTTPException(
+            status_code=400, detail="Agent ID in YAML does not match URL parameter"
         )
 
-        return "Agent import successful"
+    # Create Agent instance from YAML
+    try:
+        agent = AgentCreate.model_validate(yaml_data)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid agent configuration: {e}")
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error importing agent {agent_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Process the agent
+    await _process_agent(agent, subject, slack_message="Agent Updated via YAML Import")
+
+    return "Agent import successful"

@@ -899,7 +899,6 @@ class Agent(AgentCreate):
         return "\n".join(yaml_lines) + "\n"
 
     @staticmethod
-    @classmethod
     async def count() -> int:
         async with get_session() as db:
             return await db.scalar(select(func.count(AgentTable.id)))
