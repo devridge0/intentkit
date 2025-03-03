@@ -726,9 +726,7 @@ class AgentUpdate(BaseModel):
     async def update(self, id: str) -> "Agent":
         self.check_prompt()
         async with get_session() as db:
-            db_agent = (
-                await db.execute(select(AgentTable).where(AgentTable.id == id))
-            ).scalar_one_or_none()
+            db_agent = await db.get(AgentTable, id)
             if not db_agent:
                 raise HTTPException(
                     status_code=404,
@@ -764,10 +762,9 @@ class AgentCreate(AgentUpdate):
         if not self.upstream_id:
             return None
         async with get_session() as db:
-            result = await db.execute(
+            existing = await db.scalars(
                 select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
-            )
-            existing = result.scalar_one_or_none()
+            ).one_or_none()
             if existing:
                 raise HTTPException(
                     status_code=400,
@@ -788,13 +785,11 @@ class AgentCreate(AgentUpdate):
         self.check_prompt()
         is_new = False
         async with get_session() as db:
-            result = await db.execute(select(AgentTable).where(AgentTable.id == self.id))
-            db_agent = result.scalar_one_or_none()
+            db_agent = await db.get(AgentTable, self.id)
             if not db_agent:
-                result = await db.execute(
+                upstream = await db.scalar(
                     select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
                 )
-                upstream = result.scalar_one_or_none()
                 if upstream:
                     raise HTTPException(
                         status_code=400,
@@ -907,15 +902,12 @@ class Agent(AgentCreate):
     @classmethod
     async def count() -> int:
         async with get_session() as db:
-            result = await db.execute(select(func.count(AgentTable.id)))
-            return result.scalar_one()
+            return await db.scalar(select(func.count(AgentTable.id)))
 
     @classmethod
     async def get(cls, agent_id: str) -> Optional["Agent"]:
         async with get_session() as db:
-            result = await db.execute(select(AgentTable).where(AgentTable.id == agent_id))
-            item = result.scalar_one_or_none()
-            logger.info(item)
+            item = await db.scalar(select(AgentTable).where(AgentTable.id == agent_id))
             if item is None:
                 return None
             return cls.model_validate(item)
@@ -1042,7 +1034,7 @@ class AgentResponse(Agent):
             }
         )
 
-        return cls.model_validate(**data)
+        return cls.model_validate(data)
 
 
 class AgentDataTable(Base):
@@ -1206,20 +1198,11 @@ class AgentData(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentDataTable).where(AgentDataTable.id == agent_id)
-                )
-                item = result.scalar_one_or_none()
-                if item:
-                    return cls.model_validate(item)
-                return None
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get agent data: {str(e)}",
-            ) from e
+        async with get_session() as db:
+            item = await db.get(AgentDataTable, agent_id)
+            if item:
+                return cls.model_validate(item)
+            return None
 
     async def save(self) -> None:
         """Save or update agent data.
@@ -1228,11 +1211,7 @@ class AgentData(BaseModel):
             HTTPException: If there are database errors
         """
         async with get_session() as db:
-            result = await db.execute(
-                select(AgentDataTable).where(AgentDataTable.id == self.id)
-            )
-            existing = result.scalar_one_or_none()
-
+            existing = await db.get(AgentDataTable, self.id)
             if existing:
                 # Update existing record
                 for field, value in self.model_dump(exclude_unset=True).items():
@@ -1342,24 +1321,17 @@ class AgentPluginData(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentPluginDataTable).where(
-                        AgentPluginDataTable.agent_id == agent_id,
-                        AgentPluginDataTable.plugin == plugin,
-                        AgentPluginDataTable.key == key,
-                    )
+        async with get_session() as db:
+            item = await db.scalar(
+                select(AgentPluginDataTable).where(
+                    AgentPluginDataTable.agent_id == agent_id,
+                    AgentPluginDataTable.plugin == plugin,
+                    AgentPluginDataTable.key == key,
                 )
-                item = result.scalar_one_or_none()
-                if item:
-                    return cls.model_validate(item)
-                return None
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get plugin data: {str(e)}",
-            ) from e
+            )
+            if item:
+                return cls.model_validate(item)
+            return None
 
     async def save(self) -> None:
         """Save or update plugin data.
@@ -1367,62 +1339,34 @@ class AgentPluginData(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentPluginDataTable).where(
-                        AgentPluginDataTable.agent_id == self.agent_id,
-                        AgentPluginDataTable.plugin == self.plugin,
-                        AgentPluginDataTable.key == self.key,
-                    )
+        async with get_session() as db:
+            plugin_data = await db.scalar(
+                select(AgentPluginDataTable).where(
+                    AgentPluginDataTable.agent_id == self.agent_id,
+                    AgentPluginDataTable.plugin == self.plugin,
+                    AgentPluginDataTable.key == self.key,
                 )
-                existing = result.scalar_one_or_none()
+            )
 
-                if existing:
-                    # Update existing record
-                    existing.data = self.data
-                    existing.updated_at = datetime.now(timezone.utc)
-                    db.add(existing)
-                else:
-                    # Create new record
-                    now = datetime.now(timezone.utc)
-                    new_record = AgentPluginDataTable(
-                        agent_id=self.agent_id,
-                        plugin=self.plugin,
-                        key=self.key,
-                        data=self.data,
-                        created_at=now,
-                        updated_at=now,
-                    )
-                    db.add(new_record)
+            if plugin_data:
+                # Update existing record
+                plugin_data.data = self.data
+                db.add(plugin_data)
+            else:
+                # Create new record
+                plugin_data = AgentPluginDataTable(
+                    agent_id=self.agent_id,
+                    plugin=self.plugin,
+                    key=self.key,
+                    data=self.data,
+                )
+                db.add(plugin_data)
 
-                await db.commit()
+            await db.commit()
+            await db.refresh(plugin_data)
 
-                # Refresh the model with updated data
-                if existing:
-                    await db.refresh(existing)
-                    self.data = existing.data
-                    self.created_at = existing.created_at
-                    self.updated_at = existing.updated_at
-                else:
-                    # Get the newly created record to update this instance
-                    result = await db.execute(
-                        select(AgentPluginDataTable).where(
-                            AgentPluginDataTable.agent_id == self.agent_id,
-                            AgentPluginDataTable.plugin == self.plugin,
-                            AgentPluginDataTable.key == self.key,
-                        )
-                    )
-                    new_record = result.scalar_one_or_none()
-                    if new_record:
-                        self.created_at = new_record.created_at
-                        self.updated_at = new_record.updated_at
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to save plugin data: {str(e)}",
-            ) from e
+            # Refresh the model with updated data
+            self.model_validate(plugin_data)
 
 
 class AgentQuotaTable(Base):
@@ -1501,31 +1445,18 @@ class AgentQuota(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentQuotaTable).where(AgentQuotaTable.id == agent_id)
+        async with get_session() as db:
+            quota_record = await db.get(AgentQuotaTable, agent_id)
+            if not quota_record:
+                # Create new record
+                quota_record = AgentQuotaTable(
+                    id=agent_id,
                 )
-                quota_record = result.scalar_one_or_none()
+                db.add(quota_record)
+                await db.commit()
+                await db.refresh(quota_record)
 
-                if not quota_record:
-                    # Create new record
-                    now = datetime.now(timezone.utc)
-                    quota_record = AgentQuotaTable(
-                        id=agent_id,
-                        created_at=now,
-                        updated_at=now,
-                    )
-                    db.add(quota_record)
-                    await db.commit()
-                    await db.refresh(quota_record)
-
-                return cls.model_validate(quota_record)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get agent quota: {str(e)}",
-            ) from e
+            return cls.model_validate(quota_record)
 
     def has_message_quota(self) -> bool:
         """Check if the agent has message quota.
@@ -1573,74 +1504,42 @@ class AgentQuota(BaseModel):
         return True
 
     async def add_message(self) -> None:
-        """Add a message to the agent's message count.
+        """Add a message to the agent's message count."""
+        async with get_session() as db:
+            quota_record = await db.get(AgentQuotaTable, self.id)
 
-        Raises:
-            HTTPException: If there are database errors
-        """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                )
-                quota_record = result.scalar_one_or_none()
+            if quota_record:
+                # Update record
+                quota_record.message_count_total += 1
+                quota_record.message_count_monthly += 1
+                quota_record.message_count_daily += 1
+                quota_record.last_message_time = datetime.now(timezone.utc)
+                db.add(quota_record)
+                await db.commit()
 
-                if quota_record:
-                    # Update record
-                    quota_record.message_count_total += 1
-                    quota_record.message_count_monthly += 1
-                    quota_record.message_count_daily += 1
-                    quota_record.last_message_time = datetime.now(timezone.utc)
-                    db.add(quota_record)
-                    await db.commit()
-
-                    # Update this instance
-                    await db.refresh(quota_record)
-                    self.message_count_total = quota_record.message_count_total
-                    self.message_count_monthly = quota_record.message_count_monthly
-                    self.message_count_daily = quota_record.message_count_daily
-                    self.last_message_time = quota_record.last_message_time
-                    self.updated_at = quota_record.updated_at
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to add message: {str(e)}",
-            ) from e
+                # Update this instance
+                await db.refresh(quota_record)
+                self.message_count_total = quota_record.message_count_total
+                self.message_count_monthly = quota_record.message_count_monthly
+                self.message_count_daily = quota_record.message_count_daily
+                self.last_message_time = quota_record.last_message_time
+                self.updated_at = quota_record.updated_at
 
     async def add_autonomous(self) -> None:
-        """Add an autonomous operation to the agent's autonomous count.
+        """Add an autonomous operation to the agent's autonomous count."""
+        async with get_session() as db:
+            quota_record = await db.get(AgentQuotaTable, self.id)
+            if quota_record:
+                # Update record
+                quota_record.autonomous_count_total += 1
+                quota_record.autonomous_count_monthly += 1
+                quota_record.last_autonomous_time = datetime.now(timezone.utc)
+                db.add(quota_record)
+                await db.commit()
 
-        Raises:
-            HTTPException: If there are database errors
-        """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                )
-                quota_record = result.scalar_one_or_none()
-
-                if quota_record:
-                    # Update record
-                    quota_record.autonomous_count_total += 1
-                    quota_record.autonomous_count_monthly += 1
-                    quota_record.last_autonomous_time = datetime.now(timezone.utc)
-                    db.add(quota_record)
-                    await db.commit()
-
-                    # Update this instance
-                    await db.refresh(quota_record)
-                    self.autonomous_count_total = quota_record.autonomous_count_total
-                    self.autonomous_count_monthly = (
-                        quota_record.autonomous_count_monthly
-                    )
-                    self.last_autonomous_time = quota_record.last_autonomous_time
-                    self.updated_at = quota_record.updated_at
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to add autonomous operation: {str(e)}",
-            ) from e
+                # Update this instance
+                await db.refresh(quota_record)
+                self.model_validate(quota_record)
 
     async def add_twitter_message(self) -> None:
         """Add a twitter message to the agent's twitter count.
@@ -1648,29 +1547,17 @@ class AgentQuota(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(
-                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                )
-                quota_record = result.scalar_one_or_none()
+        async with get_session() as db:
+            quota_record = await db.get(AgentQuotaTable, self.id)
 
-                if quota_record:
-                    # Update record
-                    quota_record.twitter_count_total += 1
-                    quota_record.twitter_count_daily += 1
-                    quota_record.last_twitter_time = datetime.now(timezone.utc)
-                    db.add(quota_record)
-                    await db.commit()
+            if quota_record:
+                # Update record
+                quota_record.twitter_count_total += 1
+                quota_record.twitter_count_daily += 1
+                quota_record.last_twitter_time = datetime.now(timezone.utc)
+                db.add(quota_record)
+                await db.commit()
 
-                    # Update this instance
-                    await db.refresh(quota_record)
-                    self.twitter_count_total = quota_record.twitter_count_total
-                    self.twitter_count_daily = quota_record.twitter_count_daily
-                    self.last_twitter_time = quota_record.last_twitter_time
-                    self.updated_at = quota_record.updated_at
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to add twitter message: {str(e)}",
-            ) from e
+                # Update this instance
+                await db.refresh(quota_record)
+                self.model_validate(quota_record)

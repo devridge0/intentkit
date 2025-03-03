@@ -20,7 +20,7 @@ async def reset_daily_quotas():
         stmt = update(AgentQuotaTable).values(
             message_count_daily=0, twitter_count_daily=0
         )
-        await session.exec(stmt)
+        await session.execute(stmt)
         await session.commit()
 
 
@@ -32,7 +32,7 @@ async def reset_monthly_quotas():
         stmt = update(AgentQuotaTable).values(
             message_count_monthly=0, autonomous_count_monthly=0
         )
-        await session.exec(stmt)
+        await session.execute(stmt)
         await session.commit()
 
 

@@ -365,27 +365,19 @@ class Chat(ChatCreate):
         Returns:
             Chat if found, None otherwise
         """
-        try:
-            async with get_session() as db:
-                result = await db.execute(select(ChatTable).where(ChatTable.id == id))
-                chat_record = result.scalar_one_or_none()
-                if chat_record:
-                    return cls.model_validate(chat_record)
-                return None
-        except Exception as e:
-            raise Exception(f"Failed to get chat: {str(e)}")
+        async with get_session() as db:
+            chat_record = await db.get(ChatTable, id)
+            if chat_record:
+                return cls.model_validate(chat_record)
+            return None
 
     async def delete(self):
         """Delete the chat from the database."""
-        try:
-            async with get_session() as db:
-                result = await db.execute(select(ChatTable).where(ChatTable.id == self.id))
-                chat_record = result.scalar_one_or_none()
-                if chat_record:
-                    await db.delete(chat_record)
-                    await db.commit()
-        except Exception as e:
-            raise Exception(f"Failed to delete chat: {str(e)}")
+        async with get_session() as db:
+            chat_record = await db.get(ChatTable, self.id)
+            if chat_record:
+                await db.delete(chat_record)
+                await db.commit()
 
     async def add_round(self):
         """Increment the number of rounds in the chat on the database server.
@@ -439,12 +431,11 @@ class Chat(ChatCreate):
             List of chats
         """
         async with get_session() as db:
-            result = await db.execute(
+            results = await db.scalars(
                 select(ChatTable)
                 .order_by(desc(ChatTable.updated_at))
                 .limit(10)
                 .where(ChatTable.agent_id == agent_id, ChatTable.user_id == user_id)
             )
-            results = result.scalars().all()
 
             return [cls.model_validate(chat) for chat in results]

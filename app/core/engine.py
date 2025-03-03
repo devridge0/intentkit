@@ -488,40 +488,40 @@ async def execute_agent(
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
-    await message.save()
+    input = await message.save()
 
     is_private = False
-    if message.chat_id.startswith("owner") or message.chat_id.startswith("autonomous"):
+    if input.chat_id.startswith("owner") or input.chat_id.startswith("autonomous"):
         is_private = True
 
-    thread_id = f"{message.agent_id}-{message.chat_id}"
+    thread_id = f"{input.agent_id}-{input.chat_id}"
 
     stream_config = {
         "configurable": {
             "thread_id": thread_id,
-            "agent_id": message.agent_id,
-            "user_id": message.author_id,
-            "entrypoint": message.author_type,
+            "agent_id": input.agent_id,
+            "user_id": input.author_id,
+            "entrypoint": input.author_type,
         }
     }
     resp = []
     start = time.perf_counter()
 
-    executor, cold_start_cost = await agent_executor(message.agent_id, is_private)
+    executor, cold_start_cost = await agent_executor(input.agent_id, is_private)
     last = start + cold_start_cost
 
     # Extract images from attachments
     image_urls = []
-    if message.attachments:
+    if input.attachments:
         image_urls = [
             att.url
-            for att in message.attachments
+            for att in input.attachments
             if hasattr(att, "type") and att.type == "image" and hasattr(att, "url")
         ]
 
     # message
     content = [
-        {"type": "text", "text": message.message},
+        {"type": "text", "text": input.message},
     ]
     content.extend(
         [
@@ -550,11 +550,11 @@ async def execute_agent(
                     cached_tool_step = msg
                 elif hasattr(msg, "content") and msg.content:
                     # agent message
-                    chat_message = ChatMessageCreate(
+                    chat_message_create = ChatMessageCreate(
                         id=str(XID()),
-                        agent_id=message.agent_id,
-                        chat_id=message.chat_id,
-                        author_id=message.agent_id,
+                        agent_id=input.agent_id,
+                        chat_id=input.chat_id,
+                        author_id=input.agent_id,
                         author_type=AuthorType.AGENT,
                         message=msg.content,
                         input_tokens=(
@@ -571,10 +571,10 @@ async def execute_agent(
                     )
                     last = this_time
                     if cold_start_cost > 0:
-                        chat_message.cold_start_cost = cold_start_cost
+                        chat_message_create.cold_start_cost = cold_start_cost
                         cold_start_cost = 0
+                    chat_message = await chat_message_create.save()
                     resp.append(chat_message)
-                    await chat_message.save()
                 else:
                     logger.error(
                         "unexpected agent message: " + str(msg),
@@ -614,7 +614,7 @@ async def execute_agent(
                                     )
                             skill_calls.append(skill_call)
                             break
-                skill_message = ChatMessageCreate(
+                skill_message_create = ChatMessageCreate(
                     id=str(XID()),
                     agent_id=message.agent_id,
                     chat_id=message.chat_id,
@@ -638,11 +638,11 @@ async def execute_agent(
                 )
                 last = this_time
                 if cold_start_cost > 0:
-                    skill_message.cold_start_cost = cold_start_cost
+                    skill_message_create.cold_start_cost = cold_start_cost
                     cold_start_cost = 0
                 cached_tool_step = None
+                skill_message = await skill_message_create.save()
                 resp.append(skill_message)
-                await skill_message.save()
             elif "memory_manager" in chunk:
                 pass
             else:
@@ -654,7 +654,7 @@ async def execute_agent(
             logger.error(
                 f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
             )
-            error_message = ChatMessageCreate(
+            error_message_create = ChatMessageCreate(
                 id=str(XID()),
                 agent_id=message.agent_id,
                 chat_id=message.chat_id,
@@ -663,7 +663,7 @@ async def execute_agent(
                 message=f"Error in agent:\n  {str(e)}",
                 time_cost=time.perf_counter() - start,
             )
-            await error_message.save()
+            error_message = await error_message_create.save()
             resp.append(error_message)
             return resp
     return resp

@@ -55,32 +55,24 @@ class AgentSkillDataCreate(BaseModel):
             AgentSkillData: The saved agent skill data instance
         """
         async with get_session() as db:
-            result = await db.execute(
+            record = await db.scalar(
                 select(AgentSkillDataTable).where(
                     AgentSkillDataTable.agent_id == self.agent_id,
                     AgentSkillDataTable.skill == self.skill,
                     AgentSkillDataTable.key == self.key,
                 )
             )
-            existing = result.scalar_one_or_none()
 
-            now = datetime.now(timezone.utc)
-
-            if existing:
+            if record:
                 # Update existing record
-                existing.data = self.data
-                existing.updated_at = now
-                db.add(existing)
-                await db.commit()
-                await db.refresh(existing)
-                return AgentSkillData.model_validate(existing)
+                record.data = self.data
             else:
                 # Create new record
                 record = AgentSkillDataTable(**self.model_dump())
-                db.add(record)
-                await db.commit()
-                await db.refresh(record)
-                return AgentSkillData.model_validate(record)
+            db.add(record)
+            await db.commit()
+            await db.refresh(record)
+            return AgentSkillData.model_validate(record)
 
 
 class AgentSkillData(AgentSkillDataCreate):
@@ -115,15 +107,14 @@ class AgentSkillData(AgentSkillDataCreate):
             Dictionary containing the skill data if found, None otherwise
         """
         async with get_session() as db:
-            result = await db.execute(
+            result = await db.scalar(
                 select(AgentSkillDataTable).where(
                     AgentSkillDataTable.agent_id == agent_id,
                     AgentSkillDataTable.skill == skill,
                     AgentSkillDataTable.key == key,
                 )
             )
-            record = result.scalar_one_or_none()
-        return record.data if record else None
+            return result.data if result else None
 
     @classmethod
     async def clean_data(cls, agent_id: str):
@@ -183,33 +174,25 @@ class ThreadSkillDataCreate(BaseModel):
             ThreadSkillData: The saved thread skill data instance
         """
         async with get_session() as db:
-            result = await db.execute(
+            record = await db.scalar(
                 select(ThreadSkillDataTable).where(
                     ThreadSkillDataTable.thread_id == self.thread_id,
                     ThreadSkillDataTable.skill == self.skill,
                     ThreadSkillDataTable.key == self.key,
                 )
             )
-            existing = result.scalar_one_or_none()
 
-            now = datetime.now(timezone.utc)
-
-            if existing:
+            if record:
                 # Update existing record
-                existing.data = self.data
-                existing.agent_id = self.agent_id
-                existing.updated_at = now
-                db.add(existing)
-                await db.commit()
-                await db.refresh(existing)
-                return ThreadSkillData.model_validate(existing)
+                record.data = self.data
+                record.agent_id = self.agent_id
             else:
                 # Create new record
                 record = ThreadSkillDataTable(**self.model_dump())
-                db.add(record)
-                await db.commit()
-                await db.refresh(record)
-                return ThreadSkillData.model_validate(record)
+            db.add(record)
+            await db.commit()
+            await db.refresh(record)
+            return ThreadSkillData.model_validate(record)
 
 
 class ThreadSkillData(ThreadSkillDataCreate):
@@ -245,14 +228,13 @@ class ThreadSkillData(ThreadSkillDataCreate):
             Dictionary containing the skill data if found, None otherwise
         """
         async with get_session() as db:
-            result = await db.execute(
+            record = await db.scalar(
                 select(ThreadSkillDataTable).where(
                     ThreadSkillDataTable.thread_id == thread_id,
                     ThreadSkillDataTable.skill == skill,
                     ThreadSkillDataTable.key == key,
                 )
             )
-            record = result.scalar_one_or_none()
         return record.data if record else None
 
     @classmethod
