@@ -4,11 +4,11 @@ import asyncio
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from sqlmodel import update
+from sqlalchemy import update
 
 from app.config.config import config
 from app.services.twitter.oauth2_refresh import refresh_expiring_tokens
-from models.agent import AgentQuota
+from models.agent import AgentQuotaTable
 from models.db import get_session, init_db
 
 
@@ -17,8 +17,10 @@ async def reset_daily_quotas():
     Resets message_count_daily and twitter_count_daily to 0.
     """
     async with get_session() as session:
-        stmt = update(AgentQuota).values(message_count_daily=0, twitter_count_daily=0)
-        await session.exec(stmt)
+        stmt = update(AgentQuotaTable).values(
+            message_count_daily=0, twitter_count_daily=0
+        )
+        await session.execute(stmt)
         await session.commit()
 
 
@@ -27,10 +29,10 @@ async def reset_monthly_quotas():
     Resets message_count_monthly and autonomous_count_monthly to 0.
     """
     async with get_session() as session:
-        stmt = update(AgentQuota).values(
+        stmt = update(AgentQuotaTable).values(
             message_count_monthly=0, autonomous_count_monthly=0
         )
-        await session.exec(stmt)
+        await session.execute(stmt)
         await session.commit()
 
 

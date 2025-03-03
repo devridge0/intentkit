@@ -1,10 +1,13 @@
 """Database migration utilities."""
 
 import logging
-from typing import Callable, Type
+from typing import Callable
 
 from sqlalchemy import Column, MetaData, inspect, text
-from sqlmodel import SQLModel
+
+from models.base import Base
+
+logger = logging.getLogger(__name__)
 
 
 async def add_column_if_not_exists(
@@ -44,48 +47,57 @@ async def add_column_if_not_exists(
 
         # Execute ALTER TABLE
         await conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_def}"))
-        logging.info(f"Added column {column.name} to table {table_name}")
+        logger.info(f"Added column {column.name} to table {table_name}")
 
 
-async def update_table_schema(conn, dialect, model: Type[SQLModel]) -> None:
+async def update_table_schema(conn, dialect, model_cls) -> None:
     """Update table schema by adding missing columns from the model.
 
     Args:
         conn: SQLAlchemy conn
-        model: SQLModel class to check for new columns
+        dialect: SQLAlchemy dialect
+        model_cls: SQLAlchemy model class to check for new columns
     """
-    if not hasattr(model, "__table__"):
+    if not hasattr(model_cls, "__table__"):
         return
 
-    table_name = model.__tablename__
-    for name, column in model.__table__.columns.items():
+    table_name = model_cls.__tablename__
+    for name, column in model_cls.__table__.columns.items():
         if name != "id":  # Skip primary key
             await add_column_if_not_exists(conn, dialect, table_name, column)
 
 
 async def safe_migrate(engine) -> None:
-    """Safely migrate all SQLModel tables by adding new columns.
+    """Safely migrate all SQLAlchemy models by adding new columns.
 
     Args:
         engine: SQLAlchemy engine
     """
-    try:
-        # Create tables if they don't exist
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
+    logger.info("Starting database schema migration")
+    dialect = engine.dialect
+
+    async with engine.begin() as conn:
+        try:
+            # Create tables if they don't exist
+            await conn.run_sync(Base.metadata.create_all)
 
             # Get existing table metadata
             metadata = MetaData()
             await conn.run_sync(metadata.reflect)
 
-            # Update schema for all SQLModel classes
-            for model in SQLModel.__subclasses__():
-                if hasattr(model, "__tablename__"):
-                    table_name = model.__tablename__
+            # Update schema for all model classes
+            for mapper in Base.registry.mappers:
+                model_cls = mapper.class_
+                if hasattr(model_cls, "__tablename__"):
+                    table_name = model_cls.__tablename__
                     if table_name in metadata.tables:
-                        await update_table_schema(conn, engine.dialect, model)
+                        # We need a sync wrapper for the async update_table_schema
+                        async def update_table_wrapper():
+                            await update_table_schema(conn, dialect, model_cls)
+                        
+                        await update_table_wrapper()
+        except Exception as e:
+            logger.error(f"Error updating database schema: {str(e)}")
+            raise
 
-        logging.info("Database schema updated successfully")
-    except Exception as e:
-        logging.error(f"Error updating database schema: {str(e)}")
-        raise
+    logger.info("Database schema updated successfully")

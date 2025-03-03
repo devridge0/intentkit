@@ -12,7 +12,6 @@ fastapi = "^0.115.8"
 gunicorn = "^23.0.0"
 pydantic = "*"
 pydantic-settings = "^2.7.1"
-sqlmodel = "^0.0.22"
 sqlalchemy = {version = "^2.0.37", extras = ["asyncio"]}
 psycopg = "^3.2.3"
 psycopg2 = "*"
@@ -68,6 +67,7 @@ langchain-xai = "^0.2.1"
 coinbase-agentkit = "0.1.4.dev202502250"
 coinbase-agentkit-langchain = "^0.1.0"
 jsonref = "^1.1.0"
+pytz = "^2024.1"
 
 [tool.poetry.group.dev] 
 optional = true
