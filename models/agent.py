@@ -1249,6 +1249,32 @@ class AgentData(BaseModel):
                 detail=f"Failed to save agent data: {str(e)}",
             ) from e
 
+    @staticmethod
+    async def patch(id: str, data: dict) -> "AgentData":
+        """Update agent data.
+
+        Args:
+            id: ID of the agent
+            data: Dictionary containing fields to update
+
+        Returns:
+            Updated agent data
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        async with get_session() as db:
+            agent_data = await db.get(AgentDataTable, id)
+            if not agent_data:
+                agent_data = AgentDataTable(id=id, **data)
+                db.add(agent_data)
+            else:
+                for key, value in data.items():
+                    setattr(agent_data, key, value)
+            await db.commit()
+            await db.refresh(agent_data)
+            return AgentData.model_validate(agent_data)
+
 
 class AgentPluginDataTable(Base):
     """Database model for storing plugin-specific data for agents.
