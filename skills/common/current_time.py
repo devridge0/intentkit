@@ -32,7 +32,10 @@ class CurrentTime(CommonBaseTool):
     """
 
     name: str = "current_time"
-    description: str = "Returns the current time, converted to a specified timezone"
+    description: str = (
+        "Get the current time, converted to a specified timezone.\n"
+        "You must call this tool whenever the user asks for the time."
+    )
     args_schema: Type[BaseModel] = CurrentTimeInput
 
     def _run(self, timezone: str = "UTC") -> str:
