@@ -316,13 +316,13 @@ async def get_chat_history(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get chat messages (last 50 in DESC order)
-    result = await db.execute(
+    result = await db.scalars(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
         .limit(50)
     )
-    messages = result.scalars().all()
+    messages = result.all()
 
     # Reverse messages to get chronological order
     messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
@@ -368,14 +368,12 @@ async def retry_chat_deprecated(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.execute(
+    last = await db.scalar(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
         .limit(1)
     )
-    last = result.scalar_one_or_none()
-
     if not last:
         raise HTTPException(status_code=404, detail="No messages found")
 
@@ -452,13 +450,12 @@ async def retry_chat(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.execute(
+    last = await db.scalar(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
         .limit(1)
     )
-    last = result.scalar_one_or_none()
 
     if not last:
         raise HTTPException(status_code=404, detail="No messages found")

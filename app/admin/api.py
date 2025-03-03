@@ -234,20 +234,22 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     * `list[AgentResponse]` - List of agents with their quota information and additional processed data
     """
     # Query all agents first
-    agents = (await db.execute(select(AgentTable))).all()
+    agents = (await db.scalars(select(AgentTable))).all()
 
     # Batch get agent data
     agent_ids = [agent.id for agent in agents]
-    agent_data_list = (
-        await db.execute(select(AgentDataTable).where(AgentDataTable.id.in_(agent_ids)))
-    ).all()
+    agent_data_list = await db.scalars(
+        select(AgentDataTable).where(AgentDataTable.id.in_(agent_ids))
+    )
     agent_data_map = {data.id: data for data in agent_data_list}
 
     # Convert to AgentResponse objects
     return [
         AgentResponse.from_agent(
             Agent.model_validate(agent),
-            AgentData.model_validate(agent_data_map.get(agent.id)),
+            AgentData.model_validate(agent_data_map.get(agent.id))
+            if agent.id in agent_data_map
+            else None,
         )
         for agent in agents
     ]

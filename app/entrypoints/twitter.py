@@ -36,13 +36,12 @@ async def run_twitter_agents():
     check their twitter config, get mentions, and process them."""
     async with get_session() as db:
         # Get all twitter-enabled agents
-        result = await db.execute(
+        agents = await db.scalars(
             select(AgentTable).where(
                 AgentTable.twitter_entrypoint_enabled == True,  # noqa: E712
                 AgentTable.twitter_config != None,  # noqa: E711
             )
         )
-        agents = result.all()
 
         for item in agents:
             agent = Agent.model_validate(item)

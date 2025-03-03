@@ -33,7 +33,7 @@ async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentDataTabl
                 AgentDataTable.twitter_access_token_expires_at <= expiration_threshold,
             )
         )
-    return result.all()
+    return result.scalars().all()
 
 
 async def refresh_token(agent_data_record: AgentDataTable):

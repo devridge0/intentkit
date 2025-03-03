@@ -42,8 +42,7 @@ async def schedule_agent_autonomous_tasks(scheduler: AsyncIOScheduler):
     async with get_session() as db:
         # Get all agents with autonomous configuration
         query = select(AgentTable).where(AgentTable.autonomous != None)  # noqa: E711
-        result = await db.execute(query)
-        agents = result.all()
+        agents = await db.scalars(query)
 
         for item in agents:
             agent = Agent.model_validate(item)

@@ -19,7 +19,7 @@ async def run_autonomous_agents():
     If the quota check passes, run them autonomously."""
     async with get_session() as db:
         # Get all autonomous agents
-        agents = await db.execute(
+        result = await db.scalars(
             select(AgentTable).where(
                 AgentTable.autonomous_enabled == True,  # noqa: E712
                 AgentTable.autonomous_prompt != None,  # noqa: E711
@@ -27,7 +27,7 @@ async def run_autonomous_agents():
             )
         )
 
-        for item in agents.all():
+        for item in result:
             agent = Agent.model_validate(item)
             try:
                 # Get agent quota
