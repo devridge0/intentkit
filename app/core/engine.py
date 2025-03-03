@@ -756,13 +756,9 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
     is_private = False
     if chat_id.startswith("owner") or chat_id.startswith("autonomous"):
         is_private = True
-    try:
-        executor, _ = await agent_executor(agent_id, is_private)
-        snap = await executor.aget_state(stream_config)
-        if snap.values and "messages" in snap.values:
-            return snap.values["messages"]
-        else:
-            return []
-    except Exception as e:
-        logger.error(f"failed to get {thread_id} debug prompt: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    executor, _ = await agent_executor(agent_id, is_private)
+    snap = await executor.aget_state(stream_config)
+    if snap.values and "messages" in snap.values:
+        return snap.values["messages"]
+    else:
+        return []

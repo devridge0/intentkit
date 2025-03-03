@@ -36,12 +36,14 @@ def get_skills(
         for name in config["public_skills"]
     ]
     # return private skills only if is_private
-    if is_private:
+    if is_private and "private_skills" in config:
         resp.extend(
-            get_twitter_skill(name, twitter, store, agent_id, agent_store)
-            for name in config["private_skills"]
-            # remove duplicates
-            if name not in config["public_skills"]
+            [
+                get_twitter_skill(name, twitter, store, agent_id, agent_store)
+                for name in config["private_skills"]
+                # remove duplicates
+                if name not in config["public_skills"]
+            ]
         )
     return resp
 
