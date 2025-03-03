@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.core.engine import execute_agent
 from models.agent import Agent, AgentPluginData, AgentQuota, AgentTable
-from models.chat import AuthorType, ChatMessage
+from models.chat import AuthorType, ChatMessageCreate
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ async def run_twitter_agents():
     check their twitter config, get mentions, and process them."""
     async with get_session() as db:
         # Get all twitter-enabled agents
-        result = await db.exec(
+        result = await db.execute(
             select(AgentTable).where(
                 AgentTable.twitter_entrypoint_enabled == True,  # noqa: E712
                 AgentTable.twitter_config != None,  # noqa: E711
@@ -112,7 +112,7 @@ async def run_twitter_agents():
                 # Process each mention
                 for mention in mentions.data:
                     # because twitter react is all public, the memory shared by all public entrypoints
-                    message = ChatMessage(
+                    message = ChatMessageCreate(
                         id=str(XID()),
                         agent_id=agent.id,
                         chat_id="public",

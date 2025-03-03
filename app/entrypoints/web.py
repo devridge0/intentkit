@@ -32,6 +32,7 @@ from models.chat import (
     Chat,
     ChatCreate,
     ChatMessage,
+    ChatMessageCreate,
     ChatMessageRequest,
     ChatMessageTable,
 )
@@ -225,7 +226,7 @@ async def debug_chat(
     # get thread_id from request ip
     if not chat_id:
         chat_id = thread if thread else request.client.host
-    user_input = ChatMessage(
+    user_input = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=chat_id,
@@ -315,7 +316,7 @@ async def get_chat_history(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get chat messages (last 50 in DESC order)
-    result = await db.exec(
+    result = await db.execute(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
@@ -324,7 +325,7 @@ async def get_chat_history(
     messages = result.all()
 
     # Reverse messages to get chronological order
-    messages = [ChatMessage.from_orm(message) for message in messages[::-1]]
+    messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
 
     return messages
 
@@ -367,7 +368,7 @@ async def retry_chat_deprecated(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.exec(
+    result = await db.execute(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
@@ -388,7 +389,7 @@ async def retry_chat_deprecated(
         return last_message
 
     if last_message.author_type == AuthorType.SKILL:
-        error_message = ChatMessage(
+        error_message = ChatMessageCreate(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
@@ -451,7 +452,7 @@ async def retry_chat(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.exec(
+    result = await db.execute(
         select(ChatMessageTable)
         .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
         .order_by(desc(ChatMessageTable.created_at))
@@ -470,7 +471,7 @@ async def retry_chat(
         return [last_message]
 
     if last_message.author_type == AuthorType.SKILL:
-        error_message = ChatMessage(
+        error_message = ChatMessageCreate(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
@@ -538,7 +539,7 @@ async def create_chat_deprecated(
         raise HTTPException(status_code=429, detail="Quota exceeded")
 
     # Create user message
-    user_message = ChatMessage(
+    user_message = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
@@ -633,7 +634,7 @@ async def create_chat(
         raise HTTPException(status_code=429, detail="Quota exceeded")
 
     # Create user message
-    user_message = ChatMessage(
+    user_message = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,

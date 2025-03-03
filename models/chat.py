@@ -397,7 +397,7 @@ class Chat(ChatCreate):
                 .where(ChatTable.id == self.id)
                 .values(rounds=ChatTable.rounds + 1)
             )
-            await db.exec(stmt)
+            await db.execute(stmt)
             await db.commit()
 
             # Update local object
@@ -418,7 +418,7 @@ class Chat(ChatCreate):
             stmt = (
                 update(ChatTable).where(ChatTable.id == self.id).values(summary=summary)
             )
-            await db.exec(stmt)
+            await db.execute(stmt)
             await db.commit()
 
             # Update local object
@@ -438,7 +438,7 @@ class Chat(ChatCreate):
         """
         async with get_session() as db:
             results = (
-                await db.exec(
+                await db.execute(
                     select(ChatTable)
                     .order_by(desc(ChatTable.updated_at))
                     .limit(10)

@@ -56,7 +56,7 @@ class AgentSkillDataCreate(BaseModel):
         """
         async with get_session() as db:
             existing = (
-                await db.exec(
+                await db.execute(
                     select(AgentSkillDataTable).where(
                         AgentSkillDataTable.agent_id == self.agent_id,
                         AgentSkillDataTable.skill == self.skill,
@@ -117,7 +117,7 @@ class AgentSkillData(AgentSkillDataCreate):
         """
         async with get_session() as db:
             result = (
-                await db.exec(
+                await db.execute(
                     select(AgentSkillDataTable).where(
                         AgentSkillDataTable.agent_id == agent_id,
                         AgentSkillDataTable.skill == skill,
@@ -135,7 +135,7 @@ class AgentSkillData(AgentSkillDataCreate):
             agent_id: ID of the agent
         """
         async with get_session() as db:
-            await db.exec(
+            await db.execute(
                 delete(AgentSkillDataTable).where(
                     AgentSkillDataTable.agent_id == agent_id
                 )
@@ -186,7 +186,7 @@ class ThreadSkillDataCreate(BaseModel):
         """
         async with get_session() as db:
             existing = (
-                await db.exec(
+                await db.execute(
                     select(ThreadSkillDataTable).where(
                         ThreadSkillDataTable.thread_id == self.thread_id,
                         ThreadSkillDataTable.skill == self.skill,
@@ -249,7 +249,7 @@ class ThreadSkillData(ThreadSkillDataCreate):
         """
         async with get_session() as db:
             result = (
-                await db.exec(
+                await db.execute(
                     select(ThreadSkillDataTable).where(
                         ThreadSkillDataTable.thread_id == thread_id,
                         ThreadSkillDataTable.skill == skill,
@@ -270,14 +270,14 @@ class ThreadSkillData(ThreadSkillDataCreate):
         """
         async with get_session() as db:
             if thread_id and thread_id != "":
-                await db.exec(
+                await db.execute(
                     delete(ThreadSkillDataTable).where(
                         ThreadSkillDataTable.agent_id == agent_id,
                         ThreadSkillDataTable.thread_id == thread_id,
                     )
                 )
             else:
-                await db.exec(
+                await db.execute(
                     delete(ThreadSkillDataTable).where(
                         ThreadSkillDataTable.agent_id == agent_id
                     )

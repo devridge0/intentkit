@@ -11,15 +11,17 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import NoResultFound
 
 from app.core.engine import execute_agent
-from models.chat import ChatMessage
+from models.chat import ChatMessage, ChatMessageCreate
 
 core_router = APIRouter(prefix="/core", tags=["core"])
 
 
 @core_router.post("/execute", response_model=list[ChatMessage])
 async def execute(
-    message: Annotated[ChatMessage, AfterValidator(ChatMessage.model_validate)] = Body(
-        ChatMessage,
+    message: Annotated[
+        ChatMessageCreate, AfterValidator(ChatMessageCreate.model_validate)
+    ] = Body(
+        ChatMessageCreate,
         description="The chat message containing agent_id, chat_id and message content",
     ),
 ) -> list[ChatMessage]:
