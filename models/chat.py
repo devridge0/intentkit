@@ -367,7 +367,8 @@ class Chat(ChatCreate):
         """
         try:
             async with get_session() as db:
-                chat_record = await db.get(ChatTable, id)
+                result = await db.execute(select(ChatTable).where(ChatTable.id == id))
+                chat_record = result.scalar_one_or_none()
                 if chat_record:
                     return cls.model_validate(chat_record)
                 return None
@@ -378,7 +379,8 @@ class Chat(ChatCreate):
         """Delete the chat from the database."""
         try:
             async with get_session() as db:
-                chat_record = await db.get(ChatTable, self.id)
+                result = await db.execute(select(ChatTable).where(ChatTable.id == self.id))
+                chat_record = result.scalar_one_or_none()
                 if chat_record:
                     await db.delete(chat_record)
                     await db.commit()
@@ -437,13 +439,12 @@ class Chat(ChatCreate):
             List of chats
         """
         async with get_session() as db:
-            results = (
-                await db.execute(
-                    select(ChatTable)
-                    .order_by(desc(ChatTable.updated_at))
-                    .limit(10)
-                    .where(ChatTable.agent_id == agent_id, ChatTable.user_id == user_id)
-                )
-            ).all()
+            result = await db.execute(
+                select(ChatTable)
+                .order_by(desc(ChatTable.updated_at))
+                .limit(10)
+                .where(ChatTable.agent_id == agent_id, ChatTable.user_id == user_id)
+            )
+            results = result.scalars().all()
 
             return [cls.model_validate(chat) for chat in results]
