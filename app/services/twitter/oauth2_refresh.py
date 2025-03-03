@@ -3,16 +3,16 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import select
+from sqlalchemy import select
 
 from app.services.twitter.oauth2 import oauth2_user_handler
-from models.agent import AgentData
+from models.agent import AgentData, AgentDataTable
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
 
 
-async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentData]:
+async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentDataTable]:
     """Get all agents with tokens expiring within the specified threshold.
 
     Args:
@@ -26,17 +26,17 @@ async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentData]:
     )
 
     async with get_session() as db:
-        result = await db.exec(
-            select(AgentData).where(
-                AgentData.twitter_access_token.is_not(None),
-                AgentData.twitter_refresh_token.is_not(None),
-                AgentData.twitter_access_token_expires_at <= expiration_threshold,
+        result = await db.execute(
+            select(AgentDataTable).where(
+                AgentDataTable.twitter_access_token.is_not(None),
+                AgentDataTable.twitter_refresh_token.is_not(None),
+                AgentDataTable.twitter_access_token_expires_at <= expiration_threshold,
             )
         )
-    return result.all()
+    return result.scalars().all()
 
 
-async def refresh_token(agent_data: AgentData):
+async def refresh_token(agent_data_record: AgentDataTable):
     """Refresh Twitter OAuth2 token for an agent.
 
     Args:
@@ -44,9 +44,11 @@ async def refresh_token(agent_data: AgentData):
     """
     try:
         # Get new token using refresh token
-        token = oauth2_user_handler.refresh(agent_data.twitter_refresh_token)
+        token = oauth2_user_handler.refresh(agent_data_record.twitter_refresh_token)
 
         token = {} if token is None else token
+
+        agent_data = AgentData(id=agent_data_record.id)
 
         # Update token information
         agent_data.twitter_access_token = token.get("access_token")
@@ -59,12 +61,12 @@ async def refresh_token(agent_data: AgentData):
         await agent_data.save()
 
         logger.info(
-            f"Successfully refreshed Twitter token for agent {agent_data.id}, "
-            f"expires at {agent_data.twitter_access_token_expires_at}"
+            f"Successfully refreshed Twitter token for agent {agent_data_record.id}, "
+            f"expires at {agent_data_record.twitter_access_token_expires_at}"
         )
     except Exception as e:
         logger.error(
-            f"Failed to refresh Twitter token for agent {agent_data.id}: {str(e)}"
+            f"Failed to refresh Twitter token for agent {agent_data_record.id}: {str(e)}"
         )
 
 

@@ -19,15 +19,22 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field, ValidationError
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import NoResultFound
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 from yaml import safe_load
 
 from app.config.config import config
 from app.core.engine import clean_agent_memory
-from models.agent import Agent, AgentData, AgentResponse
+from models.agent import (
+    Agent,
+    AgentCreate,
+    AgentData,
+    AgentDataTable,
+    AgentResponse,
+    AgentTable,
+)
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
 from utils.slack_alert import send_slack_message
@@ -42,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _process_agent(
-    agent: Agent, subject: str | None = None, slack_message: str | None = None
+    agent: AgentCreate, subject: str | None = None, slack_message: str | None = None
 ) -> tuple[Agent, AgentData]:
     """Shared function to process agent creation or update.
 
@@ -188,7 +195,7 @@ async def _process_agent(
     "/agents", tags=["Agent"], status_code=201, operation_id="post_agent"
 )
 async def create_agent(
-    agent: Agent = Body(Agent, description="Agent configuration"),
+    agent: AgentCreate = Body(AgentCreate, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
 ) -> AgentResponse:
     """Create or update an agent.
@@ -227,18 +234,23 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
     * `list[AgentResponse]` - List of agents with their quota information and additional processed data
     """
     # Query all agents first
-    agents = (await db.exec(select(Agent))).all()
+    agents = (await db.scalars(select(AgentTable))).all()
 
     # Batch get agent data
     agent_ids = [agent.id for agent in agents]
-    agent_data_list = (
-        await db.exec(select(AgentData).where(AgentData.id.in_(agent_ids)))
-    ).all()
+    agent_data_list = await db.scalars(
+        select(AgentDataTable).where(AgentDataTable.id.in_(agent_ids))
+    )
     agent_data_map = {data.id: data for data in agent_data_list}
 
     # Convert to AgentResponse objects
     return [
-        AgentResponse.from_agent(agent, agent_data_map.get(agent.id))
+        AgentResponse.from_agent(
+            Agent.model_validate(agent),
+            AgentData.model_validate(agent_data_map.get(agent.id))
+            if agent.id in agent_data_map
+            else None,
+        )
         for agent in agents
     ]
 
@@ -251,7 +263,6 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
 )
 async def get_agent(
     agent_id: str = Path(..., description="ID of the agent to retrieve"),
-    db: AsyncSession = Depends(get_db),
 ) -> AgentResponse:
     """Get a single agent by ID.
 
@@ -265,17 +276,10 @@ async def get_agent(
     * `HTTPException`:
         - 404: Agent not found
     """
-    agent = (await db.exec(select(Agent).where(Agent.id == agent_id))).first()
-    if not agent:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Agent with id {agent_id} not found",
-        )
+    agent = await Agent.get(agent_id)
 
     # Get agent data
-    agent_data = (
-        await db.exec(select(AgentData).where(AgentData.id == agent_id))
-    ).first()
+    agent_data = await AgentData.get(agent_id)
 
     return AgentResponse.from_agent(agent, agent_data)
 
@@ -307,7 +311,6 @@ async def clean_memory(
     request: MemCleanRequest = Body(
         MemCleanRequest, description="Agent memory cleanup request"
     ),
-    db: AsyncSession = Depends(get_db),
 ) -> str:
     """Clear an agent memory.
 
@@ -374,22 +377,16 @@ async def export_agent(
     * `HTTPException`:
         - 404: Agent not found
     """
-    try:
-        agent = await Agent.get(agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
-
-        yaml_content = agent.to_yaml()
-        return Response(
-            content=yaml_content,
-            media_type="application/x-yaml",
-            headers={"Content-Disposition": f'attachment; filename="{agent_id}.yaml"'},
-        )
-    except NoResultFound:
+    agent = await Agent.get(agent_id)
+    if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    except Exception as e:
-        logger.error(f"Error exporting agent {agent_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+    yaml_content = agent.to_yaml()
+    return Response(
+        content=yaml_content,
+        media_type="application/x-yaml",
+        headers={"Content-Disposition": f'attachment; filename="{agent_id}.yaml"'},
+    )
 
 
 @admin_router.put(
@@ -423,42 +420,31 @@ async def import_agent(
         - 404: Agent not found
         - 500: Server error
     """
+    # First check if agent exists
+    existing_agent = await Agent.get(agent_id)
+    if not existing_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Read and parse YAML
+    content = await file.read()
     try:
-        # First check if agent exists
-        existing_agent = await Agent.get(agent_id)
-        if not existing_agent:
-            raise HTTPException(status_code=404, detail="Agent not found")
+        yaml_data = safe_load(content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
 
-        # Read and parse YAML
-        content = await file.read()
-        try:
-            yaml_data = safe_load(content)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
-
-        # Ensure agent ID matches
-        if yaml_data.get("id") != agent_id:
-            raise HTTPException(
-                status_code=400, detail="Agent ID in YAML does not match URL parameter"
-            )
-
-        # Create Agent instance from YAML
-        try:
-            agent = Agent(**yaml_data)
-        except ValidationError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid agent configuration: {e}"
-            )
-
-        # Process the agent
-        await _process_agent(
-            agent, subject, slack_message="Agent Updated via YAML Import"
+    # Ensure agent ID matches
+    if yaml_data.get("id") != agent_id:
+        raise HTTPException(
+            status_code=400, detail="Agent ID in YAML does not match URL parameter"
         )
 
-        return "Agent import successful"
+    # Create Agent instance from YAML
+    try:
+        agent = AgentCreate.model_validate(yaml_data)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid agent configuration: {e}")
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error importing agent {agent_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Process the agent
+    await _process_agent(agent, subject, slack_message="Agent Updated via YAML Import")
+
+    return "Agent import successful"

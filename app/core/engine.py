@@ -58,8 +58,8 @@ from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from clients import TwitterClient
-from models.agent import Agent, AgentData
-from models.chat import AuthorType, ChatMessage, ChatMessageSkillCall
+from models.agent import Agent, AgentData, AgentTable
+from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skills.acolyt import get_Acolyt_skill
@@ -149,6 +149,19 @@ async def initialize_agent(aid, is_private=False):
         )
         if input_token_limit > 120000:
             input_token_limit = 120000
+    elif agent.model == "eternalai":
+        agent.model = "unsloth/Llama-3.3-70B-Instruct-bnb-4bit"
+        llm = ChatOpenAI(
+            model_name=agent.model,
+            openai_api_key=config.eternal_api_key,
+            openai_api_base="https://api.eternalai.org/v1",
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
+            timeout=300,
+        )
+        if input_token_limit > 60000:
+            input_token_limit = 60000
     else:
         llm = ChatOpenAI(
             model_name=agent.model,
@@ -456,7 +469,9 @@ async def agent_executor(agent_id: str, is_private: bool) -> (CompiledGraph, flo
     return agents[agent_id], cold_start_cost
 
 
-async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
+async def execute_agent(
+    message: ChatMessageCreate, debug: bool = False
+) -> list[ChatMessage]:
     """
     Execute an agent with the given prompt and return response lines.
 
@@ -467,39 +482,46 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     4. Formats and times the execution steps
 
     Args:
-        message (ChatMessage): The chat message containing agent_id, chat_id, and message content
+        message (ChatMessageCreate): The chat message containing agent_id, chat_id, and message content
         debug (bool): Enable debug mode, will save the skill results
 
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
-    await message.save()
+    input = await message.save()
 
     is_private = False
-    if message.chat_id.startswith("owner") or message.chat_id.startswith("autonomous"):
+    if input.chat_id.startswith("owner") or input.chat_id.startswith("autonomous"):
         is_private = True
 
-    thread_id = f"{message.agent_id}-{message.chat_id}"
+    thread_id = f"{input.agent_id}-{input.chat_id}"
 
-    stream_config = {"configurable": {"thread_id": thread_id}}
+    stream_config = {
+        "configurable": {
+            "thread_id": thread_id,
+            "agent_id": input.agent_id,
+            "user_id": input.author_id,
+            "entrypoint": input.author_type,
+        }
+    }
     resp = []
     start = time.perf_counter()
 
-    executor, cold_start_cost = await agent_executor(message.agent_id, is_private)
+    executor, cold_start_cost = await agent_executor(input.agent_id, is_private)
     last = start + cold_start_cost
 
     # Extract images from attachments
     image_urls = []
-    if message.attachments:
+    if input.attachments:
         image_urls = [
             att.url
-            for att in message.attachments
+            for att in input.attachments
             if hasattr(att, "type") and att.type == "image" and hasattr(att, "url")
         ]
 
     # message
     content = [
-        {"type": "text", "text": message.message},
+        {"type": "text", "text": input.message},
     ]
     content.extend(
         [
@@ -528,11 +550,11 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     cached_tool_step = msg
                 elif hasattr(msg, "content") and msg.content:
                     # agent message
-                    chat_message = ChatMessage(
+                    chat_message_create = ChatMessageCreate(
                         id=str(XID()),
-                        agent_id=message.agent_id,
-                        chat_id=message.chat_id,
-                        author_id=message.agent_id,
+                        agent_id=input.agent_id,
+                        chat_id=input.chat_id,
+                        author_id=input.agent_id,
                         author_type=AuthorType.AGENT,
                         message=msg.content,
                         input_tokens=(
@@ -549,10 +571,10 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     )
                     last = this_time
                     if cold_start_cost > 0:
-                        chat_message.cold_start_cost = cold_start_cost
+                        chat_message_create.cold_start_cost = cold_start_cost
                         cold_start_cost = 0
+                    chat_message = await chat_message_create.save()
                     resp.append(chat_message)
-                    await chat_message.save()
                 else:
                     logger.error(
                         "unexpected agent message: " + str(msg),
@@ -592,7 +614,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                                     )
                             skill_calls.append(skill_call)
                             break
-                skill_message = ChatMessage(
+                skill_message_create = ChatMessageCreate(
                     id=str(XID()),
                     agent_id=message.agent_id,
                     chat_id=message.chat_id,
@@ -616,11 +638,11 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                 )
                 last = this_time
                 if cold_start_cost > 0:
-                    skill_message.cold_start_cost = cold_start_cost
+                    skill_message_create.cold_start_cost = cold_start_cost
                     cold_start_cost = 0
                 cached_tool_step = None
+                skill_message = await skill_message_create.save()
                 resp.append(skill_message)
-                await skill_message.save()
             elif "memory_manager" in chunk:
                 pass
             else:
@@ -632,7 +654,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
             logger.error(
                 f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
             )
-            error_message = ChatMessage(
+            error_message_create = ChatMessageCreate(
                 id=str(XID()),
                 agent_id=message.agent_id,
                 chat_id=message.chat_id,
@@ -641,7 +663,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                 message=f"Error in agent:\n  {str(e)}",
                 time_cost=time.perf_counter() - start,
             )
-            await error_message.save()
+            error_message = await error_message_create.save()
             resp.append(error_message)
             return resp
     return resp
@@ -673,18 +695,18 @@ async def clean_agent_memory(
         str: Successful response message.
     """
     # get the agent from the database
-    async with get_session() as db:
-        try:
-            if not clean_skill and not clean_agent:
-                raise HTTPException(
-                    status_code=400,
-                    detail="at least one of skills data or agent memory should be true.",
-                )
+    try:
+        if not clean_skill and not clean_agent:
+            raise HTTPException(
+                status_code=400,
+                detail="at least one of skills data or agent memory should be true.",
+            )
 
-            if clean_skill:
-                await AgentSkillData.clean_data(agent_id)
-                await ThreadSkillData.clean_data(agent_id, chat_id)
+        if clean_skill:
+            await AgentSkillData.clean_data(agent_id)
+            await ThreadSkillData.clean_data(agent_id, chat_id)
 
+        async with get_session() as db:
             if clean_agent:
                 chat_id = chat_id.strip()
                 q_suffix = "%"
@@ -713,19 +735,21 @@ async def clean_agent_memory(
 
             # update the updated_at field so that the agent instance will all reload
             await db.execute(
-                update(Agent).where(Agent.id == agent_id).values(updated_at=func.now())
+                update(AgentTable)
+                .where(AgentTable.id == agent_id)
+                .values(updated_at=func.now())
             )
             await db.commit()
 
-            logger.info(f"Agent [{agent_id}] data cleaned up successfully.")
-            return "Agent data cleaned up successfully."
-        except SQLAlchemyError as e:
-            # Handle other SQLAlchemy-related errors
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=str(e))
-        except Exception as e:
-            logger.error("failed to cleanup the agent memory: " + str(e))
-            raise e
+        logger.info(f"Agent [{agent_id}] data cleaned up successfully.")
+        return "Agent data cleaned up successfully."
+    except SQLAlchemyError as e:
+        # Handle other SQLAlchemy-related errors
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error("failed to cleanup the agent memory: " + str(e))
+        raise e
 
 
 async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
@@ -734,13 +758,9 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
     is_private = False
     if chat_id.startswith("owner") or chat_id.startswith("autonomous"):
         is_private = True
-    try:
-        executor, _ = await agent_executor(agent_id, is_private)
-        snap = await executor.aget_state(stream_config)
-        if snap.values and "messages" in snap.values:
-            return snap.values["messages"]
-        else:
-            return []
-    except Exception as e:
-        logger.error(f"failed to get {thread_id} debug prompt: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    executor, _ = await agent_executor(agent_id, is_private)
+    snap = await executor.aget_state(stream_config)
+    if snap.values and "messages" in snap.values:
+        return snap.values["messages"]
+    else:
+        return []

@@ -3,13 +3,13 @@ import logging
 import signal
 import sys
 
-from sqlmodel import select
+from sqlalchemy import select
 
 from app.config.config import config
 from app.services.tg.bot import pool
 from app.services.tg.bot.pool import BotPool, bot_by_token
 from app.services.tg.utils.cleanup import clean_token_str
-from models.agent import Agent, AgentData
+from models.agent import Agent, AgentData, AgentTable
 from models.db import get_session, init_db
 
 logger = logging.getLogger(__name__)
@@ -22,10 +22,10 @@ class AgentScheduler:
     async def sync(self):
         async with get_session() as db:
             # Get all telegram agents
-            result = await db.exec(select(Agent))
-            agents = result.all()
+            agents = await db.scalars(select(AgentTable))
 
-        for agent in agents:
+        for item in agents:
+            agent = Agent.model_validate(item)
             try:
                 if agent.id not in pool._agent_bots:
                     if (

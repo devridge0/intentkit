@@ -20,8 +20,8 @@ from fastapi import (
 from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
-from sqlmodel import desc, select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
 from app.core.engine import execute_agent, thread_stats
@@ -30,8 +30,11 @@ from models.agent import Agent, AgentData, AgentQuota
 from models.chat import (
     AuthorType,
     Chat,
+    ChatCreate,
     ChatMessage,
+    ChatMessageCreate,
     ChatMessageRequest,
+    ChatMessageTable,
 )
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
@@ -85,7 +88,7 @@ def format_debug_messages(messages: list[ChatMessage]) -> str:
             resp += "[ Agent cold start ... ]\n"
             resp += f"\n------------------- start cost: {message.cold_start_cost:.3f} seconds\n\n"
         if message.author_type == AuthorType.SKILL:
-            resp += f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ Skill Calls: ]\n\n"
+            resp += f"[ Skill Calls: ] ({message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC)\n\n"
             for skill_call in message.skill_calls:
                 resp += f" {skill_call['name']}: {skill_call['parameters']}\n"
                 if skill_call["success"]:
@@ -96,15 +99,17 @@ def format_debug_messages(messages: list[ChatMessage]) -> str:
                 f"\n------------------- skill cost: {message.time_cost:.3f} seconds\n\n"
             )
         elif message.author_type == AuthorType.AGENT:
-            resp += (
-                f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ Agent: ]\n\n"
-            )
+            resp += f"[ Agent: ] ({message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC)\n\n"
             resp += f" {message.message}\n"
             resp += (
                 f"\n------------------- agent cost: {message.time_cost:.3f} seconds\n\n"
             )
+        elif message.author_type == AuthorType.SYSTEM:
+            resp += f"[ System: ] ({message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC)\n\n"
+            resp += f" {message.message}\n"
+            resp += f"\n------------------- system cost: {message.time_cost:.3f} seconds\n\n"
         else:
-            resp += f"UTC {message.created_at.strftime('%Y-%m-%d %H:%M:%S')} [ {message.author_type}: {message.author_id} ]\n\n"
+            resp += f"[ User: ] ({message.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC) by {message.author_id}\n\n"
             resp += f" {message.message}\n"
             resp += (
                 f"\n------------------- user cost: {message.time_cost:.3f} seconds\n\n"
@@ -223,7 +228,7 @@ async def debug_chat(
     # get thread_id from request ip
     if not chat_id:
         chat_id = thread if thread else request.client.host
-    user_input = ChatMessage(
+    user_input = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=chat_id,
@@ -308,22 +313,21 @@ async def get_chat_history(
     * `404` - Agent not found
     """
     # Get agent and check if exists
-    result = await db.exec(select(Agent).where(Agent.id == aid))
-    agent = result.first()
+    agent = await Agent.get(aid)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get chat messages (last 50 in DESC order)
-    result = await db.exec(
-        select(ChatMessage)
-        .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
-        .order_by(desc(ChatMessage.created_at))
+    result = await db.scalars(
+        select(ChatMessageTable)
+        .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
+        .order_by(desc(ChatMessageTable.created_at))
         .limit(50)
     )
     messages = result.all()
 
     # Reverse messages to get chronological order
-    messages.reverse()
+    messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
 
     return messages
 
@@ -366,16 +370,16 @@ async def retry_chat_deprecated(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.exec(
-        select(ChatMessage)
-        .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
-        .order_by(desc(ChatMessage.created_at))
+    last = await db.scalar(
+        select(ChatMessageTable)
+        .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
+        .order_by(desc(ChatMessageTable.created_at))
         .limit(1)
     )
-    last_message = result.first()
-
-    if not last_message:
+    if not last:
         raise HTTPException(status_code=404, detail="No messages found")
+
+    last_message = ChatMessage.model_validate(last)
 
     # If last message is from agent, return it
     if (
@@ -385,7 +389,7 @@ async def retry_chat_deprecated(
         return last_message
 
     if last_message.author_type == AuthorType.SKILL:
-        error_message = ChatMessage(
+        error_message = ChatMessageCreate(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
@@ -448,18 +452,17 @@ async def retry_chat(
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get last message
-    result = await db.exec(
-        select(ChatMessage)
-        .where(ChatMessage.agent_id == aid, ChatMessage.chat_id == chat_id)
-        .order_by(desc(ChatMessage.created_at))
+    last = await db.scalar(
+        select(ChatMessageTable)
+        .where(ChatMessageTable.agent_id == aid, ChatMessageTable.chat_id == chat_id)
+        .order_by(desc(ChatMessageTable.created_at))
         .limit(1)
     )
-    last_message = result.first()
 
-    if not last_message:
+    if not last:
         raise HTTPException(status_code=404, detail="No messages found")
 
-    # If last message is from agent, return it
+    last_message = ChatMessage.model_validate(last)
     if (
         last_message.author_type == AuthorType.AGENT
         or last_message.author_type == AuthorType.SYSTEM
@@ -467,7 +470,7 @@ async def retry_chat(
         return [last_message]
 
     if last_message.author_type == AuthorType.SKILL:
-        error_message = ChatMessage(
+        error_message = ChatMessageCreate(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
@@ -535,7 +538,7 @@ async def create_chat_deprecated(
         raise HTTPException(status_code=429, detail="Quota exceeded")
 
     # Create user message
-    user_message = ChatMessage(
+    user_message = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
@@ -553,14 +556,14 @@ async def create_chat_deprecated(
     if chat:
         await chat.add_round()
     else:
-        chat = Chat(
+        chat = ChatCreate(
             id=request.chat_id,
             agent_id=aid,
             user_id=request.user_id,
             summary=textwrap.shorten(request.message, width=20, placeholder="..."),
             rounds=1,
         )
-        await chat.create()
+        await chat.save()
 
     # Update quota
     await quota.add_message()
@@ -630,7 +633,7 @@ async def create_chat(
         raise HTTPException(status_code=429, detail="Quota exceeded")
 
     # Create user message
-    user_message = ChatMessage(
+    user_message = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
@@ -648,14 +651,14 @@ async def create_chat(
     if chat:
         await chat.add_round()
     else:
-        chat = Chat(
+        chat = ChatCreate(
             id=request.chat_id,
             agent_id=aid,
             user_id=request.user_id,
             summary=textwrap.shorten(request.message, width=20, placeholder="..."),
             rounds=1,
         )
-        await chat.create()
+        await chat.save()
 
     # Update quota
     await quota.add_message()
@@ -803,3 +806,49 @@ async def delete_chat(
     # Delete chat
     await chat.delete()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@chat_router_readonly.get(
+    "/agents/{aid}/skill/history",
+    tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
+    response_model=List[ChatMessage],
+    operation_id="get_skill_history",
+    summary="Skill History",
+)
+async def get_skill_history(
+    aid: str = Path(..., description="Agent ID"),
+    db: AsyncSession = Depends(get_db),
+) -> List[ChatMessage]:
+    """Get last 50 skill messages for a specific agent.
+
+    **Path Parameters:**
+    * `aid` - Agent ID
+
+    **Returns:**
+    * `List[ChatMessage]` - List of skill messages, ordered by creation time ascending
+
+    **Raises:**
+    * `404` - Agent not found
+    """
+    # Get agent and check if exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get skill messages (last 50 in DESC order)
+    result = await db.scalars(
+        select(ChatMessageTable)
+        .where(
+            ChatMessageTable.agent_id == aid,
+            ChatMessageTable.author_type == AuthorType.SKILL
+        )
+        .order_by(desc(ChatMessageTable.created_at))
+        .limit(50)
+    )
+    messages = result.all()
+
+    # Reverse messages to get chronological order
+    messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
+
+    return messages
