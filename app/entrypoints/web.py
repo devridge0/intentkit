@@ -806,3 +806,49 @@ async def delete_chat(
     # Delete chat
     await chat.delete()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@chat_router_readonly.get(
+    "/agents/{aid}/skill/history",
+    tags=["Chat"],
+    dependencies=[Depends(verify_jwt)],
+    response_model=List[ChatMessage],
+    operation_id="get_skill_history",
+    summary="Skill History",
+)
+async def get_skill_history(
+    aid: str = Path(..., description="Agent ID"),
+    db: AsyncSession = Depends(get_db),
+) -> List[ChatMessage]:
+    """Get last 50 skill messages for a specific agent.
+
+    **Path Parameters:**
+    * `aid` - Agent ID
+
+    **Returns:**
+    * `List[ChatMessage]` - List of skill messages, ordered by creation time ascending
+
+    **Raises:**
+    * `404` - Agent not found
+    """
+    # Get agent and check if exists
+    agent = await Agent.get(aid)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Get skill messages (last 50 in DESC order)
+    result = await db.scalars(
+        select(ChatMessageTable)
+        .where(
+            ChatMessageTable.agent_id == aid,
+            ChatMessageTable.author_type == AuthorType.SKILL
+        )
+        .order_by(desc(ChatMessageTable.created_at))
+        .limit(50)
+    )
+    messages = result.all()
+
+    # Reverse messages to get chronological order
+    messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
+
+    return messages
