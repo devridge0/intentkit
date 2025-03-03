@@ -59,7 +59,7 @@ from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from clients import TwitterClient
 from models.agent import Agent, AgentData
-from models.chat import AuthorType, ChatMessage, ChatMessageSkillCall
+from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skills.acolyt import get_Acolyt_skill
@@ -469,7 +469,9 @@ async def agent_executor(agent_id: str, is_private: bool) -> (CompiledGraph, flo
     return agents[agent_id], cold_start_cost
 
 
-async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
+async def execute_agent(
+    message: ChatMessageCreate, debug: bool = False
+) -> list[ChatMessage]:
     """
     Execute an agent with the given prompt and return response lines.
 
@@ -480,7 +482,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
     4. Formats and times the execution steps
 
     Args:
-        message (ChatMessage): The chat message containing agent_id, chat_id, and message content
+        message (ChatMessageCreate): The chat message containing agent_id, chat_id, and message content
         debug (bool): Enable debug mode, will save the skill results
 
     Returns:
@@ -548,7 +550,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                     cached_tool_step = msg
                 elif hasattr(msg, "content") and msg.content:
                     # agent message
-                    chat_message = ChatMessage(
+                    chat_message = ChatMessageCreate(
                         id=str(XID()),
                         agent_id=message.agent_id,
                         chat_id=message.chat_id,
@@ -612,7 +614,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
                                     )
                             skill_calls.append(skill_call)
                             break
-                skill_message = ChatMessage(
+                skill_message = ChatMessageCreate(
                     id=str(XID()),
                     agent_id=message.agent_id,
                     chat_id=message.chat_id,
@@ -652,7 +654,7 @@ async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatM
             logger.error(
                 f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
             )
-            error_message = ChatMessage(
+            error_message = ChatMessageCreate(
                 id=str(XID()),
                 agent_id=message.agent_id,
                 chat_id=message.chat_id,

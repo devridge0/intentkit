@@ -70,7 +70,7 @@ async def get_session() -> AsyncSession:
     ensuring proper session cleanup.
 
     Returns:
-        AsyncSession: A SQLModel async session that will be automatically closed
+        AsyncSession: A SQLAlchemy async session that will be automatically closed
 
     Example:
         ```python

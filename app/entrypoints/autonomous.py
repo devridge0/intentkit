@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app.core.engine import execute_agent
 from models.agent import Agent, AgentQuota, AgentTable
-from models.chat import AuthorType, ChatMessage
+from models.chat import AuthorType, ChatMessageCreate
 from models.db import get_session
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ async def run_autonomous_agents():
     If the quota check passes, run them autonomously."""
     async with get_session() as db:
         # Get all autonomous agents
-        agents = await db.exec(
+        agents = await db.execute(
             select(AgentTable).where(
                 AgentTable.autonomous_enabled == True,  # noqa: E712
                 AgentTable.autonomous_prompt != None,  # noqa: E711
@@ -71,7 +71,7 @@ async def run_autonomous_agents():
 
 async def run_autonomous_action(aid: str, prompt: str):
     """Run the agent autonomously with specified intervals."""
-    message = ChatMessage(
+    message = ChatMessageCreate(
         id=str(XID()),
         agent_id=aid,
         chat_id="autonomous",
@@ -113,7 +113,7 @@ async def run_autonomous_task(agent_id: str, task_id: str, prompt: str):
 
         # Run the autonomous action
         chat_id = f"{task_id}"
-        message = ChatMessage(
+        message = ChatMessageCreate(
             id=str(XID()),
             agent_id=agent_id,
             chat_id=chat_id,

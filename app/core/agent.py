@@ -8,7 +8,7 @@ class AgentStore(AgentStoreABC):
     """Implementation of agent data storage operations.
 
     This class provides concrete implementations for storing and retrieving
-    agent-related data using SQLModel-based storage.
+    agent-related data.
 
     Args:
         agent_id: ID of the agent

@@ -7,10 +7,12 @@ import httpx
 
 from app.config.config import config
 from app.core.engine import execute_agent as local_execute_agent
-from models.chat import ChatMessage
+from models.chat import ChatMessage, ChatMessageCreate
 
 
-async def execute_agent(message: ChatMessage, debug: bool = False) -> list[ChatMessage]:
+async def execute_agent(
+    message: ChatMessageCreate, debug: bool = False
+) -> list[ChatMessage]:
     """Execute an agent with environment-aware routing.
 
     In local environment, directly calls the local execute_agent function.

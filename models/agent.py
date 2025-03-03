@@ -727,8 +727,8 @@ class AgentUpdate(BaseModel):
         self.check_prompt()
         async with get_session() as db:
             db_agent = (
-                await db.exec(select(AgentTable).where(AgentTable.id == id))
-            ).first()
+                await db.execute(select(AgentTable).where(AgentTable.id == id))
+            ).scalar_one_or_none()
             if not db_agent:
                 raise HTTPException(
                     status_code=404,
@@ -761,16 +761,18 @@ class AgentCreate(AgentUpdate):
     ]
 
     async def check_upstream_id(self) -> None:
-        if self.upstream_id:
-            async with get_session() as db:
-                ok = await db.exec(
-                    select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
-                ).first()
-                if ok:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Upstream id already in use",
-                    )
+        if not self.upstream_id:
+            return None
+        async with get_session() as db:
+            result = await db.execute(
+                select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
+            )
+            existing = result.scalar_one_or_none()
+            if existing:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Upstream id already in use",
+                )
 
     async def create(self) -> "Agent":
         self.check_prompt()
@@ -786,13 +788,13 @@ class AgentCreate(AgentUpdate):
         self.check_prompt()
         is_new = False
         async with get_session() as db:
-            db_agent = (
-                await db.exec(select(AgentTable).where(AgentTable.id == self.id))
-            ).first()
+            result = await db.execute(select(AgentTable).where(AgentTable.id == self.id))
+            db_agent = result.scalar_one_or_none()
             if not db_agent:
-                upstream = await db.exec(
+                result = await db.execute(
                     select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
-                ).first()
+                )
+                upstream = result.scalar_one_or_none()
                 if upstream:
                     raise HTTPException(
                         status_code=400,
@@ -905,15 +907,18 @@ class Agent(AgentCreate):
     @classmethod
     async def count() -> int:
         async with get_session() as db:
-            return (await db.exec(select(func.count(AgentTable.id)))).one()
+            result = await db.execute(select(func.count(AgentTable.id)))
+            return result.scalar_one()
 
     @classmethod
     async def get(cls, agent_id: str) -> Optional["Agent"]:
         async with get_session() as db:
-            res = (
-                await db.exec(select(AgentTable).where(AgentTable.id == agent_id))
-            ).first()
-            return cls.model_validate(res)
+            result = await db.execute(select(AgentTable).where(AgentTable.id == agent_id))
+            item = result.scalar_one_or_none()
+            logger.info(item)
+            if item is None:
+                return None
+            return cls.model_validate(item)
 
 
 class AgentResponse(Agent):
@@ -1203,13 +1208,12 @@ class AgentData(BaseModel):
         """
         try:
             async with get_session() as db:
-                result = (
-                    await db.exec(
-                        select(AgentDataTable).where(AgentDataTable.id == agent_id)
-                    )
-                ).first()
-                if result:
-                    return cls.model_validate(result)
+                result = await db.execute(
+                    select(AgentDataTable).where(AgentDataTable.id == agent_id)
+                )
+                item = result.scalar_one_or_none()
+                if item:
+                    return cls.model_validate(item)
                 return None
         except Exception as e:
             raise HTTPException(
@@ -1223,31 +1227,23 @@ class AgentData(BaseModel):
         Raises:
             HTTPException: If there are database errors
         """
-        try:
-            async with get_session() as db:
-                existing = (
-                    await db.exec(
-                        select(AgentDataTable).where(AgentDataTable.id == self.id)
-                    )
-                ).first()
+        async with get_session() as db:
+            result = await db.execute(
+                select(AgentDataTable).where(AgentDataTable.id == self.id)
+            )
+            existing = result.scalar_one_or_none()
 
-                if existing:
-                    # Update existing record
-                    for field, value in self.model_dump(exclude_unset=True).items():
-                        setattr(existing, field, value)
-                    db.add(existing)
-                else:
-                    # Create new record
-                    db_agent_data = AgentDataTable(**self.model_dump())
-                    db.add(db_agent_data)
+            if existing:
+                # Update existing record
+                for field, value in self.model_dump(exclude_unset=True).items():
+                    setattr(existing, field, value)
+                db.add(existing)
+            else:
+                # Create new record
+                db_agent_data = AgentDataTable(**self.model_dump())
+                db.add(db_agent_data)
 
-                await db.commit()
-        except Exception as e:
-            await db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to save agent data: {str(e)}",
-            ) from e
+            await db.commit()
 
     @staticmethod
     async def patch(id: str, data: dict) -> "AgentData":
@@ -1348,17 +1344,16 @@ class AgentPluginData(BaseModel):
         """
         try:
             async with get_session() as db:
-                result = (
-                    await db.exec(
-                        select(AgentPluginDataTable).where(
-                            AgentPluginDataTable.agent_id == agent_id,
-                            AgentPluginDataTable.plugin == plugin,
-                            AgentPluginDataTable.key == key,
-                        )
+                result = await db.execute(
+                    select(AgentPluginDataTable).where(
+                        AgentPluginDataTable.agent_id == agent_id,
+                        AgentPluginDataTable.plugin == plugin,
+                        AgentPluginDataTable.key == key,
                     )
-                ).first()
-                if result:
-                    return cls.model_validate(result)
+                )
+                item = result.scalar_one_or_none()
+                if item:
+                    return cls.model_validate(item)
                 return None
         except Exception as e:
             raise HTTPException(
@@ -1374,15 +1369,14 @@ class AgentPluginData(BaseModel):
         """
         try:
             async with get_session() as db:
-                existing = (
-                    await db.exec(
-                        select(AgentPluginDataTable).where(
-                            AgentPluginDataTable.agent_id == self.agent_id,
-                            AgentPluginDataTable.plugin == self.plugin,
-                            AgentPluginDataTable.key == self.key,
-                        )
+                result = await db.execute(
+                    select(AgentPluginDataTable).where(
+                        AgentPluginDataTable.agent_id == self.agent_id,
+                        AgentPluginDataTable.plugin == self.plugin,
+                        AgentPluginDataTable.key == self.key,
                     )
-                ).first()
+                )
+                existing = result.scalar_one_or_none()
 
                 if existing:
                     # Update existing record
@@ -1412,15 +1406,14 @@ class AgentPluginData(BaseModel):
                     self.updated_at = existing.updated_at
                 else:
                     # Get the newly created record to update this instance
-                    new_record = (
-                        await db.exec(
-                            select(AgentPluginDataTable).where(
-                                AgentPluginDataTable.agent_id == self.agent_id,
-                                AgentPluginDataTable.plugin == self.plugin,
-                                AgentPluginDataTable.key == self.key,
-                            )
+                    result = await db.execute(
+                        select(AgentPluginDataTable).where(
+                            AgentPluginDataTable.agent_id == self.agent_id,
+                            AgentPluginDataTable.plugin == self.plugin,
+                            AgentPluginDataTable.key == self.key,
                         )
-                    ).first()
+                    )
+                    new_record = result.scalar_one_or_none()
                     if new_record:
                         self.created_at = new_record.created_at
                         self.updated_at = new_record.updated_at
@@ -1510,11 +1503,10 @@ class AgentQuota(BaseModel):
         """
         try:
             async with get_session() as db:
-                quota_record = (
-                    await db.exec(
-                        select(AgentQuotaTable).where(AgentQuotaTable.id == agent_id)
-                    )
-                ).first()
+                result = await db.execute(
+                    select(AgentQuotaTable).where(AgentQuotaTable.id == agent_id)
+                )
+                quota_record = result.scalar_one_or_none()
 
                 if not quota_record:
                     # Create new record
@@ -1588,11 +1580,10 @@ class AgentQuota(BaseModel):
         """
         try:
             async with get_session() as db:
-                quota_record = (
-                    await db.exec(
-                        select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                    )
-                ).first()
+                result = await db.execute(
+                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
+                )
+                quota_record = result.scalar_one_or_none()
 
                 if quota_record:
                     # Update record
@@ -1624,11 +1615,10 @@ class AgentQuota(BaseModel):
         """
         try:
             async with get_session() as db:
-                quota_record = (
-                    await db.exec(
-                        select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                    )
-                ).first()
+                result = await db.execute(
+                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
+                )
+                quota_record = result.scalar_one_or_none()
 
                 if quota_record:
                     # Update record
@@ -1660,11 +1650,10 @@ class AgentQuota(BaseModel):
         """
         try:
             async with get_session() as db:
-                quota_record = (
-                    await db.exec(
-                        select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
-                    )
-                ).first()
+                result = await db.execute(
+                    select(AgentQuotaTable).where(AgentQuotaTable.id == self.id)
+                )
+                quota_record = result.scalar_one_or_none()
 
                 if quota_record:
                     # Update record

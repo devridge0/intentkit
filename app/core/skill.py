@@ -9,7 +9,7 @@ class SkillStore(SkillStoreABC):
     """Implementation of skill data storage operations.
 
     This class provides concrete implementations for storing and retrieving
-    skill-related data for both agents and threads using SQLModel-based storage.
+    skill-related data for both agents and threads.
     """
 
     @staticmethod

@@ -22,7 +22,7 @@ class AgentScheduler:
     async def sync(self):
         async with get_session() as db:
             # Get all telegram agents
-            result = await db.exec(select(AgentTable))
+            result = await db.execute(select(AgentTable))
             agents = result.all()
 
         for item in agents:
