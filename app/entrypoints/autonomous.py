@@ -112,7 +112,7 @@ async def run_autonomous_task(agent_id: str, task_id: str, prompt: str):
             return
 
         # Run the autonomous action
-        chat_id = f"{task_id}"
+        chat_id = f"autonomous-{task_id}"
         message = ChatMessageCreate(
             id=str(XID()),
             agent_id=agent_id,

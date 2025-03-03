@@ -58,7 +58,7 @@ from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from clients import TwitterClient
-from models.agent import Agent, AgentData
+from models.agent import Agent, AgentData, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
@@ -735,7 +735,9 @@ async def clean_agent_memory(
 
             # update the updated_at field so that the agent instance will all reload
             await db.execute(
-                update(Agent).where(Agent.id == agent_id).values(updated_at=func.now())
+                update(AgentTable)
+                .where(AgentTable.id == agent_id)
+                .values(updated_at=func.now())
             )
             await db.commit()
 
