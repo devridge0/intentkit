@@ -94,7 +94,7 @@ async def safe_migrate(engine) -> None:
                         # We need a sync wrapper for the async update_table_schema
                         async def update_table_wrapper():
                             await update_table_schema(conn, dialect, model_cls)
-                        
+
                         await update_table_wrapper()
         except Exception as e:
             logger.error(f"Error updating database schema: {str(e)}")
