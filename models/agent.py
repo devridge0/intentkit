@@ -10,7 +10,18 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, constr, field_validator, model_validator
 from pydantic import Field as PydanticField
 from pydantic.json_schema import SkipJsonSchema
-from sqlalchemy import BigInteger, Column, DateTime, Identity, String, func, select
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Identity,
+    Integer,
+    String,
+    func,
+    select,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 from models.base import Base
@@ -184,19 +195,19 @@ class AgentTable(Base):
         comment="Additional system prompt that has higher priority than the base prompt",
     )
     temperature = Column(
-        JSONB,
+        Float,
         nullable=True,
         default=0.7,
         comment="AI model temperature parameter controlling response randomness (0.0~1.0)",
     )
     frequency_penalty = Column(
-        JSONB,
+        Float,
         nullable=True,
         default=0.0,
         comment="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
     )
     presence_penalty = Column(
-        JSONB,
+        Float,
         nullable=True,
         default=0.0,
         comment="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
@@ -208,13 +219,13 @@ class AgentTable(Base):
         comment="Autonomous agent configurations",
     )
     autonomous_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether the agent can operate autonomously without user input",
     )
     autonomous_minutes = Column(
-        JSONB,
+        Integer,
         nullable=True,
         default=240,
         comment="Interval in minutes between autonomous operations when enabled",
@@ -232,7 +243,7 @@ class AgentTable(Base):
     )
     # if cdp_enabled, agent will have a cdp wallet
     cdp_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether CDP (Crestal Development Platform) integration is enabled",
@@ -255,7 +266,7 @@ class AgentTable(Base):
         comment="Dict of Crossmint wallet configurations",
     )
     goat_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether GOAT integration is enabled",
@@ -267,7 +278,7 @@ class AgentTable(Base):
     )
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
     twitter_entrypoint_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether the agent can receive events from Twitter",
@@ -286,7 +297,7 @@ class AgentTable(Base):
     )
     # if telegram_entrypoint_enabled, the telegram_entrypoint_enabled will be enabled, telegram_config will be checked
     telegram_entrypoint_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether the agent can receive events from Telegram",
@@ -310,7 +321,7 @@ class AgentTable(Base):
     )
     # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
     enso_enabled = Column(
-        JSONB,
+        Boolean,
         nullable=True,
         default=False,
         comment="Whether Enso integration is enabled",
@@ -1223,12 +1234,14 @@ class AgentData(BaseModel):
     created_at: Annotated[
         datetime,
         PydanticField(
+            default_factory=lambda: datetime.now(timezone.utc),
             description="Timestamp when the agent data was created",
         ),
     ]
     updated_at: Annotated[
         datetime,
         PydanticField(
+            default_factory=lambda: datetime.now(timezone.utc),
             description="Timestamp when the agent data was last updated",
         ),
     ]
@@ -1346,12 +1359,36 @@ class AgentPluginData(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    agent_id: str
-    plugin: str
-    key: str
-    data: Dict[str, Any] = None
-    created_at: datetime
-    updated_at: datetime
+    agent_id: Annotated[
+        str,
+        PydanticField(description="ID of the agent this data belongs to"),
+    ]
+    plugin: Annotated[
+        str,
+        PydanticField(description="Name of the plugin this data is for"),
+    ]
+    key: Annotated[
+        str,
+        PydanticField(description="Key for this specific piece of data"),
+    ]
+    data: Annotated[
+        Dict[str, Any],
+        PydanticField(default=None, description="JSON data stored for this key"),
+    ]
+    created_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when this data was created",
+            default_factory=lambda: datetime.now(timezone.utc),
+        ),
+    ]
+    updated_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when this data was last updated",
+            default_factory=lambda: datetime.now(timezone.utc),
+        ),
+    ]
 
     @classmethod
     async def get(
@@ -1460,27 +1497,104 @@ class AgentQuota(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    plan: str = "self-hosted"
-    message_count_total: int = 0
-    message_limit_total: int = 99999999
-    message_count_monthly: int = 0
-    message_limit_monthly: int = 99999999
-    message_count_daily: int = 0
-    message_limit_daily: int = 99999999
-    last_message_time: Optional[datetime] = None
-    autonomous_count_total: int = 0
-    autonomous_limit_total: int = 99999999
-    autonomous_count_monthly: int = 0
-    autonomous_limit_monthly: int = 99999999
-    last_autonomous_time: Optional[datetime] = None
-    twitter_count_total: int = 0
-    twitter_limit_total: int = 99999999
-    twitter_count_daily: int = 0
-    twitter_limit_daily: int = 99999999
-    last_twitter_time: Optional[datetime] = None
-    created_at: datetime
-    updated_at: datetime
+    id: Annotated[
+        str, PydanticField(description="ID of the agent this quota belongs to")
+    ]
+    plan: Annotated[
+        str, PydanticField(default="self-hosted", description="Agent plan name")
+    ]
+    message_count_total: Annotated[
+        int, PydanticField(default=0, description="Total message count")
+    ]
+    message_limit_total: Annotated[
+        int, PydanticField(default=99999999, description="Total message limit")
+    ]
+    message_count_monthly: Annotated[
+        int, PydanticField(default=0, description="Monthly message count")
+    ]
+    message_limit_monthly: Annotated[
+        int, PydanticField(default=99999999, description="Monthly message limit")
+    ]
+    message_count_daily: Annotated[
+        int, PydanticField(default=0, description="Daily message count")
+    ]
+    message_limit_daily: Annotated[
+        int, PydanticField(default=99999999, description="Daily message limit")
+    ]
+    last_message_time: Annotated[
+        Optional[datetime],
+        PydanticField(default=None, description="Last message timestamp"),
+    ]
+    autonomous_count_total: Annotated[
+        int, PydanticField(default=0, description="Total autonomous operations count")
+    ]
+    autonomous_limit_total: Annotated[
+        int,
+        PydanticField(
+            default=99999999, description="Total autonomous operations limit"
+        ),
+    ]
+    autonomous_count_monthly: Annotated[
+        int, PydanticField(default=0, description="Monthly autonomous operations count")
+    ]
+    autonomous_limit_monthly: Annotated[
+        int,
+        PydanticField(
+            default=99999999, description="Monthly autonomous operations limit"
+        ),
+    ]
+    autonomous_count_daily: Annotated[
+        int, PydanticField(default=0, description="Daily autonomous operations count")
+    ]
+    autonomous_limit_daily: Annotated[
+        int,
+        PydanticField(
+            default=99999999, description="Daily autonomous operations limit"
+        ),
+    ]
+    last_autonomous_time: Annotated[
+        Optional[datetime],
+        PydanticField(default=None, description="Last autonomous operation timestamp"),
+    ]
+    twitter_count_total: Annotated[
+        int, PydanticField(default=0, description="Total Twitter operations count")
+    ]
+    twitter_limit_total: Annotated[
+        int,
+        PydanticField(default=99999999, description="Total Twitter operations limit"),
+    ]
+    twitter_count_monthly: Annotated[
+        int, PydanticField(default=0, description="Monthly Twitter operations count")
+    ]
+    twitter_limit_monthly: Annotated[
+        int,
+        PydanticField(default=99999999, description="Monthly Twitter operations limit"),
+    ]
+    twitter_count_daily: Annotated[
+        int, PydanticField(default=0, description="Daily Twitter operations count")
+    ]
+    twitter_limit_daily: Annotated[
+        int,
+        PydanticField(default=99999999, description="Daily Twitter operations limit"),
+    ]
+    last_twitter_time: Annotated[
+        Optional[datetime],
+        PydanticField(default=None, description="Last Twitter operation timestamp"),
+    ]
+    created_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when this quota was created",
+            default_factory=lambda: datetime.now(timezone.utc),
+        ),
+    ]
+    updated_at: Annotated[
+        datetime,
+        PydanticField(
+            description="Timestamp when this quota was last updated",
+            default_factory=lambda: datetime.now(timezone.utc),
+        ),
+    ]
 
     @classmethod
     async def get(cls, agent_id: str) -> "AgentQuota":
