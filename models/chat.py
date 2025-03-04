@@ -301,6 +301,7 @@ class ChatTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
@@ -329,7 +330,7 @@ class ChatCreate(BaseModel):
             Chat: The saved chat with all fields populated
         """
         # Set timestamps
-        chat_record = ChatTable(**self.model_dump())
+        chat_record = ChatTable(**self.model_dump(exclude_unset=True))
 
         async with get_session() as db:
             db.add(chat_record)

@@ -34,6 +34,7 @@ class AgentSkillDataTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
@@ -150,6 +151,7 @@ class ThreadSkillDataTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
