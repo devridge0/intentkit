@@ -279,7 +279,7 @@ async def create_or_update_agent(
 
 
 @admin_router.post(
-    "/agents/v2", tags=["Agent"], status_code=201, operation_id="post_agent_v2"
+    "/agents/v2", tags=["Agent"], status_code=201, operation_id="create_agent"
 )
 async def create_agent(
     agent: AgentCreate = Body(AgentCreate, description="Agent configuration"),
