@@ -115,6 +115,7 @@ async def run_twitter_agents():
                         id=str(XID()),
                         agent_id=agent.id,
                         chat_id="public",
+                        user_id=str(mention.author_id),
                         author_id=str(mention.author_id),
                         author_type=AuthorType.TWITTER,
                         message=mention.text,

@@ -83,6 +83,7 @@ async def gp_process_message(message: Message) -> None:
                 chat_id=pool.agent_chat_id(
                     cached_bot_item.is_public_memory, message.chat.id
                 ),
+                user_id=str(message.from_user.id),
                 author_id=str(message.from_user.id),
                 author_type=AuthorType.TELEGRAM,
                 message=message_text,
@@ -130,6 +131,7 @@ async def process_message(message: Message) -> None:
             id=str(XID()),
             agent_id=cached_bot_item.agent_id,
             chat_id=pool.agent_chat_id(False, message.chat.id),
+            user_id=str(message.from_user.id),
             author_id=str(message.from_user.id),
             author_type=AuthorType.TELEGRAM,
             message=message.text,

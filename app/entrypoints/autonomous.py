@@ -75,6 +75,7 @@ async def run_autonomous_action(aid: str, prompt: str):
         id=str(XID()),
         agent_id=aid,
         chat_id="autonomous",
+        user_id="autonomous",
         author_id="autonomous",
         author_type=AuthorType.TRIGGER,
         message=prompt,
@@ -87,7 +88,9 @@ async def run_autonomous_action(aid: str, prompt: str):
     logger.info("\n".join(str(m) for m in resp), extra={"aid": aid})
 
 
-async def run_autonomous_task(agent_id: str, task_id: str, prompt: str):
+async def run_autonomous_task(
+    agent_id: str, agent_owner: str, task_id: str, prompt: str
+):
     """
     Run a specific autonomous task for an agent.
 
@@ -117,6 +120,7 @@ async def run_autonomous_task(agent_id: str, task_id: str, prompt: str):
             id=str(XID()),
             agent_id=agent_id,
             chat_id=chat_id,
+            user_id=agent_owner,
             author_id="autonomous",
             author_type=AuthorType.TRIGGER,
             message=prompt,
