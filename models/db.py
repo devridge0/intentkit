@@ -1,10 +1,10 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Annotated
-from pydantic import Field
+from typing import Annotated, AsyncGenerator
 from urllib.parse import quote_plus
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg_pool import AsyncConnectionPool
+from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from models.db_mig import safe_migrate
@@ -19,7 +19,9 @@ async def init_db(
     password: str,
     dbname: str,
     port: Annotated[str, Field(default="5432", description="Database port")],
-    auto_migrate: Annotated[bool, Field(default=True, description="Whether to run migrations automatically")],
+    auto_migrate: Annotated[
+        bool, Field(default=True, description="Whether to run migrations automatically")
+    ],
 ) -> None:
     """Initialize the database and handle schema updates.
 

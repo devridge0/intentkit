@@ -841,7 +841,7 @@ async def get_skill_history(
         select(ChatMessageTable)
         .where(
             ChatMessageTable.agent_id == aid,
-            ChatMessageTable.author_type == AuthorType.SKILL
+            ChatMessageTable.author_type == AuthorType.SKILL,
         )
         .order_by(desc(ChatMessageTable.created_at))
         .limit(50)
