@@ -64,7 +64,20 @@ async def lifespan(app: FastAPI):
     logger.info("Cleaning up and shutdown...")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title="IntentKit API",
+    summary="IntentKit API Documentation",
+    version=config.release,
+    contact={
+        "name": "IntentKit Team",
+        "url": "https://github.com/crestalnetwork/intentkit",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+)
 
 
 @app.exception_handler(StarletteHTTPException)
