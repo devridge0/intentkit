@@ -245,7 +245,7 @@ async def _send_agent_notification(
 async def create_or_update_agent(
     agent: AgentCreate = Body(AgentCreate, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
-) -> AgentResponse:
+) -> Response:
     """Create or update an agent.
 
     THIS ENDPOINT IS DEPRECATED. Please use POST /agents/v2 for creating new agents.
@@ -268,7 +268,14 @@ async def create_or_update_agent(
         - 500: Database error
     """
     latest_agent, agent_data = await _process_agent(agent, subject)
-    return AgentResponse.from_agent(latest_agent, agent_data)
+    agent_response = AgentResponse.from_agent(latest_agent, agent_data)
+
+    # Return Response with ETag header
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
 
 
 @admin_router.post(
@@ -277,7 +284,7 @@ async def create_or_update_agent(
 async def create_agent(
     agent: AgentCreate = Body(AgentCreate, description="Agent configuration"),
     subject: str = Depends(verify_jwt),
-) -> AgentResponse:
+) -> Response:
     """Create a new agent.
 
     This endpoint:
@@ -314,7 +321,14 @@ async def create_agent(
     # Process common post-creation actions
     agent_data = await _process_agent_post_actions(latest_agent, True, "Agent Created")
 
-    return AgentResponse.from_agent(latest_agent, agent_data)
+    agent_response = AgentResponse.from_agent(latest_agent, agent_data)
+
+    # Return Response with ETag header
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
 
 
 @admin_router.patch(
@@ -324,7 +338,7 @@ async def update_agent(
     agent_id: str = Path(..., description="ID of the agent to update"),
     agent: AgentUpdate = Body(AgentUpdate, description="Agent update configuration"),
     subject: str = Depends(verify_jwt),
-) -> AgentResponse:
+) -> Response:
     """Update an existing agent.
 
     This endpoint:
@@ -358,7 +372,14 @@ async def update_agent(
     # Process common post-update actions
     agent_data = await _process_agent_post_actions(latest_agent, False, "Agent Updated")
 
-    return AgentResponse.from_agent(latest_agent, agent_data)
+    agent_response = AgentResponse.from_agent(latest_agent, agent_data)
+
+    # Return Response with ETag header
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
 
 
 @admin_router_readonly.get(
@@ -403,7 +424,7 @@ async def get_agents(db: AsyncSession = Depends(get_db)) -> list[AgentResponse]:
 )
 async def get_agent(
     agent_id: str = Path(..., description="ID of the agent to retrieve"),
-) -> AgentResponse:
+) -> Response:
     """Get a single agent by ID.
 
     **Path Parameters:**
@@ -421,7 +442,14 @@ async def get_agent(
     # Get agent data
     agent_data = await AgentData.get(agent_id)
 
-    return AgentResponse.from_agent(agent, agent_data)
+    agent_response = AgentResponse.from_agent(agent, agent_data)
+
+    # Return Response with ETag header
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
 
 
 class MemCleanRequest(BaseModel):

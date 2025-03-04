@@ -974,6 +974,13 @@ class Agent(AgentCreate):
 class AgentResponse(Agent):
     """Response model for Agent API."""
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda dt: dt.isoformat(),
+        },
+    )
+
     # data part
     cdp_wallet_address: Annotated[
         Optional[str], PydanticField(description="CDP wallet address for the agent")
@@ -1010,6 +1017,23 @@ class AgentResponse(Agent):
         Optional[str],
         PydanticField(description="The name of the linked Telegram account"),
     ]
+
+    def etag(self) -> str:
+        """Generate an ETag for this agent response.
+
+        The ETag is based on a hash of the entire object to ensure it changes
+        whenever any part of the agent is modified.
+
+        Returns:
+            str: ETag value for the agent
+        """
+        import hashlib
+        import json
+
+        # Generate hash from the entire object data using json mode to handle datetime objects
+        # Sort keys to ensure consistent ordering of dictionary keys
+        data = json.dumps(self.model_dump(mode="json"), sort_keys=True)
+        return f"{hashlib.md5(data.encode()).hexdigest()}"
 
     @classmethod
     def from_agent(
