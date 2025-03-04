@@ -500,7 +500,7 @@ async def execute_agent(
         "configurable": {
             "thread_id": thread_id,
             "agent_id": input.agent_id,
-            "user_id": input.author_id,
+            "user_id": input.user_id,
             "entrypoint": input.author_type,
         }
     }
@@ -554,6 +554,7 @@ async def execute_agent(
                         id=str(XID()),
                         agent_id=input.agent_id,
                         chat_id=input.chat_id,
+                        user_id=input.user_id,
                         author_id=input.agent_id,
                         author_type=AuthorType.AGENT,
                         message=msg.content,
@@ -616,9 +617,10 @@ async def execute_agent(
                             break
                 skill_message_create = ChatMessageCreate(
                     id=str(XID()),
-                    agent_id=message.agent_id,
-                    chat_id=message.chat_id,
-                    author_id=message.agent_id,
+                    agent_id=input.agent_id,
+                    chat_id=input.chat_id,
+                    user_id=input.user_id,
+                    author_id=input.agent_id,
                     author_type=AuthorType.SKILL,
                     message="",
                     skill_calls=skill_calls,
@@ -656,9 +658,10 @@ async def execute_agent(
             )
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
-                agent_id=message.agent_id,
-                chat_id=message.chat_id,
-                author_id=message.agent_id,
+                agent_id=input.agent_id,
+                chat_id=input.chat_id,
+                user_id=input.user_id,
+                author_id=input.agent_id,
                 author_type=AuthorType.SYSTEM,
                 message=f"Error in agent:\n  {str(e)}",
                 time_cost=time.perf_counter() - start,
