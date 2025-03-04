@@ -240,7 +240,17 @@ class ThreadSkillData(ThreadSkillDataCreate):
         return record.data if record else None
 
     @classmethod
-    async def clean_data(cls, agent_id: str, thread_id: str = ""):
+    async def clean_data(
+        cls,
+        agent_id: str,
+        thread_id: Annotated[
+            str,
+            Field(
+                default="",
+                description="Optional ID of the thread. If provided, only cleans data for that thread.",
+            ),
+        ],
+    ):
         """Clean all skill data for a thread or agent.
 
         Args:

@@ -47,16 +47,22 @@ class ChatMessageAttachment(TypedDict):
     An attachment can be a link, image, or file that is associated with a chat message.
     """
 
-    type: ChatMessageAttachmentType = Field(
-        ...,
-        description="Type of the attachment (link, image, or file)",
-        examples=["link"],
-    )
-    url: str = Field(
-        ...,
-        description="URL of the attachment",
-        examples=["https://example.com/image.jpg"],
-    )
+    type: Annotated[
+        ChatMessageAttachmentType,
+        Field(
+            ...,
+            description="Type of the attachment (link, image, or file)",
+            examples=["link"],
+        ),
+    ]
+    url: Annotated[
+        str,
+        Field(
+            ...,
+            description="URL of the attachment",
+            examples=["https://example.com/image.jpg"],
+        ),
+    ]
 
 
 class ChatMessageSkillCall(TypedDict):
@@ -79,35 +85,45 @@ class ChatMessageRequest(BaseModel):
     and message content, along with optional attachments.
     """
 
-    chat_id: str = Field(
-        ...,
-        description="Unique identifier for the chat thread",
-        examples=["chat-123"],
-        min_length=1,
-    )
-    user_id: str = Field(
-        ...,
-        description="Unique identifier of the user sending the message",
-        examples=["user-456"],
-        min_length=1,
-    )
-    message: str = Field(
-        ...,
-        description="Content of the message",
-        examples=["Hello, how can you help me today?"],
-        min_length=1,
-    )
-    attachments: Optional[List[ChatMessageAttachment]] = Field(
-        None,
-        description="Optional list of attachments (links, images, or files)",
-        examples=[[{"type": "link", "url": "https://example.com"}]],
-    )
+    chat_id: Annotated[
+        str,
+        Field(
+            ...,
+            description="Unique identifier for the chat thread",
+            examples=["chat-123"],
+            min_length=1,
+        ),
+    ]
+    user_id: Annotated[
+        str,
+        Field(
+            ...,
+            description="Unique identifier of the user sending the message",
+            examples=["user-456"],
+            min_length=1,
+        ),
+    ]
+    message: Annotated[
+        str,
+        Field(
+            ...,
+            description="Content of the message",
+            examples=["Hello, how can you help me today?"],
+            min_length=1,
+        ),
+    ]
+    attachments: Annotated[
+        Optional[List[ChatMessageAttachment]],
+        Field(
+            None,
+            description="Optional list of attachments (links, images, or files)",
+            examples=[[{"type": "link", "url": "https://example.com"}]],
+        ),
+    ]
 
-    class Config:
-        """Pydantic model configuration."""
-
-        use_enum_values = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
             "example": {
                 "chat_id": "chat-123",
                 "user_id": "user-456",
@@ -119,7 +135,8 @@ class ChatMessageRequest(BaseModel):
                     }
                 ],
             }
-        }
+        },
+    )
 
 
 class ChatMessageTable(Base):
