@@ -157,6 +157,10 @@ class ChatMessageTable(Base):
         String,
         nullable=False,
     )
+    user_id = Column(
+        String,
+        nullable=True,
+    )
     author_id = Column(
         String,
         nullable=False,
@@ -219,6 +223,10 @@ class ChatMessageCreate(BaseModel):
         str, Field(description="ID of the agent this message belongs to")
     ]
     chat_id: Annotated[str, Field(description="ID of the chat this message belongs to")]
+    user_id: Annotated[
+        Optional[str],
+        Field(description="ID of the user this message belongs to or reply to"),
+    ]
     author_id: Annotated[str, Field(description="ID of the message author")]
     author_type: Annotated[AuthorType, Field(description="Type of the message author")]
     message: Annotated[str, Field(description="Content of the message")]

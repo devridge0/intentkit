@@ -73,7 +73,7 @@ async def schedule_agent_autonomous_tasks(scheduler: AsyncIOScheduler):
                         run_autonomous_task,
                         CronTrigger.from_crontab(autonomous.cron),
                         id=task_id,
-                        args=[agent.id, autonomous.id, autonomous.prompt],
+                        args=[agent.id, agent.owner, autonomous.id, autonomous.prompt],
                         replace_existing=True,
                     )
                 elif autonomous.minutes is not None:
@@ -84,7 +84,7 @@ async def schedule_agent_autonomous_tasks(scheduler: AsyncIOScheduler):
                         run_autonomous_task,
                         "interval",
                         id=task_id,
-                        args=[agent.id, autonomous.id, autonomous.prompt],
+                        args=[agent.id, agent.owner, autonomous.id, autonomous.prompt],
                         minutes=autonomous.minutes,
                         replace_existing=True,
                     )

@@ -4,7 +4,7 @@ import json
 import logging
 import secrets
 import textwrap
-from typing import List
+from typing import List, Optional
 
 from epyxid import XID
 from fastapi import (
@@ -180,12 +180,14 @@ async def debug_chat_deprecated(
 async def debug_chat(
     request: Request,
     aid: str = Path(..., description="Agent ID"),
-    q: str = Query(None, description="Query string"),
-    debug: bool = Query(None, description="Enable debug mode"),
-    thread: str = Query(
+    q: str = Query(..., description="Query string"),
+    debug: Optional[bool] = Query(None, description="Enable debug mode"),
+    thread: Optional[str] = Query(
         None, description="Thread ID for conversation tracking", deprecated=True
     ),
-    chat_id: str = Query(None, description="Chat ID for conversation tracking"),
+    chat_id: Optional[str] = Query(
+        None, description="Chat ID for conversation tracking"
+    ),
 ) -> str:
     """Debug mode: Chat with an AI agent.
 
@@ -232,6 +234,7 @@ async def debug_chat(
         id=str(XID()),
         agent_id=aid,
         chat_id=chat_id,
+        user_id=agent.owner,
         author_id="debug",
         author_type=AuthorType.WEB,
         message=q,
@@ -291,6 +294,7 @@ async def debug_agent_prompt(
 async def get_chat_history(
     aid: str = Path(..., description="Agent ID"),
     chat_id: str = Query(..., description="Chat ID to get history for"),
+    user_id: Optional[str] = Query(None, description="User ID"),
     db: AsyncSession = Depends(get_db),
 ) -> List[ChatMessage]:
     """Get last 50 messages for a specific chat.
@@ -326,6 +330,16 @@ async def get_chat_history(
     )
     messages = result.all()
 
+    # If the user_id exists, check if the chat belongs to the user
+    if user_id:
+        for message in messages:
+            if message.user_id == user_id:
+                break
+            if message.author_id == user_id:
+                break
+        else:
+            raise HTTPException(status_code=403, detail="Chat not belongs to user")
+
     # Reverse messages to get chronological order
     messages = [ChatMessage.model_validate(message) for message in messages[::-1]]
 
@@ -337,6 +351,7 @@ async def get_chat_history(
     tags=["Chat"],
     dependencies=[Depends(verify_jwt)],
     response_model=ChatMessage,
+    operation_id="retry_chat_deprecated",
     deprecated=True,
     summary="Retry Chat",
 )
@@ -393,6 +408,7 @@ async def retry_chat_deprecated(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
+            user_id=last_message.user_id,
             author_id=aid,
             author_type=AuthorType.SYSTEM,
             message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
@@ -410,7 +426,7 @@ async def retry_chat_deprecated(
     tags=["Chat"],
     dependencies=[Depends(verify_jwt)],
     response_model=list[ChatMessage],
-    operation_id="retry_chat",
+    operation_id="retry_chat_put_deprecated",
     summary="Retry Chat",
     deprecated=True,
 )
@@ -474,6 +490,7 @@ async def retry_chat(
             id=str(XID()),
             agent_id=aid,
             chat_id=chat_id,
+            user_id=last_message.user_id,
             author_id=aid,
             author_type=AuthorType.SYSTEM,
             message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
@@ -491,6 +508,7 @@ async def retry_chat(
     tags=["Chat"],
     dependencies=[Depends(verify_jwt)],
     response_model=ChatMessage,
+    operation_id="create_chat_deprecated",
     deprecated=True,
     summary="Chat",
 )
@@ -542,6 +560,7 @@ async def create_chat_deprecated(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
+        user_id=request.user_id,
         author_id=request.user_id,
         author_type=AuthorType.WEB,
         message=request.message,
@@ -637,6 +656,7 @@ async def create_chat(
         id=str(XID()),
         agent_id=aid,
         chat_id=request.chat_id,
+        user_id=request.user_id,
         author_id=request.user_id,
         author_type=AuthorType.WEB,
         message=request.message,
@@ -718,7 +738,7 @@ class ChatSummaryUpdate(BaseModel):
     summary="Update Chat Summary",
     tags=["Chat"],
     deprecated=True,
-    operation_id="update_chat_summary",
+    operation_id="update_chat_summary_deprecated",
 )
 @chat_router.patch(
     "/agents/{aid}/chats/{chat_id}",
