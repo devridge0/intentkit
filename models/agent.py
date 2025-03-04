@@ -490,7 +490,20 @@ class AgentUpdate(BaseModel):
         Optional[List[AgentAutonomous]],
         PydanticField(
             default=None,
-            description="Autonomous agent configurations",
+            description=(
+                "Autonomous agent configurations.\n"
+                "autonomous:\n"
+                "  - id: a\n"
+                "    name: TestA\n"
+                "    minutes: 1\n"
+                "    prompt: |-\n"
+                "      Say hello [sequence], use number for sequence.\n"
+                "  - id: b\n"
+                "    name: TestB\n"
+                '    cron: "0/3 * * * *"\n'
+                "    prompt: |-\n"
+                "      Say hi [sequence], use number for sequence.\n"
+            ),
         ),
     ]
     autonomous_enabled: Annotated[
@@ -505,7 +518,7 @@ class AgentUpdate(BaseModel):
         Optional[int],
         PydanticField(
             default=240,
-            deprecated=True,
+            deprecated="Please use autonomous instead",
             description="Interval in minutes between autonomous operations when enabled",
         ),
     ]
@@ -513,7 +526,7 @@ class AgentUpdate(BaseModel):
         Optional[str],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use autonomous instead",
             description="Special prompt used during autonomous operation mode",
         ),
     ]
@@ -537,7 +550,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of CDP skills available to this agent",
         ),
     ]
@@ -591,7 +604,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of Twitter-specific skills available to this agent",
         ),
     ]
@@ -615,7 +628,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of Telegram-specific skills available to this agent",
         ),
     ]
@@ -640,7 +653,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use enso_enabled instead",
             description="List of Enso-specific skills available to this agent",
         ),
     ]
@@ -648,7 +661,7 @@ class AgentUpdate(BaseModel):
         Optional[dict],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="Enso integration configuration settings",
         ),
     ]
@@ -657,7 +670,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of Acolyt-specific skills available to this agent",
         ),
     ]
@@ -665,7 +678,7 @@ class AgentUpdate(BaseModel):
         Optional[dict],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="Acolyt integration configuration settings",
         ),
     ]
@@ -674,7 +687,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of Allora-specific skills available to this agent",
         ),
     ]
@@ -682,7 +695,7 @@ class AgentUpdate(BaseModel):
         Optional[dict],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="Allora integration configuration settings",
         ),
     ]
@@ -691,7 +704,7 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="List of Elfa-specific skills available to this agent",
         ),
     ]
@@ -699,7 +712,7 @@ class AgentUpdate(BaseModel):
         Optional[dict],
         PydanticField(
             default=None,
-            deprecated=True,
+            deprecated="Please use skills instead",
             description="Elfa integration configuration settings",
         ),
     ]
@@ -868,6 +881,17 @@ class Agent(AgentCreate):
                 desc_lines = [f"# {line}" for line in description.split("\n")]
                 yaml_lines.extend(desc_lines)
 
+                # Check if the field is deprecated and add deprecation notice
+                if hasattr(field, "deprecated") and field.deprecated:
+                    # Add deprecation message
+                    if (
+                        hasattr(field, "deprecation_message")
+                        and field.deprecation_message
+                    ):
+                        yaml_lines.append(f"# Deprecated: {field.deprecation_message}")
+                    else:
+                        yaml_lines.append("# Deprecated")
+
             # Format the value based on its type
             if value is None:
                 yaml_lines.append(f"{field_name}: null")
@@ -888,6 +912,29 @@ class Agent(AgentCreate):
                         allow_unicode=True,  # This ensures emojis are preserved
                     )
                     yaml_lines.append(yaml_value.rstrip())
+            elif isinstance(value, list) and value and hasattr(value[0], "model_dump"):
+                # Handle list of Pydantic models (e.g., List[AgentAutonomous])
+                yaml_lines.append(f"{field_name}:")
+                # Convert each Pydantic model to dict
+                model_dicts = [item.model_dump(exclude_none=True) for item in value]
+                # Dump the list of dicts
+                yaml_value = yaml.dump(
+                    model_dicts, default_flow_style=False, allow_unicode=True
+                )
+                # Indent all lines and append to yaml_lines
+                indented_yaml = "\n".join(
+                    f"  {line}" for line in yaml_value.split("\n")
+                )
+                yaml_lines.append(indented_yaml.rstrip())
+            elif hasattr(value, "model_dump"):
+                # Handle individual Pydantic model
+                model_dict = value.model_dump(exclude_none=True)
+                yaml_value = yaml.dump(
+                    {field_name: model_dict},
+                    default_flow_style=False,
+                    allow_unicode=True,
+                )
+                yaml_lines.append(yaml_value.rstrip())
             else:
                 # Handle non-string values
                 yaml_value = yaml.dump(
