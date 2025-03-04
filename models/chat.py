@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Annotated, List, NotRequired, Optional, TypedDict, Dict, Any
+from typing import Annotated, List, NotRequired, Optional, TypedDict
 
 from epyxid import XID
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,7 +53,7 @@ class ChatMessageAttachment(TypedDict):
             ...,
             description="Type of the attachment (link, image, or file)",
             examples=["link"],
-        )
+        ),
     ]
     url: Annotated[
         str,
@@ -61,7 +61,7 @@ class ChatMessageAttachment(TypedDict):
             ...,
             description="URL of the attachment",
             examples=["https://example.com/image.jpg"],
-        )
+        ),
     ]
 
 
@@ -92,7 +92,7 @@ class ChatMessageRequest(BaseModel):
             description="Unique identifier for the chat thread",
             examples=["chat-123"],
             min_length=1,
-        )
+        ),
     ]
     user_id: Annotated[
         str,
@@ -101,7 +101,7 @@ class ChatMessageRequest(BaseModel):
             description="Unique identifier of the user sending the message",
             examples=["user-456"],
             min_length=1,
-        )
+        ),
     ]
     message: Annotated[
         str,
@@ -110,7 +110,7 @@ class ChatMessageRequest(BaseModel):
             description="Content of the message",
             examples=["Hello, how can you help me today?"],
             min_length=1,
-        )
+        ),
     ]
     attachments: Annotated[
         Optional[List[ChatMessageAttachment]],
@@ -118,7 +118,7 @@ class ChatMessageRequest(BaseModel):
             None,
             description="Optional list of attachments (links, images, or files)",
             examples=[[{"type": "link", "url": "https://example.com"}]],
-        )
+        ),
     ]
 
     model_config = ConfigDict(
@@ -135,7 +135,7 @@ class ChatMessageRequest(BaseModel):
                     }
                 ],
             }
-        }
+        },
     )
 
 
