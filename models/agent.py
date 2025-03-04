@@ -369,6 +369,7 @@ class AgentTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
         comment="Timestamp when the agent was last updated",
     )
@@ -1071,6 +1072,7 @@ class AgentDataTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=func.now(),
         comment="Timestamp when the agent data was last updated",
     )
@@ -1277,6 +1279,7 @@ class AgentPluginDataTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
@@ -1400,6 +1403,7 @@ class AgentQuotaTable(Base):
     updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
+        server_default=func.now(),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
