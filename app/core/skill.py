@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 from abstracts.skill import SkillStoreABC
 from app.config.config import config
+from models.agent import Agent, AgentData, AgentQuota
 from models.skill import AgentSkillData, ThreadSkillData
 
 
@@ -19,8 +20,25 @@ class SkillStore(SkillStoreABC):
             return getattr(config, key)
         return None
 
+    @staticmethod
+    async def get_agent_config(agent_id: str) -> Optional[Agent]:
+        return await Agent.get(agent_id)
+
+    @staticmethod
+    async def get_agent_data(agent_id: str) -> Optional[AgentData]:
+        return await AgentData.get(agent_id)
+
+    @staticmethod
+    async def set_agent_data(agent_id: str, data: Dict) -> None:
+        return await AgentData.patch(agent_id, data)
+
+    @staticmethod
+    async def get_agent_quota(agent_id: str) -> Optional[AgentQuota]:
+        return await AgentQuota.get(agent_id)
+
+    @staticmethod
     async def get_agent_skill_data(
-        self, agent_id: str, skill: str, key: str
+        agent_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for an agent.
 
@@ -34,8 +52,9 @@ class SkillStore(SkillStoreABC):
         """
         return await AgentSkillData.get(agent_id, skill, key)
 
+    @staticmethod
     async def save_agent_skill_data(
-        self, agent_id: str, skill: str, key: str, data: Dict[str, Any]
+        agent_id: str, skill: str, key: str, data: Dict[str, Any]
     ) -> None:
         """Save or update skill data for an agent.
 
@@ -53,8 +72,9 @@ class SkillStore(SkillStoreABC):
         )
         await skill_data.save()
 
+    @staticmethod
     async def get_thread_skill_data(
-        self, thread_id: str, skill: str, key: str
+        thread_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for a thread.
 
@@ -68,8 +88,8 @@ class SkillStore(SkillStoreABC):
         """
         return await ThreadSkillData.get(thread_id, skill, key)
 
+    @staticmethod
     async def save_thread_skill_data(
-        self,
         thread_id: str,
         agent_id: str,
         skill: str,

@@ -1,7 +1,9 @@
 from typing import Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from clients.twitter import get_twitter_client
 from skills.twitter.base import TwitterBaseTool
 
 
@@ -9,13 +11,6 @@ class TwitterLikeTweetInput(BaseModel):
     """Input for TwitterLikeTweet tool."""
 
     tweet_id: str = Field(description="The ID of the tweet to like")
-
-
-class TwitterLikeTweetOutput(BaseModel):
-    """Output for TwitterLikeTweet tool."""
-
-    success: bool
-    message: str
 
 
 class TwitterLikeTweet(TwitterBaseTool):
@@ -33,62 +28,42 @@ class TwitterLikeTweet(TwitterBaseTool):
     description: str = "Like a tweet on Twitter"
     args_schema: Type[BaseModel] = TwitterLikeTweetInput
 
-    async def _arun(self, tweet_id: str) -> TwitterLikeTweetOutput:
+    async def _arun(self, tweet_id: str, config: RunnableConfig, **kwargs) -> bool:
         """Async implementation of the tool to like a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to like.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
-            TwitterLikeTweetOutput: A structured output containing the result of the like action.
+            bool: True if the tweet was successfully liked.
 
         Raises:
-            Exception: If there's an error accessing the Twitter API.
+            Exception: If there's an error accessing the Twitter API or liking the tweet.
         """
         try:
-            # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = await self.check_rate_limit(
-                    max_requests=100, interval=1440
-                )
-                if is_rate_limited:
-                    return TwitterLikeTweetOutput(
-                        success=False, message=f"Error liking tweet: {error}"
-                    )
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
+            )
 
-            client = await self.twitter.get_client()
-            if not client:
-                return TwitterLikeTweetOutput(
-                    success=False,
-                    message=self._get_error_with_username(
-                        "Failed to get Twitter client. Please check your authentication."
-                    ),
+            # Check rate limit only when not using OAuth
+            if not twitter.use_key:
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=100, interval=1440
                 )
+
+            client = await twitter.get_client()
 
             # Like the tweet using tweepy client
-            response = await client.like(
-                tweet_id=tweet_id, user_auth=self.twitter.use_key
-            )
+            response = await client.like(tweet_id=tweet_id, user_auth=twitter.use_key)
 
             if "data" in response and "liked" in response["data"]:
-                return TwitterLikeTweetOutput(
-                    success=True, message=f"Successfully liked tweet {tweet_id}"
-                )
-            return TwitterLikeTweetOutput(
-                success=False,
-                message=self._get_error_with_username("Failed to like tweet."),
-            )
+                return True
+            else:
+                raise ValueError("Failed to like tweet.")
 
         except Exception as e:
-            return TwitterLikeTweetOutput(
-                success=False, message=self._get_error_with_username(str(e))
-            )
-
-    def _run(self, tweet_id: str) -> TwitterLikeTweetOutput:
-        """Sync implementation of the tool.
-
-        This method is deprecated since we now have native async implementation in _arun.
-        """
-        raise NotImplementedError(
-            "Use _arun instead, which is the async implementation"
-        )
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
