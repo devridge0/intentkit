@@ -1,7 +1,10 @@
 import logging
 from typing import Type
 
-from pydantic import BaseModel
+from langchain_core.runnables import RunnableConfig
+from pydantic import BaseModel, Field
+
+from clients.twitter import get_twitter_client
 
 from .base import Tweet, TwitterBaseTool
 
@@ -11,10 +14,9 @@ logger = logging.getLogger(__name__)
 class TwitterGetTimelineInput(BaseModel):
     """Input for TwitterGetTimeline tool."""
 
-
-class TwitterGetTimelineOutput(BaseModel):
-    tweets: list[Tweet]
-    error: str | None = None
+    max_results: int = Field(
+        default=10, description="Maximum number of tweets to retrieve"
+    )
 
 
 class TwitterGetTimeline(TwitterBaseTool):
@@ -33,76 +35,54 @@ class TwitterGetTimeline(TwitterBaseTool):
     description: str = "Get tweets from the authenticated user's timeline"
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
-    def _run(self, max_results: int = 10) -> TwitterGetTimelineOutput:
-        """Run the tool to get the user's timeline.
+    async def _arun(
+        self, input: TwitterGetTimelineInput, config: RunnableConfig = None, **kwargs
+    ) -> list[Tweet]:
+        """Async implementation of the tool to get the user's timeline.
 
         Args:
-            max_results (int, optional): Maximum number of tweets to retrieve. Defaults to 10.
+            input (TwitterGetTimelineInput): The input for the tool.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
-            TwitterGetTimelineOutput: A structured output containing the timeline data.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, max_results: int = 10) -> TwitterGetTimelineOutput:
-        """Run the tool to get the user's timeline.
-
-        Args:
-            max_results (int, optional): Maximum number of tweets to retrieve. Defaults to 10.
-
-        Returns:
-            TwitterGetTimelineOutput: A structured output containing the timeline data.
+            list[Tweet]: A list of tweets from the user's timeline.
 
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
         try:
             # Ensure max_results is an integer
-            max_results = int(max_results)
+            max_results = int(input.max_results)
+
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
+            )
 
             # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = await self.check_rate_limit(
-                    max_requests=3, interval=60 * 24
+            if not twitter.use_key:
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=3, interval=60 * 24
                 )
-                if is_rate_limited:
-                    return TwitterGetTimelineOutput(
-                        tweets=[],
-                        error=self._get_error_with_username(error),
-                    )
 
             # get since id from store
             last = await self.skill_store.get_agent_skill_data(
-                self.agent_id, self.name, "last"
+                context.agent.id, self.name, "last"
             )
             last = last or {}
             since_id = last.get("since_id")
             if since_id:
                 max_results = 100
 
-            client = await self.twitter.get_client()
-            if not client:
-                return TwitterGetTimelineOutput(
-                    tweets=[],
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter client. Please check your authentication."
-                    ),
-                )
-
-            user_id = self.twitter.self_id
+            client = await twitter.get_client()
+            user_id = twitter.self_id
             if not user_id:
-                return TwitterGetTimelineOutput(
-                    tweets=[],
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter user ID."
-                    ),
-                )
+                raise ValueError("Failed to get Twitter user ID.")
 
             timeline = await client.get_users_tweets(
-                user_auth=self.twitter.use_key,
+                user_auth=twitter.use_key,
                 id=user_id,
                 max_results=max_results,
                 since_id=since_id,
@@ -135,13 +115,11 @@ class TwitterGetTimeline(TwitterBaseTool):
             if timeline.get("meta") and timeline["meta"].get("newest_id"):
                 last["since_id"] = timeline["meta"]["newest_id"]
                 await self.skill_store.save_agent_skill_data(
-                    self.agent_id, self.name, "last", last
+                    context.agent.id, self.name, "last", last
                 )
 
-            return TwitterGetTimelineOutput(tweets=result)
+            return result
 
         except Exception as e:
             logger.error("Error getting timeline: %s", str(e))
-            return TwitterGetTimelineOutput(
-                tweets=[], error=self._get_error_with_username(str(e))
-            )
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e

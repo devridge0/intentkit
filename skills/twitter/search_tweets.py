@@ -2,24 +2,22 @@ import datetime
 import logging
 from typing import Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
+
+from clients.twitter import get_twitter_client
 
 from .base import Tweet, TwitterBaseTool
 
 logger = logging.getLogger(__name__)
+
+PROMPT = "Search for recent tweets on Twitter using a query keyword"
 
 
 class TwitterSearchTweetsInput(BaseModel):
     """Input for TwitterSearchTweets tool."""
 
     query: str = Field(description="The search query to find tweets")
-
-
-class TwitterSearchTweetsOutput(BaseModel):
-    """Output for TwitterSearchTweets tool."""
-
-    tweets: list[Tweet]
-    error: str | None = None
 
 
 class TwitterSearchTweets(TwitterBaseTool):
@@ -34,12 +32,10 @@ class TwitterSearchTweets(TwitterBaseTool):
     """
 
     name: str = "twitter_search_tweets"
-    description: str = "Search for recent tweets on Twitter using a query"
+    description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterSearchTweetsInput
 
-    async def _arun(
-        self, query: str, max_results: int = 10, recent_only: bool = True
-    ) -> TwitterSearchTweetsOutput:
+    async def _arun(self, query: str, config: RunnableConfig, **kwargs) -> list[Tweet]:
         """Async implementation of the tool to search tweets.
 
         Args:
@@ -53,29 +49,23 @@ class TwitterSearchTweets(TwitterBaseTool):
         Raises:
             Exception: If there's an error searching via the Twitter API.
         """
+        max_results = 10
         try:
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
+            )
             # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = await self.check_rate_limit(
-                    max_requests=3, interval=60 * 24
-                )
-                if is_rate_limited:
-                    return TwitterSearchTweetsOutput(
-                        tweets=[], error=self._get_error_with_username(error)
-                    )
+            if not twitter.use_key:
+                await self.check_rate_limit(max_requests=3, interval=60 * 24)
 
-            client = await self.twitter.get_client()
-            if not client:
-                return TwitterSearchTweetsOutput(
-                    tweets=[],
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter client. Please check your authentication."
-                    ),
-                )
+            client = await twitter.get_client()
 
             # Get since_id from store to avoid duplicate results
             last = await self.skill_store.get_agent_skill_data(
-                self.agent_id, self.name, query
+                context.agent.id, self.name, query
             )
             last = last or {}
             since_id = last.get("since_id")
@@ -91,7 +81,7 @@ class TwitterSearchTweets(TwitterBaseTool):
 
             tweets = await client.search_recent_tweets(
                 query=query,
-                user_auth=self.twitter.use_key,
+                user_auth=twitter.use_key,
                 since_id=since_id,
                 max_results=max_results,
                 expansions=[
@@ -117,38 +107,17 @@ class TwitterSearchTweets(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            try:
-                result = self.process_tweets_response(tweets)
-            except Exception as e:
-                logger.error(
-                    self._get_error_with_username(
-                        f"Error processing search results: {e}"
-                    )
-                )
-                raise
+            result = self.process_tweets_response(tweets)
 
             # Update the since_id in store for the next request
             if tweets.get("meta") and tweets.get("meta").get("newest_id"):
                 last["since_id"] = tweets["meta"]["newest_id"]
                 last["timestamp"] = datetime.datetime.now().isoformat()
                 await self.skill_store.save_agent_skill_data(
-                    self.agent_id, self.name, query, last
+                    context.agent.id, self.name, query, last
                 )
 
-            return TwitterSearchTweetsOutput(tweets=result)
+            return result
 
         except Exception as e:
-            logger.error(self._get_error_with_username(f"Error searching tweets: {e}"))
-            return TwitterSearchTweetsOutput(
-                tweets=[],
-                error=self._get_error_with_username(f"Error searching tweets: {e}"),
-            )
-
-    def _run(self, query: str) -> TwitterSearchTweetsOutput:
-        """Sync implementation of the tool.
-
-        This method is deprecated since we now have native async implementation in _arun.
-        """
-        raise NotImplementedError(
-            "Use _arun instead, which is the async implementation"
-        )
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e

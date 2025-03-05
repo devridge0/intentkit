@@ -77,6 +77,8 @@ from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
 
+_agent_configs: dict[str, Agent] = {}
+
 # Global variable to cache all agent executors
 _agents: dict[str, CompiledGraph] = {}
 _private_agents: dict[str, CompiledGraph] = {}
@@ -112,8 +114,8 @@ async def initialize_agent(aid, is_private=False):
 
     # get the agent from the database
     try:
-        agent: Agent = await agent_store.get_config()
-        agent_data: AgentData = await agent_store.get_data()
+        agent: Agent = await Agent.get(aid)
+        agent_data: AgentData = await AgentData.get(aid)
 
     except NoResultFound:
         # Handle the case where the user is not found
@@ -433,6 +435,7 @@ async def initialize_agent(aid, is_private=False):
         debug=config.debug_checkpoint,
         input_token_limit=input_token_limit,
     )
+    _agent_configs[aid] = agent
     if is_private:
         _private_agents[aid] = executor
         _private_agents_updated[aid] = agent.updated_at
@@ -498,8 +501,8 @@ async def execute_agent(
 
     stream_config = {
         "configurable": {
+            "agent": _agent_configs[input.agent_id],
             "thread_id": thread_id,
-            "agent_id": input.agent_id,
             "user_id": input.user_id,
             "entrypoint": input.author_type,
         }

@@ -3,54 +3,40 @@ from typing import Any, Dict, List, Type
 
 from pydantic import BaseModel, Field
 
-from abstracts.agent import AgentStoreABC
-from abstracts.skill import IntentKitSkill, SkillStoreABC
-from abstracts.twitter import TwitterABC
+from abstracts.exception import RateLimitExceeded
+from abstracts.skill import SkillStoreABC
+from skills.base import IntentKitSkill
 
 
 class TwitterBaseTool(IntentKitSkill):
     """Base class for Twitter tools."""
 
-    twitter: TwitterABC = Field(description="The Twitter client abstraction")
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
-    agent_id: str = Field(description="The ID of the agent")
-    agent_store: AgentStoreABC = Field(
-        description="The agent store for persisting data"
-    )
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
 
-    def _get_error_with_username(self, error_msg: str) -> str:
-        """Get error message with username if available.
-
-        Args:
-            error_msg: The original error message.
-
-        Returns:
-            Error message with username if available.
-        """
-        username = self.twitter.self_username
-        if username:
-            return f"Error for Twitter user @{username}: {error_msg}"
-        return error_msg
+    @property
+    def category(self) -> str:
+        return "twitter"
 
     async def check_rate_limit(
-        self, max_requests: int = 1, interval: int = 15
-    ) -> tuple[bool, str | None]:
+        self, agent_id: str, max_requests: int = 1, interval: int = 15
+    ) -> None:
         """Check if the rate limit has been exceeded.
 
         Args:
+            agent_id: The ID of the agent.
             max_requests: Maximum number of requests allowed within the rate limit window.
             interval: Time interval in minutes for the rate limit window.
 
-        Returns:
-            tuple[bool, str | None]: (is_rate_limited, error_message)
+        Raises:
+            RateLimitExceeded: If the rate limit has been exceeded.
         """
         rate_limit = await self.skill_store.get_agent_skill_data(
-            self.agent_id, self.name, "rate_limit"
+            agent_id, self.name, "rate_limit"
         )
 
         current_time = datetime.now(tz=timezone.utc)
@@ -62,13 +48,13 @@ class TwitterBaseTool(IntentKitSkill):
             and datetime.fromisoformat(rate_limit["reset_time"]) > current_time
         ):
             if rate_limit["count"] >= max_requests:
-                return True, "Rate limit exceeded"
+                raise RateLimitExceeded("Rate limit exceeded")
             else:
                 rate_limit["count"] += 1
                 await self.skill_store.save_agent_skill_data(
-                    self.agent_id, self.name, "rate_limit", rate_limit
+                    agent_id, self.name, "rate_limit", rate_limit
                 )
-                return False, None
+                return
 
         # If no rate limit exists or it has expired, create a new one
         new_rate_limit = {
@@ -76,9 +62,9 @@ class TwitterBaseTool(IntentKitSkill):
             "reset_time": (current_time + timedelta(minutes=interval)).isoformat(),
         }
         await self.skill_store.save_agent_skill_data(
-            self.agent_id, self.name, "rate_limit", new_rate_limit
+            agent_id, self.name, "rate_limit", new_rate_limit
         )
-        return False, None
+        return
 
     def process_tweets_response(self, response: Dict[str, Any]) -> List["Tweet"]:
         """Process Twitter API response and convert it to a list of Tweet objects.
@@ -215,5 +201,5 @@ class Tweet(BaseModel):
     author_id: str
     author: TwitterUser | None = None
     created_at: datetime
-    referenced_tweets: list["Tweet"] | None = None
-    attachments: list[TwitterMedia] | None = None
+    referenced_tweets: List["Tweet"] | None = None
+    attachments: List[TwitterMedia] | None = None

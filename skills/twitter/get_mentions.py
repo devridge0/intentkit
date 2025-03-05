@@ -2,7 +2,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
+
+from clients.twitter import get_twitter_client
 
 from .base import Tweet, TwitterBaseTool
 
@@ -12,10 +15,7 @@ logger = logging.getLogger(__name__)
 class TwitterGetMentionsInput(BaseModel):
     """Input for TwitterGetMentions tool."""
 
-
-class TwitterGetMentionsOutput(BaseModel):
-    mentions: list[Tweet]
-    error: str | None = None
+    pass
 
 
 class TwitterGetMentions(TwitterBaseTool):
@@ -34,37 +34,35 @@ class TwitterGetMentions(TwitterBaseTool):
     description: str = "Get tweets that mention the authenticated user"
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
-    def _run(self) -> TwitterGetMentionsOutput:
-        """Run the get mentions tool.
+    async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
+        """Async implementation of the tool to get mentions.
+
+        Args:
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
-            TwitterGetMentionsOutput: A structured output containing the mentions data.
+            list[Tweet]: A list of tweets that mention the authenticated user.
 
         Raises:
             Exception: If there's an error accessing the Twitter API.
         """
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> TwitterGetMentionsOutput:
-        """Run the get mentions tool.
-
-        Returns:
-            TwitterGetMentionsOutput: A structured output containing the mentions data.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
-        is_rate_limited, error_msg = await self.check_rate_limit(1, 240)
-        if is_rate_limited:
-            return TwitterGetMentionsOutput(
-                mentions=[],
-                error=error_msg,
+        try:
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
             )
 
-        try:
+            # Check rate limit only when not using OAuth
+            if not twitter.use_key:
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=1, interval=240
+                )
+
             # get since id from store
             last = await self.skill_store.get_agent_skill_data(
-                self.agent_id, self.name, "last"
+                context.agent.id, self.name, "last"
             )
             last = last or {}
             max_results = 10
@@ -75,26 +73,13 @@ class TwitterGetMentions(TwitterBaseTool):
             # Always get mentions for the last day
             start_time = datetime.now(tz=timezone.utc) - timedelta(days=1)
 
-            client = await self.twitter.get_client()
-            if not client:
-                return TwitterGetMentionsOutput(
-                    mentions=[],
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter client. Please check your authentication."
-                    ),
-                )
-
-            user_id = self.twitter.self_id
+            client = await twitter.get_client()
+            user_id = twitter.self_id
             if not user_id:
-                return TwitterGetMentionsOutput(
-                    mentions=[],
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter user ID."
-                    ),
-                )
+                raise ValueError("Failed to get Twitter user ID.")
 
             mentions = await client.get_users_mentions(
-                user_auth=self.twitter.use_key,
+                user_auth=twitter.use_key,
                 id=user_id,
                 max_results=max_results,
                 since_id=since_id,
@@ -122,23 +107,16 @@ class TwitterGetMentions(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            try:
-                result = self.process_tweets_response(mentions)
-            except Exception as e:
-                logger.error("Error processing mentions: %s", str(e))
-                raise
+            result = self.process_tweets_response(mentions)
 
             # Update since_id in store
             if mentions.get("meta") and mentions["meta"].get("newest_id"):
                 last["since_id"] = mentions["meta"].get("newest_id")
                 await self.skill_store.save_agent_skill_data(
-                    self.agent_id, self.name, "last", last
+                    context.agent.id, self.name, "last", last
                 )
 
-            return TwitterGetMentionsOutput(mentions=result)
+            return result
 
         except Exception as e:
-            logger.error("Error getting mentions: %s", str(e))
-            return TwitterGetMentionsOutput(
-                mentions=[], error=self._get_error_with_username(str(e))
-            )
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
