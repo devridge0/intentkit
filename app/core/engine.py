@@ -62,7 +62,7 @@ from models.agent import Agent, AgentData, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
-from skills.acolyt import get_Acolyt_skill
+from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
@@ -330,7 +330,7 @@ async def initialize_agent(aid, is_private=False):
     if agent.acolyt_skills and len(agent.acolyt_skills) > 0 and agent.acolyt_config:
         for skill in agent.acolyt_skills:
             try:
-                s = get_Acolyt_skill(
+                s = get_acolyt_skill(
                     skill,
                     agent.acolyt_config.get("api_key"),
                     skill_store,

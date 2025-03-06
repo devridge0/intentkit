@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, List, Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
 from skills.cryptocompare.api import FetchPriceInput, fetch_price
@@ -30,7 +31,11 @@ class CryptoCompareFetchPrice(CryptoCompareBaseTool):
         raise NotImplementedError("Use _arun instead")
 
     async def _arun(
-        self, from_symbol: str, to_symbols: List[str]
+        self,
+        from_symbol: str,
+        to_symbols: List[str],
+        config: RunnableConfig = None,
+        **kwargs,
     ) -> CryptoCompareFetchPriceOutput:
         is_rate_limited, error_msg = await self.check_rate_limit()
         if is_rate_limited:

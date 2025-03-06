@@ -2,6 +2,7 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from .base import ElfaBaseTool, base_url
@@ -85,14 +86,16 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
         self,
         timeWindow: str | None = "24h",
         minMentions: int | None = 5,
+        config: RunnableConfig = None,
+        **kwargs,
     ) -> ElfaGetTrendingTokensOutput:
         """Run the tool to ranks the most discussed tokens by smart mentions count for a given period, updated every 5 minutes via the Elfa API.
 
         Args:
             timeWindow: Time window for trending tokens (e.g., '1h', '24h', '7d').
-            page: Page number for pagination.
-            pageSize: Number of tokens per page.
             minMentions: Minimum number of mentions for a token.
+            config: The configuration for the runnable, containing agent context.
+            **kwargs: Additional parameters.
 
         Returns:
             ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
@@ -100,6 +103,8 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
+        # We can access context via self.context_from_config(config) if needed
+
         url = f"{base_url}/v1/trending-tokens"
         headers = {
             "accept": "application/json",
