@@ -1,7 +1,10 @@
 """Twitter skills."""
 
+from typing import TypedDict
+
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
+from clients.twitter import TwitterClientConfig
+from skills.base import SkillConfig, SkillState
 from skills.twitter.base import TwitterBaseTool
 from skills.twitter.follow_user import TwitterFollowUser
 from skills.twitter.get_mentions import TwitterGetMentions
@@ -12,9 +15,25 @@ from skills.twitter.reply_tweet import TwitterReplyTweet
 from skills.twitter.retweet import TwitterRetweet
 from skills.twitter.search_tweets import TwitterSearchTweets
 
+# we cache skills in system level, because they are stateless
+_cache: dict[str, TwitterBaseTool] = {}
 
-class Config(SkillConfig):
+
+class SkillStates(TypedDict):
+    get_mentions: SkillState
+    post_tweet: SkillState
+    reply_tweet: SkillState
+    get_timeline: SkillState
+    follow_user: SkillState
+    like_tweet: SkillState
+    retweet: SkillState
+    search_tweets: SkillState
+
+
+class Config(SkillConfig, TwitterClientConfig):
     """Configuration for Twitter skills."""
+
+    skill_states: SkillStates
 
 
 def get_skills(
@@ -56,36 +75,52 @@ def get_twitter_skill(
         ValueError: If the requested skill name is unknown
     """
     if name == "get_mentions":
-        return TwitterGetMentions(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterGetMentions(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "post_tweet":
-        return TwitterPostTweet(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterPostTweet(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "reply_tweet":
-        return TwitterReplyTweet(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterReplyTweet(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "get_timeline":
-        return TwitterGetTimeline(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterGetTimeline(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "follow_user":
-        return TwitterFollowUser(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterFollowUser(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "like_tweet":
-        return TwitterLikeTweet(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterLikeTweet(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "retweet":
-        return TwitterRetweet(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterRetweet(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "search_tweets":
-        return TwitterSearchTweets(
-            skill_store=store,
-        )
+        if name not in _cache:
+            _cache[name] = TwitterSearchTweets(
+                skill_store=store,
+            )
+        return _cache[name]
     else:
         raise ValueError(f"Unknown Twitter skill: {name}")
