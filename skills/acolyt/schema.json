@@ -1,34 +1,33 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "title": "Acolyt Skills",
+  "description": "Configuration schema for Acolyt skills",
   "properties": {
-    "public_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "ask_gpt"
-        ]
+    "skill_states": {
+      "type": "object",
+      "properties": {
+        "ask_gpt": {
+          "type": "string",
+          "title": "Ask GPT",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the ask_gpt skill"
+        }
       },
-      "description": "List of public skills that are available to all users"
-    },
-    "private_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "ask_gpt"
-        ]
-      },
-      "description": "List of private skills that are only available to privileged users"
+      "description": "States for each Acolyt skill (disabled, public, or private)"
     },
     "api_key": {
       "type": "string",
-      "description": "Acolyt API key"
+      "title": "Acolyt API Key",
+      "description": "Acolyt API key for authentication"
     }
   },
   "required": [
-    "public_skills",
+    "skill_states",
     "api_key"
   ],
   "additionalProperties": true
