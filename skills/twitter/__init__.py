@@ -43,19 +43,17 @@ def get_skills(
     **_,
 ) -> list[TwitterBaseTool]:
     """Get all Twitter skills."""
-    # always return public skills
-    resp = [get_twitter_skill(name, store) for name in config["public_skills"]]
-    # return private skills only if is_private
-    if is_private and "private_skills" in config:
-        resp.extend(
-            [
-                get_twitter_skill(name, store)
-                for name in config["private_skills"]
-                # remove duplicates
-                if name not in config["public_skills"]
-            ]
-        )
-    return resp
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["skill_states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [get_twitter_skill(name, store) for name in available_skills]
 
 
 def get_twitter_skill(
