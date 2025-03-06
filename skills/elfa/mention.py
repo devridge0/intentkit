@@ -4,6 +4,7 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field, HttpUrl
 
 from .base import ElfaBaseTool, base_url
@@ -137,8 +138,14 @@ class ElfaGetMentions(ElfaBaseTool):
         """
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self) -> ElfaGetMentionsOutput:
+    async def _arun(
+        self, config: RunnableConfig = None, **kwargs
+    ) -> ElfaGetMentionsOutput:
         """Run the tool to get the the ELFA AI API to query hourly-updated tweets from smart accounts with at least 10 interactions (comments, retweets, quote tweets).
+
+        Args:
+            config: The configuration for the runnable, containing agent context.
+            **kwargs: Additional parameters.
 
         Returns:
             ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
@@ -146,6 +153,8 @@ class ElfaGetMentions(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
+        # We can access context via self.context_from_config(config) if needed
+
         url = f"{base_url}/v1/mentions"
         headers = {
             "accept": "application/json",
@@ -285,22 +294,26 @@ class ElfaGetTopMentions(ElfaBaseTool):
         ticker: str,
         timeWindow: str = "24h",
         includeAccountDetails: bool = False,
-    ) -> ElfaGetMentionsOutput:
+        config: RunnableConfig = None,
+        **kwargs,
+    ) -> ElfaGetTopMentionsOutput:
         """Run the tool to get the Elfa API to query tweets mentioning a specific stock ticker. The tweets are ranked by view count and the results are updated hourly.
 
         Args:
             ticker: Stock ticker symbol.
             timeWindow: Time window (optional).
-            page: Page number.
-            pageSize: Items per page.
             includeAccountDetails: Include account details.
+            config: The configuration for the runnable, containing agent context.
+            **kwargs: Additional parameters.
 
         Returns:
-            ElfaGetMentionsOutput: A structured output containing output of Elfa top mentions API.
+            ElfaGetTopMentionsOutput: A structured output containing output of Elfa top mentions API.
 
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
+        # We can access context via self.context_from_config(config) if needed
+
         url = f"{base_url}/v1/top-mentions"
         headers = {
             "accept": "application/json",
@@ -438,6 +451,8 @@ class ElfaSearchMentions(ElfaBaseTool):
         keywords: str,
         from_: int = get_current_epoch_timestamp(),
         to: int = get_yesterday_epoch_timestamp(),
+        config: RunnableConfig = None,
+        **kwargs,
     ) -> ElfaSearchMentionsOutput:
         """Run the tool to for tweets mentioning up to five keywords within the past 30 days.  It can access up to six months of historical tweet data, updated every five minutes via the Elfa API.
 
@@ -445,6 +460,8 @@ class ElfaSearchMentions(ElfaBaseTool):
             keywords: Keywords to search.
             from_: Start date (Unix timestamp).
             to: End date (Unix timestamp).
+            config: The configuration for the runnable, containing agent context.
+            **kwargs: Additional parameters.
 
         Returns:
             ElfaSearchMentionsOutput: A structured output containing output of Elfa top mentions API.
@@ -452,6 +469,8 @@ class ElfaSearchMentions(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
+        # We can access context via self.context_from_config(config) if needed
+
         url = f"{base_url}/v1/mentions/search"
         headers = {
             "accept": "application/json",

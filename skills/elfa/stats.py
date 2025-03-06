@@ -2,6 +2,7 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from .base import ElfaBaseTool, base_url
@@ -76,18 +77,24 @@ class ElfaGetSmartStats(ElfaBaseTool):
         """
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, username: str) -> ElfaGetSmartStatsOutput:
+    async def _arun(
+        self, username: str, config: RunnableConfig = None, **kwargs
+    ) -> ElfaGetSmartStatsOutput:
         """Run the tool retrieve smart stats (smart following count) and social metrics (engagement score and ratio) for a given username.
 
         Args:
             username (str): The username to check stats for.
+            config: The configuration for the runnable, containing agent context.
+            **kwargs: Additional parameters.
 
         Returns:
-            ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
+            ElfaGetSmartStatsOutput: A structured output containing output of Elfa get mentions API.
 
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
+        # We can access context via self.context_from_config(config) if needed
+
         url = f"{base_url}/v1/account/smart-stats"
         headers = {
             "accept": "application/json",

@@ -1,56 +1,64 @@
 """Common utility skills."""
 
-from abstracts.agent import AgentStoreABC
+from typing import TypedDict
+
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
+from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
+
+# Cache skills at the system level, because they are stateless
+_cache: dict[str, CommonBaseTool] = {}
+
+
+class SkillStates(TypedDict):
+    current_time: SkillState
 
 
 class Config(SkillConfig):
     """Configuration for common utility skills."""
 
+    skill_states: SkillStates
+
 
 def get_skills(
     config: "Config",
-    agent_id: str,
     is_private: bool,
     store: SkillStoreABC,
-    agent_store: AgentStoreABC,
     **_,
 ) -> list[CommonBaseTool]:
-    """Get all common utility skills."""
-    # always return public skills
-    resp = [
-        get_common_skill(name, store, agent_id, agent_store)
-        for name in config["public_skills"]
-    ]
-    # return private skills only if is_private
-    if is_private and "private_skills" in config:
-        resp.extend(
-            [
-                get_common_skill(name, store, agent_id, agent_store)
-                for name in config["private_skills"]
-                # remove duplicates
-                if name not in config["public_skills"]
-            ]
-        )
-    return resp
+    """Get all common utility skills.
+
+    Args:
+        config: The configuration for common utility skills.
+        is_private: Whether to include private skills.
+        store: The skill store for persisting data.
+
+    Returns:
+        A list of common utility skills.
+    """
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["skill_states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [get_common_skill(name, store) for name in available_skills]
 
 
 def get_common_skill(
     name: str,
     store: SkillStoreABC,
-    agent_id: str,
-    agent_store: AgentStoreABC,
 ) -> CommonBaseTool:
     """Get a common utility skill by name.
 
     Args:
         name: The name of the skill to get
         store: The skill store for persisting data
-        agent_id: The ID of the agent
-        agent_store: The agent store for persisting data
 
     Returns:
         The requested common utility skill
@@ -59,10 +67,10 @@ def get_common_skill(
         ValueError: If the requested skill name is unknown
     """
     if name == "current_time":
-        return CurrentTime(
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CurrentTime(
+                skill_store=store,
+            )
+        return _cache[name]
     else:
-        raise ValueError(f"Unknown skill: {name}")
+        raise ValueError(f"Unknown common skill: {name}")

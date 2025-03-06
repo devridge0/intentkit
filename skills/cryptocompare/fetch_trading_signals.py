@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
 from skills.cryptocompare.api import FetchTradingSignalsInput, fetch_trading_signals
@@ -27,8 +28,20 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
     def _run(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
-        is_rate_limited, error_msg = await self.check_rate_limit()
+    async def _arun(
+        self, from_symbol: str, config: RunnableConfig = None, **kwargs
+    ) -> CryptoCompareFetchTradingSignalsOutput:
+        # Get agent context if available
+        context = None
+        if config:
+            context = self.context_from_config(config)
+            agent_id = context.agent.id if context else None
+            # Check rate limiting with agent_id
+            is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
+        else:
+            # Check rate limiting without agent_id
+            is_rate_limited, error_msg = await self.check_rate_limit()
+
         if is_rate_limited:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=error_msg)
         try:

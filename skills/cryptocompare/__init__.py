@@ -1,10 +1,9 @@
 """CryptoCompare skills."""
 
-from typing import NotRequired
+from typing import TypedDict
 
-from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
+from skills.base import SkillConfig, SkillState
 from skills.cryptocompare.base import CryptoCompareBaseTool
 from skills.cryptocompare.fetch_news import CryptoCompareFetchNews
 from skills.cryptocompare.fetch_price import CryptoCompareFetchPrice
@@ -13,58 +12,67 @@ from skills.cryptocompare.fetch_top_market_cap import CryptoCompareFetchTopMarke
 from skills.cryptocompare.fetch_top_volume import CryptoCompareFetchTopVolume
 from skills.cryptocompare.fetch_trading_signals import CryptoCompareFetchTradingSignals
 
+# Cache skills at the system level, because they are stateless
+_cache: dict[str, CryptoCompareBaseTool] = {}
 
-class Config(SkillConfig):
-    """Configuration for CryptoCompare skills."""
+
+class SkillStates(TypedDict):
+    fetch_news: SkillState
+    fetch_price: SkillState
+    fetch_trading_signals: SkillState
+    fetch_top_market_cap: SkillState
+    fetch_top_exchanges: SkillState
+    fetch_top_volume: SkillState
+
+
+class CryptoCompareConfig(TypedDict):
+    """Configuration for CryptoCompare API client."""
 
     api_key: str
-    public_skills: NotRequired[list[str]] = []
-    private_skills: NotRequired[list[str]] = []
+
+
+class Config(SkillConfig, CryptoCompareConfig):
+    """Configuration for CryptoCompare skills."""
+
+    skill_states: SkillStates
 
 
 def get_skills(
-    config: Config,
-    agent_id: str,
+    config: "Config",
     is_private: bool,
     store: SkillStoreABC,
-    agent_store: AgentStoreABC,
     **_,
 ) -> list[CryptoCompareBaseTool]:
-    """Get all CryptoCompare skills."""
-    # always return public skills
-    resp = [
-        get_cryptocompare_skill(
-            name,
-            config["api_key"],
-            store,
-            agent_id,
-            agent_store,
-        )
-        for name in config.get("public_skills", [])
+    """Get all CryptoCompare skills.
+
+    Args:
+        config: The configuration for CryptoCompare skills.
+        is_private: Whether to include private skills.
+        store: The skill store for persisting data.
+
+    Returns:
+        A list of CryptoCompare skills.
+    """
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["skill_states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [
+        get_cryptocompare_skill(name, config["api_key"], store)
+        for name in available_skills
     ]
-    # return private skills only if is_private
-    if is_private and "private_skills" in config:
-        resp.extend(
-            get_cryptocompare_skill(
-                name,
-                config["api_key"],
-                store,
-                agent_id,
-                agent_store,
-            )
-            for name in config["private_skills"]
-            # remove duplicates
-            if name not in config.get("public_skills", [])
-        )
-    return resp
 
 
 def get_cryptocompare_skill(
     name: str,
     api_key: str,
     store: SkillStoreABC,
-    agent_id: str,
-    agent_store: AgentStoreABC,
 ) -> CryptoCompareBaseTool:
     """Get a CryptoCompare skill by name.
 
@@ -72,8 +80,6 @@ def get_cryptocompare_skill(
         name: The name of the skill to get
         api_key: The CryptoCompare API key
         store: The skill store for persisting data
-        agent_id: The ID of the agent
-        agent_store: The agent store for persisting data
 
     Returns:
         The requested CryptoCompare skill
@@ -81,47 +87,50 @@ def get_cryptocompare_skill(
     Raises:
         ValueError: If the requested skill name is unknown
     """
+    if not api_key:
+        raise ValueError("CryptoCompare API key is empty")
+
     if name == "fetch_news":
-        return CryptoCompareFetchNews(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchNews(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_price":
-        return CryptoCompareFetchPrice(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchPrice(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_trading_signals":
-        return CryptoCompareFetchTradingSignals(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchTradingSignals(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_top_market_cap":
-        return CryptoCompareFetchTopMarketCap(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchTopMarketCap(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_top_exchanges":
-        return CryptoCompareFetchTopExchanges(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchTopExchanges(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_top_volume":
-        return CryptoCompareFetchTopVolume(
-            api_key=api_key,
-            skill_store=store,
-            agent_id=agent_id,
-            agent_store=agent_store,
-        )
+        if name not in _cache:
+            _cache[name] = CryptoCompareFetchTopVolume(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     else:
         raise ValueError(f"Unknown CryptoCompare skill: {name}")

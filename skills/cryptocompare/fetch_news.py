@@ -3,6 +3,7 @@
 import time
 from typing import List, Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.cryptocompare.api import FetchNewsInput, fetch_news
@@ -45,9 +46,7 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
     Example:
         news_tool = CryptoCompareFetchNews(
             api_key="your_api_key",
-            skill_store=store,
-            agent_id="agent_123",
-            agent_store=agent_store
+            skill_store=store
         )
         result = await news_tool._arun(token="BTC")
     """
@@ -60,19 +59,33 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
         """Synchronous implementation - not supported."""
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, token: str) -> CryptoCompareFetchNewsOutput:
+    async def _arun(
+        self, token: str, config: RunnableConfig = None, **kwargs
+    ) -> CryptoCompareFetchNewsOutput:
         """Fetch news articles for the given token.
 
         Args:
             token: Cryptocurrency token symbol (e.g., "BTC", "ETH")
-            timestamp: Optional Unix timestamp to search for news from
+            config: The configuration for the runnable, containing agent context
+            **kwargs: Additional configuration parameters
 
         Returns:
             CryptoCompareFetchNewsOutput containing list of articles or error
         """
         try:
-            # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            # Get agent context if available
+            context = None
+            if config:
+                context = self.context_from_config(config)
+                agent_id = context.agent.id if context else None
+                # Check rate limiting with agent_id
+                is_rate_limited, error_msg = await self.check_rate_limit(
+                    agent_id=agent_id
+                )
+            else:
+                # Check rate limiting without agent_id
+                is_rate_limited, error_msg = await self.check_rate_limit()
+
             if is_rate_limited:
                 return CryptoCompareFetchNewsOutput(error=error_msg)
 
