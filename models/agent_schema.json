@@ -297,8 +297,8 @@
       "description": "Dict of skills and their corresponding configurations",
       "x-group": "skills",
       "properties": {
-        "defillama": {
-          "$ref": "../skills/defillama/schema.json"
+        "cdp": {
+          "$ref": "../skills/defillama/cdp.json"
         },
         "twitter": {
           "$ref": "../skills/twitter/schema.json"
@@ -314,6 +314,15 @@
         },
         "cryptocompare": {
           "$ref": "../skills/cryptocompare/schema.json"
+        },
+        "elfa": {
+          "$ref": "../skills/elfa/schema.json"
+        },
+        "slack": {
+          "$ref": "../skills/slack/schema.json"
+        },
+        "common": {
+          "$ref": "../skills/common/schema.json"
         }
       }
     },
