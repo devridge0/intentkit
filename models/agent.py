@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import yaml
 from epyxid import XID
@@ -570,7 +570,20 @@ class AgentUpdate(BaseModel):
         ),
     ]
     cdp_network_id: Annotated[
-        Optional[str],
+        Optional[
+            Literal[
+                "ethereum-mainnet",
+                "ethereum-sepolia",
+                "polygon-mainnet",
+                "polygon-mumbai",
+                "base-mainnet",
+                "base-sepolia",
+                "arbitrum-mainnet",
+                "arbitrum-sepolia",
+                "optimism-mainnet",
+                "optimism-sepolia",
+            ]
+        ],
         PydanticField(
             default="base-mainnet",
             description="Network identifier for CDP integration",

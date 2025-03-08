@@ -208,6 +208,18 @@
       "type": "string",
       "description": "Network identifier for CDP integration",
       "default": "base-mainnet",
+      "enum": [
+        "ethereum-mainnet",
+        "ethereum-sepolia",
+        "polygon-mainnet",
+        "polygon-mumbai",
+        "base-mainnet",
+        "base-sepolia",
+        "arbitrum-mainnet",
+        "arbitrum-sepolia",
+        "optimism-mainnet",
+        "optimism-sepolia"
+      ],
       "x-group": "onchain"
     },
     "crossmint_config": {

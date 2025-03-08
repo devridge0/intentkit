@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "CDP Skills",
+  "description": "Configuration schema for CDP wallet interaction skills",
+  "properties": {
+    "skill_states": {
+      "type": "object",
+      "properties": {
+        "get_balance": {
+          "type": "string",
+          "title": "Get Balance",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_balance skill"
+        }
+      },
+      "description": "States for each CDP skill (disabled, public, or private)"
+    }
+  },
+  "required": ["skill_states"],
+  "additionalProperties": true
+}

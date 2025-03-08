@@ -5,13 +5,9 @@ from pydantic import BaseModel, Field
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
 
-base_url = "https://api.elfa.ai"
 
-
-class ElfaBaseTool(IntentKitSkill):
-    """Base class for Elfa tools."""
-
-    api_key: str = Field(description="API Key")
+class CDPBaseTool(IntentKitSkill):
+    """Base class for CDP tools."""
 
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
@@ -22,4 +18,4 @@ class ElfaBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "elfa"
+        return "cdp"

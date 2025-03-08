@@ -5,7 +5,8 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from abstracts.skill import IntentKitSkill, SkillStoreABC
+from abstracts.skill import SkillStoreABC
+from skills.base import IntentKitSkill
 from skills.defillama.config.chains import (
     get_chain_from_alias,
 )
