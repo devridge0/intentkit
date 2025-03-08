@@ -1,24 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Common Utility Skills",
-  "description": "Configuration schema for common utility skills",
+  "title": "CDP Skills",
+  "description": "Configuration schema for CDP wallet interaction skills",
   "properties": {
     "states": {
       "type": "object",
       "properties": {
-        "current_time": {
+        "get_balance": {
           "type": "string",
-          "title": "Current Time",
+          "title": "Get Balance",
           "enum": [
             "disabled",
             "public",
             "private"
           ],
-          "description": "State of the current_time skill"
+          "description": "State of the get_balance skill"
         }
       },
-      "description": "States for each common utility skill (disabled, public, or private)"
+      "description": "States for each CDP skill (disabled, public, or private)"
     }
   },
   "required": [

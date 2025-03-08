@@ -1,34 +1,33 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "title": "Allora Skills",
+  "description": "Configuration schema for Allora skills",
   "properties": {
-    "public_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "get_price_prediction"
-        ]
+    "states": {
+      "type": "object",
+      "properties": {
+        "get_price_prediction": {
+          "type": "string",
+          "title": "Get Price Prediction",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_price_prediction skill"
+        }
       },
-      "description": "List of public skills that are available to all users"
-    },
-    "private_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "get_price_prediction"
-        ]
-      },
-      "description": "List of private skills that are only available to privileged users"
+      "description": "States for each Allora skill (disabled, public, or private)"
     },
     "api_key": {
       "type": "string",
-      "description": "Allora API key"
+      "title": "Allora API Key",
+      "description": "Allora API key for authentication"
     }
   },
   "required": [
-    "public_skills",
+    "states",
     "api_key"
   ],
   "additionalProperties": true

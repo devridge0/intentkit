@@ -2,6 +2,7 @@ from typing import Literal, Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.allora.base import AlloraBaseTool
@@ -59,12 +60,12 @@ class AlloraGetPrice(AlloraBaseTool):
 
 
     Attributes:
-        name (str): Name of the tool, specifically "allora_get_price".
+        name (str): Name of the tool, specifically "get_price_prediction".
         description (str): Comprehensive description of the tool's purpose and functionality.
         args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
     """
 
-    name: str = "allora_get_price"
+    name: str = "get_price_prediction"
     description: str = """
         The Allora Price Prediction Feed tool fetches the price prediction feed from the Allora API.
         Ethereum (ETH) or Bitcoin (BTC) price predictions (5-minute, 8-hour)
@@ -82,11 +83,14 @@ class AlloraGetPrice(AlloraBaseTool):
         """
         raise NotImplementedError("Use _arun instead")
 
-    async def _arun(self, token: str, time_frame: str) -> AlloraGetPriceOutput:
+    async def _arun(
+        self, token: str, time_frame: str, config: RunnableConfig = None, **kwargs
+    ) -> AlloraGetPriceOutput:
         """Run the tool to get the token price prediction from Allora API.
         Args:
             token (str): Token to get price prediction for.
             time_frame (str): Time frame for price prediction.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
              AlloraGetPriceOutput: A structured output containing output of Allora toke price prediction API.
@@ -111,11 +115,11 @@ class AlloraGetPrice(AlloraBaseTool):
                 return res
             except httpx.RequestError as req_err:
                 raise ToolException(
-                    f"request error from Allora API: {req_err}"
+                    f"Request error from Allora API: {req_err}"
                 ) from req_err
             except httpx.HTTPStatusError as http_err:
                 raise ToolException(
-                    f"http error from Allora API: {http_err}"
+                    f"HTTP error from Allora API: {http_err}"
                 ) from http_err
             except Exception as e:
-                raise ToolException(f"error from Allora API: {e}") from e
+                raise ToolException(f"Error from Allora API: {e}") from e

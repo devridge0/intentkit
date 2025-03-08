@@ -1,72 +1,90 @@
 """Allora skill module."""
 
-from abstracts.agent import AgentStoreABC
+from typing import TypedDict
+
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
 from skills.allora.base import AlloraBaseTool
 from skills.allora.price import AlloraGetPrice
+from skills.base import SkillConfig, SkillState
+
+# Cache skills at the system level, because they are stateless
+_cache: dict[str, AlloraBaseTool] = {}
 
 
-class Config(SkillConfig):
-    """Configuration for Allora skills."""
+class SkillStates(TypedDict):
+    get_price_prediction: SkillState
+
+
+class AlloraClientConfig(TypedDict):
+    """Configuration for Allora API client."""
 
     api_key: str
 
 
+class Config(SkillConfig, AlloraClientConfig):
+    """Configuration for Allora skills."""
+
+    states: SkillStates
+
+
 def get_skills(
-    config: Config,
-    agent_id: str,
+    config: "Config",
     is_private: bool,
     store: SkillStoreABC,
-    agent_store: AgentStoreABC,
     **_,
 ) -> list[AlloraBaseTool]:
-    """Get all Allora skills."""
-    # always return public skills
-    resp = [
-        get_allora_skill(
-            name,
-            config["api_key"],
-            store,
-            agent_store,
-            agent_id,
-        )
-        for name in config["public_skills"]
+    """Get all Allora skills.
+
+    Args:
+        config: The configuration for Allora skills.
+        is_private: Whether to include private skills.
+        store: The skill store for persisting data.
+
+    Returns:
+        A list of Allora skills.
+    """
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [
+        get_allora_skill(name, config["api_key"], store) for name in available_skills
     ]
-    # return private skills only if is_private
-    if is_private and "private_skills" in config:
-        resp.extend(
-            get_allora_skill(
-                name,
-                config["api_key"],
-                store,
-                agent_store,
-                agent_id,
-            )
-            for name in config["private_skills"]
-            # remove duplicates
-            if name not in config["public_skills"]
-        )
-    return resp
 
 
 def get_allora_skill(
     name: str,
     api_key: str,
-    skill_store: SkillStoreABC,
-    agent_store: AgentStoreABC,
-    agent_id: str,
+    store: SkillStoreABC,
 ) -> AlloraBaseTool:
+    """Get an Allora skill by name.
+
+    Args:
+        name: The name of the skill to get
+        api_key: The API key for Allora
+        store: The skill store for persisting data
+
+    Returns:
+        The requested Allora skill
+
+    Raises:
+        ValueError: If the requested skill name is unknown or API key is empty
+    """
     if not api_key:
-        raise ValueError("Allora API token is empty")
+        raise ValueError("Allora API key is empty")
 
     if name == "get_price_prediction":
-        return AlloraGetPrice(
-            api_key=api_key,
-            agent_id=agent_id,
-            skill_store=skill_store,
-            agent_store=agent_store,
-        )
-
+        if name not in _cache:
+            _cache[name] = AlloraGetPrice(
+                api_key=api_key,
+                skill_store=store,
+            )
+        return _cache[name]
     else:
         raise ValueError(f"Unknown Allora skill: {name}")

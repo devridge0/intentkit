@@ -62,7 +62,7 @@ from models.agent import Agent, AgentData, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
-from skills.acolyt import get_Acolyt_skill
+from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
 from skills.common import get_common_skill
@@ -76,6 +76,8 @@ from skills.goat import (
 from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
+
+_agent_configs: dict[str, Agent] = {}
 
 # Global variable to cache all agent executors
 _agents: dict[str, CompiledGraph] = {}
@@ -112,8 +114,8 @@ async def initialize_agent(aid, is_private=False):
 
     # get the agent from the database
     try:
-        agent: Agent = await agent_store.get_config()
-        agent_data: AgentData = await agent_store.get_data()
+        agent: Agent = await Agent.get(aid)
+        agent_data: AgentData = await AgentData.get(aid)
 
     except NoResultFound:
         # Handle the case where the user is not found
@@ -186,14 +188,14 @@ async def initialize_agent(aid, is_private=False):
                 skill_module = importlib.import_module(f"skills.{k}")
                 if hasattr(skill_module, "get_skills"):
                     skill_tools = skill_module.get_skills(
-                        v, aid, is_private, skill_store, agent_store=agent_store
+                        v, is_private, skill_store, aid
                     )
                     if skill_tools and len(skill_tools) > 0:
                         tools.extend(skill_tools)
                 else:
-                    logger.warning(f"Skill {k} does not have get_skills function")
+                    logger.error(f"Skill {k} does not have get_skills function")
             except ImportError:
-                logger.warning(f"Could not import skill module: {k}")
+                logger.error(f"Could not import skill module: {k}")
 
     # Configure CDP Agentkit Langchain Extension.
     cdp_wallet_provider = None
@@ -202,6 +204,7 @@ async def initialize_agent(aid, is_private=False):
         and agent_data
         and agent_data.cdp_wallet_data
         and agent.cdp_skills
+        and "cdp" not in agent.skills
     ):
         cdp_wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=config.cdp_api_key_name,
@@ -243,7 +246,7 @@ async def initialize_agent(aid, is_private=False):
                 if tool.name.endswith(skill):
                     tools.append(tool)
 
-    if agent.goat_enabled and agent.crossmint_config:
+    if agent.goat_enabled and agent.crossmint_config and "goat" not in agent.skills:
         if (
             hasattr(config, "chain_provider")
             and config.crossmint_api_key
@@ -304,7 +307,12 @@ async def initialize_agent(aid, is_private=False):
                     logger.warning(e)
 
     # Enso skills
-    if agent.enso_skills and len(agent.enso_skills) > 0 and agent.enso_config:
+    if (
+        agent.enso_skills
+        and len(agent.enso_skills) > 0
+        and agent.enso_config
+        and "enso" not in agent.skills
+    ):
         for skill in agent.enso_skills:
             try:
                 s = get_enso_skill(
@@ -325,10 +333,15 @@ async def initialize_agent(aid, is_private=False):
             except Exception as e:
                 logger.warning(e)
     # Acolyt skills
-    if agent.acolyt_skills and len(agent.acolyt_skills) > 0 and agent.acolyt_config:
+    if (
+        agent.acolyt_skills
+        and len(agent.acolyt_skills) > 0
+        and agent.acolyt_config
+        and "acolyt" not in agent.skills
+    ):
         for skill in agent.acolyt_skills:
             try:
-                s = get_Acolyt_skill(
+                s = get_acolyt_skill(
                     skill,
                     agent.acolyt_config.get("api_key"),
                     skill_store,
@@ -339,7 +352,12 @@ async def initialize_agent(aid, is_private=False):
             except Exception as e:
                 logger.warning(e)
     # Allora skills
-    if agent.allora_skills and len(agent.allora_skills) > 0 and agent.allora_config:
+    if (
+        agent.allora_skills
+        and len(agent.allora_skills) > 0
+        and agent.allora_config
+        and "allora" not in agent.skills
+    ):
         for skill in agent.allora_skills:
             try:
                 s = get_allora_skill(
@@ -353,7 +371,12 @@ async def initialize_agent(aid, is_private=False):
             except Exception as e:
                 logger.warning(e)
     # Elfa skills
-    if agent.elfa_skills and len(agent.elfa_skills) > 0 and agent.elfa_config:
+    if (
+        agent.elfa_skills
+        and len(agent.elfa_skills) > 0
+        and agent.elfa_config
+        and "elfa" not in agent.skills
+    ):
         for skill in agent.elfa_skills:
             try:
                 s = get_elfa_skill(
@@ -367,7 +390,11 @@ async def initialize_agent(aid, is_private=False):
             except Exception as e:
                 logger.warning(e)
     # Twitter skills
-    if agent.twitter_skills and len(agent.twitter_skills) > 0:
+    if (
+        agent.twitter_skills
+        and len(agent.twitter_skills) > 0
+        and "twitter" not in agent.skills
+    ):
         if not agent.twitter_config:
             agent.twitter_config = {}
         twitter_client = TwitterClient(aid, agent_store, agent.twitter_config)
@@ -382,7 +409,7 @@ async def initialize_agent(aid, is_private=False):
             tools.append(s)
 
     # Common skills
-    if agent.common_skills:
+    if agent.common_skills and "common" not in agent.skills:
         for skill in agent.common_skills:
             tools.append(get_common_skill(skill))
 
@@ -433,6 +460,7 @@ async def initialize_agent(aid, is_private=False):
         debug=config.debug_checkpoint,
         input_token_limit=input_token_limit,
     )
+    _agent_configs[aid] = agent
     if is_private:
         _private_agents[aid] = executor
         _private_agents_updated[aid] = agent.updated_at
@@ -494,16 +522,6 @@ async def execute_agent(
     if input.chat_id.startswith("owner") or input.chat_id.startswith("autonomous"):
         is_private = True
 
-    thread_id = f"{input.agent_id}-{input.chat_id}"
-
-    stream_config = {
-        "configurable": {
-            "thread_id": thread_id,
-            "agent_id": input.agent_id,
-            "user_id": input.user_id,
-            "entrypoint": input.author_type,
-        }
-    }
     resp = []
     start = time.perf_counter()
 
@@ -529,6 +547,17 @@ async def execute_agent(
             for image_url in image_urls
         ]
     )
+
+    # stream config
+    thread_id = f"{input.agent_id}-{input.chat_id}"
+    stream_config = {
+        "configurable": {
+            "agent": _agent_configs[input.agent_id],
+            "thread_id": thread_id,
+            "user_id": input.user_id,
+            "entrypoint": input.author_type,
+        }
+    }
 
     # run
     cached_tool_step = None

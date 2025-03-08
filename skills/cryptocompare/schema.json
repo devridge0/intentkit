@@ -1,44 +1,83 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "title": "CryptoCompare Skills",
+  "description": "Configuration schema for CryptoCompare skills",
   "properties": {
-    "public_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "fetch_news",
-          "fetch_price",
-          "fetch_trading_signals",
-          "fetch_top_exchanges",
-          "fetch_top_market_cap",
-          "fetch_top_volume"
-        ]
+    "states": {
+      "type": "object",
+      "properties": {
+        "fetch_news": {
+          "type": "string",
+          "title": "Fetch News",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_news skill"
+        },
+        "fetch_price": {
+          "type": "string",
+          "title": "Fetch Price",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_price skill"
+        },
+        "fetch_trading_signals": {
+          "type": "string",
+          "title": "Fetch Trading Signals",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_trading_signals skill"
+        },
+        "fetch_top_market_cap": {
+          "type": "string",
+          "title": "Fetch Top Market Cap",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_top_market_cap skill"
+        },
+        "fetch_top_exchanges": {
+          "type": "string",
+          "title": "Fetch Top Exchanges",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_top_exchanges skill"
+        },
+        "fetch_top_volume": {
+          "type": "string",
+          "title": "Fetch Top Volume",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the fetch_top_volume skill"
+        }
       },
-      "description": "List of public skills that are available to all users"
-    },
-    "private_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "fetch_news",
-          "fetch_price",
-          "fetch_trading_signals",
-          "fetch_top_exchanges",
-          "fetch_top_market_cap",
-          "fetch_top_volume"
-        ]
-      },
-      "description": "List of private skills that are only available to privileged users"
+      "description": "States for each CryptoCompare skill (disabled, public, or private)"
     },
     "api_key": {
       "type": "string",
-      "description": "CryptoCompare API key"
+      "title": "CryptoCompare API Key",
+      "description": "CryptoCompare API key for authentication"
     }
   },
   "required": [
-    "public_skills",
+    "states",
     "api_key"
   ],
   "additionalProperties": true

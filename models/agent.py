@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import yaml
 from epyxid import XID
@@ -26,7 +26,6 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 from models.base import Base
 from models.db import get_session
-from models.skill import SkillConfig
 
 logger = logging.getLogger(__name__)
 
@@ -389,6 +388,11 @@ class AgentTable(Base):
 class AgentUpdate(BaseModel):
     """Agent update model."""
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        use_enum_values=True,
+    )
+
     name: Annotated[
         Optional[str],
         PydanticField(
@@ -543,7 +547,7 @@ class AgentUpdate(BaseModel):
     ]
     # skills
     skills: Annotated[
-        Optional[Dict[str, SkillConfig]],
+        Optional[Dict[str, Any]],
         PydanticField(
             default=None,
             description="Dict of skills and their corresponding configurations",
@@ -566,7 +570,20 @@ class AgentUpdate(BaseModel):
         ),
     ]
     cdp_network_id: Annotated[
-        Optional[str],
+        Optional[
+            Literal[
+                "ethereum-mainnet",
+                "ethereum-sepolia",
+                "polygon-mainnet",
+                "polygon-mumbai",
+                "base-mainnet",
+                "base-sepolia",
+                "arbitrum-mainnet",
+                "arbitrum-sepolia",
+                "optimism-mainnet",
+                "optimism-sepolia",
+            ]
+        ],
         PydanticField(
             default="base-mainnet",
             description="Network identifier for CDP integration",

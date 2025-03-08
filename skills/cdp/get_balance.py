@@ -3,7 +3,8 @@ from typing import Type
 from cdp import Wallet
 from pydantic import BaseModel, Field
 
-from abstracts.skill import IntentKitSkill, SkillStoreABC
+from abstracts.skill import SkillStoreABC
+from skills.cdp.base import CDPBaseTool
 
 
 class GetBalanceInput(BaseModel):
@@ -14,7 +15,7 @@ class GetBalanceInput(BaseModel):
     )
 
 
-class GetBalance(IntentKitSkill):
+class GetBalance(CDPBaseTool):
     """Tool for getting balance from CDP wallet.
 
     This tool uses the CDP API to get balance for all addresses in a wallet for a given asset.

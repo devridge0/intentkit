@@ -1,7 +1,7 @@
-from typing import Type
+from typing import Dict, Type
 
 import httpx
-from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
@@ -35,24 +35,6 @@ class AcolytAskGptRequest(BaseModel):
     )
 
 
-class OutputMessage(BaseModel):
-    content: str | None = Field(
-        None,
-        description="The output content of the question response from acolyt API call.",
-    )
-
-
-class OutputChoices(BaseModel):
-    finish_reason: Literal[
-        "stop", "length", "tool_calls", "content_filter", "function_call"
-    ] = Field(description="The reason of GPT method stop.")
-    message: OutputMessage
-
-
-class AcolytAskGptOutput(BaseModel):
-    choices: list[OutputChoices]
-
-
 class AcolytAskGpt(AcolytBaseTool):
     """
     The Acolyt Data Fetcher is a versatile LangChain tool designed to interact with the Acolyt chat API to retrieve insightful data
@@ -83,31 +65,26 @@ class AcolytAskGpt(AcolytBaseTool):
         """
     args_schema: Type[BaseModel] = AcolytAskGptInput
 
-    def _run(self, question: str) -> AcolytAskGptOutput:
-        """Run the tool to get the tokens and APYs from the API.
-
-        Returns:
-             AcolytAskOutput: A structured output containing output of Acolyt chat completion API.
-
-        Raises:
-            Exception: If there's an error accessing the Acolyt API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, question: str) -> AcolytAskGptOutput:
+    async def _arun(self, question: str, config: RunnableConfig, **kwargs) -> Dict:
         """Run the tool to get answer from Acolyt GPT.
+
         Args:
             question (str): The question body from user.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
+
         Returns:
-            AcolytAskOutput: A structured output containing output of Acolyt chat completion API.
+            Dict: The response from the API with message content.
 
         Raises:
             Exception: If there's an error accessing the Acolyt API.
         """
+        context = self.context_from_config(config)
+        api_key = context.config["api_key"]
+
         url = f"{base_url}/api/chat/completions"
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {api_key}",
         }
 
         body = AcolytAskGptRequest(
@@ -122,16 +99,25 @@ class AcolytAskGpt(AcolytBaseTool):
                 response.raise_for_status()
                 json_dict = response.json()
 
-                res = AcolytAskGptOutput(**json_dict)
+                # Extract message content directly
+                if "choices" in json_dict and len(json_dict["choices"]) > 0:
+                    if (
+                        "message" in json_dict["choices"][0]
+                        and "content" in json_dict["choices"][0]["message"]
+                    ):
+                        return json_dict
+                    else:
+                        raise ValueError("Unexpected response format from Acolyt API")
+                else:
+                    raise ValueError("Empty response from Acolyt API")
 
-                return res
             except httpx.RequestError as req_err:
-                raise ToolException(
-                    f"request error from Acolyt API: {req_err}"
+                raise ValueError(
+                    f"Request error from Acolyt API: {req_err}"
                 ) from req_err
             except httpx.HTTPStatusError as http_err:
-                raise ToolException(
-                    f"http error from Acolyt API: {http_err}"
+                raise ValueError(
+                    f"HTTP error from Acolyt API: {http_err}"
                 ) from http_err
             except Exception as e:
-                raise ToolException(f"error from Acolyt API: {e}") from e
+                raise ValueError(f"Error from Acolyt API: {e}") from e
