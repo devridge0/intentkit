@@ -523,4 +523,5 @@ def create_agent(
         interrupt_before=interrupt_before,
         interrupt_after=interrupt_after,
         debug=debug,
+        name=aid,
     )

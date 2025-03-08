@@ -8,5 +8,5 @@ package_dir = os.path.dirname(__file__)
 __all__ = [
     name
     for _, name, _ in pkgutil.iter_modules([package_dir])
-    if not name.startswith("_")  # Exclude private modules
+    if not name.startswith("_") and not name == "base"
 ]

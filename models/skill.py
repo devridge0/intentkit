@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, NotRequired, Optional, TypedDict
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Column, DateTime, String, delete, func, select
@@ -7,14 +7,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from models.base import Base
 from models.db import get_session
-
-
-class SkillConfig(TypedDict):
-    """Abstract base class for skill configuration."""
-
-    public_skills: List[str]
-    private_skills: NotRequired[List[str]]
-    __extra__: NotRequired[Dict[str, Any]]
 
 
 class AgentSkillDataTable(Base):

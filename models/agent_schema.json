@@ -208,6 +208,18 @@
       "type": "string",
       "description": "Network identifier for CDP integration",
       "default": "base-mainnet",
+      "enum": [
+        "ethereum-mainnet",
+        "ethereum-sepolia",
+        "polygon-mainnet",
+        "polygon-mumbai",
+        "base-mainnet",
+        "base-sepolia",
+        "arbitrum-mainnet",
+        "arbitrum-sepolia",
+        "optimism-mainnet",
+        "optimism-sepolia"
+      ],
       "x-group": "onchain"
     },
     "crossmint_config": {
@@ -285,8 +297,8 @@
       "description": "Dict of skills and their corresponding configurations",
       "x-group": "skills",
       "properties": {
-        "defillama": {
-          "$ref": "../skills/defillama/schema.json"
+        "cdp": {
+          "$ref": "../skills/defillama/cdp.json"
         },
         "twitter": {
           "$ref": "../skills/twitter/schema.json"
@@ -302,6 +314,15 @@
         },
         "cryptocompare": {
           "$ref": "../skills/cryptocompare/schema.json"
+        },
+        "elfa": {
+          "$ref": "../skills/elfa/schema.json"
+        },
+        "slack": {
+          "$ref": "../skills/slack/schema.json"
+        },
+        "common": {
+          "$ref": "../skills/common/schema.json"
         }
       }
     },

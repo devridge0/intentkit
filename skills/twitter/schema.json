@@ -1,60 +1,118 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "title": "Twitter Skills",
+  "description": "Configuration schema for Twitter skills",
   "properties": {
-    "public_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "follow_user",
-          "get_mentions",
-          "get_timeline",
-          "like_tweet",
-          "post_tweet",
-          "reply_tweet",
-          "retweet",
-          "search_tweets"
-        ]
+    "states": {
+      "type": "object",
+      "properties": {
+        "get_mentions": {
+          "type": "string",
+          "title": "Get Mentions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_mentions skill"
+        },
+        "post_tweet": {
+          "type": "string",
+          "title": "Post Tweet",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the post_tweet skill"
+        },
+        "reply_tweet": {
+          "type": "string",
+          "title": "Reply Tweet",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the reply_tweet skill"
+        },
+        "get_timeline": {
+          "type": "string",
+          "title": "Get Timeline",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_timeline skill"
+        },
+        "follow_user": {
+          "type": "string",
+          "title": "Follow User",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the follow_user skill"
+        },
+        "like_tweet": {
+          "type": "string",
+          "title": "Like Tweet",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the like_tweet skill"
+        },
+        "retweet": {
+          "type": "string",
+          "title": "Retweet",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the retweet skill"
+        },
+        "search_tweets": {
+          "type": "string",
+          "title": "Search Tweets",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the search_tweets skill"
+        }
       },
-      "description": "List of public skills that are available to all users"
-    },
-    "private_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "follow_user",
-          "get_mentions",
-          "get_timeline",
-          "like_tweet",
-          "post_tweet",
-          "reply_tweet",
-          "retweet",
-          "search_tweets"
-        ]
-      },
-      "description": "List of private skills that are only available to privileged users"
+      "description": "States for each Twitter skill (disabled, public, or private)"
     },
     "consumer_key": {
       "type": "string",
+      "title": "Twitter API consumer key",
       "description": "Twitter API consumer key"
     },
     "consumer_secret": {
       "type": "string",
+      "title": "Twitter API consumer secret",
       "description": "Twitter API consumer secret"
     },
     "access_token": {
       "type": "string",
+      "title": "Twitter API access token",
       "description": "Twitter API access token"
     },
     "access_token_secret": {
       "type": "string",
+      "title": "Twitter API access token secret",
       "description": "Twitter API access token secret"
     }
   },
   "required": [
-    "public_skills"
+    "states"
   ],
   "additionalProperties": true
 }

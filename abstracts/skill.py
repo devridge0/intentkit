@@ -1,32 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
-from langchain_core.tools import BaseTool
-from langchain_core.tools.base import ToolException
-from pydantic import (
-    ValidationError,
-)
-from pydantic.v1 import ValidationError as ValidationErrorV1
-
-from models.skill import SkillConfig
-
-
-class IntentKitSkill(BaseTool):
-    """Abstract base class for IntentKit skills.
-    Will have predefined abilities.
-    """
-
-    agent_id: str
-    skill_store: "SkillStoreABC"
-    # overwrite the value of BaseTool
-    handle_tool_error: Optional[Union[bool, str, Callable[[ToolException], str]]] = True
-    """Handle the content of the ToolException thrown."""
-
-    # overwrite the value of BaseTool
-    handle_validation_error: Optional[
-        Union[bool, str, Callable[[Union[ValidationError, ValidationErrorV1]], str]]
-    ] = True
-    """Handle the content of the ValidationError thrown."""
+from models.agent import Agent, AgentData, AgentQuota
 
 
 class SkillStoreABC(ABC):
@@ -42,9 +17,51 @@ class SkillStoreABC(ABC):
         """Get system configuration value by key."""
         pass
 
+    @staticmethod
+    @abstractmethod
+    async def get_agent_config(agent_id: str) -> Optional[Agent]:
+        """Get agent configuration.
+
+        Returns:
+            Agent configuration if found, None otherwise
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    async def get_agent_data(agent_id: str) -> Optional[AgentData]:
+        """Get additional agent data.
+
+        Returns:
+            Agent data if found, None otherwise
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    async def set_agent_data(agent_id: str, data: Dict) -> None:
+        """Update agent data.
+
+        Args:
+            agent_id: ID of the agent
+            data: Dictionary containing fields to update
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    async def get_agent_quota(agent_id: str) -> Optional[AgentQuota]:
+        """Get agent quota information.
+
+        Returns:
+            Agent quota if found, None otherwise
+        """
+        pass
+
+    @staticmethod
     @abstractmethod
     async def get_agent_skill_data(
-        self, agent_id: str, skill: str, key: str
+        agent_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for an agent.
 
@@ -58,9 +75,10 @@ class SkillStoreABC(ABC):
         """
         pass
 
+    @staticmethod
     @abstractmethod
     async def save_agent_skill_data(
-        self, agent_id: str, skill: str, key: str, data: Dict[str, Any]
+        agent_id: str, skill: str, key: str, data: Dict[str, Any]
     ) -> None:
         """Save or update skill data for an agent.
 
@@ -72,9 +90,10 @@ class SkillStoreABC(ABC):
         """
         pass
 
+    @staticmethod
     @abstractmethod
     async def get_thread_skill_data(
-        self, thread_id: str, skill: str, key: str
+        thread_id: str, skill: str, key: str
     ) -> Optional[Dict[str, Any]]:
         """Get skill data for a thread.
 
@@ -88,9 +107,9 @@ class SkillStoreABC(ABC):
         """
         pass
 
+    @staticmethod
     @abstractmethod
     async def save_thread_skill_data(
-        self,
         thread_id: str,
         agent_id: str,
         skill: str,
@@ -107,8 +126,3 @@ class SkillStoreABC(ABC):
             data: JSON data to store
         """
         pass
-
-
-GetSkillCallable = Callable[
-    [SkillConfig, str, bool, SkillStoreABC, ...], list[IntentKitSkill]
-]

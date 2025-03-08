@@ -1,7 +1,9 @@
 from typing import Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from clients.twitter import get_twitter_client
 from skills.twitter.base import TwitterBaseTool
 
 
@@ -9,13 +11,6 @@ class TwitterFollowUserInput(BaseModel):
     """Input for TwitterFollowUser tool."""
 
     user_id: str = Field(description="The ID of the user to follow")
-
-
-class TwitterFollowUserOutput(BaseModel):
-    """Output for TwitterFollowUser tool."""
-
-    followed: bool
-    error: str = Field(default=None)
 
 
 class TwitterFollowUser(TwitterBaseTool):
@@ -33,67 +28,44 @@ class TwitterFollowUser(TwitterBaseTool):
     description: str = "Follow a Twitter user"
     args_schema: Type[BaseModel] = TwitterFollowUserInput
 
-    def _run(self, user_id: str) -> TwitterFollowUserOutput:
-        """Run the tool to follow a user.
+    async def _arun(self, user_id: str, config: RunnableConfig, **kwargs) -> bool:
+        """Async implementation of the tool to follow a user.
 
         Args:
             user_id (str): The ID of the user to follow.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
-            TwitterFollowUserOutput: A structured output containing the result of the follow action.
+            bool: True if the user was successfully followed, otherwise raises an exception.
 
         Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, user_id: str) -> TwitterFollowUserOutput:
-        """Run the tool to follow a user.
-
-        Args:
-            user_id (str): The ID of the user to follow.
-
-        Returns:
-            TwitterFollowUserOutput: A structured output containing the result of the follow action.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
+            Exception: If there's an error accessing the Twitter API or following the user.
         """
         try:
-            # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = await self.check_rate_limit(
-                    max_requests=5, interval=15
-                )
-                if is_rate_limited:
-                    return TwitterFollowUserOutput(
-                        followed=False,
-                        error=self._get_error_with_username(error),
-                    )
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
+            )
 
-            client = await self.twitter.get_client()
-            if not client:
-                return TwitterFollowUserOutput(
-                    followed=False,
-                    error=self._get_error_with_username(
-                        "Failed to get Twitter client. Please check your authentication."
-                    ),
+            # Check rate limit only when not using OAuth
+            if not twitter.use_key:
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=5, interval=15
                 )
+
+            client = await twitter.get_client()
 
             # Follow the user using tweepy client
             response = await client.follow_user(
-                target_user_id=user_id, user_auth=self.twitter.use_key
+                target_user_id=user_id, user_auth=twitter.use_key
             )
 
             if response.data and response.data.get("following"):
-                return TwitterFollowUserOutput(followed=True)
+                return True
             else:
-                return TwitterFollowUserOutput(
-                    followed=False,
-                    error=self._get_error_with_username("Failed to follow user"),
-                )
+                raise ValueError("Failed to follow user")
 
         except Exception as e:
-            return TwitterFollowUserOutput(
-                followed=False, error=self._get_error_with_username(str(e))
-            )
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e

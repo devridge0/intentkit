@@ -1,7 +1,9 @@
 from typing import Type
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from clients.twitter import get_twitter_client
 from skills.twitter.base import TwitterBaseTool
 
 
@@ -27,48 +29,51 @@ class TwitterReplyTweet(TwitterBaseTool):
     description: str = "Reply to an existing tweet on Twitter"
     args_schema: Type[BaseModel] = TwitterReplyTweetInput
 
-    async def _arun(self, tweet_id: str, text: str) -> str:
+    async def _arun(
+        self, tweet_id: str, text: str, config: RunnableConfig, **kwargs
+    ) -> str:
         """Async implementation of the tool to reply to a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to reply to.
             text (str): The text content of the reply.
+            config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
-            str: A message indicating success or failure of the reply action.
+            str: The ID of the posted reply tweet.
 
         Raises:
             Exception: If there's an error replying via the Twitter API.
         """
         try:
-            # Check rate limit only when not using OAuth
-            if not self.twitter.use_key:
-                is_rate_limited, error = await self.check_rate_limit(
-                    max_requests=48, interval=1440
-                )
-                if is_rate_limited:
-                    return self._get_error_with_username(
-                        f"Error replying to tweet: {error}"
-                    )
+            context = self.context_from_config(config)
+            twitter = get_twitter_client(
+                agent_id=context.agent.id,
+                skill_store=self.skill_store,
+                config=context.config,
+            )
 
-            client = await self.twitter.get_client()
-            if not client:
-                return self._get_error_with_username(
-                    "Failed to get Twitter client. Please check your authentication."
+            # Check rate limit only when not using OAuth
+            if not twitter.use_key:
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=48, interval=1440
                 )
+
+            client = await twitter.get_client()
 
             # Post reply tweet using tweepy client
             response = await client.create_tweet(
-                text=text, user_auth=self.twitter.use_key, in_reply_to_tweet_id=tweet_id
+                text=text, user_auth=twitter.use_key, in_reply_to_tweet_id=tweet_id
             )
 
             if "data" in response and "id" in response["data"]:
                 reply_id = response["data"]["id"]
-                return f"Reply posted successfully! Reply Tweet ID: {reply_id}"
-            return self._get_error_with_username("Failed to post reply tweet.")
+                return reply_id
+            else:
+                raise ValueError("Failed to post reply tweet.")
 
         except Exception as e:
-            return self._get_error_with_username(f"Error posting reply tweet: {str(e)}")
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
 
     def _run(self, tweet_id: str, text: str) -> str:
         """Sync implementation of the tool.

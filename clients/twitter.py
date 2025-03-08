@@ -4,11 +4,13 @@ from typing import Dict, NotRequired, Optional, TypedDict
 
 from tweepy.asynchronous import AsyncClient
 
-from abstracts.agent import AgentStoreABC
+from abstracts.skill import SkillStoreABC
 from abstracts.twitter import TwitterABC
 from models.agent import AgentData
 
 logger = logging.getLogger(__name__)
+
+_clients: Dict[str, "TwitterClient"] = {}
 
 
 class TwitterClientConfig(TypedDict):
@@ -25,32 +27,34 @@ class TwitterClient(TwitterABC):
     through a Tweepy client, supporting both API key and OAuth2 authentication.
 
     Args:
-        agent_store: The agent store for persisting data
+        agent_id: The ID of the agent
+        skill_store: The skill store for retrieving data
         config: Configuration dictionary that may contain API keys
     """
 
-    def __init__(self, agent_id, agent_store: AgentStoreABC, config: Dict) -> None:
+    def __init__(self, agent_id: str, skill_store: SkillStoreABC, config: Dict) -> None:
         """Initialize the Twitter client.
 
         Args:
-            agent_store: The agent store for persisting data
+            agent_id: The ID of the agent
+            skill_store: The skill store for retrieving data
             config: Configuration dictionary that may contain API keys
         """
         self.agent_id = agent_id
         self._client: Optional[AsyncClient] = None
-        self._agent_store = agent_store
+        self._skill_store = skill_store
         self._agent_data: Optional[AgentData] = None
         self.use_key = False
         self._config = config
 
-    async def get_client(self) -> Optional[AsyncClient]:
+    async def get_client(self) -> AsyncClient:
         """Get the initialized Twitter client.
 
         Returns:
-            Optional[AsyncClient]: The Twitter client if initialized, None otherwise
+            AsyncClient: The Twitter client if initialized
         """
         if not self._agent_data:
-            self._agent_data = await self._agent_store.get_data()
+            self._agent_data = await self._skill_store.get_agent_data()
             if not self._agent_data:
                 raise Exception(f"[{self.agent_id}] Agent data not found")
         if not self._client:
@@ -74,14 +78,14 @@ class TwitterClient(TwitterABC):
                 self.use_key = True
                 me = await self._client.get_me(user_auth=self.use_key)
                 if me and "data" in me and "id" in me["data"]:
-                    await self._agent_store.set_data(
+                    await self._skill_store.set_agent_data(
                         {
                             "twitter_id": me["data"]["id"],
                             "twitter_username": me["data"]["username"],
                             "twitter_name": me["data"]["name"],
                         }
                     )
-                self._agent_data = await self._agent_store.get_data()
+                self._agent_data = await self._skill_store.get_agent_data()
                 logger.info(
                     f"Twitter client initialized. "
                     f"Use API key: {self.use_key}, "
@@ -111,7 +115,7 @@ class TwitterClient(TwitterABC):
             if self._agent_data.twitter_access_token_expires_at <= datetime.now(
                 tz=timezone.utc
             ):
-                self._agent_data = await self._agent_store.get_data()
+                self._agent_data = await self._skill_store.get_agent_data()
                 # check again
                 if self._agent_data.twitter_access_token_expires_at <= datetime.now(
                     tz=timezone.utc
@@ -164,3 +168,11 @@ class TwitterClient(TwitterABC):
         if not self._agent_data:
             return None
         return self._agent_data.twitter_name
+
+
+def get_twitter_client(
+    agent_id: str, skill_store: SkillStoreABC, config: Dict
+) -> "TwitterClient":
+    if agent_id not in _clients:
+        _clients[agent_id] = TwitterClient(agent_id, skill_store, config)
+    return _clients[agent_id]

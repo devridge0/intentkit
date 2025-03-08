@@ -1,7 +1,7 @@
 """DeFi Llama skills."""
 
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
+from skills.base import SkillConfig
 from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.coins.fetch_batch_historical_prices import (
     DefiLlamaFetchBatchHistoricalPrices,

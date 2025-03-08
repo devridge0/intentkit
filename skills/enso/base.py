@@ -3,8 +3,8 @@ from typing import Type
 from cdp import Wallet
 from pydantic import BaseModel, Field
 
-from abstracts.agent import AgentStoreABC
-from abstracts.skill import IntentKitSkill, SkillStoreABC
+from abstracts.skill import SkillStoreABC
+from skills.base import IntentKitSkill
 from utils.chain import ChainProvider, NetworkId
 
 base_url = "https://api.enso.finance"
@@ -12,7 +12,7 @@ default_chain_id = int(NetworkId.BaseMainnet)
 
 
 class EnsoBaseTool(IntentKitSkill):
-    """Base class for Twitter tools."""
+    """Base class for Enso tools."""
 
     api_token: str = Field(description="API token")
     main_tokens: list[str] = Field(description="Main supported tokens")
@@ -23,10 +23,6 @@ class EnsoBaseTool(IntentKitSkill):
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
-    agent_id: str = Field(description="The ID of the agent")
-    agent_store: AgentStoreABC = Field(
-        description="The agent store for persisting data"
-    )
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )

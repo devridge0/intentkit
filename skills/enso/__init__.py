@@ -6,7 +6,7 @@ from cdp import Wallet
 
 from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
-from models.skill import SkillConfig
+from skills.base import SkillConfig
 from skills.enso.base import EnsoBaseTool
 from skills.enso.networks import EnsoGetNetworks
 from skills.enso.prices import EnsoGetPrices
