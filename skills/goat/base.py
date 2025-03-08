@@ -3,7 +3,8 @@ from typing import Type
 from pydantic import BaseModel, Field
 
 from abstracts.agent import AgentStoreABC
-from abstracts.skill import IntentKitSkill, SkillStoreABC
+from abstracts.skill import SkillStoreABC
+from skills.base import IntentKitSkill
 from utils.chain import ChainConfig, ChainProvider, Network
 
 
