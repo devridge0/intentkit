@@ -4,7 +4,7 @@
   "title": "CDP Skills",
   "description": "Configuration schema for CDP wallet interaction skills",
   "properties": {
-    "skill_states": {
+    "states": {
       "type": "object",
       "properties": {
         "get_balance": {
@@ -21,6 +21,8 @@
       "description": "States for each CDP skill (disabled, public, or private)"
     }
   },
-  "required": ["skill_states"],
+  "required": [
+    "states"
+  ],
   "additionalProperties": true
 }

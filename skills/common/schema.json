@@ -4,7 +4,7 @@
   "title": "Common Utility Skills",
   "description": "Configuration schema for common utility skills",
   "properties": {
-    "skill_states": {
+    "states": {
       "type": "object",
       "properties": {
         "current_time": {
@@ -21,6 +21,8 @@
       "description": "States for each common utility skill (disabled, public, or private)"
     }
   },
-  "required": ["skill_states"],
+  "required": [
+    "states"
+  ],
   "additionalProperties": true
 }

@@ -4,7 +4,7 @@
   "title": "Allora Skills",
   "description": "Configuration schema for Allora skills",
   "properties": {
-    "skill_states": {
+    "states": {
       "type": "object",
       "properties": {
         "get_price_prediction": {
@@ -27,7 +27,7 @@
     }
   },
   "required": [
-    "skill_states",
+    "states",
     "api_key"
   ],
   "additionalProperties": true
