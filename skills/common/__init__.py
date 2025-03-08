@@ -18,7 +18,7 @@ class SkillStates(TypedDict):
 class Config(SkillConfig):
     """Configuration for common utility skills."""
 
-    skill_states: SkillStates
+    states: SkillStates
 
 
 def get_skills(
@@ -40,7 +40,7 @@ def get_skills(
     available_skills = []
 
     # Include skills based on their state
-    for skill_name, state in config["skill_states"].items():
+    for skill_name, state in config["states"].items():
         if state == "disabled":
             continue
         elif state == "public" or (state == "private" and is_private):

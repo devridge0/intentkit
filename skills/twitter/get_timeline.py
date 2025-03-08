@@ -2,7 +2,7 @@ import logging
 from typing import Type
 
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from clients.twitter import get_twitter_client
 
@@ -13,10 +13,6 @@ logger = logging.getLogger(__name__)
 
 class TwitterGetTimelineInput(BaseModel):
     """Input for TwitterGetTimeline tool."""
-
-    max_results: int = Field(
-        default=10, description="Maximum number of tweets to retrieve"
-    )
 
 
 class TwitterGetTimeline(TwitterBaseTool):
@@ -35,9 +31,7 @@ class TwitterGetTimeline(TwitterBaseTool):
     description: str = "Get tweets from the authenticated user's timeline"
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
-    async def _arun(
-        self, input: TwitterGetTimelineInput, config: RunnableConfig = None, **kwargs
-    ) -> list[Tweet]:
+    async def _arun(self, config: RunnableConfig = None, **kwargs) -> list[Tweet]:
         """Async implementation of the tool to get the user's timeline.
 
         Args:
@@ -52,7 +46,7 @@ class TwitterGetTimeline(TwitterBaseTool):
         """
         try:
             # Ensure max_results is an integer
-            max_results = int(input.max_results)
+            max_results = 10
 
             context = self.context_from_config(config)
             twitter = get_twitter_client(
@@ -73,8 +67,6 @@ class TwitterGetTimeline(TwitterBaseTool):
             )
             last = last or {}
             since_id = last.get("since_id")
-            if since_id:
-                max_results = 100
 
             client = await twitter.get_client()
             user_id = twitter.self_id

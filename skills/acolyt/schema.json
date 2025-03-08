@@ -4,7 +4,7 @@
   "title": "Acolyt Skills",
   "description": "Configuration schema for Acolyt skills",
   "properties": {
-    "skill_states": {
+    "states": {
       "type": "object",
       "properties": {
         "ask_gpt": {
@@ -27,7 +27,7 @@
     }
   },
   "required": [
-    "skill_states",
+    "states",
     "api_key"
   ],
   "additionalProperties": true

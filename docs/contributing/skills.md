@@ -6,215 +6,306 @@ This guide will help you create new skills for IntentKit. Skills are the buildin
 
 Skill can be enabled in the Agent configuration. The Agent is aware of all the skills it possesses and will spontaneously use them at appropriate times, utilizing the output of the skills for subsequent reasoning or decision-making. The Agent can call multiple skills in a single interaction based on the needs.
 
-A skill in IntentKit is a specialized tool that inherits from `IntentKitSkill` (which extends LangChain's `BaseTool`). Each skill provides specific functionality that agents can use to interact with external services or perform specific tasks.
+A skill in IntentKit is a specialized tool that inherits from `IntentKitSkill` (which inherits from LangChain's `BaseTool`). Each skill provides specific functionality that agents can use to interact with external services or perform specific tasks.
 
-## Where to add skills
+## How skill works
 
-The skills are all in the `skills/` directory. In the future, it may also be in the `skills/` directory of the plugin root. Overall, we categorize as follows:
-* Common Skills: Skills located in the skills/common/ directory
-* First Class Skills: Skills found in other folders under skills/
-* Skill Sets: Located in the skill-sets directory
-* Plugin Skills: Located in the plugin repositories
+Before writing our first skill, we need to understand how a skill works.
 
-We need to choose the placement of skills so that they can be configured in the Agent settings and loaded.
+The code of skills are all in the `skills/` directory. Each subdirectory is a skill category.
 
-We can judge based on the following principles:
-1. If the basic capabilities provided by IntentKitSkill are sufficient, then it can be placed in common skills.
-2. If additional initialization steps are needed (such as initializing an SDK client) or extra configuration information is required, then it can be placed in skill sets, which support additional configuration and use of that configuration for extra initialization.
-3. If new Python dependencies need to be introduced, then they should be placed in a plugin.
-4. First Class Skills can support any customizations because they require adding an extra initialization code segment in app/core/engine, while the first three only need the skill code itself. When a skills category becomes common enough, we can promote it to First Class Skills.
-
-
-## Basic Structure
-
-Every skill consists of at least two components:
-
-1. A skill class that inherits from `IntentKitSkill`
-2. Input/Output models using Pydantic
-
-### Example Structure
-```python
-from pydantic import BaseModel
-from abstracts.skill import IntentKitSkill
-
-class MySkillInput(BaseModel):
-    """Input parameters for your skill"""
-    param1: str
-    param2: int = 10  # with default value
-
-class MySkillOutput(BaseModel):
-    """Output format for your skill"""
-    result: str
-    error: str | None = None
-
-class MySkill(IntentKitSkill):
-    name: str = "my_skill_name"
-    description: str = "Description of what your skill does"
-    args_schema: Type[BaseModel] = MySkillInput
-
-    def _run(self, param1: str, param2: int = 10) -> MySkillOutput:
-        try:
-            # Your skill implementation here
-            result = f"Processed {param1} {param2} times"
-            return MySkillOutput(result=result)
-        except Exception as e:
-            return MySkillOutput(result="", error=str(e))
-
-    async def _arun(self, param1: str, param2: int = 10) -> MySkillOutput:
-        """Async implementation if needed"""
-        return await self._run(param1, param2)
+The skill is configured in the field `skills` in the agent configuration. The key is the skill category, and the value is a predefined skill config. For example:
+```yaml
+id: my-test-agent
+skills:
+  twitter:
+    states: 
+      get_timeline: public
+      post_tweet: private
+      follow_user: disabled
+  common:
+    states:
+      current_time: public
 ```
 
-## Key Components
+## Adding a new skill category
 
-### 1. Input/Output Models
+Most of the time, you will need to add a new skill category. If you only want to add a skill in an existing category, you can copy an existing skill and modify it. Let's see how to add a new skill category.
 
-- Use Pydantic models to define input parameters and output structure
-- Input model will be used as `args_schema` in your skill
-- Output model ensures consistent return format
+After creating a new skill category folder in `skills/`, you need to add these 4 essential components:
+- `base.py` - Defines the base class for the skill, adding shared functionality for all skills in this category
+- `your_skill_name.py` - Defines the first skill implementation in the new category
+- `__init__.py` - Defines how to instantiate and retrieve the skills in this category
+- `schema.json` - Defines the config JSON schema for this skill category to help users understand the configuration options
 
-### 2. Skill Class
+Let's use `common/current_time` as an example.
 
-Required attributes:
-- `name`: Unique identifier for your skill
-- `description`: Clear description of what the skill does
-- `args_schema`: Pydantic model for input validation
+### Base class (base.py)
 
-Required methods:
-- `_run`: Synchronous implementation of your skill
-- `_arun`: Asynchronous implementation (if needed)
-
-### 3. State Management
-
-Skills have access to persistent storage through `self.store`, which implements `SkillStoreABC`:
+The base class should inherit from `IntentKitSkill` and provide common functionality for all skills in this category:
 
 ```python
-# Store agent-specific data
-self.skill_store.save_agent_skill_data(
-   self.agent_id,  # automatically provided
-   self.name,  # your skill name
-   "key_name",  # custom key for your data
-   {"data": "value"}  # any JSON-serializable data
-)
+from typing import Type
 
-# Retrieve agent-specific data
-data = await self.skill_store.get_agent_skill_data(
-   self.agent_id,
-   self.name,
-   "key_name"
-)
+from pydantic import BaseModel, Field
 
-# Store thread-specific data
-await self.skill_store.save_thread_skill_data(
-   thread_id,  # provided in context
-   self.agent_id,
-   self.name,
-   "key_name",
-   {"data": "value"}
-)
+from abstracts.skill import SkillStoreABC
+from skills.base import IntentKitSkill
 
-# Retrieve thread-specific data
-data = await self.skill_store.get_thread_skill_data(
-   thread_id,
-   self.name,
-   "key_name"
-)
+
+class CommonBaseTool(IntentKitSkill):
+    """Base class for common utility tools."""
+
+    name: str = Field(description="The name of the tool")
+    description: str = Field(description="A description of what the tool does")
+    args_schema: Type[BaseModel]
+    skill_store: SkillStoreABC = Field(
+        description="The skill store for persisting data"
+    )
+
+    @property
+    def category(self) -> str:
+        return "common"
 ```
 
-## Best Practices
+Key points:
+- The base class should inherit from `IntentKitSkill`
+- Define common attributes all skills in this category will use
+- Implement the `category` property to identify the skill category
+- Include the `skill_store` for persistence if your skills need to store data
 
-1. **Error Handling**
-   - Always wrap your main logic in try-except blocks
-   - Return errors through your output model rather than raising exceptions
-   - Provide meaningful error messages
+### Skill class (current_time.py)
 
-2. **Documentation**
-   - Add detailed docstrings to your skill class and methods
-   - Document input parameters and return values
-   - Include usage examples in docstrings
-
-3. **Input Validation**
-   - Use Pydantic models to validate inputs
-   - Set appropriate field types and constraints
-   - Provide default values when sensible
-
-4. **State Management**
-   - Use `self.store` for persistent data storage
-   - Keep agent-specific data separate from thread-specific data
-   - Use meaningful keys for stored data
-
-5. **Async Support**
-   - Implement `_arun` for skills that perform I/O operations
-   - Use async libraries when available
-   - Maintain consistent behavior between sync and async implementations
-
-## Example: Twitter Timeline Skill
-
-Here's a real-world example of a skill that fetches tweets from a user's timeline:
+Each skill implementation should inherit from your category base class:
 
 ```python
-class TwitterGetTimelineInput(BaseModel):
-    """Empty input model as no parameters needed"""
-    pass
+class CurrentTimeInput(BaseModel):
+    """Input for CurrentTime tool."""
 
-class Tweet(BaseModel):
-    """Model representing a Twitter tweet"""
-    id: str
-    text: str
-    author_id: str
-    created_at: datetime
-    referenced_tweets: list[dict] | None = None
-    attachments: dict | None = None
+    timezone: str = Field(
+        description="Timezone to format the time in (e.g., 'UTC', 'US/Pacific', 'Europe/London', 'Asia/Tokyo'). Default is UTC.",
+        default="UTC",
+    )
 
-class TwitterGetTimelineOutput(BaseModel):
-    tweets: list[Tweet]
-    error: str | None = None
 
-class TwitterGetTimeline(TwitterBaseTool):
-    name: str = "twitter_get_timeline"
-    description: str = "Get tweets from the authenticated user's timeline"
-    args_schema: Type[BaseModel] = TwitterGetTimelineInput
+class CurrentTime(CommonBaseTool):
+    """The doc string will not pass to LLM, it is written for human"""
 
-    def _run(self) -> TwitterGetTimelineOutput:
-        try:
-            # Get last processed tweet ID from storage
-            last = self.store.get_agent_skill_data(self.agent_id, self.name, "last")
-            since_id = last.get("since_id") if last else None
+    name: str = "current_time"
+    description: str = (
+        "Get the current time, converted to a specified timezone.\n"
+        "You must call this tool whenever the user asks for the time."
+    )
+    args_schema: Type[BaseModel] = CurrentTimeInput
 
-            # Fetch timeline
-            timeline = self.client.get_home_timeline(...)
-
-            # Process and return results
-            result = [Tweet(...) for tweet in timeline.data]
-            
-            # Update storage with newest tweet ID
-            if timeline.meta:
-                self.store.save_agent_skill_data(
-                    self.agent_id,
-                    self.name,
-                    "last",
-                    {"since_id": timeline.meta["newest_id"]}
-                )
-
-            return TwitterGetTimelineOutput(tweets=result)
-        except Exception as e:
-            return TwitterGetTimelineOutput(tweets=[], error=str(e))
+    async def _arun(self, timezone: str = "UTC", **kwargs) -> str:
+        # Implementation of the tool
+        # ...
 ```
 
-## Testing Your Skill
+Key points:
+- Create a Pydantic model for the input parameters
+- Inherit from your category base class
+- Define required attributes: `name`, `description`, and `args_schema`
+- Implement the logic in `_arun` (asynchronous) method
 
-1. Create unit tests in the `tests/skills` directory
-2. Test both success and error cases
-3. Mock external services and dependencies
-4. Verify state management behavior
-5. Test both sync and async implementations
+You should know, the `name`, `description`, and the description of the `args_schema` will be passed to the LLM. They are important reference information, letting LLM know when to call this skill, so please make sure they are clear and concise.
 
-## Contributing
+### Skill getter (__init__.py)
 
-1. Create your skill in the `skills/` directory
-2. Follow the structure of existing skills
-3. Add comprehensive tests
-4. Update documentation
-5. Submit a pull request
+The `__init__.py` file exports your skills and defines how they are configured:
 
-For more examples, check the existing skills in the `skills/` directory.
+```python
+from typing import TypedDict
+
+from abstracts.skill import SkillStoreABC
+from skills.base import SkillConfig, SkillState
+from skills.common.base import CommonBaseTool
+from skills.common.current_time import CurrentTime
+
+# Cache skills at the system level, because they are stateless
+_cache: dict[str, CommonBaseTool] = {}
+
+
+class SkillStates(TypedDict):
+    current_time: SkillState
+
+
+class Config(SkillConfig):
+    """Configuration for common utility skills."""
+
+    states: SkillStates
+
+
+def get_skills(
+    config: "Config",
+    is_private: bool,
+    store: SkillStoreABC,
+    **_,
+) -> list[CommonBaseTool]:
+    """Get all common utility skills."""
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [get_common_skill(name, store) for name in available_skills]
+
+
+def get_common_skill(
+    name: str,
+    store: SkillStoreABC,
+) -> CommonBaseTool:
+    """Get a common utility skill by name."""
+    if name == "current_time":
+        if name not in _cache:
+            _cache[name] = CurrentTime(
+                skill_store=store,
+            )
+        return _cache[name]
+    else:
+        raise ValueError(f"Unknown common skill: {name}")
+```
+
+Key points:
+- Define a `TypedDict` for the skill states
+- Create a `Config` class that extends `SkillConfig`
+- Implement the `get_skills` function to return all enabled skills based on configuration
+- Implement a helper function to instantiate individual skills
+- Consider caching skill instances if they are stateless
+
+### Config Schema (schema.json)
+
+The schema.json file defines the JSON schema for configuring skills in this category:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Common Utility Skills",
+  "description": "Configuration schema for common utility skills",
+  "properties": {
+    "states": {
+      "type": "object",
+      "properties": {
+        "current_time": {
+          "type": "string",
+          "title": "Current Time",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the current_time skill"
+        }
+      },
+      "description": "States for each common utility skill (disabled, public, or private)"
+    }
+  },
+  "required": ["states"],
+  "additionalProperties": true
+}
+```
+
+Key points:
+- Follow the JSON Schema standard (draft-07)
+- Define the structure of the skill config, it will be used or check by the agent creation/update/import/export
+- List all skills in the `states` section
+
+## More details
+
+### About the return value
+
+You may notice that we defined the input of the skill but not the output. What can I output?
+
+The answer is everything. You can output a natural language string to LLM, or you can output an object, which will be converted to json and sent to LLM. You can even output a markdown, but you need to convert it to a string.
+
+Images, videos and files are not supported yet. We will update the way to output images soon.
+
+### How to handle errors
+
+When the skill fails, you can return a string that will be passed to LLM. You can also raise an exception, which will be caught by the framework and converted to a string.
+
+Only if you are not satisfied with the contents of the exception, you can catch it and add more context, then re-throw it.
+
+### How to get the agent id in skill
+
+We recommend that you write your skill as stateless, which helps save memory. When you need to get the runtime context, you can get it from the parameters of the _run function.
+
+```python
+from langchain_core.runnables import RunnableConfig
+
+class YourSkillInput(BaseModel):
+    foo: str = Field(description="A string parameter")
+    bar: int = Field(description="An integer parameter")
+
+class YourSkill(TwitterBaseTool):
+    async def _arun(self, config: RunnableConfig = None, **kwargs) -> str:
+        context = self.context_from_config(config)
+        print(context)
+        return f"I'm running in agent {context.agent.id}"
+```
+
+Here is the context definition:
+
+```python
+class SkillContext(BaseModel):
+    agent: Agent
+    config: SkillConfig
+    user_id: str
+    entrypoint: Literal["web", "twitter", "telegram", "trigger"]
+```
+
+### How to add custom skill config
+
+Some times you may need to add custom config to the skill. Like an api key, or behavior choices for agents.
+
+In `__init__.py`
+
+```python
+class Config(SkillConfig):
+    """Configuration for your skills."""
+
+    states: SkillStates
+    api_key: str
+```
+
+Then it can be defined in the agent config.
+```yaml
+id: my-test-agent
+skills:
+  your_new_skill_category:
+    states:
+      your_skill: public
+    api_key: your_api_key
+```
+
+You can get it from context when you need it.
+
+### How to use more packages in skill
+
+Please find in the [pyproject.toml](https://github.com/crestalnetwork/intentkit/blob/main/pyproject.toml) for the available packages.
+
+Like for http client, we suggest you use the async client of `httpx`.
+
+If you need to use other packages, please add them to the pyproject.toml use `poetry add`.
+
+### How to store data in skill
+
+You can use the [skill_store](https://github.com/crestalnetwork/intentkit/blob/main/abstracts/skill.py) to store data in the skill. It is a key-value store that can be used to store data that is specific to the skill.
+
+You can store and retrieve a dict at these levels:
+- agent
+- thread
+- agent + user
+
+### How to write on-chain skills
+
+You can use the [CdpClient](https://github.com/crestalnetwork/intentkit/blob/main/clients/cdp.py) to write on-chain skills.
+
+Get the agent id from context, then use agent id and self.store to initialize the CdpClient.

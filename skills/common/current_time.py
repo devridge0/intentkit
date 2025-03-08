@@ -38,7 +38,7 @@ class CurrentTime(CommonBaseTool):
     )
     args_schema: Type[BaseModel] = CurrentTimeInput
 
-    def _run(self, timezone: str = "UTC") -> str:
+    async def _arun(self, timezone: str = "UTC") -> str:
         """Implementation of the tool to get the current time.
 
         Args:
@@ -84,15 +84,3 @@ class CurrentTime(CommonBaseTool):
             return f"Current time: {formatted_time}"
         except Exception as e:
             return f"Error retrieving time: {str(e)}"
-
-    async def _arun(self, timezone: str = "UTC", **kwargs) -> str:
-        """Async implementation of the tool to get the current time.
-
-        Args:
-            timezone (str): The timezone to format the time in. Defaults to "UTC".
-            **kwargs: Additional keyword arguments for compatibility with the framework.
-
-        Returns:
-            str: A formatted string with the current time in the specified timezone.
-        """
-        return self._run(timezone)

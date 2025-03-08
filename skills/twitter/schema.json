@@ -4,7 +4,7 @@
   "title": "Twitter Skills",
   "description": "Configuration schema for Twitter skills",
   "properties": {
-    "skill_states": {
+    "states": {
       "type": "object",
       "properties": {
         "get_mentions": {
@@ -112,7 +112,7 @@
     }
   },
   "required": [
-    "skill_states"
+    "states"
   ],
   "additionalProperties": true
 }

@@ -18,7 +18,7 @@ SkillState = Literal["disabled", "public", "private"]
 class SkillConfig(TypedDict):
     """Abstract base class for skill configuration."""
 
-    skill_states: TypedDict
+    states: TypedDict
     __extra__: NotRequired[Dict[str, Any]]
 
 
