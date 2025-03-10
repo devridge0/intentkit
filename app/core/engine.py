@@ -49,7 +49,6 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy import func, update
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm.exc import NoResultFound
 
 from abstracts.graph import AgentState
 from app.config.config import config
@@ -57,15 +56,12 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
-from clients import TwitterClient
 from models.agent import Agent, AgentData, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
-from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
-from skills.common import get_common_skill
 from skills.elfa import get_elfa_skill
 from skills.enso import get_enso_skill
 from skills.goat import (
@@ -113,17 +109,10 @@ async def initialize_agent(aid, is_private=False):
     agent_store = AgentStore(aid)
 
     # get the agent from the database
-    try:
-        agent: Agent = await Agent.get(aid)
-        agent_data: AgentData = await AgentData.get(aid)
-
-    except NoResultFound:
-        # Handle the case where the user is not found
+    agent: Agent = await Agent.get(aid)
+    if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
-    except SQLAlchemyError as e:
-        # Handle other SQLAlchemy-related errors
-        logger.error(e)
-        raise HTTPException(status_code=500, detail=str(e))
+    agent_data: AgentData = await AgentData.get(aid)
 
     # ==== Initialize LLM.
     input_token_limit = config.input_token_limit
@@ -332,25 +321,6 @@ async def initialize_agent(aid, is_private=False):
                 tools.append(s)
             except Exception as e:
                 logger.warning(e)
-    # Acolyt skills
-    if (
-        agent.acolyt_skills
-        and len(agent.acolyt_skills) > 0
-        and agent.acolyt_config
-        and "acolyt" not in agent.skills
-    ):
-        for skill in agent.acolyt_skills:
-            try:
-                s = get_acolyt_skill(
-                    skill,
-                    agent.acolyt_config.get("api_key"),
-                    skill_store,
-                    agent_store,
-                    aid,
-                )
-                tools.append(s)
-            except Exception as e:
-                logger.warning(e)
     # Allora skills
     if (
         agent.allora_skills
@@ -364,8 +334,6 @@ async def initialize_agent(aid, is_private=False):
                     skill,
                     agent.allora_config.get("api_key"),
                     skill_store,
-                    agent_store,
-                    aid,
                 )
                 tools.append(s)
             except Exception as e:
@@ -383,8 +351,6 @@ async def initialize_agent(aid, is_private=False):
                     skill,
                     agent.elfa_config.get("api_key"),
                     skill_store,
-                    agent_store,
-                    aid,
                 )
                 tools.append(s)
             except Exception as e:
@@ -395,23 +361,12 @@ async def initialize_agent(aid, is_private=False):
         and len(agent.twitter_skills) > 0
         and "twitter" not in agent.skills
     ):
-        if not agent.twitter_config:
-            agent.twitter_config = {}
-        twitter_client = TwitterClient(aid, agent_store, agent.twitter_config)
         for skill in agent.twitter_skills:
             s = get_twitter_skill(
                 skill,
-                twitter_client,
                 skill_store,
-                aid,
-                agent_store,
             )
             tools.append(s)
-
-    # Common skills
-    if agent.common_skills and "common" not in agent.skills:
-        for skill in agent.common_skills:
-            tools.append(get_common_skill(skill))
 
     # filter the duplicate tools
     tools = list({tool.name: tool for tool in tools}.values())
