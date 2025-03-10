@@ -806,9 +806,9 @@ class AgentCreate(AgentUpdate):
         if not self.upstream_id:
             return None
         async with get_session() as db:
-            existing = await db.scalars(
+            existing = await db.scalar(
                 select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
-            ).one_or_none()
+            )
             if existing:
                 raise HTTPException(
                     status_code=400,
