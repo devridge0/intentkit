@@ -177,7 +177,7 @@ async def initialize_agent(aid, is_private=False):
                 skill_module = importlib.import_module(f"skills.{k}")
                 if hasattr(skill_module, "get_skills"):
                     skill_tools = skill_module.get_skills(
-                        v, is_private, skill_store, aid
+                        v, is_private, skill_store, agent_id=aid
                     )
                     if skill_tools and len(skill_tools) > 0:
                         tools.extend(skill_tools)
@@ -193,7 +193,7 @@ async def initialize_agent(aid, is_private=False):
         and agent_data
         and agent_data.cdp_wallet_data
         and agent.cdp_skills
-        and "cdp" not in agent.skills
+        and ("cdp" not in agent.skills if agent.skills else True)
     ):
         cdp_wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=config.cdp_api_key_name,
@@ -235,7 +235,11 @@ async def initialize_agent(aid, is_private=False):
                 if tool.name.endswith(skill):
                     tools.append(tool)
 
-    if agent.goat_enabled and agent.crossmint_config and "goat" not in agent.skills:
+    if (
+        agent.goat_enabled
+        and agent.crossmint_config
+        and ("goat" not in agent.skills if agent.skills else True)
+    ):
         if (
             hasattr(config, "chain_provider")
             and config.crossmint_api_key
@@ -300,7 +304,7 @@ async def initialize_agent(aid, is_private=False):
         agent.enso_skills
         and len(agent.enso_skills) > 0
         and agent.enso_config
-        and "enso" not in agent.skills
+        and ("enso" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.enso_skills:
             try:
@@ -326,7 +330,7 @@ async def initialize_agent(aid, is_private=False):
         agent.allora_skills
         and len(agent.allora_skills) > 0
         and agent.allora_config
-        and "allora" not in agent.skills
+        and ("allora" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.allora_skills:
             try:
@@ -343,7 +347,7 @@ async def initialize_agent(aid, is_private=False):
         agent.elfa_skills
         and len(agent.elfa_skills) > 0
         and agent.elfa_config
-        and "elfa" not in agent.skills
+        and ("elfa" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.elfa_skills:
             try:
@@ -359,7 +363,7 @@ async def initialize_agent(aid, is_private=False):
     if (
         agent.twitter_skills
         and len(agent.twitter_skills) > 0
-        and "twitter" not in agent.skills
+        and ("twitter" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.twitter_skills:
             s = get_twitter_skill(

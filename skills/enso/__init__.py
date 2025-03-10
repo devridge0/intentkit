@@ -31,47 +31,12 @@ class Config(SkillConfig):
 
 def get_skills(
     config: Config,
-    agent_id: str,
     is_private: bool,
     store: SkillStoreABC,
-    agent_store: AgentStoreABC,
-    wallet: Wallet = None,
-    chain_provider: ChainProvider = None,
     **_,
 ) -> list[EnsoBaseTool]:
     """Get all Enso skills."""
-    # always return public skills
-    resp = [
-        get_enso_skill(
-            name,
-            config["api_token"],
-            config["main_tokens"],
-            wallet,
-            chain_provider,
-            store,
-            agent_store,
-            agent_id,
-        )
-        for name in config["public_skills"]
-    ]
-    # return private skills only if is_private
-    if is_private and "private_skills" in config:
-        resp.extend(
-            get_enso_skill(
-                name,
-                config["api_token"],
-                config["main_tokens"],
-                wallet,
-                chain_provider,
-                store,
-                agent_store,
-                agent_id,
-            )
-            for name in config["private_skills"]
-            # remove duplicates
-            if name not in config["public_skills"]
-        )
-    return resp
+    pass
 
 
 def get_enso_skill(
