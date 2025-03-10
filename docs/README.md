@@ -15,6 +15,7 @@
 ## Contributing
 
 - [Building Skills](contributing/skills.md)
+- [Wishlist](contributing/wishlist.md)
 
 ## Skills
 

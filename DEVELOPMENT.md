@@ -66,6 +66,7 @@ Read [Configuration](docs/configuration.md) for detailed settings. Then create y
 ```bash
 cp example.env .env
 # Edit .env with your configuration
+# OPENAI_API_KEY and DB_* are all required
 ```
 
 4. Run the application:
