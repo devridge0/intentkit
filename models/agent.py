@@ -7,7 +7,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 import yaml
 from epyxid import XID
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, constr, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from pydantic import Field as PydanticField
 from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy import (
@@ -796,8 +796,10 @@ class AgentCreate(AgentUpdate):
         PydanticField(
             default_factory=lambda: str(XID()),
             description="Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
+            pattern=r"^[a-z][a-z0-9-]*$",
+            min_length=2,
+            max_length=67,
         ),
-        constr(pattern=r"^[a-z][a-z0-9-]*$"),
     ]
 
     async def check_upstream_id(self) -> None:
@@ -829,14 +831,7 @@ class AgentCreate(AgentUpdate):
         async with get_session() as db:
             db_agent = await db.get(AgentTable, self.id)
             if not db_agent:
-                upstream = await db.scalar(
-                    select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
-                )
-                if upstream:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Upstream id already in use",
-                    )
+                await self.check_upstream_id()
                 db_agent = AgentTable(**self.model_dump())
                 db.add(db_agent)
                 is_new = True
