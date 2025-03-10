@@ -3,6 +3,7 @@
 <div align="center">
   <img src="docs/images/intentkit_banner.png" alt="IntentKit by Crestal" width="100%" />
 </div>
+<br>
 
 IntentKit is an autonomous agent framework that enables the creation and management of AI agents with various capabilities including blockchain interaction, social media management, and custom skill integration.
 
@@ -87,18 +88,9 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 
 ### Contribute Skills
 
-If you want to add a skill collection, follow these steps:
+First check [Wishlist](docs/contributing/wishlist.md) for active requests.
 
-1. Create a new skill collection in the [skills/](skills/) directory
-2. Implement the skill interface
-3. Register the skill in `skills/YOUR_SKILL_COLLECTION/__init__.py`
-
-If you want to add a simple skill, follow these steps:
-
-1. Create a new skill in the [skills/common/](skills/common/) directory
-2. Register the skill in [skills/common/\_\_init\_\_.py](skills/common/__init__.py)
-
-See the [Skill Development Guide](docs/contributing/skills.md) for more information.
+Once you are ready to start, see [Skill Development Guide](docs/contributing/skills.md) for more information.
 
 ## License
 
