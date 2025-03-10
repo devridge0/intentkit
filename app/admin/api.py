@@ -62,6 +62,7 @@ async def _process_agent(
     Returns:
         tuple[Agent, AgentData]: Tuple of (processed agent, agent data)
     """
+    logger.info(f"Processing agent: {agent}")
     if subject:
         agent.owner = subject
 
