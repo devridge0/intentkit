@@ -3,6 +3,7 @@
   "type": "object",
   "title": "Twitter Skills",
   "description": "Configuration schema for Twitter skills",
+  "x-icon": "./icon.png",
   "properties": {
     "states": {
       "type": "object",
