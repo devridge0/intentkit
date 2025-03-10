@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Elfa Skills",
+  "description": "Configuration schema for Elfa skills",
+  "x-icon": "./icon.png",
+  "properties": {
+    "states": {
+      "type": "object",
+      "properties": {
+        "get_mentions": {
+          "type": "string",
+          "title": "Get Mentions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_mentions skill"
+        },
+        "get_top_mentions": {
+          "type": "string",
+          "title": "Get Top Mentions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_top_mentions skill"
+        },
+        "search_mentions": {
+          "type": "string",
+          "title": "Search Mentions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the search_mentions skill"
+        },
+        "get_trending_tokens": {
+          "type": "string",
+          "title": "Get Trending Tokens",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_trending_tokens skill"
+        },
+        "get_smart_stats": {
+          "type": "string",
+          "title": "Get Smart Stats",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State of the get_smart_stats skill"
+        }
+      },
+      "description": "States for each Elfa skill (disabled, public, or private)"
+    },
+    "api_key": {
+      "type": "string",
+      "title": "Elfa API Key",
+      "description": "Elfa API key for authentication"
+    }
+  },
+  "required": [
+    "states"
+  ],
+  "additionalProperties": true
+}

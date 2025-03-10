@@ -176,6 +176,7 @@ Key points:
 - Define a `TypedDict` for the skill states
 - Create a `Config` class that extends `SkillConfig`
 - Implement the `get_skills` function to return all enabled skills based on configuration
+- The last param `**_` of `get_skills` is required. It is a placeholder for future use.
 - Implement a helper function to instantiate individual skills
 - Consider caching skill instances if they are stateless
 
