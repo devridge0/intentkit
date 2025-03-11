@@ -3,6 +3,11 @@
   "type": "object",
   "title": "Acolyt Skills",
   "description": "Configuration schema for Acolyt skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/acolyt/icon.jpg",
+  "x-tags": [
+    "Blockchain",
+    "Oracle"
+  ],
   "properties": {
     "states": {
       "type": "object",

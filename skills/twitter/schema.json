@@ -4,6 +4,9 @@
   "title": "Twitter Skills",
   "description": "Configuration schema for Twitter skills",
   "x-icon": "https://ai.service.crestal.dev/skills/twitter/icon.png",
+  "x-tags": [
+    "Social"
+  ],
   "properties": {
     "states": {
       "type": "object",
