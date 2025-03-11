@@ -3,6 +3,10 @@
   "type": "object",
   "title": "CDP Skills",
   "description": "Configuration schema for CDP wallet interaction skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/cdp/icon.png",
+  "x-tags": [
+    "Blockchain"
+  ],
   "properties": {
     "states": {
       "type": "object",

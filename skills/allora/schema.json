@@ -3,6 +3,10 @@
   "type": "object",
   "title": "Allora Skills",
   "description": "Configuration schema for Allora skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/allora/icon.jpeg",
+  "x-tags": [
+    "Blockchain"
+  ],
   "properties": {
     "states": {
       "type": "object",

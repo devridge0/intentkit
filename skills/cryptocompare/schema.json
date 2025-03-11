@@ -3,6 +3,11 @@
   "type": "object",
   "title": "CryptoCompare Skills",
   "description": "Configuration schema for CryptoCompare skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/cryptocompare/icon.png",
+  "x-tags": [
+    "Blockchain",
+    "Finance"
+  ],
   "properties": {
     "states": {
       "type": "object",

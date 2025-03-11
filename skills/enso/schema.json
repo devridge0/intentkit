@@ -1,6 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "title": "Enso Skills",
+  "description": "Configuration schema for Enso skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/enso/icon.jpg",
+  "x-tags": [
+    "Blockchain"
+  ],
   "properties": {
     "public_skills": {
       "type": "array",
