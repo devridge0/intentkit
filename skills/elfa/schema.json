@@ -3,7 +3,10 @@
   "type": "object",
   "title": "Elfa Skills",
   "description": "Configuration schema for Elfa skills",
-  "x-icon": "./icon.png",
+  "x-icon": "https://ai.service.crestal.dev/skills/elfa/icon.jpg",
+  "x-tags": [
+    "Data"
+  ],
   "properties": {
     "states": {
       "type": "object",

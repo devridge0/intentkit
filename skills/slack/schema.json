@@ -3,7 +3,10 @@
   "type": "object",
   "title": "Slack Skills",
   "description": "Configuration schema for Slack skills",
-  "x-icon": "./icon.png",
+  "x-icon": "https://ai.service.crestal.dev/skills/slack/icon.jpg",
+  "x-tags": [
+    "Social"
+  ],
   "properties": {
     "states": {
       "type": "object",

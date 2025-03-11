@@ -3,6 +3,10 @@
   "type": "object",
   "title": "Common Utility Skills",
   "description": "Configuration schema for common utility skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/common/icon.jpg",
+  "x-tags": [
+    "Utility"
+  ],
   "properties": {
     "states": {
       "type": "object",
