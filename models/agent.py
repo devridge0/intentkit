@@ -40,6 +40,9 @@ class AgentAutonomous(BaseModel):
             min_length=3,
             max_length=20,
             pattern=r"^[a-z0-9-]+$",
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     name: Annotated[
@@ -48,6 +51,9 @@ class AgentAutonomous(BaseModel):
             default=None,
             description="Display name of the autonomous configuration",
             max_length=50,
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     description: Annotated[
@@ -56,6 +62,9 @@ class AgentAutonomous(BaseModel):
             default=None,
             description="Description of the autonomous configuration",
             max_length=200,
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     minutes: Annotated[
@@ -63,6 +72,9 @@ class AgentAutonomous(BaseModel):
         PydanticField(
             default=1440,
             description="Interval in minutes between operations, mutually exclusive with cron",
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     cron: Annotated[
@@ -70,6 +82,9 @@ class AgentAutonomous(BaseModel):
         PydanticField(
             default=None,
             description="Cron expression for scheduling operations, mutually exclusive with minutes",
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     prompt: Annotated[
@@ -77,6 +92,9 @@ class AgentAutonomous(BaseModel):
         PydanticField(
             description="Special prompt used during autonomous operation",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
     enabled: Annotated[
@@ -84,6 +102,9 @@ class AgentAutonomous(BaseModel):
         PydanticField(
             default=False,
             description="Whether the autonomous configuration is enabled",
+            json_schema_extra={
+                "x-group": "autonomous",
+            },
         ),
     ]
 
@@ -443,6 +464,10 @@ class AgentUpdate(BaseModel):
             description="Ticker symbol of the agent",
             max_length=10,
             min_length=3,
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Enter agent ticker",
+            },
         ),
     ]
     token_address: Annotated[
@@ -451,6 +476,9 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Token address of the agent",
             max_length=42,
+            json_schema_extra={
+                "x-group": "internal",
+            },
         ),
     ]
     purpose: Annotated[
@@ -459,6 +487,10 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Purpose or role of the agent",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Enter agent purpose",
+            },
         ),
     ]
     personality: Annotated[
@@ -467,6 +499,10 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Personality traits of the agent",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Enter agent personality",
+            },
         ),
     ]
     principles: Annotated[
@@ -475,6 +511,10 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Principles or values of the agent",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Enter agent principles",
+            },
         ),
     ]
     owner: Annotated[
@@ -483,6 +523,9 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Owner identifier of the agent, used for access control",
             max_length=50,
+            json_schema_extra={
+                "x-group": "internal",
+            },
         ),
     ]
     upstream_id: Annotated[
@@ -491,6 +534,9 @@ class AgentUpdate(BaseModel):
             default=None,
             description="External reference ID for idempotent operations",
             max_length=100,
+            json_schema_extra={
+                "x-group": "internal",
+            },
         ),
     ]
     # AI part
@@ -506,6 +552,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default="gpt-4o-mini",
             description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai",
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     prompt: Annotated[
@@ -514,6 +563,9 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Base system prompt that defines the agent's behavior and capabilities",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     prompt_append: Annotated[
@@ -522,6 +574,9 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Additional system prompt that has higher priority than the base prompt",
             max_length=3000,
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     temperature: Annotated[
@@ -531,6 +586,9 @@ class AgentUpdate(BaseModel):
             description="AI model temperature parameter controlling response randomness (0.0~2.0)",
             ge=0.0,
             le=2.0,
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     frequency_penalty: Annotated[
@@ -540,6 +598,9 @@ class AgentUpdate(BaseModel):
             description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
             ge=-2.0,
             le=2.0,
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     presence_penalty: Annotated[
@@ -549,6 +610,9 @@ class AgentUpdate(BaseModel):
             description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
             ge=-2.0,
             le=2.0,
+            json_schema_extra={
+                "x-group": "ai",
+            },
         ),
     ]
     # autonomous mode
@@ -570,6 +634,10 @@ class AgentUpdate(BaseModel):
                 "    prompt: |-\n"
                 "      Say hi [sequence], use number for sequence.\n"
             ),
+            json_schema_extra={
+                "x-group": "autonomous",
+                "x-inline": True,
+            },
         ),
     ]
     autonomous_enabled: Annotated[
@@ -578,6 +646,9 @@ class AgentUpdate(BaseModel):
             default=False,
             deprecated="Please use autonomous instead",
             description="Whether the agent can operate autonomously without user input",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     autonomous_minutes: Annotated[
@@ -586,6 +657,9 @@ class AgentUpdate(BaseModel):
             default=240,
             deprecated="Please use autonomous instead",
             description="Interval in minutes between autonomous operations when enabled",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     autonomous_prompt: Annotated[
@@ -594,6 +668,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use autonomous instead",
             description="Special prompt used during autonomous operation mode",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     # skills
@@ -602,6 +679,10 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Dict of skills and their corresponding configurations",
+            json_schema_extra={
+                "x-group": "skills",
+                "x-inline": True,
+            },
         ),
     ]
     # if cdp_enabled, agent will have a cdp wallet
@@ -610,6 +691,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether CDP (Crestal Development Platform) integration is enabled",
+            json_schema_extra={
+                "x-group": "onchain",
+            },
         ),
     ]
     cdp_skills: Annotated[
@@ -618,6 +702,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="List of CDP skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     cdp_network_id: Annotated[
@@ -638,6 +725,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default="base-mainnet",
             description="Network identifier for CDP integration",
+            json_schema_extra={
+                "x-group": "onchain",
+            },
         ),
     ]
     # if goat_enabled, will load goat skills
@@ -646,6 +736,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Dict of Crossmint wallet configurations",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     goat_enabled: Annotated[
@@ -653,6 +746,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether GOAT integration is enabled",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     goat_skills: Annotated[
@@ -660,6 +756,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Dict of GOAT skills and their corresponding configurations",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     # if twitter_enabled, the twitter_entrypoint will be enabled, twitter_config will be checked
@@ -668,6 +767,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether the agent can receive events from Twitter",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     twitter_config: Annotated[
@@ -675,6 +777,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="This configuration will be used for entrypoint only",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     # twitter skills require config, but not require twitter_enabled flag.
@@ -693,6 +798,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether the agent can receive events from Telegram",
+            json_schema_extra={
+                "x-group": "social",
+            },
         ),
     ]
     telegram_config: Annotated[
@@ -700,6 +808,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Telegram integration configuration settings",
+            json_schema_extra={
+                "x-group": "social",
+            },
         ),
     ]
     # telegram skills not used for now
@@ -709,6 +820,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="List of Telegram-specific skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     # skills have no category
@@ -716,7 +830,11 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
+            deprecated="Please use skills instead",
             description="List of general-purpose skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     # if enso_enabled, the enso skillset will be enabled, enso_config will be checked
@@ -725,6 +843,9 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether Enso integration is enabled",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     # enso skills
@@ -734,6 +855,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use enso_enabled instead",
             description="List of Enso-specific skills available to this agent",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     enso_config: Annotated[
@@ -742,6 +866,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="Enso integration configuration settings",
+            json_schema_extra={
+                "x-group": "experimental",
+            },
         ),
     ]
     # Acolyt skills
@@ -751,6 +878,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="List of Acolyt-specific skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     acolyt_config: Annotated[
@@ -759,6 +889,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="Acolyt integration configuration settings",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     # Allora skills
@@ -768,6 +901,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="List of Allora-specific skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     allora_config: Annotated[
@@ -776,6 +912,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="Allora integration configuration settings",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     # ELFA skills
@@ -785,6 +924,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="List of Elfa-specific skills available to this agent",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
     elfa_config: Annotated[
@@ -793,6 +935,9 @@ class AgentUpdate(BaseModel):
             default=None,
             deprecated="Please use skills instead",
             description="Elfa integration configuration settings",
+            json_schema_extra={
+                "x-group": "deprecated",
+            },
         ),
     ]
 
