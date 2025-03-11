@@ -1,9 +1,9 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema#",
   "type": "object",
   "title": "Twitter Skills",
   "description": "Configuration schema for Twitter skills",
-  "x-icon": "./icon.png",
+  "x-icon": "https://ai.service.crestal.dev/skills/twitter/icon.png",
   "properties": {
     "states": {
       "type": "object",
@@ -94,22 +94,26 @@
     "consumer_key": {
       "type": "string",
       "title": "Twitter API consumer key",
-      "description": "Twitter API consumer key"
+      "description": "Twitter API consumer key",
+      "maxLength": 100
     },
     "consumer_secret": {
       "type": "string",
       "title": "Twitter API consumer secret",
-      "description": "Twitter API consumer secret"
+      "description": "Twitter API consumer secret",
+      "maxLength": 100
     },
     "access_token": {
       "type": "string",
       "title": "Twitter API access token",
-      "description": "Twitter API access token"
+      "description": "Twitter API access token",
+      "maxLength": 100
     },
     "access_token_secret": {
       "type": "string",
       "title": "Twitter API access token secret",
-      "description": "Twitter API access token secret"
+      "description": "Twitter API access token secret",
+      "maxLength": 100
     }
   },
   "required": [

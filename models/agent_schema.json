@@ -33,62 +33,82 @@
       "id": "skills",
       "title": "Agent Skills",
       "order": 6
+    },
+    {
+      "id": "experimental",
+      "title": "Experimental Features",
+      "order": 7
+    },
+    {
+      "id": "deprecated",
+      "title": "Deprecated",
+      "order": 8
+    },
+    {
+      "id": "internal",
+      "title": "Internal",
+      "order": 9
     }
   ],
   "properties": {
-    "id": {
-      "type": "string",
-      "description": "Unique identifier for the agent. Must be URL-safe, containing only lowercase letters, numbers, and hyphens",
-      "readOnly": true,
-      "x-group": "basic"
-    },
     "name": {
       "type": "string",
       "description": "Display name of the agent",
-      "x-group": "basic"
+      "required": true,
+      "x-group": "basic",
+      "x-placeholder": "Enter agent name"
     },
     "ticker": {
       "type": "string",
       "description": "Ticker symbol of the agent",
-      "x-group": "basic"
+      "required": true,
+      "x-group": "basic",
+      "x-placeholder": "Enter agent ticker"
     },
     "purpose": {
       "type": "string",
       "description": "Purpose or role of the agent",
-      "x-group": "basic"
+      "required": true,
+      "x-group": "basic",
+      "x-placeholder": "Enter agent purpose"
     },
     "personality": {
       "type": "string",
       "description": "Personality traits of the agent",
-      "x-group": "basic"
+      "required": true,
+      "x-group": "basic",
+      "x-placeholder": "Enter agent personality"
     },
     "principles": {
       "type": "string",
       "description": "Principles or values of the agent",
-      "x-group": "basic"
+      "required": true,
+      "x-group": "basic",
+      "x-placeholder": "Enter agent principles"
     },
     "owner": {
       "type": "string",
       "description": "Owner identifier of the agent, used for access control",
       "readOnly": true,
-      "x-group": "basic"
+      "x-group": "internal"
     },
     "upstream_id": {
       "type": "string",
       "description": "External reference ID for idempotent operations",
       "readOnly": true,
-      "x-group": "basic"
+      "x-group": "internal"
     },
     "model": {
       "type": "string",
-      "description": "AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
+      "description": "AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai",
       "default": "gpt-4o-mini",
       "enum": [
         "gpt-4o",
         "gpt-4o-mini",
         "deepseek-chat",
         "deepseek-reasoner",
-        "grok-2"
+        "grok-2",
+        "eternalai"
       ],
       "x-group": "ai"
     },
@@ -99,15 +119,15 @@
     },
     "prompt_append": {
       "type": "string",
-      "description": "Additional system prompt that overrides or extends the base prompt",
+      "description": "Additional system prompt that has higher priority than the base prompt",
       "x-group": "ai"
     },
     "temperature": {
       "type": "number",
-      "description": "AI model temperature parameter controlling response randomness (0.0~1.0)",
+      "description": "AI model temperature parameter controlling response randomness (0.0~2.0)",
       "default": 0.7,
       "minimum": 0.0,
-      "maximum": 1.0,
+      "maximum": 2.0,
       "x-group": "ai"
     },
     "frequency_penalty": {
@@ -133,62 +153,76 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Unique identifier for the autonomous configuration, must contain only lowercase letters, numbers, and dashes",
+            "description": "Unique identifier for the autonomous configuration",
+            "minLength": 3,
             "maxLength": 20,
-            "pattern": "^[a-z0-9-]+$"
+            "pattern": "^[a-z0-9-]+$",
+            "x-group": "autonomous"
           },
           "name": {
             "type": "string",
             "description": "Display name of the autonomous configuration",
-            "maxLength": 50
+            "maxLength": 50,
+            "x-group": "autonomous"
           },
           "description": {
             "type": "string",
             "description": "Description of the autonomous configuration",
-            "maxLength": 200
+            "maxLength": 200,
+            "x-group": "autonomous"
           },
           "minutes": {
             "type": "integer",
-            "description": "Interval in minutes between autonomous operations"
+            "description": "Interval in minutes between operations, mutually exclusive with cron",
+            "default": 1440,
+            "x-group": "autonomous"
           },
           "cron": {
             "type": "string",
-            "description": "Cron expression for scheduling autonomous operations"
+            "description": "Cron expression for scheduling operations, mutually exclusive with minutes",
+            "x-group": "autonomous"
           },
           "prompt": {
             "type": "string",
             "description": "Special prompt used during autonomous operation",
-            "maxLength": 2000
+            "maxLength": 3000,
+            "x-group": "autonomous"
           },
           "enabled": {
             "type": "boolean",
-            "description": "Whether this autonomous configuration is enabled",
-            "default": true
+            "description": "Whether the autonomous configuration is enabled",
+            "default": false,
+            "x-group": "autonomous"
           }
         },
         "required": [
-          "id"
+          "id",
+          "prompt"
         ]
       },
-      "description": "Autonomous agent configurations",
-      "x-group": "autonomous"
-    },
-    "autonomous_enabled": {
-      "type": "boolean",
-      "description": "Whether the agent can operate autonomously without user input",
-      "default": false,
-      "x-group": "autonomous"
+      "description": "Autonomous agent configurations.\nautonomous:\n  - id: a\n    name: TestA\n    minutes: 1\n    prompt: |-\n      Say hello [sequence], use number for sequence.\n  - id: b\n    name: TestB\n    cron: \"0/3 * * * *\"\n    prompt: |-\n      Say hi [sequence], use number for sequence.",
+      "x-group": "autonomous",
+      "x-inline": true
     },
     "autonomous_minutes": {
       "type": "integer",
       "description": "Interval in minutes between autonomous operations when enabled",
       "default": 240,
-      "x-group": "autonomous"
+      "deprecated": "Please use autonomous instead",
+      "x-group": "deprecated"
     },
     "autonomous_prompt": {
       "type": "string",
       "description": "Special prompt used during autonomous operation mode",
-      "x-group": "autonomous"
+      "deprecated": "Please use autonomous instead",
+      "x-group": "deprecated"
+    },
+    "autonomous_enabled": {
+      "type": "boolean",
+      "description": "Whether the agent can operate autonomously without user input",
+      "default": false,
+      "deprecated": "Please use autonomous instead",
+      "x-group": "deprecated"
     },
     "cdp_enabled": {
       "type": "boolean",
@@ -202,7 +236,8 @@
         "type": "string"
       },
       "description": "List of CDP skills available to this agent",
-      "x-group": "skills"
+      "deprecated": "Please use skills instead",
+      "x-group": "deprecated"
     },
     "cdp_network_id": {
       "type": "string",
@@ -225,29 +260,29 @@
     "crossmint_config": {
       "type": "object",
       "description": "Dict of Crossmint wallet configurations",
-      "x-group": "onchain"
+      "x-group": "experimental"
     },
     "goat_enabled": {
       "type": "boolean",
       "description": "Whether GOAT integration is enabled",
       "default": false,
-      "x-group": "onchain"
+      "x-group": "experimental"
     },
     "goat_skills": {
       "type": "object",
       "description": "Dict of GOAT skills and their corresponding configurations",
-      "x-group": "onchain"
+      "x-group": "experimental"
     },
     "twitter_entrypoint_enabled": {
       "type": "boolean",
       "description": "Whether the agent can receive events from Twitter",
       "default": false,
-      "x-group": "social"
+      "x-group": "experimental"
     },
     "twitter_config": {
       "type": "object",
       "description": "Twitter integration configuration settings",
-      "x-group": "social"
+      "x-group": "experimental"
     },
     "twitter_skills": {
       "type": "array",
@@ -255,7 +290,8 @@
         "type": "string"
       },
       "description": "List of Twitter-specific skills available to this agent",
-      "x-group": "social"
+      "deprecated": "Please use skills instead",
+      "x-group": "deprecated"
     },
     "telegram_entrypoint_enabled": {
       "type": "boolean",
@@ -274,7 +310,8 @@
         "type": "string"
       },
       "description": "List of Telegram-specific skills available to this agent",
-      "x-group": "social"
+      "deprecated": "Please use skills instead",
+      "x-group": "deprecated"
     },
     "crestal_skills": {
       "type": "array",
@@ -282,7 +319,7 @@
         "type": "string"
       },
       "description": "List of Crestal platform-specific skills available to this agent",
-      "x-group": "skills"
+      "x-group": "deprecated"
     },
     "common_skills": {
       "type": "array",
@@ -290,12 +327,14 @@
         "type": "string"
       },
       "description": "List of general-purpose skills available to this agent",
-      "x-group": "skills"
+      "deprecated": "Please use skills instead",
+      "x-group": "deprecated"
     },
     "skills": {
       "type": "object",
       "description": "Dict of skills and their corresponding configurations",
       "x-group": "skills",
+      "x-inline": true,
       "properties": {
         "cdp": {
           "$ref": "../skills/cdp/schema.json"
@@ -330,7 +369,7 @@
       "type": "boolean",
       "description": "Whether Enso integration is enabled",
       "default": false,
-      "x-group": "onchain"
+      "x-group": "experimental"
     },
     "enso_skills": {
       "type": "array",
@@ -338,12 +377,12 @@
         "type": "string"
       },
       "description": "List of Enso-specific skills available to this agent",
-      "x-group": "skills"
+      "x-group": "experimental"
     },
     "enso_config": {
       "type": "object",
       "description": "Enso integration configuration settings",
-      "x-group": "onchain"
+      "x-group": "experimental"
     },
     "acolyt_skills": {
       "type": "array",
@@ -351,12 +390,12 @@
         "type": "string"
       },
       "description": "List of Acolyt-specific skills available to this agent",
-      "x-group": "skills"
+      "x-group": "deprecated"
     },
     "acolyt_config": {
       "type": "object",
       "description": "Acolyt integration configuration settings",
-      "x-group": "onchain"
+      "x-group": "deprecated"
     },
     "allora_skills": {
       "type": "array",
@@ -364,12 +403,12 @@
         "type": "string"
       },
       "description": "List of Allora-specific skills available to this agent",
-      "x-group": "skills"
+      "x-group": "deprecated"
     },
     "allora_config": {
       "type": "object",
       "description": "Allora integration configuration settings",
-      "x-group": "onchain"
+      "x-group": "deprecated"
     },
     "elfa_skills": {
       "type": "array",
@@ -377,16 +416,13 @@
         "type": "string"
       },
       "description": "List of Elfa-specific skills available to this agent",
-      "x-group": "skills"
+      "x-group": "deprecated"
     },
     "elfa_config": {
       "type": "object",
       "description": "Elfa integration configuration settings",
-      "x-group": "onchain"
+      "x-group": "deprecated"
     }
   },
-  "required": [
-    "id"
-  ],
   "additionalProperties": false
 }
