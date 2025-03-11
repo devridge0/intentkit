@@ -91,7 +91,7 @@ class AgentAutonomous(BaseModel):
         str,
         PydanticField(
             description="Special prompt used during autonomous operation",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "autonomous",
             },
@@ -486,7 +486,7 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Purpose or role of the agent",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent purpose",
@@ -498,7 +498,7 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Personality traits of the agent",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent personality",
@@ -510,7 +510,7 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Principles or values of the agent",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent principles",
@@ -562,7 +562,7 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Base system prompt that defines the agent's behavior and capabilities",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "ai",
             },
@@ -573,7 +573,7 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Additional system prompt that has higher priority than the base prompt",
-            max_length=3000,
+            max_length=9999,
             json_schema_extra={
                 "x-group": "ai",
             },
