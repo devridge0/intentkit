@@ -55,13 +55,24 @@
       "type": "string",
       "description": "Display name of the agent",
       "required": true,
+      "maxLength": 30,
       "x-group": "basic",
       "x-placeholder": "Enter agent name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Slug of the agent, used for URL generation",
+      "maxLength": 30,
+      "minLength": 2,
+      "readOnly": true,
+      "x-group": "internal"
     },
     "ticker": {
       "type": "string",
       "description": "Ticker symbol of the agent",
       "required": true,
+      "maxLength": 10,
+      "minLength": 3,
       "x-group": "basic",
       "x-placeholder": "Enter agent ticker"
     },
@@ -69,6 +80,7 @@
       "type": "string",
       "description": "Purpose or role of the agent",
       "required": true,
+      "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent purpose"
     },
@@ -76,6 +88,7 @@
       "type": "string",
       "description": "Personality traits of the agent",
       "required": true,
+      "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent personality"
     },
@@ -83,6 +96,7 @@
       "type": "string",
       "description": "Principles or values of the agent",
       "required": true,
+      "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent principles"
     },
@@ -90,12 +104,14 @@
       "type": "string",
       "description": "Owner identifier of the agent, used for access control",
       "readOnly": true,
+      "maxLength": 50,
       "x-group": "internal"
     },
     "upstream_id": {
       "type": "string",
       "description": "External reference ID for idempotent operations",
       "readOnly": true,
+      "maxLength": 100,
       "x-group": "internal"
     },
     "model": {
@@ -115,11 +131,13 @@
     "prompt": {
       "type": "string",
       "description": "Base system prompt that defines the agent's behavior and capabilities",
+      "maxLength": 9999,
       "x-group": "ai"
     },
     "prompt_append": {
       "type": "string",
       "description": "Additional system prompt that has higher priority than the base prompt",
+      "maxLength": 9999,
       "x-group": "ai"
     },
     "temperature": {
@@ -185,7 +203,7 @@
           "prompt": {
             "type": "string",
             "description": "Special prompt used during autonomous operation",
-            "maxLength": 3000,
+            "maxLength": 9999,
             "x-group": "autonomous"
           },
           "enabled": {
