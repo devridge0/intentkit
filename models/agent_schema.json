@@ -61,7 +61,7 @@
     "name": {
       "type": "string",
       "description": "Display name of the agent",
-      "maxLength": 30,
+      "maxLength": 50,
       "x-group": "basic",
       "x-placeholder": "Enter agent name"
     },
