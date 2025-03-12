@@ -525,7 +525,7 @@ async def execute_agent(
     ):
         try:
             this_time = time.perf_counter()
-            logger.debug(f"stream chunk: {chunk}", extra={"thread_id": thread_id})
+            # logger.debug(f"stream chunk: {chunk}", extra={"thread_id": thread_id})
             if "agent" in chunk and "messages" in chunk["agent"]:
                 if len(chunk["agent"]["messages"]) != 1:
                     logger.error(
