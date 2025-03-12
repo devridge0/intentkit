@@ -84,21 +84,21 @@
     "purpose": {
       "type": "string",
       "description": "Purpose or role of the agent",
-      "maxLength": 9999,
+      "maxLength": 20000,
       "x-group": "basic",
       "x-placeholder": "Enter agent purpose"
     },
     "personality": {
       "type": "string",
       "description": "Personality traits of the agent",
-      "maxLength": 9999,
+      "maxLength": 20000,
       "x-group": "basic",
       "x-placeholder": "Enter agent personality"
     },
     "principles": {
       "type": "string",
       "description": "Principles or values of the agent",
-      "maxLength": 9999,
+      "maxLength": 20000,
       "x-group": "basic",
       "x-placeholder": "Enter agent principles"
     },
@@ -133,13 +133,13 @@
     "prompt": {
       "type": "string",
       "description": "Base system prompt that defines the agent's behavior and capabilities",
-      "maxLength": 9999,
+      "maxLength": 20000,
       "x-group": "ai"
     },
     "prompt_append": {
       "type": "string",
       "description": "Additional system prompt that has higher priority than the base prompt",
-      "maxLength": 9999,
+      "maxLength": 20000,
       "x-group": "ai"
     },
     "temperature": {
@@ -205,7 +205,7 @@
           "prompt": {
             "type": "string",
             "description": "Special prompt used during autonomous operation",
-            "maxLength": 9999,
+            "maxLength": 20000,
             "x-group": "autonomous"
           },
           "enabled": {
