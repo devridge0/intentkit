@@ -71,7 +71,6 @@ def get_skills(
 
 def get_cryptocompare_skill(
     name: str,
-    api_key: str,
     store: SkillStoreABC,
 ) -> CryptoCompareBaseTool:
     """Get a CryptoCompare skill by name.
@@ -87,48 +86,40 @@ def get_cryptocompare_skill(
     Raises:
         ValueError: If the requested skill name is unknown
     """
-    if not api_key:
-        raise ValueError("CryptoCompare API key is empty")
 
     if name == "fetch_news":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchNews(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
     elif name == "fetch_price":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchPrice(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
     elif name == "fetch_trading_signals":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchTradingSignals(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
     elif name == "fetch_top_market_cap":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchTopMarketCap(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
     elif name == "fetch_top_exchanges":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchTopExchanges(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
     elif name == "fetch_top_volume":
         if name not in _cache:
             _cache[name] = CryptoCompareFetchTopVolume(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]

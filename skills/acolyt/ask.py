@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Type
 
 import httpx
@@ -8,6 +9,8 @@ from typing_extensions import Literal
 from skills.acolyt.base import AcolytBaseTool
 
 from .base import base_url
+
+logger = logging.getLogger(__name__)
 
 
 class AcolytAskGptInput(BaseModel):

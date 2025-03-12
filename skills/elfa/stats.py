@@ -66,19 +66,8 @@ class ElfaGetSmartStats(ElfaBaseTool):
         """
     args_schema: Type[BaseModel] = ElfaGetSmartStatsInput
 
-    def _run(self, username: str) -> ElfaGetSmartStatsOutput:
-        """Run the tool retrieve smart stats (smart following count) and social metrics (engagement score and ratio) for a given username.
-
-        Returns:
-             ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
-
-        Raises:
-            Exception: If there's an error accessing the Elfa API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, username: str, config: RunnableConfig = None, **kwargs
+        self, username: str, config: RunnableConfig, **kwargs
     ) -> ElfaGetSmartStatsOutput:
         """Run the tool retrieve smart stats (smart following count) and social metrics (engagement score and ratio) for a given username.
 
@@ -93,12 +82,12 @@ class ElfaGetSmartStats(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
-        # We can access context via self.context_from_config(config) if needed
+        context = self.context_from_config(config)
 
         url = f"{base_url}/v1/account/smart-stats"
         headers = {
             "accept": "application/json",
-            "x-elfa-api-key": self.api_key,
+            "x-elfa-api-key": context.config.get("api_key"),
         }
 
         params = ElfaGetSmartStatsInput(username=username).model_dump(exclude_none=True)

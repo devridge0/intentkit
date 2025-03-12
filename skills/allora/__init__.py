@@ -60,14 +60,12 @@ def get_skills(
 
 def get_allora_skill(
     name: str,
-    api_key: str,
     store: SkillStoreABC,
 ) -> AlloraBaseTool:
     """Get an Allora skill by name.
 
     Args:
         name: The name of the skill to get
-        api_key: The API key for Allora
         store: The skill store for persisting data
 
     Returns:
@@ -76,13 +74,9 @@ def get_allora_skill(
     Raises:
         ValueError: If the requested skill name is unknown or API key is empty
     """
-    if not api_key:
-        raise ValueError("Allora API key is empty")
-
     if name == "get_price_prediction":
         if name not in _cache:
             _cache[name] = AlloraGetPrice(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
