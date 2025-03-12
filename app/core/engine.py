@@ -60,6 +60,7 @@ from models.agent import Agent, AgentData, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
+from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
 from skills.elfa import get_elfa_skill
@@ -325,6 +326,21 @@ async def initialize_agent(aid, is_private=False):
                 tools.append(s)
             except Exception as e:
                 logger.warning(e)
+    # Acoalyt skills
+    if (
+        agent.acolyt_skills
+        and len(agent.acolyt_skills) > 0
+        and ("acolyt" not in agent.skills if agent.skills else True)
+    ):
+        for skill in agent.acolyt_skills:
+            try:
+                s = get_acolyt_skill(
+                    skill,
+                    skill_store,
+                )
+                tools.append(s)
+            except Exception as e:
+                logger.warning(e)
     # Allora skills
     if (
         agent.allora_skills
@@ -405,7 +421,7 @@ async def initialize_agent(aid, is_private=False):
         logger.info(
             f"[{aid}{'-private' if is_private else ''}] loaded tool: {tool.name}"
         )
-    logger.info(
+    logger.debug(
         f"[{aid}{'-private' if is_private else ''}] init prompt: {escaped_prompt}"
     )
 

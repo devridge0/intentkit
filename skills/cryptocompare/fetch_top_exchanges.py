@@ -25,29 +25,22 @@ class CryptoCompareFetchTopExchanges(CryptoCompareBaseTool):
     description: str = FETCH_TOP_EXCHANGES_PROMPT
     args_schema: Type[BaseModel] = FetchTopExchangesInput
 
-    def _run(
-        self, from_symbol: str, to_symbol: str
-    ) -> CryptoCompareFetchTopExchangesOutput:
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, from_symbol: str, to_symbol: str, config: RunnableConfig = None, **kwargs
+        self, from_symbol: str, to_symbol: str, config: RunnableConfig, **kwargs
     ) -> CryptoCompareFetchTopExchangesOutput:
-        # Get agent context if available
-        context = None
-        if config:
+        try:
+            # Get agent context if available
             context = self.context_from_config(config)
             agent_id = context.agent.id if context else None
             # Check rate limiting with agent_id
             is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
-        else:
-            # Check rate limiting without agent_id
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            if is_rate_limited:
+                return CryptoCompareFetchTopExchangesOutput(result={}, error=error_msg)
 
-        if is_rate_limited:
-            return CryptoCompareFetchTopExchangesOutput(result={}, error=error_msg)
-        try:
-            result = await fetch_top_exchanges(self.api_key, from_symbol, to_symbol)
+            # Fetch top exchanges from API using API key from context
+            result = await fetch_top_exchanges(
+                context.config.get("api_key"), from_symbol, to_symbol
+            )
             return CryptoCompareFetchTopExchangesOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTopExchangesOutput(result={}, error=str(e))

@@ -84,7 +84,7 @@ class AlloraGetPrice(AlloraBaseTool):
         raise NotImplementedError("Use _arun instead")
 
     async def _arun(
-        self, token: str, time_frame: str, config: RunnableConfig = None, **kwargs
+        self, token: str, time_frame: str, config: RunnableConfig, **kwargs
     ) -> AlloraGetPriceOutput:
         """Run the tool to get the token price prediction from Allora API.
         Args:
@@ -98,10 +98,11 @@ class AlloraGetPrice(AlloraBaseTool):
         Raises:
             Exception: If there's an error accessing the Allora API.
         """
+        context = self.context_from_config(config)
         url = f"{base_url}/consumer/price/ethereum-11155111/{token}/{time_frame}"
         headers = {
             "accept": "application/json",
-            "x-api-key": self.api_key,
+            "x-api-key": context.config.get("api_key"),
         }
 
         async with httpx.AsyncClient() as client:

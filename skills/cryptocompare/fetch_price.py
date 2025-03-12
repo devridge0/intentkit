@@ -25,23 +25,26 @@ class CryptoCompareFetchPrice(CryptoCompareBaseTool):
     description: str = FETCH_PRICE_PROMPT
     args_schema: Type[BaseModel] = FetchPriceInput
 
-    def _run(
-        self, from_symbol: str, to_symbols: List[str]
-    ) -> CryptoCompareFetchPriceOutput:
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
         from_symbol: str,
         to_symbols: List[str],
-        config: RunnableConfig = None,
+        config: RunnableConfig,
         **kwargs,
     ) -> CryptoCompareFetchPriceOutput:
-        is_rate_limited, error_msg = await self.check_rate_limit()
-        if is_rate_limited:
-            return CryptoCompareFetchPriceOutput(result={}, error=error_msg)
         try:
-            result = await fetch_price(self.api_key, from_symbol, to_symbols)
+            # Get agent context if available
+            context = self.context_from_config(config)
+            agent_id = context.agent.id if context else None
+            # Check rate limiting with agent_id
+            is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
+            if is_rate_limited:
+                return CryptoCompareFetchPriceOutput(result={}, error=error_msg)
+
+            # Fetch price from API using API key from context
+            result = await fetch_price(
+                context.config.get("api_key"), from_symbol, to_symbols
+            )
             return CryptoCompareFetchPriceOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchPriceOutput(result={}, error=str(e))

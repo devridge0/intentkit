@@ -127,17 +127,6 @@ class ElfaGetMentions(ElfaBaseTool):
         The data returned includes the tweet content, timestamp, and potentially other relevant metadata."""
     args_schema: Type[BaseModel] = ElfaGetMentionsInput
 
-    def _run(self) -> ElfaGetMentionsOutput:
-        """Run the tool to get the the ELFA AI API to query hourly-updated tweets from smart accounts with at least 10 interactions (comments, retweets, quote tweets).
-
-        Returns:
-             ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
-
-        Raises:
-            Exception: If there's an error accessing the Elfa API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self, config: RunnableConfig = None, **kwargs
     ) -> ElfaGetMentionsOutput:
@@ -153,12 +142,12 @@ class ElfaGetMentions(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
-        # We can access context via self.context_from_config(config) if needed
+        context = self.context_from_config(config)
 
         url = f"{base_url}/v1/mentions"
         headers = {
             "accept": "application/json",
-            "x-elfa-api-key": self.api_key,
+            "x-elfa-api-key": context.config.get("api_key"),
         }
 
         params = ElfaGetMentionsInput(limit=100, offset=0).model_dump(exclude_none=True)

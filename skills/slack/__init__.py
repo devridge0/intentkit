@@ -45,23 +45,18 @@ def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [
-        get_slack_skill(name, store, config.slack_bot_token)
-        for name in available_skills
-    ]
+    return [get_slack_skill(name, store) for name in available_skills]
 
 
 def get_slack_skill(
     name: str,
     store: SkillStoreABC,
-    slack_bot_token: str,
 ) -> SlackBaseTool:
     """Get a Slack skill by name.
 
     Args:
         name: The name of the skill to get
         store: The skill store for persisting data
-        slack_bot_token: The Slack bot token for API access
 
     Returns:
         The requested Slack skill
@@ -73,28 +68,24 @@ def get_slack_skill(
         if name not in _cache:
             _cache[name] = SlackGetChannel(
                 skill_store=store,
-                slack_bot_token=slack_bot_token,
             )
         return _cache[name]
     elif name == "get_message":
         if name not in _cache:
             _cache[name] = SlackGetMessage(
                 skill_store=store,
-                slack_bot_token=slack_bot_token,
             )
         return _cache[name]
     elif name == "schedule_message":
         if name not in _cache:
             _cache[name] = SlackScheduleMessage(
                 skill_store=store,
-                slack_bot_token=slack_bot_token,
             )
         return _cache[name]
     elif name == "send_message":
         if name not in _cache:
             _cache[name] = SlackSendMessage(
                 skill_store=store,
-                slack_bot_token=slack_bot_token,
             )
         return _cache[name]
     else:

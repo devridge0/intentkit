@@ -25,27 +25,24 @@ class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
     description: str = FETCH_TRADING_SIGNALS_PROMPT
     args_schema: Type[BaseModel] = FetchTradingSignalsInput
 
-    def _run(self, from_symbol: str) -> CryptoCompareFetchTradingSignalsOutput:
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, from_symbol: str, config: RunnableConfig = None, **kwargs
+        self, from_symbol: str, config: RunnableConfig, **kwargs
     ) -> CryptoCompareFetchTradingSignalsOutput:
-        # Get agent context if available
-        context = None
-        if config:
+        try:
+            # Get agent context if available
             context = self.context_from_config(config)
             agent_id = context.agent.id if context else None
             # Check rate limiting with agent_id
             is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
-        else:
-            # Check rate limiting without agent_id
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            if is_rate_limited:
+                return CryptoCompareFetchTradingSignalsOutput(
+                    result={}, error=error_msg
+                )
 
-        if is_rate_limited:
-            return CryptoCompareFetchTradingSignalsOutput(result={}, error=error_msg)
-        try:
-            result = await fetch_trading_signals(self.api_key, from_symbol)
+            # Fetch trading signals from API using API key from context
+            result = await fetch_trading_signals(
+                context.config.get("api_key"), from_symbol
+            )
             return CryptoCompareFetchTradingSignalsOutput(result=result)
         except Exception as e:
             return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))

@@ -67,26 +67,11 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
         To use this tool, you would typically specify a time window (e.g., the last hour, the last 24 hours). The tool will then return a ranked list of tokens, along with their corresponding smart mention counts."""
     args_schema: Type[BaseModel] = ElfaGetTrendingTokensInput
 
-    def _run(
-        self,
-        timeWindow: str | None = "24h",
-        minMentions: int | None = 5,
-    ) -> ElfaGetTrendingTokensOutput:
-        """Run the tool to ranks the most discussed tokens by smart mentions count for a given period, updated every 5 minutes via the Elfa API.
-
-        Returns:
-             ElfaGetMentionsOutput: A structured output containing output of Elfa get mentions API.
-
-        Raises:
-            Exception: If there's an error accessing the Elfa API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
-        timeWindow: str | None = "24h",
-        minMentions: int | None = 5,
-        config: RunnableConfig = None,
+        timeWindow: str,
+        minMentions: int,
+        config: RunnableConfig,
         **kwargs,
     ) -> ElfaGetTrendingTokensOutput:
         """Run the tool to ranks the most discussed tokens by smart mentions count for a given period, updated every 5 minutes via the Elfa API.
@@ -103,12 +88,12 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
         Raises:
             Exception: If there's an error accessing the Elfa API.
         """
-        # We can access context via self.context_from_config(config) if needed
+        context = self.context_from_config(config)
 
         url = f"{base_url}/v1/trending-tokens"
         headers = {
             "accept": "application/json",
-            "x-elfa-api-key": self.api_key,
+            "x-elfa-api-key": context.config.get("api_key"),
         }
 
         params = ElfaGetTrendingTokensInput(
