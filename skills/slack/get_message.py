@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
@@ -32,19 +33,15 @@ class SlackGetMessage(SlackBaseTool):
     name = "get_message"
     description = "Get messages from a Slack channel or thread"
     args_schema = SlackGetMessageSchema
-    slack_bot_token: str
     skill_store: SkillStoreABC
 
-    def __init__(self, skill_store: SkillStoreABC, slack_bot_token: str) -> None:
-        super().__init__(skill_store=skill_store)
-        self.slack_bot_token = slack_bot_token
-
-    async def _run(
+    async def _arun(
         self,
         channel_id: str,
-        ts: Optional[str] = None,
-        thread_ts: Optional[str] = None,
-        limit: int = 10,
+        ts: Optional[str],
+        thread_ts: Optional[str],
+        limit: int,
+        config: RunnableConfig,
         **kwargs,
     ) -> Dict[str, Any]:
         """Run the tool to get Slack messages.
@@ -61,7 +58,8 @@ class SlackGetMessage(SlackBaseTool):
         Raises:
             Exception: If an error occurs getting the messages
         """
-        client = self.get_client(self.slack_bot_token)
+        context = self.context_from_config(config)
+        client = self.get_client(context.config.get("slack_bot_token"))
 
         try:
             # Ensure limit is within bounds

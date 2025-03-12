@@ -55,12 +55,8 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
     description: str = FETCH_NEWS_PROMPT
     args_schema: Type[BaseModel] = FetchNewsInput
 
-    def _run(self, token: str) -> CryptoCompareFetchNewsOutput:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, token: str, config: RunnableConfig = None, **kwargs
+        self, token: str, config: RunnableConfig, **kwargs
     ) -> CryptoCompareFetchNewsOutput:
         """Fetch news articles for the given token.
 
@@ -74,25 +70,17 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
         """
         try:
             # Get agent context if available
-            context = None
-            if config:
-                context = self.context_from_config(config)
-                agent_id = context.agent.id if context else None
-                # Check rate limiting with agent_id
-                is_rate_limited, error_msg = await self.check_rate_limit(
-                    agent_id=agent_id
-                )
-            else:
-                # Check rate limiting without agent_id
-                is_rate_limited, error_msg = await self.check_rate_limit()
-
+            context = self.context_from_config(config)
+            agent_id = context.agent.id if context else None
+            # Check rate limiting with agent_id
+            is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
             if is_rate_limited:
                 return CryptoCompareFetchNewsOutput(error=error_msg)
 
             timestamp = int(time.time())
 
             # Fetch news from API
-            result = await fetch_news(self.api_key, token, timestamp)
+            result = await fetch_news(context.config.get("api_key"), token, timestamp)
 
             if "Data" not in result:
                 return CryptoCompareFetchNewsOutput(
