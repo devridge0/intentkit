@@ -24,6 +24,7 @@ async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentDataTabl
     expiration_threshold = datetime.now(timezone.utc) + timedelta(
         minutes=minutes_threshold
     )
+    broken = datetime.now(timezone.utc) - timedelta(days=1)
 
     async with get_session() as db:
         result = await db.execute(
@@ -31,6 +32,7 @@ async def get_expiring_tokens(minutes_threshold: int = 10) -> list[AgentDataTabl
                 AgentDataTable.twitter_access_token.is_not(None),
                 AgentDataTable.twitter_refresh_token.is_not(None),
                 AgentDataTable.twitter_access_token_expires_at <= expiration_threshold,
+                AgentDataTable.twitter_access_token_expires_at > broken,
             )
         )
     return result.scalars().all()
