@@ -656,6 +656,23 @@ async def execute_agent(
                     "unexpected message type: " + str(chunk),
                     extra={"thread_id": thread_id},
                 )
+        except SQLAlchemyError as e:
+            logger.error(
+                f"db error when execute agent: {str(e)}", extra={"thread_id": thread_id}
+            )
+            error_message_create = ChatMessageCreate(
+                id=str(XID()),
+                agent_id=input.agent_id,
+                chat_id=input.chat_id,
+                user_id=input.user_id,
+                author_id=input.agent_id,
+                author_type=AuthorType.SYSTEM,
+                message="IntentKit internal error",
+                time_cost=time.perf_counter() - start,
+            )
+            error_message = await error_message_create.save()
+            resp.append(error_message)
+            return resp
         except Exception as e:
             logger.error(
                 f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
