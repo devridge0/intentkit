@@ -35,6 +35,8 @@ RUN poetry install --no-root
 # Copy the rest of the application code into the container
 COPY . .
 
+RUN poetry install
+
 ARG RELEASE
 ENV RELEASE=$RELEASE
 
