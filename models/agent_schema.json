@@ -172,7 +172,7 @@
           "id": {
             "type": "string",
             "description": "Unique identifier for the autonomous configuration",
-            "minLength": 3,
+            "minLength": 1,
             "maxLength": 20,
             "pattern": "^[a-z0-9-]+$",
             "x-group": "autonomous"

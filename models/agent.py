@@ -37,7 +37,7 @@ class AgentAutonomous(BaseModel):
         str,
         PydanticField(
             description="Unique identifier for the autonomous configuration",
-            min_length=3,
+            min_length=1,
             max_length=20,
             pattern=r"^[a-z0-9-]+$",
             json_schema_extra={
