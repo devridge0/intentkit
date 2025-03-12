@@ -2697,19 +2697,20 @@ requests = ">=2,<3"
 
 [[package]]
 name = "langgraph"
-version = "0.2.76"
+version = "0.3.5"
 description = "Building stateful, multi-actor applications with LLMs"
 optional = false
 python-versions = "<4.0,>=3.9.0"
 groups = ["main"]
 files = [
-    {file = "langgraph-0.2.76-py3-none-any.whl", hash = "sha256:076b8b5d2fc5a9761c46a7618430cfa5c978a8012257c43cbc127b27e0fd7872"},
-    {file = "langgraph-0.2.76.tar.gz", hash = "sha256:688f8dcd9b6797ba78384599e0de944773000c75156ad1e186490e99e89fa5c0"},
+    {file = "langgraph-0.3.5-py3-none-any.whl", hash = "sha256:be313ec300633c857873ea3e44aece4dd7d0b11f131d385108b359d377a85bf7"},
+    {file = "langgraph-0.3.5.tar.gz", hash = "sha256:7c0d8e61aa02578b41036c9f7a599ccba2562d269f66ef76bacbba47a99a7eca"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.2.43,<0.3.0 || >0.3.0,<0.3.1 || >0.3.1,<0.3.2 || >0.3.2,<0.3.3 || >0.3.3,<0.3.4 || >0.3.4,<0.3.5 || >0.3.5,<0.3.6 || >0.3.6,<0.3.7 || >0.3.7,<0.3.8 || >0.3.8,<0.3.9 || >0.3.9,<0.3.10 || >0.3.10,<0.3.11 || >0.3.11,<0.3.12 || >0.3.12,<0.3.13 || >0.3.13,<0.3.14 || >0.3.14,<0.3.15 || >0.3.15,<0.3.16 || >0.3.16,<0.3.17 || >0.3.17,<0.3.18 || >0.3.18,<0.3.19 || >0.3.19,<0.3.20 || >0.3.20,<0.3.21 || >0.3.21,<0.3.22 || >0.3.22,<0.4.0"
+langchain-core = ">=0.1,<0.4"
 langgraph-checkpoint = ">=2.0.10,<3.0.0"
+langgraph-prebuilt = ">=0.1.1,<0.2"
 langgraph-sdk = ">=0.1.42,<0.2.0"
 
 [[package]]
@@ -2745,6 +2746,22 @@ langgraph-checkpoint = ">=2.0.15,<3.0.0"
 orjson = ">=3.10.1"
 psycopg = ">=3.2.0,<4.0.0"
 psycopg-pool = ">=3.2.0,<4.0.0"
+
+[[package]]
+name = "langgraph-prebuilt"
+version = "0.1.2"
+description = "Library with high-level APIs for creating and executing LangGraph agents and tools."
+optional = false
+python-versions = "<4.0.0,>=3.9.0"
+groups = ["main"]
+files = [
+    {file = "langgraph_prebuilt-0.1.2-py3-none-any.whl", hash = "sha256:32028c4c4370576748e6c2e075cab1e13b5e3f2c196a390d71cacfb455212311"},
+    {file = "langgraph_prebuilt-0.1.2.tar.gz", hash = "sha256:cfa7e54006d45e8f3d034ee88fa1d457c381bf6a2a0de0e64c5d3a776659e6d0"},
+]
+
+[package.dependencies]
+langchain-core = ">=0.2.43,<0.3.0 || >0.3.0,<0.3.1 || >0.3.1,<0.3.2 || >0.3.2,<0.3.3 || >0.3.3,<0.3.4 || >0.3.4,<0.3.5 || >0.3.5,<0.3.6 || >0.3.6,<0.3.7 || >0.3.7,<0.3.8 || >0.3.8,<0.3.9 || >0.3.9,<0.3.10 || >0.3.10,<0.3.11 || >0.3.11,<0.3.12 || >0.3.12,<0.3.13 || >0.3.13,<0.3.14 || >0.3.14,<0.3.15 || >0.3.15,<0.3.16 || >0.3.16,<0.3.17 || >0.3.17,<0.3.18 || >0.3.18,<0.3.19 || >0.3.19,<0.3.20 || >0.3.20,<0.3.21 || >0.3.21,<0.3.22 || >0.3.22,<0.4.0"
+langgraph-checkpoint = ">=2.0.10,<3.0.0"
 
 [[package]]
 name = "langgraph-sdk"
@@ -5240,4 +5257,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "67d6238a09b8337915c0c88515cb7cddc9dc6aec76493997526ce7c07d282ebc"
+content-hash = "339ff0047459fbdfaa93eeef74381c59063230fa479a55541a2c2d941fb557e6"
