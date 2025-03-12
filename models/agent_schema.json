@@ -1,42 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema#",
   "title": "Agent",
-  "description": "Agent model.",
+  "description": "Agent model",
   "type": "object",
   "x-groups": [
     {
       "id": "basic",
-      "title": "Basic Information",
+      "title": "Basic",
       "order": 1
     },
     {
       "id": "ai",
-      "title": "AI Configuration",
+      "title": "AI Model",
       "order": 2
     },
     {
       "id": "autonomous",
-      "title": "Autonomous Mode",
+      "title": "Autonomous",
       "order": 3
     },
     {
       "id": "onchain",
-      "title": "On-Chain Integrations",
+      "title": "On-Chain",
       "order": 4
     },
     {
       "id": "social",
-      "title": "Social Media",
+      "title": "Social",
       "order": 5
     },
     {
       "id": "skills",
-      "title": "Agent Skills",
+      "title": "Skills",
       "order": 6
     },
     {
       "id": "experimental",
-      "title": "Experimental Features",
+      "title": "Experimental",
       "order": 7
     },
     {
@@ -50,11 +50,17 @@
       "order": 9
     }
   ],
+  "required": [
+    "name",
+    "ticker",
+    "purpose",
+    "personality",
+    "model"
+  ],
   "properties": {
     "name": {
       "type": "string",
       "description": "Display name of the agent",
-      "required": true,
       "maxLength": 30,
       "x-group": "basic",
       "x-placeholder": "Enter agent name"
@@ -70,7 +76,6 @@
     "ticker": {
       "type": "string",
       "description": "Ticker symbol of the agent",
-      "required": true,
       "maxLength": 10,
       "minLength": 3,
       "x-group": "basic",
@@ -79,7 +84,6 @@
     "purpose": {
       "type": "string",
       "description": "Purpose or role of the agent",
-      "required": true,
       "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent purpose"
@@ -87,7 +91,6 @@
     "personality": {
       "type": "string",
       "description": "Personality traits of the agent",
-      "required": true,
       "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent personality"
@@ -95,7 +98,6 @@
     "principles": {
       "type": "string",
       "description": "Principles or values of the agent",
-      "required": true,
       "maxLength": 9999,
       "x-group": "basic",
       "x-placeholder": "Enter agent principles"
