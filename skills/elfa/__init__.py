@@ -64,7 +64,6 @@ def get_skills(
 
 def get_elfa_skill(
     name: str,
-    api_key: str,
     store: SkillStoreABC,
 ) -> ElfaBaseTool:
     """Get an Elfa skill by name.
@@ -80,13 +79,10 @@ def get_elfa_skill(
     Raises:
         ValueError: If the requested skill name is unknown
     """
-    if not api_key:
-        raise ValueError("Elfa API token is empty")
 
     if name == "get_mentions":
         if name not in _cache:
             _cache[name] = ElfaGetMentions(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
@@ -94,7 +90,6 @@ def get_elfa_skill(
     elif name == "get_top_mentions":
         if name not in _cache:
             _cache[name] = ElfaGetTopMentions(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
@@ -102,7 +97,6 @@ def get_elfa_skill(
     elif name == "search_mentions":
         if name not in _cache:
             _cache[name] = ElfaSearchMentions(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
@@ -110,7 +104,6 @@ def get_elfa_skill(
     elif name == "get_trending_tokens":
         if name not in _cache:
             _cache[name] = ElfaGetTrendingTokens(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]
@@ -118,7 +111,6 @@ def get_elfa_skill(
     elif name == "get_smart_stats":
         if name not in _cache:
             _cache[name] = ElfaGetSmartStats(
-                api_key=api_key,
                 skill_store=store,
             )
         return _cache[name]

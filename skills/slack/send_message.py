@@ -1,5 +1,6 @@
 from typing import Optional
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
@@ -27,15 +28,15 @@ class SlackSendMessage(SlackBaseTool):
     name = "send_message"
     description = "Send a message to a Slack channel or thread"
     args_schema = SlackSendMessageSchema
-    slack_bot_token: str
     skill_store: SkillStoreABC
 
-    def __init__(self, skill_store: SkillStoreABC, slack_bot_token: str) -> None:
-        super().__init__(skill_store=skill_store)
-        self.slack_bot_token = slack_bot_token
-
-    async def _run(
-        self, channel_id: str, text: str, thread_ts: Optional[str] = None, **kwargs
+    async def _arun(
+        self,
+        channel_id: str,
+        text: str,
+        thread_ts: Optional[str],
+        config: RunnableConfig,
+        **kwargs,
     ) -> SlackMessage:
         """Run the tool to send a Slack message.
 
@@ -50,7 +51,8 @@ class SlackSendMessage(SlackBaseTool):
         Raises:
             Exception: If an error occurs sending the message
         """
-        client = self.get_client(self.slack_bot_token)
+        context = self.context_from_config(config)
+        client = self.get_client(context.config.get("slack_bot_token"))
 
         try:
             # Prepare message parameters

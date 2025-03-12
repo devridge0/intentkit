@@ -25,12 +25,10 @@ class CryptoCompareBaseTool(IntentKitSkill):
     """Base class for CryptoCompare tools.
 
     This class provides common functionality for all CryptoCompare API tools:
-    - API key management
     - Rate limiting
     - State management through skill_store
     """
 
-    api_key: str = Field(description="The CryptoCompare API key")
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]

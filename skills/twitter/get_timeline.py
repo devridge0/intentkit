@@ -31,7 +31,7 @@ class TwitterGetTimeline(TwitterBaseTool):
     description: str = "Get tweets from the authenticated user's timeline"
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
-    async def _arun(self, config: RunnableConfig = None, **kwargs) -> list[Tweet]:
+    async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
         """Async implementation of the tool to get the user's timeline.
 
         Args:
