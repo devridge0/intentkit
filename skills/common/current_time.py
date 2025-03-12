@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Type
 
 import pytz
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.common.base import CommonBaseTool
@@ -38,7 +39,7 @@ class CurrentTime(CommonBaseTool):
     )
     args_schema: Type[BaseModel] = CurrentTimeInput
 
-    async def _arun(self, timezone: str = "UTC") -> str:
+    async def _arun(self, timezone: str, config: RunnableConfig, **kwargs) -> str:
         """Implementation of the tool to get the current time.
 
         Args:
@@ -47,40 +48,39 @@ class CurrentTime(CommonBaseTool):
         Returns:
             str: A formatted string with the current time in the specified timezone.
         """
-        try:
-            # Get current UTC time
-            utc_now = datetime.now(pytz.UTC)
+        # Get current UTC time
+        utc_now = datetime.now(pytz.UTC)
+        context = self.context_from_config(config)
+        logger.debug(f"context: {context}")
 
-            # Convert to the requested timezone
-            if timezone.upper() != "UTC":
-                try:
-                    tz = pytz.timezone(timezone)
-                    converted_time = utc_now.astimezone(tz)
-                except pytz.exceptions.UnknownTimeZoneError:
-                    # Provide some suggestions for common timezones
-                    common_timezones = [
-                        "US/Eastern",
-                        "US/Central",
-                        "US/Pacific",
-                        "Europe/London",
-                        "Europe/Paris",
-                        "Europe/Berlin",
-                        "Asia/Shanghai",
-                        "Asia/Tokyo",
-                        "Asia/Singapore",
-                        "Australia/Sydney",
-                    ]
-                    suggestion_str = ", ".join([f"'{tz}'" for tz in common_timezones])
-                    return (
-                        f"Error: Unknown timezone '{timezone}'. Using UTC instead.\n"
-                        f"Some common timezone options: {suggestion_str}"
-                    )
-            else:
-                converted_time = utc_now
+        # Convert to the requested timezone
+        if timezone.upper() != "UTC":
+            try:
+                tz = pytz.timezone(timezone)
+                converted_time = utc_now.astimezone(tz)
+            except pytz.exceptions.UnknownTimeZoneError:
+                # Provide some suggestions for common timezones
+                common_timezones = [
+                    "US/Eastern",
+                    "US/Central",
+                    "US/Pacific",
+                    "Europe/London",
+                    "Europe/Paris",
+                    "Europe/Berlin",
+                    "Asia/Shanghai",
+                    "Asia/Tokyo",
+                    "Asia/Singapore",
+                    "Australia/Sydney",
+                ]
+                suggestion_str = ", ".join([f"'{tz}'" for tz in common_timezones])
+                return (
+                    f"Error: Unknown timezone '{timezone}'. Using UTC instead.\n"
+                    f"Some common timezone options: {suggestion_str}"
+                )
+        else:
+            converted_time = utc_now
 
-            # Format the time
-            formatted_time = converted_time.strftime("%Y-%m-%d %H:%M:%S %Z")
+        # Format the time
+        formatted_time = converted_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-            return f"Current time: {formatted_time}"
-        except Exception as e:
-            return f"Error retrieving time: {str(e)}"
+        return f"Current time: {formatted_time}"
