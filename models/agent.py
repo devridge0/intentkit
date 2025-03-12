@@ -437,7 +437,7 @@ class AgentUpdate(BaseModel):
             default=None,
             title="Name",
             description="Display name of the agent",
-            max_length=30,
+            max_length=50,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent name",
