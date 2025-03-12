@@ -22,8 +22,7 @@ from langchain_core.tools import BaseTool
 from langgraph.errors import ErrorCode, create_error_message
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from langgraph.prebuilt.tool_executor import ToolExecutor
-from langgraph.prebuilt.tool_node import ToolNode
+from langgraph.prebuilt import ToolNode
 from langgraph.store.base import BaseStore
 from langgraph.types import Checkpointer
 from langgraph.utils.runnable import RunnableCallable
@@ -192,7 +191,7 @@ def _count_tokens(messages: Sequence[BaseMessage], model_name: str = "gpt-4") ->
 def create_agent(
     aid: str,
     model: LanguageModelLike,
-    tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
+    tools: Union[Sequence[BaseTool], ToolNode],
     *,
     state_schema: Optional[StateSchemaType] = None,
     state_modifier: Optional[StateModifier] = None,
@@ -286,10 +285,7 @@ def create_agent(
         ):
             raise ValueError(f"Missing required key(s) {missing_keys} in state_schema")
 
-    if isinstance(tools, ToolExecutor):
-        tool_classes: Sequence[BaseTool] = tools.tools
-        tool_node = ToolNode(tool_classes)
-    elif isinstance(tools, ToolNode):
+    if isinstance(tools, ToolNode):
         tool_classes = list(tools.tools_by_name.values())
         tool_node = tools
     else:
