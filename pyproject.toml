@@ -1,31 +1,37 @@
-[tool.poetry]
+[project]
 name = "intentkit"
 version = "0.1.19"
 description = "Intent-based AI Agent Platform"
-authors = ["Ruihua <ruihua@crestal.network>"]
+authors = [{name = "Ruihua", email = "ruihua@crestal.network"}]
 readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph (>=0.3.5,<0.4.0)",
+    "langgraph-prebuilt (>=0.1.2,<0.2.0)"
+]
+
+[tool.poetry]
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = "^0.115.8"
 gunicorn = "^23.0.0"
-pydantic = "*"
-pydantic-settings = "^2.7.1"
+pydantic = "^2.10.6"
+pydantic-settings = "^2.8.1"
 sqlalchemy = {version = "^2.0.37", extras = ["asyncio"]}
 psycopg = "^3.2.3"
 psycopg2 = "*"
 psycopg-pool = "^3.2.4"
 alembic = "^1.14.0"
 pgvector = "^0.3.6"
-langchain = "^0.3.19"
-langchain-core = "^0.3.37"
-langchain-openai = "^0.3.6"
+langchain = "^0.3.20"
+langchain-core = "^0.3.43"
+langchain-openai = "^0.3.8"
 langchain-postgres = "^0.0.13"
-langchain-community = "^0.3.18"
-langgraph = "^0.2.74"
-langgraph-checkpoint = "^2.0.16"
-langgraph-checkpoint-postgres = "^2.0.15"
+langchain-community = "^0.3.19"
+langgraph-checkpoint = "^2.0.18"
+langgraph-checkpoint-postgres = "^2.0.16"
 openai = "^1.59.6"
 cdp-sdk = "0.17.0"
 tweepy = {version = "^4.15.0", extras = ["async"]}
