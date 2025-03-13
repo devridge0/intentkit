@@ -1123,6 +1123,11 @@ class Agent(AgentCreate):
                 else:
                     yaml_lines.append("# Deprecated")
 
+            # Check if the field is experimental and add experimental notice
+            if hasattr(field, "json_schema_extra") and field.json_schema_extra:
+                if field.json_schema_extra.get("x-group") == "experimental":
+                    yaml_lines.append("# Experimental")
+
             # Format the value based on its type
             if value is None:
                 yaml_lines.append(f"{field_name}: null")
