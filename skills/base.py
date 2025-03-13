@@ -68,6 +68,8 @@ class IntentKitSkill(BaseTool):
             config = agent.skills.get(self.category)
         if not config:
             config = getattr(agent, self.category + "_config", {})
+        if not config:
+            config = {}
         return SkillContext(
             agent=agent,
             config=config,
