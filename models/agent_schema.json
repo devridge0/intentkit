@@ -228,20 +228,20 @@
       "type": "integer",
       "description": "Interval in minutes between autonomous operations when enabled",
       "default": 240,
-      "deprecated": "Please use autonomous instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "autonomous_prompt": {
       "type": "string",
       "description": "Special prompt used during autonomous operation mode",
-      "deprecated": "Please use autonomous instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "autonomous_enabled": {
       "type": "boolean",
       "description": "Whether the agent can operate autonomously without user input",
       "default": false,
-      "deprecated": "Please use autonomous instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "cdp_enabled": {
@@ -256,7 +256,7 @@
         "type": "string"
       },
       "description": "List of CDP skills available to this agent",
-      "deprecated": "Please use skills instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "cdp_network_id": {
@@ -310,7 +310,7 @@
         "type": "string"
       },
       "description": "List of Twitter-specific skills available to this agent",
-      "deprecated": "Please use skills instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "telegram_entrypoint_enabled": {
@@ -330,7 +330,7 @@
         "type": "string"
       },
       "description": "List of Telegram-specific skills available to this agent",
-      "deprecated": "Please use skills instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "crestal_skills": {
@@ -339,6 +339,7 @@
         "type": "string"
       },
       "description": "List of Crestal platform-specific skills available to this agent",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "common_skills": {
@@ -347,7 +348,7 @@
         "type": "string"
       },
       "description": "List of general-purpose skills available to this agent",
-      "deprecated": "Please use skills instead",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "skills": {
@@ -410,11 +411,13 @@
         "type": "string"
       },
       "description": "List of Acolyt-specific skills available to this agent",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "acolyt_config": {
       "type": "object",
       "description": "Acolyt integration configuration settings",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "allora_skills": {
@@ -423,11 +426,13 @@
         "type": "string"
       },
       "description": "List of Allora-specific skills available to this agent",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "allora_config": {
       "type": "object",
       "description": "Allora integration configuration settings",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "elfa_skills": {
@@ -436,11 +441,13 @@
         "type": "string"
       },
       "description": "List of Elfa-specific skills available to this agent",
+      "deprecated": true,
       "x-group": "deprecated"
     },
     "elfa_config": {
       "type": "object",
       "description": "Elfa integration configuration settings",
+      "deprecated": true,
       "x-group": "deprecated"
     }
   },
