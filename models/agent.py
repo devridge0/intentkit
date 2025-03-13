@@ -1076,6 +1076,8 @@ class Agent(AgentCreate):
         Dump the agent model to YAML format with field descriptions as comments.
         The comments are extracted from the field descriptions in the model.
         Fields annotated with SkipJsonSchema will be excluded from the output.
+        Only fields from AgentUpdate model are included.
+        Deprecated fields with None or empty values are skipped.
 
         Returns:
             str: YAML representation of the agent with field descriptions as comments
@@ -1083,13 +1085,26 @@ class Agent(AgentCreate):
         data = {}
         yaml_lines = []
 
+        # Get the field names from AgentUpdate model for filtering
+        agent_update_fields = set(AgentUpdate.model_fields.keys())
+
         for field_name, field in self.model_fields.items():
             logger.debug(f"Processing field {field_name} with type {field.metadata}")
+            # Skip fields that are not in AgentUpdate model
+            if field_name not in agent_update_fields:
+                continue
+
             # Skip fields with SkipJsonSchema annotation
             if any(isinstance(item, SkipJsonSchema) for item in field.metadata):
                 continue
 
             value = getattr(self, field_name)
+
+            # Skip deprecated fields with None or empty values
+            is_deprecated = hasattr(field, "deprecated") and field.deprecated
+            if is_deprecated and not value:
+                continue
+
             data[field_name] = value
             # Add comment from field description if available
             description = field.description
@@ -1100,16 +1115,18 @@ class Agent(AgentCreate):
                 desc_lines = [f"# {line}" for line in description.split("\n")]
                 yaml_lines.extend(desc_lines)
 
-                # Check if the field is deprecated and add deprecation notice
-                if hasattr(field, "deprecated") and field.deprecated:
-                    # Add deprecation message
-                    if (
-                        hasattr(field, "deprecation_message")
-                        and field.deprecation_message
-                    ):
-                        yaml_lines.append(f"# Deprecated: {field.deprecation_message}")
-                    else:
-                        yaml_lines.append("# Deprecated")
+            # Check if the field is deprecated and add deprecation notice
+            if is_deprecated:
+                # Add deprecation message
+                if hasattr(field, "deprecation_message") and field.deprecation_message:
+                    yaml_lines.append(f"# Deprecated: {field.deprecation_message}")
+                else:
+                    yaml_lines.append("# Deprecated")
+
+            # Check if the field is experimental and add experimental notice
+            if hasattr(field, "json_schema_extra") and field.json_schema_extra:
+                if field.json_schema_extra.get("x-group") == "experimental":
+                    yaml_lines.append("# Experimental")
 
             # Format the value based on its type
             if value is None:
