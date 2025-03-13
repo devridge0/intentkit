@@ -1,7 +1,9 @@
 """Scheduler for periodic tasks."""
 
 import asyncio
+import logging
 
+from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import update
@@ -10,6 +12,8 @@ from app.config.config import config
 from app.services.twitter.oauth2_refresh import refresh_expiring_tokens
 from models.agent import AgentQuotaTable
 from models.db import get_session, init_db
+
+logger = logging.getLogger(__name__)
 
 
 async def reset_daily_quotas():
@@ -38,7 +42,18 @@ async def reset_monthly_quotas():
 
 def create_scheduler():
     """Create and configure the APScheduler with all periodic tasks."""
-    scheduler = AsyncIOScheduler()
+    # Job Store
+    jobstores = {}
+    if config.redis_host:
+        jobstores["default"] = RedisJobStore(
+            host=config.redis_host,
+            port=config.redis_port,
+            jobs_key="intentkit:scheduler:jobs",
+            run_times_key="intentkit:scheduler:run_times",
+        )
+        logger.info(f"scheduler use redis store: {config.redis_host}")
+
+    scheduler = AsyncIOScheduler(jobstores=jobstores)
 
     # Reset daily quotas at UTC 00:00
     scheduler.add_job(

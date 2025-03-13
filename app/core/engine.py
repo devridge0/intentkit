@@ -561,6 +561,8 @@ async def execute_agent(
                         user_id=input.user_id,
                         author_id=input.agent_id,
                         author_type=AuthorType.AGENT,
+                        thread_type=input.author_type,
+                        reply_to=input.id,
                         message=msg.content,
                         input_tokens=(
                             msg.usage_metadata.get("input_tokens", 0)
@@ -626,6 +628,8 @@ async def execute_agent(
                     user_id=input.user_id,
                     author_id=input.agent_id,
                     author_type=AuthorType.SKILL,
+                    thread_type=input.author_type,
+                    reply_to=input.id,
                     message="",
                     skill_calls=skill_calls,
                     input_tokens=(
@@ -667,6 +671,8 @@ async def execute_agent(
                 user_id=input.user_id,
                 author_id=input.agent_id,
                 author_type=AuthorType.SYSTEM,
+                thread_type=input.author_type,
+                reply_to=input.id,
                 message="IntentKit internal error",
                 time_cost=time.perf_counter() - start,
             )
@@ -684,6 +690,8 @@ async def execute_agent(
                 user_id=input.user_id,
                 author_id=input.agent_id,
                 author_type=AuthorType.SYSTEM,
+                thread_type=input.author_type,
+                reply_to=input.id,
                 message=f"Error in agent:\n  {str(e)}",
                 time_cost=time.perf_counter() - start,
             )

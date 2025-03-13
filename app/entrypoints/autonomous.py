@@ -78,6 +78,7 @@ async def run_autonomous_action(aid: str, prompt: str):
         user_id="autonomous",
         author_id="autonomous",
         author_type=AuthorType.TRIGGER,
+        thread_type=AuthorType.TRIGGER,
         message=prompt,
     )
 
@@ -123,6 +124,7 @@ async def run_autonomous_task(
             user_id=agent_owner,
             author_id="autonomous",
             author_type=AuthorType.TRIGGER,
+            thread_type=AuthorType.TRIGGER,
             message=prompt,
         )
 

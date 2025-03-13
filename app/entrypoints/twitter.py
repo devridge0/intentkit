@@ -118,6 +118,7 @@ async def run_twitter_agents():
                         user_id=str(mention.author_id),
                         author_id=str(mention.author_id),
                         author_type=AuthorType.TWITTER,
+                        thread_type=AuthorType.TWITTER,
                         message=mention.text,
                     )
                     response = await execute_agent(message)
