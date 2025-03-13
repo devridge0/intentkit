@@ -54,7 +54,7 @@ class TwitterClient(TwitterABC):
             AsyncClient: The Twitter client if initialized
         """
         if not self._agent_data:
-            self._agent_data = await self._skill_store.get_agent_data()
+            self._agent_data = await self._skill_store.get_agent_data(self.agent_id)
             if not self._agent_data:
                 raise Exception(f"[{self.agent_id}] Agent data not found")
         if not self._client:
@@ -85,7 +85,7 @@ class TwitterClient(TwitterABC):
                             "twitter_name": me["data"]["name"],
                         }
                     )
-                self._agent_data = await self._skill_store.get_agent_data()
+                self._agent_data = await self._skill_store.get_agent_data(self.agent_id)
                 logger.info(
                     f"Twitter client initialized. "
                     f"Use API key: {self.use_key}, "
@@ -115,7 +115,7 @@ class TwitterClient(TwitterABC):
             if self._agent_data.twitter_access_token_expires_at <= datetime.now(
                 tz=timezone.utc
             ):
-                self._agent_data = await self._skill_store.get_agent_data()
+                self._agent_data = await self._skill_store.get_agent_data(self.agent_id)
                 # check again
                 if self._agent_data.twitter_access_token_expires_at <= datetime.now(
                     tz=timezone.utc
