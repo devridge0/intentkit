@@ -10,6 +10,7 @@ import signal
 import sys
 
 import sentry_sdk
+from apscheduler.jobstores.redis import RedisJobStore
 
 from app.admin.scheduler import create_scheduler
 from app.config.config import config
@@ -34,6 +35,17 @@ if __name__ == "__main__":
     async def main():
         # Initialize database
         await init_db(**config.db)
+
+        # Job Store
+        jobstores = {}
+        if config.redis_host:
+            jobstores["default"] = RedisJobStore(
+                host=config.redis_host,
+                port=config.redis_port,
+                jobs_key="intentkit:scheduler:jobs",
+                run_times_key="intentkit:scheduler:run_times",
+            )
+            logger.info(f"scheduler use redis store: {config.redis_host}")
 
         # Initialize scheduler
         scheduler = create_scheduler()
