@@ -86,6 +86,7 @@ async def gp_process_message(message: Message) -> None:
                 user_id=str(message.from_user.id),
                 author_id=str(message.from_user.id),
                 author_type=AuthorType.TELEGRAM,
+                thread_type=AuthorType.TELEGRAM,
                 message=message_text,
             )
             response = await execute_agent(input)
@@ -134,6 +135,7 @@ async def process_message(message: Message) -> None:
             user_id=str(message.from_user.id),
             author_id=str(message.from_user.id),
             author_type=AuthorType.TELEGRAM,
+            thread_type=AuthorType.TELEGRAM,
             message=message.text,
         )
         response = await execute_agent(input)

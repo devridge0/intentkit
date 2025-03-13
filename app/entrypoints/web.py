@@ -237,6 +237,7 @@ async def debug_chat(
         user_id=agent.owner,
         author_id="debug",
         author_type=AuthorType.WEB,
+        thread_type=AuthorType.WEB,
         message=q,
     )
 
@@ -411,6 +412,8 @@ async def retry_chat_deprecated(
             user_id=last_message.user_id,
             author_id=aid,
             author_type=AuthorType.SYSTEM,
+            thread_type=last_message.author_type,
+            reply_to=last_message.reply_to,
             message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
             attachments=None,
         )
@@ -493,6 +496,8 @@ async def retry_chat(
             user_id=last_message.user_id,
             author_id=aid,
             author_type=AuthorType.SYSTEM,
+            thread_type=last_message.author_type,
+            reply_to=last_message.reply_to,
             message="You were interrupted after executing a skill. Please retry with caution to avoid repeating the skill.",
             attachments=None,
         )
@@ -563,6 +568,7 @@ async def create_chat_deprecated(
         user_id=request.user_id,
         author_id=request.user_id,
         author_type=AuthorType.WEB,
+        thread_type=AuthorType.WEB,
         message=request.message,
         attachments=request.attachments,
     )
@@ -659,6 +665,7 @@ async def create_chat(
         user_id=request.user_id,
         author_id=request.user_id,
         author_type=AuthorType.WEB,
+        thread_type=AuthorType.WEB,
         message=request.message,
         attachments=request.attachments,
     )
