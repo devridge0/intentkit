@@ -59,7 +59,9 @@ class TwitterSearchTweets(TwitterBaseTool):
             )
             # Check rate limit only when not using OAuth
             if not twitter.use_key:
-                await self.check_rate_limit(max_requests=3, interval=60 * 24)
+                await self.check_rate_limit(
+                    context.agent.id, max_requests=3, interval=60 * 24
+                )
 
             client = await twitter.get_client()
 
