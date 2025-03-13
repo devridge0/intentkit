@@ -66,7 +66,7 @@ class Config:
         )  # log with checkpoint
         # Redis
         self.redis_host = self.load("REDIS_HOST")
-        self.redis_port = self.load("REDIS_PORT", "6379")
+        self.redis_port = int(self.load("REDIS_PORT", "6379"))
         # Internal
         self.internal_base_url = self.load("INTERNAL_BASE_URL", "http://intent-api")
         # Admin
