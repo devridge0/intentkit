@@ -3,7 +3,12 @@ from typing import Any, Dict, Optional
 from abstracts.skill import SkillStoreABC
 from app.config.config import config
 from models.agent import Agent, AgentData, AgentQuota
-from models.skill import AgentSkillData, ThreadSkillData
+from models.skill import (
+    AgentSkillData,
+    AgentSkillDataCreate,
+    ThreadSkillData,
+    ThreadSkillDataCreate,
+)
 
 
 class SkillStore(SkillStoreABC):
@@ -64,7 +69,7 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        skill_data = AgentSkillData(
+        skill_data = AgentSkillDataCreate(
             agent_id=agent_id,
             skill=skill,
             key=key,
@@ -105,7 +110,7 @@ class SkillStore(SkillStoreABC):
             key: Data key
             data: JSON data to store
         """
-        skill_data = ThreadSkillData(
+        skill_data = ThreadSkillDataCreate(
             thread_id=thread_id,
             agent_id=agent_id,
             skill=skill,
