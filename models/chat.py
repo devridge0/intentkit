@@ -169,6 +169,14 @@ class ChatMessageTable(Base):
         String,
         nullable=False,
     )
+    thread_type = Column(
+        String,
+        nullable=True,
+    )
+    reply_to = Column(
+        String,
+        nullable=True,
+    )
     message = Column(
         String,
         nullable=False,
@@ -229,6 +237,14 @@ class ChatMessageCreate(BaseModel):
     ]
     author_id: Annotated[str, Field(description="ID of the message author")]
     author_type: Annotated[AuthorType, Field(description="Type of the message author")]
+    thread_type: Annotated[
+        Optional[AuthorType],
+        Field(None, description="Author Type of the message thread start"),
+    ]
+    reply_to: Annotated[
+        Optional[str],
+        Field(None, description="ID of the message this message is a reply to"),
+    ]
     message: Annotated[str, Field(description="Content of the message")]
     attachments: Annotated[
         Optional[List[ChatMessageAttachment]],
