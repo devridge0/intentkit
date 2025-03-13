@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Dict
 
 import sentry_sdk
+from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
@@ -20,6 +21,22 @@ logger = logging.getLogger(__name__)
 # Global dictionary to store task_id and last updated time
 autonomous_tasks_updated_at: Dict[str, datetime] = {}
 
+# Global scheduler instance
+_scheduler = None
+
+
+def get_scheduler() -> AsyncIOScheduler:
+    """Get the global scheduler instance"""
+    global _scheduler
+    return _scheduler
+
+
+def set_scheduler(scheduler: AsyncIOScheduler):
+    """Set the global scheduler instance"""
+    global _scheduler
+    _scheduler = scheduler
+
+
 if config.sentry_dsn:
     sentry_sdk.init(
         dsn=config.sentry_dsn,
@@ -32,12 +49,18 @@ if config.sentry_dsn:
     )
 
 
-async def schedule_agent_autonomous_tasks(scheduler: AsyncIOScheduler):
+async def schedule_agent_autonomous_tasks():
     """
     Find all agents with autonomous tasks and schedule them.
     This function is called periodically to update the scheduler with new or modified tasks.
     """
     logger.info("Checking for agent autonomous tasks...")
+
+    # Get the global scheduler instance
+    scheduler = get_scheduler()
+    if not scheduler:
+        logger.error("Scheduler not initialized")
+        return
 
     async with get_session() as db:
         # Get all agents with autonomous configuration
@@ -103,8 +126,21 @@ if __name__ == "__main__":
         # Initialize database
         await init_db(**config.db)
 
+        # Job Store
+        jobstores = {}
+        if config.redis_host:
+            jobstores["default"] = RedisJobStore(
+                host=config.redis_host,
+                port=config.redis_port,
+                jobs_key="intentkit:autonomous:jobs",
+            )
+            logger.info(f"autonomous scheduler use redis store: {config.redis_host}")
+
         # Initialize scheduler
-        scheduler = AsyncIOScheduler()
+        scheduler = AsyncIOScheduler(jobstores=jobstores)
+
+        # Set the global scheduler instance
+        set_scheduler(scheduler)
 
         # Add job to run legacy autonomous agents every minute
         scheduler.add_job(run_autonomous_agents, "interval", minutes=100)
@@ -114,7 +150,6 @@ if __name__ == "__main__":
         scheduler.add_job(
             schedule_agent_autonomous_tasks,
             "interval",
-            args=[scheduler],
             minutes=5,
             next_run_time=datetime.now(),
         )
