@@ -133,6 +133,7 @@ if __name__ == "__main__":
                 host=config.redis_host,
                 port=config.redis_port,
                 jobs_key="intentkit:autonomous:jobs",
+                run_times_key="intentkit:autonomous:run_times",
             )
             logger.info(f"autonomous scheduler use redis store: {config.redis_host}")
 
