@@ -599,19 +599,18 @@ async def import_agent(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid YAML format: {e}")
 
-    # Ensure agent ID matches
-    if yaml_data.get("id") != agent_id:
-        raise HTTPException(
-            status_code=400, detail="Agent ID in YAML does not match URL parameter"
-        )
-
     # Create Agent instance from YAML
     try:
-        agent = AgentCreate.model_validate(yaml_data)
+        agent = AgentUpdate.model_validate(yaml_data)
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=f"Invalid agent configuration: {e}")
 
-    # Process the agent
-    await _process_agent(agent, subject, slack_message="Agent Updated via YAML Import")
+    # Get the latest agent from create_or_update
+    latest_agent = await agent.update(agent_id)
+
+    # Process common post-creation/update steps
+    await _process_agent_post_actions(
+        latest_agent, False, "Agent Updated via YAML Import"
+    )
 
     return "Agent import successful"
