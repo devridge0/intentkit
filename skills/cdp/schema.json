@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "CDP Skills",
-  "description": "Configuration schema for CDP wallet interaction skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/cdp/icon.png",
+  "description": "Configuration schema for CDP skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/cdp/cdp.png",
   "x-tags": [
     "Blockchain"
   ],
