@@ -91,6 +91,7 @@ async def gp_process_message(message: Message) -> None:
             )
             response = await execute_agent(input)
             await message.answer(
+                parse_mode="MarkdownV2",
                 text=response[-1].message if response else "Server Error",
                 reply_to_message_id=message.message_id,
             )
@@ -140,6 +141,7 @@ async def process_message(message: Message) -> None:
         )
         response = await execute_agent(input)
         await message.answer(
+            parse_mode="MarkdownV2",
             text=response[-1].message if response else "Server Error",
             reply_to_message_id=message.message_id,
         )
