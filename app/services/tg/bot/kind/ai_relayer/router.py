@@ -4,7 +4,6 @@ import logging
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
-from aiogram.utils.formatting import Text
 from epyxid import XID
 
 from app.core.client import execute_agent
@@ -91,10 +90,9 @@ async def gp_process_message(message: Message) -> None:
                 message=message_text,
             )
             response = await execute_agent(input)
-            text = Text(response[-1].message if response else "Server Error")
             await message.answer(
-                text=text.as_markdown(),
-                parse_mode="MarkdownV2",
+                text=response[-1].message if response else "Server Error",
+                parse_mode="Markdown",
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -142,10 +140,9 @@ async def process_message(message: Message) -> None:
             message=message.text,
         )
         response = await execute_agent(input)
-        text = Text(response[-1].message if response else "Server Error")
         await message.answer(
-            text=text.as_markdown(),
-            parse_mode="MarkdownV2",
+            text=response[-1].message if response else "Server Error",
+            parse_mode="Markdown",
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
