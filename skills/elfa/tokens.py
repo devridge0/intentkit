@@ -89,11 +89,14 @@ class ElfaGetTrendingTokens(ElfaBaseTool):
             Exception: If there's an error accessing the Elfa API.
         """
         context = self.context_from_config(config)
+        api_key = self.get_api_key(context)
+        if not api_key:
+            raise ValueError("Elfa API key not found")
 
         url = f"{base_url}/v1/trending-tokens"
         headers = {
             "accept": "application/json",
-            "x-elfa-api-key": context.config.get("api_key"),
+            "x-elfa-api-key": api_key,
         }
 
         params = ElfaGetTrendingTokensInput(

@@ -3,7 +3,7 @@
   "type": "object",
   "title": "Allora Skills",
   "description": "Configuration schema for Allora skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/allora/icon.jpeg",
+  "x-icon": "https://ai.service.crestal.dev/skills/allora/allora.jpeg",
   "x-tags": [
     "Blockchain"
   ],
@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_price_prediction skill"
+          "description": "Generates 6-hour price forecasts using ensemble ML models analyzing on-chain liquidity and market sentiment"
         }
       },
       "description": "States for each Allora skill (disabled, public, or private)"

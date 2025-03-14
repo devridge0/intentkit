@@ -99,10 +99,14 @@ class AlloraGetPrice(AlloraBaseTool):
             Exception: If there's an error accessing the Allora API.
         """
         context = self.context_from_config(config)
+        api_key = self.get_api_key(context)
+        if not api_key:
+            raise ValueError("Allora API key not found")
+
         url = f"{base_url}/consumer/price/ethereum-11155111/{token}/{time_frame}"
         headers = {
             "accept": "application/json",
-            "x-api-key": context.config.get("api_key"),
+            "x-api-key": api_key,
         }
 
         async with httpx.AsyncClient() as client:
