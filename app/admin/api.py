@@ -279,6 +279,31 @@ async def create_or_update_agent(
     )
 
 
+@admin_router_readonly.post(
+    "/agent/validate",
+    tags=["Agent"],
+    status_code=204,
+    operation_id="validate_agent",
+)
+async def validate_agent(
+    input: AgentUpdate = Body(AgentUpdate, description="Agent configuration"),
+) -> Response:
+    """Validate agent configuration.
+
+    **Request Body:**
+    * `agent` - Agent configuration
+
+    **Returns:**
+    * `204 No Content` - Agent configuration is valid
+
+    **Raises:**
+    * `HTTPException`:
+        - 400: Invalid agent configuration
+        - 500: Server error
+    """
+    return Response(status_code=204)
+
+
 @admin_router.post(
     "/agents/v2",
     tags=["Agent"],
@@ -468,17 +493,25 @@ class MemCleanRequest(BaseModel):
 
 
 @admin_router.post(
+    "/agent/clean-memory",
+    tags=["Agent"],
+    status_code=204,
+    dependencies=[Depends(verify_jwt)],
+    operation_id="clean_agent_memory",
+)
+@admin_router.post(
     "/agents/clean-memory",
     tags=["Agent"],
     status_code=201,
     dependencies=[Depends(verify_jwt)],
-    operation_id="clean_agent_memory",
+    operation_id="clean_agent_memory_deprecated",
+    deprecated=True,
 )
 async def clean_memory(
     request: MemCleanRequest = Body(
         MemCleanRequest, description="Agent memory cleanup request"
     ),
-) -> str:
+):
     """Clear an agent memory.
 
     **Request Body:**
@@ -505,7 +538,7 @@ async def clean_memory(
                 detail=f"Agent with id {request.agent_id} not found",
             )
 
-        return await clean_agent_memory(
+        await clean_agent_memory(
             request.agent_id,
             request.chat_id,
             clean_agent=request.clean_agent_memory,
