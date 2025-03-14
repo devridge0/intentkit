@@ -2878,6 +2878,18 @@ docs = ["autodocsumm (==0.2.14)", "furo (==2024.8.6)", "sphinx (==8.1.3)", "sphi
 tests = ["pytest", "simplejson"]
 
 [[package]]
+name = "mistletoe"
+version = "1.4.0"
+description = "A fast, extensible Markdown parser in pure Python."
+optional = false
+python-versions = "~=3.5"
+groups = ["main"]
+files = [
+    {file = "mistletoe-1.4.0-py3-none-any.whl", hash = "sha256:44a477803861de1237ba22e375c6b617690a31d2902b47279d1f8f7ed498a794"},
+    {file = "mistletoe-1.4.0.tar.gz", hash = "sha256:1630f906e5e4bbe66fdeb4d29d277e2ea515d642bb18a9b49b136361a9818c9d"},
+]
+
+[[package]]
 name = "msgpack"
 version = "1.1.0"
 description = "MessagePack serializer"
@@ -4502,6 +4514,25 @@ anyio = ">=3.6.2,<5"
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
 
 [[package]]
+name = "telegramify-markdown"
+version = "0.5.0"
+description = "Makes it easy to send Markdown in Telegram MarkdownV2 style"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "telegramify_markdown-0.5.0-py3-none-any.whl", hash = "sha256:6f66b7029c0eba268fed5f9daf9216f56c588c6202dd591ff572f7df0d318f2f"},
+    {file = "telegramify_markdown-0.5.0.tar.gz", hash = "sha256:70e6eff7e341e6e9c8818fa1ec53a4e25e4f5e3ef50856d7772760fc6b7a4066"},
+]
+
+[package.dependencies]
+mistletoe = "1.4.0"
+
+[package.extras]
+mermaid = ["Pillow (>=10.4.0)", "aiohttp (>=3.10.11)"]
+tests = ["mock (>=1.0.1,<4) ; python_version < \"3.4\"", "pytelegrambotapi (>=4.22.0)", "pytest (<6)", "python-dotenv (>=1.0.1)"]
+
+[[package]]
 name = "tenacity"
 version = "9.0.0"
 description = "Retry code until it succeeds"
@@ -5080,4 +5111,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "4210b710b83f6beefcb125bd27018744fb34ef43ee21669b913e31ce28ca759d"
+content-hash = "31f18e73e7896fb9bc765aa64f098e45a71c034c68438183c6c8dff0e084446b"
