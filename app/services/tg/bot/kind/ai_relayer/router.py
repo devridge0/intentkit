@@ -4,6 +4,7 @@ import logging
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
+from aiogram.utils.formatting import Text
 from epyxid import XID
 
 from app.core.client import execute_agent
@@ -12,7 +13,7 @@ from app.services.tg.bot.filter.chat_type import GroupOnlyFilter
 from app.services.tg.bot.filter.content_type import TextOnlyFilter
 from app.services.tg.bot.filter.id import WhitelistedChatIDsFilter
 from app.services.tg.bot.filter.no_bot import NoBotFilter
-from app.services.tg.utils.cleanup import remove_bot_name
+from app.services.tg.bot.utils.cleanup import remove_bot_name
 from models.chat import AuthorType, ChatMessageCreate
 
 logger = logging.getLogger(__name__)
@@ -90,9 +91,10 @@ async def gp_process_message(message: Message) -> None:
                 message=message_text,
             )
             response = await execute_agent(input)
+            text = Text(response[-1].message if response else "Server Error")
             await message.answer(
+                text=text.as_markdown(),
                 parse_mode="MarkdownV2",
-                text=response[-1].message if response else "Server Error",
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -140,9 +142,10 @@ async def process_message(message: Message) -> None:
             message=message.text,
         )
         response = await execute_agent(input)
+        text = Text(response[-1].message if response else "Server Error")
         await message.answer(
+            text=text.as_markdown(),
             parse_mode="MarkdownV2",
-            text=response[-1].message if response else "Server Error",
             reply_to_message_id=message.message_id,
         )
     except Exception as e:
