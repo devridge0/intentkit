@@ -490,6 +490,10 @@ class AgentUpdate(BaseModel):
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent purpose",
+                "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+                "errorMessage": {
+                    "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+                }
             },
         ),
     ]
@@ -502,6 +506,10 @@ class AgentUpdate(BaseModel):
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent personality",
+                "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+                "errorMessage": {
+                    "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+                }
             },
         ),
     ]
@@ -514,6 +522,10 @@ class AgentUpdate(BaseModel):
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "Enter agent principles",
+                "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+                "errorMessage": {
+                    "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+                }
             },
         ),
     ]
@@ -565,6 +577,10 @@ class AgentUpdate(BaseModel):
             max_length=20000,
             json_schema_extra={
                 "x-group": "ai",
+                "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+                "errorMessage": {
+                    "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+                }
             },
         ),
     ]
@@ -576,6 +592,10 @@ class AgentUpdate(BaseModel):
             max_length=20000,
             json_schema_extra={
                 "x-group": "ai",
+                "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+                "errorMessage": {
+                    "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+                }
             },
         ),
     ]
@@ -941,35 +961,27 @@ class AgentUpdate(BaseModel):
         ),
     ]
 
-    def check_prompt(self):
-        # Check for markdown headers in text fields
-        fields_to_check = [
-            "purpose",
-            "personality",
-            "principles",
-            "prompt",
-            "prompt_append",
-        ]
-        for field in fields_to_check:
-            value = getattr(self, field)
-            if value and isinstance(value, str):
-                for line_num, line in enumerate(value.split("\n"), 1):
-                    line = line.strip()
-                    if line.startswith("# ") or line.startswith("## "):
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Field '{field}' contains markdown level 1/2 header at line {line_num}. You can use level 3 (### ) instead.",
-                        )
+    @field_validator("purpose", "personality", "principles", "prompt", "prompt_append")
+    @classmethod
+    def validate_no_level1_level2_headings(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that the text doesn't contain level 1 or level 2 headings."""
+        if v is None:
+            return v
+        
+        import re
+        # Check if any line starts with # or ## followed by a space
+        if re.search(r"^(# |## )", v, re.MULTILINE):
+            raise ValueError("Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead.")
+        return v
 
     async def update(self, id: str) -> "Agent":
-        self.check_prompt()
+        # The validation is now handled by field validators
+        # No need to call check_prompt() anymore
+        
         async with get_session() as db:
             db_agent = await db.get(AgentTable, id)
             if not db_agent:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Agent not found",
-                )
+                raise HTTPException(status_code=404, detail="Agent not found")
             # check onwer
             if self.owner and db_agent.owner != self.owner:
                 raise HTTPException(
@@ -1012,7 +1024,7 @@ class AgentCreate(AgentUpdate):
                 )
 
     async def create(self) -> "Agent":
-        self.check_prompt()
+        # Validation is now handled by field validators
         await self.check_upstream_id()
         async with get_session() as db:
             db_agent = AgentTable(**self.model_dump())
@@ -1022,17 +1034,17 @@ class AgentCreate(AgentUpdate):
             return Agent.model_validate(db_agent)
 
     async def create_or_update(self) -> ("Agent", bool):
-        self.check_prompt()
+        # Validation is now handled by field validators
+        await self.check_upstream_id()
         is_new = False
         async with get_session() as db:
             db_agent = await db.get(AgentTable, self.id)
             if not db_agent:
-                await self.check_upstream_id()
                 db_agent = AgentTable(**self.model_dump())
                 db.add(db_agent)
                 is_new = True
             else:
-                # check onwer
+                # check owner
                 if self.owner and db_agent.owner != self.owner:
                     raise HTTPException(
                         status_code=403,
@@ -1042,7 +1054,7 @@ class AgentCreate(AgentUpdate):
                     setattr(db_agent, key, value)
             await db.commit()
             await db.refresh(db_agent)
-            return (Agent.model_validate(db_agent), is_new)
+            return Agent.model_validate(db_agent), is_new
 
 
 class Agent(AgentCreate):
@@ -1212,7 +1224,7 @@ class AgentResponse(Agent):
     ]
     has_twitter_linked: Annotated[
         bool,
-        PydanticField(description="Whether the agent has linked their Twitter account"),
+        PydanticField(description="Whether the agent has linked their Twitter account")
     ]
     linked_twitter_username: Annotated[
         Optional[str],
@@ -1725,6 +1737,8 @@ class AgentQuotaTable(Base):
     last_autonomous_time = Column(DateTime(timezone=True), default=None, nullable=True)
     twitter_count_total = Column(BigInteger, default=0)
     twitter_limit_total = Column(BigInteger, default=99999999)
+    twitter_count_monthly = Column(BigInteger, default=0)
+    twitter_limit_monthly = Column(BigInteger, default=99999999)
     twitter_count_daily = Column(BigInteger, default=0)
     twitter_limit_daily = Column(BigInteger, default=99999999)
     last_twitter_time = Column(DateTime(timezone=True), default=None, nullable=True)

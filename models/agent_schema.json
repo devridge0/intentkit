@@ -85,6 +85,10 @@
       "type": "string",
       "description": "Purpose or role of the agent",
       "maxLength": 20000,
+      "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+      "errorMessage": {
+        "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+      },
       "x-group": "basic",
       "x-placeholder": "Enter agent purpose"
     },
@@ -92,6 +96,10 @@
       "type": "string",
       "description": "Personality traits of the agent",
       "maxLength": 20000,
+      "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+      "errorMessage": {
+        "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+      },
       "x-group": "basic",
       "x-placeholder": "Enter agent personality"
     },
@@ -99,6 +107,10 @@
       "type": "string",
       "description": "Principles or values of the agent",
       "maxLength": 20000,
+      "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+      "errorMessage": {
+        "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+      },
       "x-group": "basic",
       "x-placeholder": "Enter agent principles"
     },
@@ -134,12 +146,20 @@
       "type": "string",
       "description": "Base system prompt that defines the agent's behavior and capabilities",
       "maxLength": 20000,
+      "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+      "errorMessage": {
+        "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+      },
       "x-group": "ai"
     },
     "prompt_append": {
       "type": "string",
       "description": "Additional system prompt that has higher priority than the base prompt",
       "maxLength": 20000,
+      "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
+      "errorMessage": {
+        "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+      },
       "x-group": "ai"
     },
     "temperature": {
