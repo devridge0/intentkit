@@ -209,7 +209,12 @@ class AgentTable(Base):
         String,
         index=True,
         nullable=True,
-        comment="External reference ID for idempotent operations",
+        comment="Upstream reference ID for idempotent operations",
+    )
+    upstream_extra = Column(
+        JSONB,
+        nullable=True,
+        comment="Additional data store for upstream use",
     )
     # AI part
     model = Column(
@@ -493,7 +498,7 @@ class AgentUpdate(BaseModel):
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
-                }
+                },
             },
         ),
     ]
@@ -509,7 +514,7 @@ class AgentUpdate(BaseModel):
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
-                }
+                },
             },
         ),
     ]
@@ -525,7 +530,7 @@ class AgentUpdate(BaseModel):
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
-                }
+                },
             },
         ),
     ]
@@ -546,6 +551,16 @@ class AgentUpdate(BaseModel):
             default=None,
             description="External reference ID for idempotent operations",
             max_length=100,
+            json_schema_extra={
+                "x-group": "internal",
+            },
+        ),
+    ]
+    upstream_extra: Annotated[
+        Optional[Dict[str, Any]],
+        PydanticField(
+            default=None,
+            description="Additional data store for upstream use",
             json_schema_extra={
                 "x-group": "internal",
             },
@@ -580,7 +595,7 @@ class AgentUpdate(BaseModel):
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
-                }
+                },
             },
         ),
     ]
@@ -595,7 +610,7 @@ class AgentUpdate(BaseModel):
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
-                }
+                },
             },
         ),
     ]
@@ -967,17 +982,20 @@ class AgentUpdate(BaseModel):
         """Validate that the text doesn't contain level 1 or level 2 headings."""
         if v is None:
             return v
-        
+
         import re
+
         # Check if any line starts with # or ## followed by a space
         if re.search(r"^(# |## )", v, re.MULTILINE):
-            raise ValueError("Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead.")
+            raise ValueError(
+                "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
+            )
         return v
 
     async def update(self, id: str) -> "Agent":
         # The validation is now handled by field validators
         # No need to call check_prompt() anymore
-        
+
         async with get_session() as db:
             db_agent = await db.get(AgentTable, id)
             if not db_agent:
@@ -1224,7 +1242,7 @@ class AgentResponse(Agent):
     ]
     has_twitter_linked: Annotated[
         bool,
-        PydanticField(description="Whether the agent has linked their Twitter account")
+        PydanticField(description="Whether the agent has linked their Twitter account"),
     ]
     linked_twitter_username: Annotated[
         Optional[str],
