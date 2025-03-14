@@ -310,3 +310,11 @@ You can store and retrieve a dict at these levels:
 You can use the [CdpClient](https://github.com/crestalnetwork/intentkit/blob/main/clients/cdp.py) to write on-chain skills.
 
 Get the agent id from context, then use agent id and self.store to initialize the CdpClient.
+
+### How to add api key to system level
+
+You may want to add an api key of specific service to the system level.
+Then every agent can share this api key, no longer need to add it in the config.
+
+When you contribute a new skill category, please add it in skill config first.
+If we find it is a common service, the IntentKit team will add it to the system level.
