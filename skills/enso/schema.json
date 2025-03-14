@@ -3,7 +3,7 @@
   "type": "object",
   "title": "Enso Skills",
   "description": "Configuration schema for Enso skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/enso/icon.jpg",
+  "x-icon": "https://ai.service.crestal.dev/skills/enso/enso.jpg",
   "x-tags": [
     "Blockchain"
   ],

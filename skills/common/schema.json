@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Common Utility Skills",
-  "description": "Configuration schema for common utility skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/common/icon.jpg",
+  "title": "Common Skills",
+  "description": "Configuration schema for Common skills",
+  "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
   "x-tags": [
     "Utility"
   ],
@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the current_time skill"
+          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation"
         }
       },
       "description": "States for each common utility skill (disabled, public, or private)"

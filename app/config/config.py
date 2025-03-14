@@ -110,6 +110,10 @@ class Config:
             "SLACK_ALERT_TOKEN"
         )  # For alert purposes only
         self.slack_alert_channel = self.load("SLACK_ALERT_CHANNEL")
+        # Skills
+        self.acolyt_api_key = self.load("ACOLYT_API_KEY")
+        self.allora_api_key = self.load("ALLORA_API_KEY")
+        self.elfa_api_key = self.load("ELFA_API_KEY")
         # Sentry
         self.sentry_dsn = self.load("SENTRY_DSN")
         self.sentry_sample_rate = float(self.load("SENTRY_SAMPLE_RATE", "0.1"))
