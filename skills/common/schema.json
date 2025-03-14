@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the current_time skill"
+          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation"
         }
       },
       "description": "States for each common utility skill (disabled, public, or private)"

@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_price_prediction skill"
+          "description": "Generates 6-hour price forecasts using ensemble ML models analyzing on-chain liquidity and market sentiment"
         }
       },
       "description": "States for each Allora skill (disabled, public, or private)"

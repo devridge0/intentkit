@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_mentions skill"
+          "description": "This tool uses the Elfa AI API to query hourly-updated tweets from \"smart accounts\" – accounts identified as influential or relevant – that have received at least 10 interactions (comments, retweets, quote tweets)."
         },
         "get_top_mentions": {
           "type": "string",
@@ -29,7 +29,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_top_mentions skill"
+          "description": "This tool uses the Elfa API to query tweets mentioning a specific stock ticker. The tweets are ranked by view count, providing insight into the most visible and potentially influential discussions surrounding the stock. The results are updated hourly, allowing for real-time monitoring of market sentiment."
         },
         "search_mentions": {
           "type": "string",
@@ -39,7 +39,7 @@
             "public",
             "private"
           ],
-          "description": "State of the search_mentions skill"
+          "description": "This tool uses the Elfa API to search tweets mentioning up to five keywords. It can search within the past 30 days of data, which is updated every 5 minutes, or access up to six months of historical tweet data."
         },
         "get_trending_tokens": {
           "type": "string",
@@ -49,7 +49,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_trending_tokens skill"
+          "description": "This tool ranks the most discussed tokens based on smart mentions count for a given period, with updates every 5 minutes via the Elfa API. Smart mentions provide a more sophisticated measure of discussion volume than simple keyword counts."
         },
         "get_smart_stats": {
           "type": "string",
@@ -59,7 +59,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_smart_stats skill"
+          "description": "This tool uses the Elfa API to retrieve key social media metrics for a given username. These metrics include Smart Following Count, Engagement Score, and Engagement Ratio."
         }
       },
       "description": "States for each Elfa skill (disabled, public, or private)"

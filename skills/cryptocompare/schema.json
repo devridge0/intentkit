@@ -20,7 +20,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_news skill"
+          "description": "This tool fetches the latest cryptocurrency news articles for a specific token.\nYou can optionally specify a timestamp to get historical news, otherwise it uses the current time.\nReturns articles in English with details like title, body, source, and publish time."
         },
         "fetch_price": {
           "type": "string",
@@ -30,7 +30,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_price skill"
+          "description": "Provides real-time cryptocurrency pricing with multi-exchange aggregation and historical comparisons"
         },
         "fetch_trading_signals": {
           "type": "string",
@@ -40,7 +40,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_trading_signals skill"
+          "description": "Generates technical analysis signals using indicators like RSI, MACD, and Bollinger Bands"
         },
         "fetch_top_market_cap": {
           "type": "string",
@@ -50,7 +50,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_top_market_cap skill"
+          "description": "Tracks top cryptocurrencies by market capitalization with sector breakdowns"
         },
         "fetch_top_exchanges": {
           "type": "string",
@@ -60,7 +60,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_top_exchanges skill"
+          "description": "Ranks cryptocurrency exchanges by liquidity and trading volume with market pair analysis"
         },
         "fetch_top_volume": {
           "type": "string",
@@ -70,7 +70,7 @@
             "public",
             "private"
           ],
-          "description": "State of the fetch_top_volume skill"
+          "description": "Analyzes 24h trading volume trends across exchanges and currency pairs"
         }
       },
       "description": "States for each CryptoCompare skill (disabled, public, or private)"
