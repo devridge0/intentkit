@@ -82,7 +82,9 @@ class AcolytAskGpt(AcolytBaseTool):
             Exception: If there's an error accessing the Acolyt API.
         """
         context = self.context_from_config(config)
-        api_key = context.config["api_key"]
+        api_key = self.get_api_key(context)
+        if not api_key:
+            raise ValueError("Acolyt API key not found")
 
         url = f"{base_url}/api/chat/completions"
         headers = {

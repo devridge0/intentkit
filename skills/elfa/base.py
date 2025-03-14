@@ -1,9 +1,9 @@
-from typing import Type
+from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
-from skills.base import IntentKitSkill
+from skills.base import IntentKitSkill, SkillContext
 
 base_url = "https://api.elfa.ai"
 
@@ -17,6 +17,11 @@ class ElfaBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
+
+    def get_api_key(self, context: SkillContext) -> Optional[str]:
+        if "api_key" in context.config and context.config["api_key"]:
+            return context.config["api_key"]
+        return self.skill_store.get_system_config("elfa_api_key")
 
     @property
     def category(self) -> str:
