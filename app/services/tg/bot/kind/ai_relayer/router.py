@@ -13,7 +13,7 @@ from app.services.tg.bot.filter.chat_type import GroupOnlyFilter
 from app.services.tg.bot.filter.content_type import TextOnlyFilter
 from app.services.tg.bot.filter.id import WhitelistedChatIDsFilter
 from app.services.tg.bot.filter.no_bot import NoBotFilter
-from app.services.tg.bot.utils.cleanup import remove_bot_name
+from app.services.tg.utils.cleanup import remove_bot_name
 from models.chat import AuthorType, ChatMessageCreate
 
 logger = logging.getLogger(__name__)
