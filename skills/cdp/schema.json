@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "State of the get_balance skill"
+          "description": "Provides real-time collateral/debt ratios with automatic currency conversion and risk threshold alerts. Final CDP balance description"
         }
       },
       "description": "States for each CDP skill (disabled, public, or private)"
