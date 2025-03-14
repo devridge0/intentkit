@@ -59,7 +59,7 @@ def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_elfa_skill(name, config["api_key"], store) for name in available_skills]
+    return [get_elfa_skill(name, store) for name in available_skills]
 
 
 def get_elfa_skill(
