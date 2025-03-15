@@ -461,6 +461,8 @@ async def get_agent(
         - 404: Agent not found
     """
     agent = await Agent.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get agent data
     agent_data = await AgentData.get(agent_id)
