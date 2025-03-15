@@ -152,7 +152,7 @@ async def debug_chat_history(
     db: AsyncSession = Depends(get_db),
 ) -> str:
     resp = f"Agent ID:\t{agent_id}\n\nChat ID:\t{chat_id}\n\n-------------------\n\n"
-    messages = await get_chat_history(agent_id, chat_id, db)
+    messages = await get_chat_history(agent_id, chat_id, user_id=None, db=db)
     if messages:
         resp += format_debug_messages(messages)
     else:
