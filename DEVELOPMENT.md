@@ -33,16 +33,20 @@ mv example.env .env
 docker compose up
 ```
 
-5. To create your first agent, check out the [agent creation guide](docs/agent.md) for development.
+5. To create your first agent:
+```bash
+cd scripts
+sh create.sh example
+```
 
 6. Try it out:
 ```bash
-curl "http://127.0.0.1:8000/admin/chat?q=Hello"
+curl "http://127.0.0.1:8000/example/chat?q=Hello"
 ```
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
 ### Local Development
-0. It's recommended to use [3.12](https://www.python.org/downloads/).
+0. It's recommended to use Python [3.12](https://www.python.org/downloads/).
 
 1. Clone the repository:
 ```bash
@@ -74,8 +78,27 @@ cp example.env .env
 # Run the API server in development mode
 uvicorn app.api:app --reload
 
-# Run the autonomous agent scheduler
-python -m app.autonomous
+# There are many other services, like autonomous agent scheduler, you can try them later
+# python -m app.autonomous
 ```
 
-Refer to "To create your first agent" and "Try it out" in the Docker section.
+5. To create your first agent:
+```bash
+cd scripts
+sh create.sh example
+```
+
+6. Try it out:
+```bash
+curl "http://127.0.0.1:8000/example/chat?q=Hello"
+```
+In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
+
+
+## What's Next
+
+More about the agent management, check out [Agent Management](docs/agent.md).
+
+You can visit the [API Docs](http://localhost:8000/redoc#tag/Agent) to learn more.
+
+You may want to contribute skills, check out [Skill Contributing](docs/contributing/skills.md).
