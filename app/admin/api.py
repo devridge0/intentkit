@@ -339,7 +339,6 @@ async def create_agent(
 
     # Create new agent
     await agent.check_upstream_id()
-    agent.check_prompt()
     latest_agent = await agent.create()
 
     # Process common post-creation actions
