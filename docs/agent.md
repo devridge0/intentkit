@@ -1,38 +1,50 @@
-# How to create an agent
+# Agent Management
 
-## Your First Agent
+## Use Shell Scripts
 
-Use the following bash script to create your first agent:
+We have provided some [helper shells](../scripts/) for your convenience.
 
-```bash
-curl -X POST http://127.0.0.1:8000/agents \
-     -H "Content-Type: application/json" \
-     -d '{
-         "id": "admin",
-         "name": "Admin",
-         "prompt": "You are an autonomous AI agent. Respond to user queries."
-     }'
-```
+When you use these scripts, make sure you have started the [api server in localhost](../DEVELOPMENT.md).
 
-## Advanced Agent Creation Script
-
-There are many fields that can control an agent's behavior.
-We have provided a [helper shell](create_agent.sh) for your convenience.
-To use it, modify the config fields in the script as necessary, then run:
+For example, we want to create an agent, id is `example`, first cd into the directory:
 
 ```bash
-./create_agent.sh
+cd scripts
 ```
+
+**Create Agent:**
+```bash
+sh create.sh example
+```
+
+Now you have a blank agent, let's add features to it.
+
+**Export Agent:**
+```bash
+sh export.sh example
+```
+
+Edit the agent config file: `example.yaml`. Then import it.
+
+**Import Agent:**
+```bash
+sh import.sh example
+```
+
+## Advanced Agent API
+
+You can visit the [API Docs](http://localhost:8000/redoc#tag/Agent) to learn more.
 
 ## The Prompt
-In agent config, there are 3 fields about prompt, they are `prompt`, `prompt_append` and `autonomous_prompt`.  
-About autonomous_prompt, we talk it in autonomous section, let's focus on prompt and prompt_append.
+In agent config, there are 6 fields about prompt, they are `purpose`, `personality`, `principles`, `prompt`, `prompt_append` and `autonomous_prompt`.  
+IntentKit will compose `purpose`, `personality`, `principles`, `prompt` to `system_prompt`.
+About autonomous_prompt, we talk it in autonomous section, let's focus on `system_prompt` and prompt_append.
 
 ### LLM Interaction
 The models cannot remember anything, so every time we interact with it, we have to provide all the 
 background information and interaction context (that is, additional knowledge and memory).  
 What we send to the large model looks something like this:
-- System: `prompt`
+- System: `system_prompt`
 - User: conversation history
 - Assistant: conversation history
 - ...
