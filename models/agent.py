@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import textwrap
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
@@ -618,7 +619,7 @@ class AgentUpdate(BaseModel):
         Optional[float],
         PydanticField(
             default=0.7,
-            description="AI model temperature parameter controlling response randomness (0.0~2.0)",
+            description="The randomness of the generated results is such that the higher the number, the more creative the results will be. However, this also makes them wilder and increases the likelihood of errors. For creative tasks, you can adjust it to above 1, but for rigorous tasks, such as quantitative trading, it's advisable to set it lower, around 0.2. (0.0~2.0)",
             ge=0.0,
             le=2.0,
             json_schema_extra={
@@ -630,7 +631,7 @@ class AgentUpdate(BaseModel):
         Optional[float],
         PydanticField(
             default=0.0,
-            description="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+            description="The frequency penalty is a measure of how much the AI is allowed to repeat itself. A lower value means the AI is more likely to repeat previous responses, while a higher value means the AI is more likely to generate new content. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
             ge=-2.0,
             le=2.0,
             json_schema_extra={
@@ -642,7 +643,7 @@ class AgentUpdate(BaseModel):
         Optional[float],
         PydanticField(
             default=0.0,
-            description="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+            description="The presence penalty is a measure of how much the AI is allowed to deviate from the topic. A higher value means the AI is more likely to deviate from the topic, while a lower value means the AI is more likely to follow the topic. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
             ge=-2.0,
             le=2.0,
             json_schema_extra={
@@ -1115,6 +1116,18 @@ class Agent(AgentCreate):
         data = {}
         yaml_lines = []
 
+        def wrap_text(text: str, width: int = 80, prefix: str = "# ") -> list[str]:
+            """Wrap text to specified width, preserving existing line breaks."""
+            lines = []
+            for paragraph in text.split("\n"):
+                if not paragraph:
+                    lines.append(prefix.rstrip())
+                    continue
+                # Use textwrap to wrap each paragraph
+                wrapped = textwrap.wrap(paragraph, width=width - len(prefix))
+                lines.extend(prefix + line for line in wrapped)
+            return lines
+
         # Get the field names from AgentUpdate model for filtering
         agent_update_fields = set(AgentUpdate.model_fields.keys())
 
@@ -1141,15 +1154,16 @@ class Agent(AgentCreate):
             if description:
                 if len(yaml_lines) > 0:  # Add blank line between fields
                     yaml_lines.append("")
-                # Split description into multiple lines if too long
-                desc_lines = [f"# {line}" for line in description.split("\n")]
-                yaml_lines.extend(desc_lines)
+                # Split and wrap description into multiple lines
+                yaml_lines.extend(wrap_text(description))
 
             # Check if the field is deprecated and add deprecation notice
             if is_deprecated:
                 # Add deprecation message
                 if hasattr(field, "deprecation_message") and field.deprecation_message:
-                    yaml_lines.append(f"# Deprecated: {field.deprecation_message}")
+                    yaml_lines.extend(
+                        wrap_text(f"Deprecated: {field.deprecation_message}")
+                    )
                 else:
                     yaml_lines.append("# Deprecated")
 
@@ -1410,7 +1424,7 @@ class AgentDataTable(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
-        onupdate=func.now(),
+        onupdate=lambda: datetime.now(timezone.utc),
         comment="Timestamp when the agent data was last updated",
     )
 

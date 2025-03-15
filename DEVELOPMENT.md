@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-### Docker (Recommended)
+### Docker (When you just want to have a quick try)
 0. Install [Docker](https://docs.docker.com/get-started/get-docker/).
 
 1. Create a new directory and navigate into it:
@@ -33,7 +33,7 @@ mv example.env .env
 docker compose up
 ```
 
-5. To create your first agent, check out the [agent creation guide](docs/create_agent.md) for development.
+5. To create your first agent, check out the [agent creation guide](docs/agent.md) for development.
 
 6. Try it out:
 ```bash
@@ -42,7 +42,7 @@ curl "http://127.0.0.1:8000/admin/chat?q=Hello"
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
 ### Local Development
-0. Python 3.11-3.12 are supported versions, and it's recommended to use [3.12](https://www.python.org/downloads/).
+0. It's recommended to use [3.12](https://www.python.org/downloads/).
 
 1. Clone the repository:
 ```bash
@@ -66,7 +66,7 @@ Read [Configuration](docs/configuration.md) for detailed settings. Then create y
 ```bash
 cp example.env .env
 # Edit .env with your configuration
-# OPENAI_API_KEY and DB_* are all required
+# OPENAI_API_KEY and DB_* are required
 ```
 
 4. Run the application:
