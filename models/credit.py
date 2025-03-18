@@ -37,6 +37,7 @@ class OwnerType(str, Enum):
     PLATFORM = "platform"
 
 
+# Platform virtual account ids, they are used for transaction balance tracing
 DEFAULT_PLATFORM_ACCOUNT_RECHARGE = "platform_recharge"
 DEFAULT_PLATFORM_ACCOUNT_DAILY_RESET = "platform_daily_reset"
 DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT = "platform_adjustment"
