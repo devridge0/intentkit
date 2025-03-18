@@ -1,17 +1,17 @@
 import logging
 from typing import Annotated, List, Optional
 
-from config import config
 from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, Field
 
-from app.admin.auth import create_jwt_middleware
+from app.config.config import config
 from models.credit import (
     CreditAccount,
     CreditEvent,
     CreditType,
     OwnerType,
 )
+from utils.middleware import create_jwt_middleware
 
 logger = logging.getLogger(__name__)
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
@@ -172,7 +172,7 @@ async def update_account_daily_quota(
 )
 async def list_user_expense_events(
     user_id: str,
-    cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
 ) -> List[CreditEvent]:
     """List all expense events for a user account.
 
@@ -192,7 +192,7 @@ async def list_user_expense_events(
 )
 async def list_user_income_events(
     user_id: str,
-    cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
 ) -> List[CreditEvent]:
     """List all income events for a user account.
 
@@ -212,7 +212,7 @@ async def list_user_income_events(
 )
 async def list_agent_income_events(
     agent_id: str,
-    cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
 ) -> List[CreditEvent]:
     """List all income events for an agent account.
 
