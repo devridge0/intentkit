@@ -310,6 +310,14 @@ class EventType(str, Enum):
     DAILY_RESET = "daily_reset"
 
 
+class UpstreamType(str, Enum):
+    """Type of upstream transaction."""
+
+    API = "api"
+    SCHEDULER = "scheduler"
+    EXECUTOR = "executor"
+
+
 class Direction(str, Enum):
     """Direction of credit flow."""
 
@@ -333,9 +341,13 @@ class CreditEventTable(Base):
         String,
         nullable=False,
     )
+    upstream_type = Column(
+        String,
+        nullable=False,
+    )
     upstream_tx_id = Column(
         String,
-        nullable=True,
+        nullable=False,
     )
     start_message_id = Column(
         String,
@@ -423,11 +435,13 @@ class CreditEvent(BaseModel):
         ),
     ]
     event_type: Annotated[EventType, Field(description="Type of the event")]
-    upstream_tx_id: Annotated[
-        Optional[str], Field(None, description="Upstream transaction ID if any")
+    upstream_type: Annotated[
+        UpstreamType, Field(description="Type of upstream transaction")
     ]
+    upstream_tx_id: Annotated[str, Field(description="Upstream transaction ID if any")]
     start_message_id: Annotated[
-        Optional[str], Field(None, description="ID of the starting message if applicable")
+        Optional[str],
+        Field(None, description="ID of the starting message if applicable"),
     ]
     message_id: Annotated[
         Optional[str], Field(None, description="ID of the message if applicable")

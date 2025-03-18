@@ -16,16 +16,17 @@ from models.credit import (
 logger = logging.getLogger(__name__)
 verify_jwt = create_jwt_middleware(config.admin_auth_enabled, config.admin_jwt_secret)
 
-admin_router_readonly = APIRouter()
-admin_router = APIRouter()
-
-router = APIRouter(prefix="/credit", tags=["credit"])
+credit_router = APIRouter(prefix="/credit", tags=["Credit"])
+credit_router_readonly = APIRouter(prefix="/credit", tags=["Credit"])
 
 
 # ===== Input models =====
 class RechargeRequest(BaseModel):
     """Request model for recharging a user account."""
 
+    upstream_tx_id: Annotated[
+        str, Field(str, description="Upstream transaction ID, idempotence Check")
+    ]
     user_id: Annotated[str, Field(description="ID of the user to recharge")]
     amount: Annotated[float, Field(gt=0, description="Amount to recharge")]
     note: Annotated[
@@ -36,6 +37,9 @@ class RechargeRequest(BaseModel):
 class RewardRequest(BaseModel):
     """Request model for rewarding a user account."""
 
+    upstream_tx_id: Annotated[
+        str, Field(str, description="Upstream transaction ID, idempotence Check")
+    ]
     user_id: Annotated[str, Field(description="ID of the user to reward")]
     amount: Annotated[float, Field(gt=0, description="Amount to reward")]
     note: Annotated[
@@ -46,6 +50,9 @@ class RewardRequest(BaseModel):
 class AdjustmentRequest(BaseModel):
     """Request model for adjusting a user account."""
 
+    upstream_tx_id: Annotated[
+        str, Field(str, description="Upstream transaction ID, idempotence Check")
+    ]
     user_id: Annotated[str, Field(description="ID of the user to adjust")]
     credit_type: Annotated[CreditType, Field(description="Type of credit to adjust")]
     amount: Annotated[
@@ -63,7 +70,7 @@ class CreditEventResponse(BaseModel):
 
 
 # ===== API Endpoints =====
-@router.get("/accounts/{owner_type}/{owner_id}", response_model=CreditAccount)
+@credit_router.get("/accounts/{owner_type}/{owner_id}", response_model=CreditAccount)
 async def get_account(owner_type: OwnerType, owner_id: str):
     """Get a credit account by owner type and ID.
 
@@ -78,7 +85,9 @@ async def get_account(owner_type: OwnerType, owner_id: str):
     pass
 
 
-@router.post("/recharge", response_model=CreditAccount, status_code=status.HTTP_200_OK)
+@credit_router.post(
+    "/recharge", response_model=CreditAccount, status_code=status.HTTP_200_OK
+)
 async def recharge_user_account(request: RechargeRequest):
     """Recharge a user account with credits.
 
@@ -92,7 +101,9 @@ async def recharge_user_account(request: RechargeRequest):
     pass
 
 
-@router.post("/reward", response_model=CreditAccount, status_code=status.HTTP_200_OK)
+@credit_router.post(
+    "/reward", response_model=CreditAccount, status_code=status.HTTP_200_OK
+)
 async def reward_user_account(request: RewardRequest):
     """Reward a user account with credits.
 
@@ -106,7 +117,9 @@ async def reward_user_account(request: RewardRequest):
     pass
 
 
-@router.post("/adjust", response_model=CreditAccount, status_code=status.HTTP_200_OK)
+@credit_router.post(
+    "/adjust", response_model=CreditAccount, status_code=status.HTTP_200_OK
+)
 async def adjust_user_account(request: AdjustmentRequest):
     """Adjust a user account's credits.
 
@@ -120,7 +133,9 @@ async def adjust_user_account(request: AdjustmentRequest):
     pass
 
 
-@router.get("/event/users/{user_id}/expense", response_model=List[CreditEvent])
+@credit_router_readonly.get(
+    "/event/users/{user_id}/expense", response_model=List[CreditEvent]
+)
 async def list_user_expense_events(
     user_id: str,
     cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
@@ -138,7 +153,9 @@ async def list_user_expense_events(
     pass
 
 
-@router.get("/event/users/{user_id}/income", response_model=List[CreditEvent])
+@credit_router_readonly.get(
+    "/event/users/{user_id}/income", response_model=List[CreditEvent]
+)
 async def list_user_income_events(
     user_id: str,
     cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
@@ -156,7 +173,9 @@ async def list_user_income_events(
     pass
 
 
-@router.get("/event/agents/{agent_id}/income", response_model=List[CreditEvent])
+@credit_router_readonly.get(
+    "/event/agents/{agent_id}/income", response_model=List[CreditEvent]
+)
 async def list_agent_income_events(
     agent_id: str,
     cursor: Annotated[str, Query(None, description="Cursor for pagination")] = None,
