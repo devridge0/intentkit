@@ -1,6 +1,7 @@
 import inspect
 import logging
 
+import telegramify_markdown
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
@@ -91,8 +92,10 @@ async def gp_process_message(message: Message) -> None:
             )
             response = await execute_agent(input)
             await message.answer(
-                text=response[-1].message if response else "Server Error",
-                parse_mode="Markdown",
+                text=telegramify_markdown.markdownify(
+                    response[-1].message if response else "Server Error"
+                ),
+                parse_mode="MarkdownV2",
                 reply_to_message_id=message.message_id,
             )
         except Exception as e:
@@ -141,8 +144,10 @@ async def process_message(message: Message) -> None:
         )
         response = await execute_agent(input)
         await message.answer(
-            text=response[-1].message if response else "Server Error",
-            parse_mode="Markdown",
+            text=telegramify_markdown.markdownify(
+                response[-1].message if response else "Server Error"
+            ),
+            parse_mode="MarkdownV2",
             reply_to_message_id=message.message_id,
         )
     except Exception as e:

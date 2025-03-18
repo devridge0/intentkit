@@ -10,7 +10,7 @@
 
 - [Configuration](configuration.md)
 - [LLM](llm.md)
-- [Create an Agent](create_agent.md)
+- [Create an Agent](agent.md)
 
 ## Contributing
 
