@@ -146,18 +146,17 @@ async def adjust_user_account(request: AdjustmentRequest):
 
 
 @credit_router.put(
-    "/accounts/{owner_type}/{owner_id}/daily-quota",
+    "/accounts/users/{user_id}/daily-quota",
     response_model=CreditAccount,
     status_code=status.HTTP_200_OK,
 )
 async def update_account_daily_quota(
-    owner_type: OwnerType, owner_id: str, request: UpdateDailyQuotaRequest
+    user_id: str, request: UpdateDailyQuotaRequest
 ) -> CreditAccount:
     """Update the daily quota of a credit account.
 
     Args:
-        owner_type: Type of the owner (user, agent, platform)
-        owner_id: ID of the owner
+        user_id: ID of the user
         request: Update request details including new daily_quota and explanation note
 
     Returns:
