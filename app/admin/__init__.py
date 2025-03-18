@@ -7,4 +7,6 @@ __all__ = [
     "admin_router_readonly",
     "health_router",
     "schema_router_readonly",
+    "credit_router",
+    "credit_router_readonly",
 ]
