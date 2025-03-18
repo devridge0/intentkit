@@ -61,6 +61,18 @@ class AdjustmentRequest(BaseModel):
     note: Annotated[str, Field(description="Required explanation for the adjustment")]
 
 
+class UpdateDailyQuotaRequest(BaseModel):
+    """Request model for updating account daily quota."""
+
+    upstream_tx_id: Annotated[
+        str, Field(str, description="Upstream transaction ID, idempotence Check")
+    ]
+    daily_quota: Annotated[
+        float, Field(gt=0, description="New daily quota value for the account")
+    ]
+    note: Annotated[str, Field(description="Explanation for changing the daily quota")]
+
+
 # ===== Output models =====
 class CreditEventResponse(BaseModel):
     """Response model for credit events."""
@@ -125,6 +137,28 @@ async def adjust_user_account(request: AdjustmentRequest):
 
     Args:
         request: Adjustment request details
+
+    Returns:
+        The updated credit account
+    """
+    # Implementation will be added later
+    pass
+
+
+@credit_router.put(
+    "/accounts/{owner_type}/{owner_id}/daily-quota",
+    response_model=CreditAccount,
+    status_code=status.HTTP_200_OK,
+)
+async def update_account_daily_quota(
+    owner_type: OwnerType, owner_id: str, request: UpdateDailyQuotaRequest
+) -> CreditAccount:
+    """Update the daily quota of a credit account.
+
+    Args:
+        owner_type: Type of the owner (user, agent, platform)
+        owner_id: ID of the owner
+        request: Update request details including new daily_quota and explanation note
 
     Returns:
         The updated credit account
