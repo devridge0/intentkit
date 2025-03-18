@@ -123,7 +123,7 @@ async def _process_agent_post_actions(
 
     # Send Slack notification
     slack_message = slack_message or ("Agent Created" if is_new else "Agent Updated")
-    await _send_agent_notification(agent, wallet_data, slack_message)
+    _send_agent_notification(agent, agent_data, wallet_data, slack_message)
 
     return agent_data
 
@@ -166,13 +166,14 @@ async def _process_telegram_config(agent: Agent, agent_data: AgentData) -> None:
             )
 
 
-async def _send_agent_notification(
-    agent: Agent, wallet_data: dict, message: str
+def _send_agent_notification(
+    agent: Agent, agent_data: AgentData, wallet_data: dict, message: str
 ) -> None:
     """Send a notification about agent creation or update.
 
     Args:
         agent: The agent that was created or updated
+        agent_data: The agent data to update
         wallet_data: The agent's wallet data
         message: The notification message
     """
@@ -183,7 +184,7 @@ async def _send_agent_notification(
                 "color": "good",
                 "fields": [
                     {"title": "ENV", "short": True, "value": config.env},
-                    {"title": "Total", "short": True, "value": await Agent.count()},
+                    {"title": "Number", "short": True, "value": agent.number},
                     {"title": "ID", "short": True, "value": agent.id},
                     {"title": "Name", "short": True, "value": agent.name},
                     {"title": "Model", "short": True, "value": agent.model},
@@ -191,6 +192,21 @@ async def _send_agent_notification(
                         "title": "GOAT Enabled",
                         "short": True,
                         "value": str(agent.goat_enabled),
+                    },
+                    {
+                        "title": "Twitter Username",
+                        "short": True,
+                        "value": agent_data.twitter_username,
+                    },
+                    {
+                        "title": "Telegram Enabled",
+                        "short": True,
+                        "value": str(agent.telegram_entrypoint_enabled),
+                    },
+                    {
+                        "title": "Telegram Username",
+                        "short": True,
+                        "value": agent_data.telegram_username,
                     },
                     {
                         "title": "CDP Enabled",
@@ -203,32 +219,16 @@ async def _send_agent_notification(
                         "value": agent.cdp_network_id or "Default",
                     },
                     {
-                        "title": "Autonomous",
-                        "short": True,
-                        "value": str(agent.autonomous_enabled),
-                    },
-                    {
-                        "title": "Autonomous Interval",
-                        "short": True,
-                        "value": str(agent.autonomous_minutes),
-                    },
-                    {
-                        "title": "Twitter Entrypoint",
-                        "short": True,
-                        "value": str(agent.twitter_entrypoint_enabled),
-                    },
-                    {
-                        "title": "Telegram Entrypoint",
-                        "short": True,
-                        "value": str(agent.telegram_entrypoint_enabled),
-                    },
-                    {
-                        "title": "Twitter Skills",
-                        "value": str(agent.twitter_skills),
-                    },
-                    {
                         "title": "CDP Wallet Address",
                         "value": wallet_data.get("default_address_id"),
+                    },
+                    {
+                        "title": "Autonomous",
+                        "value": str(agent.autonomous),
+                    },
+                    {
+                        "title": "Skills",
+                        "value": str(agent.skills),
                     },
                 ],
             }
@@ -339,7 +339,6 @@ async def create_agent(
 
     # Create new agent
     await agent.check_upstream_id()
-    agent.check_prompt()
     latest_agent = await agent.create()
 
     # Process common post-creation actions
@@ -462,6 +461,8 @@ async def get_agent(
         - 404: Agent not found
     """
     agent = await Agent.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
 
     # Get agent data
     agent_data = await AgentData.get(agent_id)

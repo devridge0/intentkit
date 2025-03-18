@@ -34,7 +34,7 @@ This project is currently in alpha stage and is not recommended for production u
   Agent Config  │     ┌───────────────▼────────────────┐     │  Chain Integration   
                 │     │                                │     │                      
   Credentials   │     │                                │     │  Wallet Management   
-                │     │           The  Agent           │     │                      
+                │     │           The Agent            │     │                      
   Personality   │     │                                │     │  On-Chain Actions    
                 │     │                                │     │                      
   Memory        │     │      Powered by LangGraph      │     │  Internet Search     
@@ -77,7 +77,10 @@ Check out [Documentation](docs/) before you start.
   - [readonly.py](app/readonly.py): Readonly entrypoint
   - [twitter.py](app/twitter.py): Twitter listener
   - [telegram.py](app/telegram.py): Telegram listener
+- [clients/](clients/): Clients for external services
+- [docs/](docs/): Documentation
 - [models/](models/): Database models
+- [scripts/](scripts/): Scripts for agent management
 - [skills/](skills/): Skill implementations
 - [plugins/](plugins/): Reserved for Plugin implementations
 - [utils/](utils/): Utility functions
