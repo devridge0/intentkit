@@ -23,7 +23,7 @@ class SlackGetChannelSchema(BaseModel):
 class SlackGetChannel(SlackBaseTool):
     """Tool for getting information about a Slack channel."""
 
-    name = "get_channel"
+    name = "slack_get_channel"
     description = "Get information about a Slack channel by ID or name"
     args_schema = SlackGetChannelSchema
     skill_store: SkillStoreABC

@@ -174,6 +174,8 @@ async def initialize_agent(aid, is_private=False):
 
     if agent.skills:
         for k, v in agent.skills.items():
+            if not v.get("enabled", False):
+                continue
             try:
                 skill_module = importlib.import_module(f"skills.{k}")
                 if hasattr(skill_module, "get_skills"):

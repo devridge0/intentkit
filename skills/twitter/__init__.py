@@ -33,6 +33,7 @@ class SkillStates(TypedDict):
 class Config(SkillConfig, TwitterClientConfig):
     """Configuration for Twitter skills."""
 
+    enabled: bool
     states: SkillStates
 
 

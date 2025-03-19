@@ -29,7 +29,7 @@ class SlackScheduleMessageSchema(BaseModel):
 class SlackScheduleMessage(SlackBaseTool):
     """Tool for scheduling messages to be sent to a Slack channel or thread."""
 
-    name = "schedule_message"
+    name = "slack_schedule_message"
     description = (
         "Schedule a message to be sent to a Slack channel or thread at a specific time"
     )

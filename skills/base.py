@@ -18,6 +18,7 @@ SkillState = Literal["disabled", "public", "private"]
 class SkillConfig(TypedDict):
     """Abstract base class for skill configuration."""
 
+    enabled: bool
     states: Dict[str, SkillState]
     __extra__: NotRequired[Dict[str, Any]]
 
