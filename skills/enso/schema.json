@@ -8,41 +8,99 @@
     "Blockchain"
   ],
   "properties": {
-    "public_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "get_networks",
-          "get_tokens",
-          "get_prices",
-          "route_shortcut",
-          "get_wallet_approvals",
-          "get_wallet_balances",
-          "wallet_approve"
-        ]
-      },
-      "description": "List of public skills that are available to all users"
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
     },
-    "private_skills": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "get_networks",
-          "get_tokens",
-          "get_prices",
-          "route_shortcut",
-          "get_wallet_approvals",
-          "get_wallet_balances",
-          "wallet_approve"
-        ]
+    "states": {
+      "type": "object",
+      "properties": {
+        "get_networks": {
+          "type": "string",
+          "title": "Get Networks",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Retrieve networks supported by the Enso API",
+          "default": "disabled"
+        },
+        "get_tokens": {
+          "type": "string",
+          "title": "Get Tokens",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Enso Finance Token Information Tool: Retrieves detailed token information from the Enso Finance API, including APY, symbol, address, protocol slug, token type, and underlying tokens.",
+          "default": "disabled"
+        },
+        "get_prices": {
+          "type": "string",
+          "title": "Get Prices",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Retrieve the price of a token by chain ID and contract address",
+          "default": "disabled"
+        },
+        "get_wallet_approvals": {
+          "type": "string",
+          "title": "Get Wallet Approvals",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Retrieve token spend approvals for a wallet on a specified blockchain network.",
+          "default": "disabled"
+        },
+        "get_wallet_balances": {
+          "type": "string",
+          "title": "Get Wallet Balances",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Retrieve token balances of a wallet on a specified blockchain network.",
+          "default": "disabled"
+        },
+        "wallet_approve": {
+          "type": "string",
+          "title": "Wallet Approve",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token.",
+          "default": "disabled"
+        },
+        "route_shortcut": {
+          "type": "string",
+          "title": "Route Shortcut",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId.",
+          "default": "disabled"
+        }
       },
-      "description": "List of private skills that are only available to privileged users"
+      "description": "States for each Enso skill (disabled, public, or private)"
     },
     "api_token": {
       "type": "string",
-      "description": "Enso API token"
+      "title": "API Token",
+      "description": "Enso API token for authentication"
     },
     "main_tokens": {
       "type": "array",
@@ -53,9 +111,9 @@
     }
   },
   "required": [
-    "public_skills",
-    "api_token",
-    "main_tokens"
+    "states",
+    "main_tokens",
+    "enabled"
   ],
   "additionalProperties": true
 }

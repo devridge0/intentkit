@@ -2,10 +2,12 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from skills.base import SkillContext
 from skills.enso.abi.route import ABI_ROUTE
-from skills.enso.networks import EnsoGetNetworks, EnsoGetNetworksInput
+from skills.enso.networks import EnsoGetNetworks
 from utils.tx import EvmContractWrapper
 
 from .base import EnsoBaseTool, base_url, default_chain_id
@@ -16,7 +18,7 @@ class EnsoRouteShortcutInput(BaseModel):
     Input model for finding best route for swap or deposit.
     """
 
-    broadcast_requested: bool | None = Field(
+    broadcast_requested: bool = Field(
         False,
         description="Whether to broadcast the transaction or not, this is false by default.",
     )
@@ -159,32 +161,15 @@ class EnsoRouteShortcut(EnsoBaseTool):
     description: str = "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId."
     args_schema: Type[BaseModel] = EnsoRouteShortcutInput
 
-    def _run(
-        self,
-        amountIn: list[int],
-        tokenIn: list[str],
-        tokenOut: list[str],
-        chainId: int = default_chain_id,
-        broadcast_requested: bool | None = False,
-    ) -> EnsoRouteShortcutOutput:
-        """
-        Run the tool to get swap route information.
-
-        Returns:
-            EnsoRouteShortcutOutput: The response containing route shortcut information.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
         amountIn: list[int],
         tokenIn: list[str],
         tokenOut: list[str],
+        config: RunnableConfig,
         chainId: int = default_chain_id,
-        broadcast_requested: bool | None = False,
+        broadcast_requested: bool = False,
+        **kwargs,
     ) -> EnsoRouteShortcutOutput:
         """
         Run the tool to get swap route information.
@@ -200,11 +185,17 @@ class EnsoRouteShortcut(EnsoBaseTool):
             EnsoRouteShortcutOutput: The response containing route shortcut information.
         """
 
+        context: SkillContext = self.context_from_config(config)
+        agent_id = context.agent.id
+        api_token = self.get_api_token(context)
+        chain_provider = self.get_chain_provider(context)
+        wallet = await self.get_wallet(context)
+
         async with httpx.AsyncClient() as client:
             try:
                 network_name = None
                 networks = await self.skill_store.get_agent_skill_data(
-                    self.agent_id, "enso_get_networks", "networks"
+                    agent_id, "enso_get_networks", "networks"
                 )
 
                 if networks:
@@ -215,12 +206,8 @@ class EnsoRouteShortcut(EnsoBaseTool):
                     )
                 if network_name is None:
                     networks = await EnsoGetNetworks(
-                        api_token=self.api_token,
-                        main_tokens=self.main_tokens,
                         skill_store=self.skill_store,
-                        agent_store=self.agent_store,
-                        agent_id=self.agent_id,
-                    ).arun(EnsoGetNetworksInput())
+                    ).arun(config)
 
                     for network in networks.res:
                         if network.id == chainId:
@@ -233,11 +220,11 @@ class EnsoRouteShortcut(EnsoBaseTool):
 
                 headers = {
                     "accept": "application/json",
-                    "Authorization": f"Bearer {self.api_token}",
+                    "Authorization": f"Bearer {api_token}",
                 }
 
                 token_decimals = await self.skill_store.get_agent_skill_data(
-                    self.agent_id,
+                    agent_id,
                     "enso_get_tokens",
                     "decimals",
                 )
@@ -267,7 +254,7 @@ class EnsoRouteShortcut(EnsoBaseTool):
                     tokenOut=tokenOut,
                 ).model_dump(exclude_none=True)
 
-                params["fromAddress"] = self.wallet.addresses[0].address_id
+                params["fromAddress"] = wallet.addresses[0].address_id
 
                 response = await client.get(url, headers=headers, params=params)
                 response.raise_for_status()  # Raise HTTPError for non-2xx responses
@@ -281,9 +268,7 @@ class EnsoRouteShortcut(EnsoBaseTool):
                 )
 
                 if broadcast_requested:
-                    rpc_url = self.chain_provider.get_chain_config_by_id(
-                        chainId
-                    ).rpc_url
+                    rpc_url = chain_provider.get_chain_config_by_id(chainId).rpc_url
                     contract = EvmContractWrapper(
                         rpc_url, ABI_ROUTE, json_dict.get("tx")
                     )
@@ -292,7 +277,7 @@ class EnsoRouteShortcut(EnsoBaseTool):
 
                     fn_args["amountIn"] = str(fn_args["amountIn"])
 
-                    invocation = self.wallet.invoke_contract(
+                    invocation = wallet.invoke_contract(
                         contract_address=contract.dst_addr,
                         method=fn.fn_name,
                         abi=ABI_ROUTE,

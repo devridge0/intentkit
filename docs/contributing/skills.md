@@ -37,6 +37,7 @@ After creating a new skill category folder in `skills/`, you need to add these 4
 - `your_skill_name.py` - Defines the first skill implementation in the new category
 - `__init__.py` - Defines how to instantiate and retrieve the skills in this category
 - `schema.json` - Defines the config JSON schema for this skill category to help users understand the configuration options
+- An icon for the skill category, png/svg/jpg/jpeg is supported. Tips: most of the time you can easily find the icon from their github organization or X account.
 
 Let's use `common/current_time` as an example.
 
@@ -246,7 +247,7 @@ class YourSkillInput(BaseModel):
     bar: int = Field(description="An integer parameter")
 
 class YourSkill(TwitterBaseTool):
-    async def _arun(self, config: RunnableConfig = None, **kwargs) -> str:
+    async def _arun(self, config: RunnableConfig, **kwargs) -> str:
         context = self.context_from_config(config)
         print(context)
         return f"I'm running in agent {context.agent.id}"
@@ -261,6 +262,8 @@ class SkillContext(BaseModel):
     user_id: str
     entrypoint: Literal["web", "twitter", "telegram", "trigger"]
 ```
+
+If you have optional parameters in _arun, you can put them after `config: RunnableConfig`. Because the agent always use parameter name to pass the parameters.
 
 ### How to add custom skill config
 

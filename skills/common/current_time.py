@@ -32,7 +32,7 @@ class CurrentTime(CommonBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "current_time"
+    name: str = "common_current_time"
     description: str = (
         "Get the current time, converted to a specified timezone.\n"
         "You must call this tool whenever the user asks for the time."

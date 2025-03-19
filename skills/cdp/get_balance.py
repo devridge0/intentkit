@@ -30,7 +30,7 @@ class GetBalance(CDPBaseTool):
     skill_store: SkillStoreABC
     wallet: Wallet | None = None
 
-    name: str = "get_balance"
+    name: str = "cdp_get_balance"
     description: str = (
         "This tool will get the balance of all the addresses in the wallet for a given asset. It takes the asset ID as input."
         "Always use 'eth' for the native asset ETH and 'usdc' for USDC. "
