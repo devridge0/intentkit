@@ -50,12 +50,19 @@
         "type": "string"
       },
       "description": "List of main tokens to use"
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
     "public_skills",
     "api_token",
-    "main_tokens"
+    "main_tokens",
+    "enabled"
   ],
   "additionalProperties": true
 }

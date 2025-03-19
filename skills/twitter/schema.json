@@ -117,10 +117,17 @@
       "title": "Twitter API access token secret",
       "description": "Twitter API access token secret",
       "maxLength": 100
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
-    "states"
+    "states",
+    "enabled"
   ],
   "additionalProperties": true
 }

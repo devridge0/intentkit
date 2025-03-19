@@ -19,7 +19,7 @@
             "public",
             "private"
           ],
-          "description": "This tool uses the Elfa AI API to query hourly-updated tweets from \"smart accounts\" – accounts identified as influential or relevant – that have received at least 10 interactions (comments, retweets, quote tweets)."
+          "description": "This tool uses the Elfa AI API to query hourly-updated tweets from \"smart accounts\" \u2013 accounts identified as influential or relevant \u2013 that have received at least 10 interactions (comments, retweets, quote tweets)."
         },
         "get_top_mentions": {
           "type": "string",
@@ -68,10 +68,17 @@
       "type": "string",
       "title": "Elfa API Key",
       "description": "Elfa API key for authentication"
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
-    "states"
+    "states",
+    "enabled"
   ],
   "additionalProperties": true
 }

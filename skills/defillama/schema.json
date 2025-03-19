@@ -9,122 +9,223 @@
       "properties": {
         "fetch_batch_historical_prices": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch batch historical prices"
         },
         "fetch_block": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch block"
         },
         "fetch_current_prices": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch current prices"
         },
         "fetch_first_price": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Retrieves inaugural trading price data for assets with historical context"
         },
         "fetch_historical_prices": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch historical prices"
         },
         "fetch_price_chart": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch price chart"
         },
         "fetch_price_percentage": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch price percentage"
         },
         "fetch_fees_overview": {
           "type": "string",
           "title": "Fetch Fees Overview",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Provides aggregated fee statistics across DEXs, lending protocols, and other fee-generating DeFi primitives"
         },
         "fetch_stablecoin_chains": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Shows blockchain distribution of stablecoin supply with chain-specific circulation metrics"
         },
         "fetch_stablecoin_charts": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Generates historical charts for stablecoin market cap, supply changes, and chain dominance"
         },
         "fetch_stablecoin_prices": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch stablecoin prices"
         },
         "fetch_stablecoins": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch stablecoins"
         },
         "fetch_chain_historical_tvl": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Retrieves historical TVL data for specific blockchain chains with daily granularity"
         },
         "fetch_chains": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch chains"
         },
         "fetch_historical_tvl": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Provides historical TVL trends for the entire DeFi ecosystem or specific protocol categories"
         },
         "fetch_protocol": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch protocol"
         },
         "fetch_protocol_current_tvl": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch protocol current TVL"
         },
         "fetch_protocols": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Retrieves comprehensive list of all tracked DeFi protocols with their category, chain, and TVL data"
         },
         "fetch_dex_overview": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Provides aggregated DEX metrics including total volume, top trading pairs, and liquidity distribution"
         },
         "fetch_dex_summary": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch dex summary"
         },
         "fetch_options_overview": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch options overview"
         },
         "fetch_pool_chart": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch pool chart"
         },
         "fetch_pools": {
           "type": "string",
-          "enum": ["disabled", "public", "private"],
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
           "description": "Fetch pools"
         }
       }
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
-  "required": ["states"]
+  "required": [
+    "states",
+    "enabled"
+  ]
 }

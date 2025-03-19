@@ -29,11 +29,18 @@
       "type": "string",
       "title": "Acolyt API Key",
       "description": "Acolyt API key for authentication"
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
     "states",
-    "api_key"
+    "api_key",
+    "enabled"
   ],
   "additionalProperties": true
 }
