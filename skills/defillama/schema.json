@@ -4,6 +4,12 @@
   "title": "DeFi Llama Skills Configuration",
   "description": "Configuration schema for DeFi Llama skills",
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -14,7 +20,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch batch historical prices"
+          "description": "Fetch batch historical prices",
+          "default": "disabled"
         },
         "fetch_block": {
           "type": "string",
@@ -23,7 +30,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch block"
+          "description": "Fetch block",
+          "default": "disabled"
         },
         "fetch_current_prices": {
           "type": "string",
@@ -32,7 +40,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch current prices"
+          "description": "Fetch current prices",
+          "default": "disabled"
         },
         "fetch_first_price": {
           "type": "string",
@@ -41,7 +50,8 @@
             "public",
             "private"
           ],
-          "description": "Retrieves inaugural trading price data for assets with historical context"
+          "description": "Retrieves inaugural trading price data for assets with historical context",
+          "default": "disabled"
         },
         "fetch_historical_prices": {
           "type": "string",
@@ -50,7 +60,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch historical prices"
+          "description": "Fetch historical prices",
+          "default": "disabled"
         },
         "fetch_price_chart": {
           "type": "string",
@@ -59,7 +70,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch price chart"
+          "description": "Fetch price chart",
+          "default": "disabled"
         },
         "fetch_price_percentage": {
           "type": "string",
@@ -68,7 +80,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch price percentage"
+          "description": "Fetch price percentage",
+          "default": "disabled"
         },
         "fetch_fees_overview": {
           "type": "string",
@@ -78,7 +91,8 @@
             "public",
             "private"
           ],
-          "description": "Provides aggregated fee statistics across DEXs, lending protocols, and other fee-generating DeFi primitives"
+          "description": "Provides aggregated fee statistics across DEXs, lending protocols, and other fee-generating DeFi primitives",
+          "default": "disabled"
         },
         "fetch_stablecoin_chains": {
           "type": "string",
@@ -87,7 +101,8 @@
             "public",
             "private"
           ],
-          "description": "Shows blockchain distribution of stablecoin supply with chain-specific circulation metrics"
+          "description": "Shows blockchain distribution of stablecoin supply with chain-specific circulation metrics",
+          "default": "disabled"
         },
         "fetch_stablecoin_charts": {
           "type": "string",
@@ -96,7 +111,8 @@
             "public",
             "private"
           ],
-          "description": "Generates historical charts for stablecoin market cap, supply changes, and chain dominance"
+          "description": "Generates historical charts for stablecoin market cap, supply changes, and chain dominance",
+          "default": "disabled"
         },
         "fetch_stablecoin_prices": {
           "type": "string",
@@ -105,7 +121,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch stablecoin prices"
+          "description": "Fetch stablecoin prices",
+          "default": "disabled"
         },
         "fetch_stablecoins": {
           "type": "string",
@@ -114,7 +131,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch stablecoins"
+          "description": "Fetch stablecoins",
+          "default": "disabled"
         },
         "fetch_chain_historical_tvl": {
           "type": "string",
@@ -123,7 +141,8 @@
             "public",
             "private"
           ],
-          "description": "Retrieves historical TVL data for specific blockchain chains with daily granularity"
+          "description": "Retrieves historical TVL data for specific blockchain chains with daily granularity",
+          "default": "disabled"
         },
         "fetch_chains": {
           "type": "string",
@@ -132,7 +151,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch chains"
+          "description": "Fetch chains",
+          "default": "disabled"
         },
         "fetch_historical_tvl": {
           "type": "string",
@@ -141,7 +161,8 @@
             "public",
             "private"
           ],
-          "description": "Provides historical TVL trends for the entire DeFi ecosystem or specific protocol categories"
+          "description": "Provides historical TVL trends for the entire DeFi ecosystem or specific protocol categories",
+          "default": "disabled"
         },
         "fetch_protocol": {
           "type": "string",
@@ -150,7 +171,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch protocol"
+          "description": "Fetch protocol",
+          "default": "disabled"
         },
         "fetch_protocol_current_tvl": {
           "type": "string",
@@ -159,7 +181,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch protocol current TVL"
+          "description": "Fetch protocol current TVL",
+          "default": "disabled"
         },
         "fetch_protocols": {
           "type": "string",
@@ -168,7 +191,8 @@
             "public",
             "private"
           ],
-          "description": "Retrieves comprehensive list of all tracked DeFi protocols with their category, chain, and TVL data"
+          "description": "Retrieves comprehensive list of all tracked DeFi protocols with their category, chain, and TVL data",
+          "default": "disabled"
         },
         "fetch_dex_overview": {
           "type": "string",
@@ -177,7 +201,8 @@
             "public",
             "private"
           ],
-          "description": "Provides aggregated DEX metrics including total volume, top trading pairs, and liquidity distribution"
+          "description": "Provides aggregated DEX metrics including total volume, top trading pairs, and liquidity distribution",
+          "default": "disabled"
         },
         "fetch_dex_summary": {
           "type": "string",
@@ -186,7 +211,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch dex summary"
+          "description": "Fetch dex summary",
+          "default": "disabled"
         },
         "fetch_options_overview": {
           "type": "string",
@@ -195,7 +221,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch options overview"
+          "description": "Fetch options overview",
+          "default": "disabled"
         },
         "fetch_pool_chart": {
           "type": "string",
@@ -204,7 +231,8 @@
             "public",
             "private"
           ],
-          "description": "Fetch pool chart"
+          "description": "Fetch pool chart",
+          "default": "disabled"
         },
         "fetch_pools": {
           "type": "string",
@@ -213,15 +241,11 @@
             "public",
             "private"
           ],
-          "description": "Fetch pools"
+          "description": "Fetch pools",
+          "default": "disabled"
         }
-      }
-    },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
+      },
+      "description": "States for each Defillama skill (disabled, public, or private)"
     }
   },
   "required": [

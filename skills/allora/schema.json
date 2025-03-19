@@ -8,6 +8,12 @@
     "Blockchain"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -19,7 +25,8 @@
             "public",
             "private"
           ],
-          "description": "Generates 6-hour price forecasts using ensemble ML models analyzing on-chain liquidity and market sentiment"
+          "description": "Generates 6-hour price forecasts using ensemble ML models analyzing on-chain liquidity and market sentiment",
+          "default": "disabled"
         }
       },
       "description": "States for each Allora skill (disabled, public, or private)"
@@ -28,12 +35,6 @@
       "type": "string",
       "title": "Allora API Key",
       "description": "Allora API key for authentication"
-    },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
     }
   },
   "required": [

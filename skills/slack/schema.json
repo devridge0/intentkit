@@ -8,6 +8,12 @@
     "Social"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -19,7 +25,8 @@
             "public",
             "private"
           ],
-          "description": "State of the get_channel skill"
+          "description": "State of the get_channel skill",
+          "default": "disabled"
         },
         "get_message": {
           "type": "string",
@@ -29,7 +36,8 @@
             "public",
             "private"
           ],
-          "description": "State of the get_message skill"
+          "description": "State of the get_message skill",
+          "default": "disabled"
         },
         "schedule_message": {
           "type": "string",
@@ -39,7 +47,8 @@
             "public",
             "private"
           ],
-          "description": "State of the schedule_message skill"
+          "description": "State of the schedule_message skill",
+          "default": "disabled"
         },
         "send_message": {
           "type": "string",
@@ -49,7 +58,8 @@
             "public",
             "private"
           ],
-          "description": "State of the send_message skill"
+          "description": "State of the send_message skill",
+          "default": "disabled"
         }
       },
       "description": "States for each Slack skill (disabled, public, or private)"
@@ -58,12 +68,6 @@
       "type": "string",
       "title": "Slack Bot Token",
       "description": "Slack bot token for API access"
-    },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
     }
   },
   "required": [

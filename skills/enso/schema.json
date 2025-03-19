@@ -8,6 +8,12 @@
     "Blockchain"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "public_skills": {
       "type": "array",
       "items": {
@@ -51,11 +57,88 @@
       },
       "description": "List of main tokens to use"
     },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
+    "states": {
+      "type": "object",
+      "properties": {
+        "route_shortcut": {
+          "type": "string",
+          "title": "Route Shortcut",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for route_shortcut",
+          "default": "disabled"
+        },
+        "get_prices": {
+          "type": "string",
+          "title": "Get Prices",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for get_prices",
+          "default": "disabled"
+        },
+        "get_wallet_approvals": {
+          "type": "string",
+          "title": "Get Wallet Approvals",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for get_wallet_approvals",
+          "default": "disabled"
+        },
+        "get_wallet_balances": {
+          "type": "string",
+          "title": "Get Wallet Balances",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for get_wallet_balances",
+          "default": "disabled"
+        },
+        "wallet_approve": {
+          "type": "string",
+          "title": "Wallet Approve",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for wallet_approve",
+          "default": "disabled"
+        },
+        "get_networks": {
+          "type": "string",
+          "title": "Get Networks",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for get_networks",
+          "default": "disabled"
+        },
+        "get_tokens": {
+          "type": "string",
+          "title": "Get Tokens",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for get_tokens",
+          "default": "disabled"
+        }
+      },
+      "description": "States for each Enso skill (disabled, public, or private)"
     }
   },
   "required": [

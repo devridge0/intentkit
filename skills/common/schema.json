@@ -8,6 +8,12 @@
     "Utility"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -19,16 +25,11 @@
             "public",
             "private"
           ],
-          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation"
+          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
+          "default": "disabled"
         }
       },
       "description": "States for each common utility skill (disabled, public, or private)"
-    },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
     }
   },
   "required": [

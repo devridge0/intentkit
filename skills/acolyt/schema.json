@@ -9,6 +9,12 @@
     "Oracle"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -20,7 +26,8 @@
             "public",
             "private"
           ],
-          "description": "The Acolyt Data Fetcher is a LangChain tool accessing the Acolyt chat API for data across Twitter Metrics, Onchain Analysis, DEX & Trading, and Overall Metrics. It processes queries, fetches data, and returns summarized responses. Features include:\n\n        Twitter: Engagement metrics, top smart follower counts, best tweets, mindshare comparison, impressions/follower ratio.\n        Onchain: Market cap, holder distribution, whale concentration, holder retention, Herfindahl index, high holder count tokens.\n        DEX & Trading: 24h volume, top DEX liquidity, buy/sell ratio, price change comparison, high liquidity pairs.\n        Overall: Smart engagement/market cap ratio, mindshare/market cap ratio, smart follower percentage comparison across top AI agents."
+          "description": "The Acolyt Data Fetcher is a LangChain tool accessing the Acolyt chat API for data across Twitter Metrics, Onchain Analysis, DEX & Trading, and Overall Metrics. It processes queries, fetches data, and returns summarized responses. Features include:\n\n        Twitter: Engagement metrics, top smart follower counts, best tweets, mindshare comparison, impressions/follower ratio.\n        Onchain: Market cap, holder distribution, whale concentration, holder retention, Herfindahl index, high holder count tokens.\n        DEX & Trading: 24h volume, top DEX liquidity, buy/sell ratio, price change comparison, high liquidity pairs.\n        Overall: Smart engagement/market cap ratio, mindshare/market cap ratio, smart follower percentage comparison across top AI agents.",
+          "default": "disabled"
         }
       },
       "description": "States for each Acolyt skill (disabled, public, or private)"
@@ -29,12 +36,6 @@
       "type": "string",
       "title": "Acolyt API Key",
       "description": "Acolyt API key for authentication"
-    },
-    "enabled": {
-      "type": "boolean",
-      "title": "Enabled",
-      "description": "Whether this skill is enabled",
-      "default": true
     }
   },
   "required": [
