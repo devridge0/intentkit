@@ -40,7 +40,6 @@
   },
   "required": [
     "states",
-    "api_key",
     "enabled"
   ],
   "additionalProperties": true
