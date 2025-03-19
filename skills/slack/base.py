@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Optional, Type
 
 from pydantic import BaseModel, Field
 from slack_sdk import WebClient
@@ -52,4 +52,4 @@ class SlackMessage(BaseModel):
     text: str
     user: str
     channel: str
-    thread_ts: str = None
+    thread_ts: Optional[str] = None

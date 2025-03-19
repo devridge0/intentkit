@@ -1,9 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from abstracts.skill import SkillStoreABC
 from skills.slack.base import SlackBaseTool, SlackMessage
 
 
@@ -30,18 +29,17 @@ class SlackGetMessageSchema(BaseModel):
 class SlackGetMessage(SlackBaseTool):
     """Tool for getting messages from a Slack channel or thread."""
 
-    name = "slack_get_message"
-    description = "Get messages from a Slack channel or thread"
-    args_schema = SlackGetMessageSchema
-    skill_store: SkillStoreABC
+    name: str = "slack_get_message"
+    description: str = "Get messages from a Slack channel or thread"
+    args_schema: Type[BaseModel] = SlackGetMessageSchema
 
     async def _arun(
         self,
-        channel_id: str,
-        ts: Optional[str],
-        thread_ts: Optional[str],
-        limit: int,
         config: RunnableConfig,
+        channel_id: str,
+        ts: Optional[str] = None,
+        thread_ts: Optional[str] = None,
+        limit: int = 10,
         **kwargs,
     ) -> Dict[str, Any]:
         """Run the tool to get Slack messages.

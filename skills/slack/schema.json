@@ -58,10 +58,17 @@
       "type": "string",
       "title": "Slack Bot Token",
       "description": "Slack bot token for API access"
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
-    "states"
+    "states",
+    "enabled"
   ],
   "additionalProperties": true
 }

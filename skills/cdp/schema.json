@@ -23,10 +23,17 @@
         }
       },
       "description": "States for each CDP skill (disabled, public, or private)"
+    },
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     }
   },
   "required": [
-    "states"
+    "states",
+    "enabled"
   ],
   "additionalProperties": true
 }

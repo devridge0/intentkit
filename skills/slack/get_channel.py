@@ -1,9 +1,8 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Type, Union
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from abstracts.skill import SkillStoreABC
 from skills.slack.base import SlackBaseTool, SlackChannel
 
 
@@ -23,16 +22,15 @@ class SlackGetChannelSchema(BaseModel):
 class SlackGetChannel(SlackBaseTool):
     """Tool for getting information about a Slack channel."""
 
-    name = "slack_get_channel"
-    description = "Get information about a Slack channel by ID or name"
-    args_schema = SlackGetChannelSchema
-    skill_store: SkillStoreABC
+    name: str = "slack_get_channel"
+    description: str = "Get information about a Slack channel by ID or name"
+    args_schema: Type[BaseModel] = SlackGetChannelSchema
 
     async def _arun(
         self,
-        channel_id: Optional[str],
-        channel_name: Optional[str],
         config: RunnableConfig,
+        channel_id: Optional[str] = None,
+        channel_name: Optional[str] = None,
         **kwargs,
     ) -> Union[SlackChannel, Dict[str, SlackChannel]]:
         """Run the tool to get information about a Slack channel.
