@@ -124,6 +124,7 @@ class Config:
         self.acolyt_api_key = self.load("ACOLYT_API_KEY")
         self.allora_api_key = self.load("ALLORA_API_KEY")
         self.elfa_api_key = self.load("ELFA_API_KEY")
+        self.enso_api_token = self.load("ENSO_API_TOKEN")
         # Sentry
         self.sentry_dsn = self.load("SENTRY_DSN")
         self.sentry_sample_rate = float(self.load("SENTRY_SAMPLE_RATE", "0.1"))

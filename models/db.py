@@ -41,6 +41,7 @@ async def init_db(
             min_size=3,
             max_size=20,
             timeout=60,
+            max_idle=30 * 60,
         )
     # Initialize SQLAlchemy engine with pool settings
     if engine is None:

@@ -2,8 +2,10 @@ from typing import Literal, Tuple, Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from skills.base import SkillContext
 from utils.tx import EvmContractWrapper
 
 from .abi.erc20 import ABI_ERC20
@@ -60,23 +62,11 @@ class EnsoGetWalletBalances(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetBalancesInput
 
-    def _run(
-        self,
-        chainId: int = default_chain_id,
-    ) -> EnsoGetBalancesOutput:
-        """Run the tool to get the token balances of a wallet.
-
-        Returns:
-            EnsoGetPricesOutput: A structured output containing the result of token balances of a wallet.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
+        config: RunnableConfig,
         chainId: int = default_chain_id,
+        **kwargs,
     ) -> EnsoGetBalancesOutput:
         """
         Run the tool to get token balances of a wallet.
@@ -89,13 +79,16 @@ class EnsoGetWalletBalances(EnsoBaseTool):
         """
         url = f"{base_url}/api/v1/wallet/balances"
 
+        context: SkillContext = self.context_from_config(config)
+        api_token = self.get_api_token(context)
+        wallet = await self.get_wallet(context)
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
         params = EnsoGetBalancesInput(chainId=chainId).model_dump(exclude_none=True)
-        params["eoaAddress"] = self.wallet.addresses[0].address_id
+        params["eoaAddress"] = wallet.addresses[0].address_id
         params["useEoa"] = True
 
         async with httpx.AsyncClient() as client:
@@ -165,23 +158,9 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetApprovalsOutput
 
-    def _run(
-        self,
-        chainId: int = default_chain_id,
-        **kwargs,
-    ) -> EnsoGetApprovalsOutput:
-        """Run the tool to get the token approvals for a wallet.
-
-        Returns:
-            EnsoGetPricesOutput: A structured output containing the result of token approvals for a wallet.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
+        config: RunnableConfig,
         chainId: int = default_chain_id,
         **kwargs,
     ) -> EnsoGetApprovalsOutput:
@@ -197,14 +176,18 @@ class EnsoGetWalletApprovals(EnsoBaseTool):
         """
         url = f"{base_url}/api/v1/wallet/approvals"
 
+        context: SkillContext = self.context_from_config(config)
+        api_token = self.get_api_token(context)
+        wallet = await self.get_wallet(context)
+
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
         params = EnsoGetApprovalsInput(
             chainId=chainId,
-            fromAddress=self.wallet.addresses[0].address_id,
+            fromAddress=wallet.addresses[0].address_id,
         )
 
         if kwargs.get("routingStrategy"):
@@ -312,10 +295,11 @@ class EnsoWalletApprove(EnsoBaseTool):
     #     """
     #     raise NotImplementedError("Use _arun instead")
 
-    def _run(
+    async def _arun(
         self,
         tokenAddress: str,
         amount: int,
+        config: RunnableConfig,
         chainId: int = default_chain_id,
         **kwargs,
     ) -> Tuple[EnsoWalletApproveOutput, EnsoWalletApproveArtifact]:
@@ -332,13 +316,17 @@ class EnsoWalletApprove(EnsoBaseTool):
             Tuple[EnsoBroadcastWalletApproveOutput, EnsoBroadcastWalletApproveArtifact]: The list of approve transaction output or an error message.
         """
         url = f"{base_url}/api/v1/wallet/approve"
+        context: SkillContext = self.context_from_config(config)
+        api_token = self.get_api_token(context)
+        chain_provider = self.get_chain_provider(context)
+        wallet = await self.get_wallet(context)
 
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
-        from_address = self.wallet.addresses[0].address_id
+        from_address = wallet.addresses[0].address_id
 
         params = EnsoWalletApproveInput(
             tokenAddress=tokenAddress,
@@ -364,13 +352,13 @@ class EnsoWalletApprove(EnsoBaseTool):
                 content = EnsoWalletApproveOutput(**json_dict)
                 artifact = EnsoWalletApproveArtifact(**json_dict)
 
-                rpc_url = self.chain_provider.get_chain_config_by_id(chainId).rpc_url
+                rpc_url = chain_provider.get_chain_config_by_id(chainId).rpc_url
                 contract = EvmContractWrapper(rpc_url, ABI_ERC20, artifact.tx)
 
                 fn, fn_args = contract.fn_and_args
                 fn_args["value"] = str(fn_args["value"])
 
-                invocation = self.wallet.invoke_contract(
+                invocation = wallet.invoke_contract(
                     contract_address=contract.dst_addr,
                     method=fn.fn_name,
                     abi=ABI_ERC20,
