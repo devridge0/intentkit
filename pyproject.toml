@@ -79,6 +79,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.9.2"
+jsonschema = "^4.21.1"
 
 [tool.ruff.lint]
 extend-select = ["I"]
