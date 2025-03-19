@@ -15,16 +15,11 @@ class SkillStates(TypedDict):
     ask_gpt: SkillState
 
 
-class AcolytClientConfig(TypedDict):
-    """Configuration for Acolyt API client."""
-
-    api_key: str
-
-
-class Config(SkillConfig, AcolytClientConfig):
+class Config(SkillConfig):
     """Configuration for Acolyt skills."""
 
     states: SkillStates
+    api_key: str
 
 
 def get_skills(

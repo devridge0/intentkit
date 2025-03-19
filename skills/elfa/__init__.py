@@ -21,16 +21,11 @@ class SkillStates(TypedDict):
     get_smart_stats: SkillState
 
 
-class ElfaConfig(TypedDict):
-    """Configuration for Elfa API client."""
-
-    api_key: str
-
-
-class Config(SkillConfig, ElfaConfig):
+class Config(SkillConfig):
     """Configuration for Elfa skills."""
 
     states: SkillStates
+    api_key: str
 
 
 def get_skills(

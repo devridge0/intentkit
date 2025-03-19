@@ -8,6 +8,12 @@
     "Blockchain"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -19,14 +25,302 @@
             "public",
             "private"
           ],
-          "description": "Provides real-time collateral/debt ratios with automatic currency conversion and risk threshold alerts. Final CDP balance description"
+          "description": "Provides real-time collateral/debt ratios with automatic currency conversion and risk threshold alerts. Final CDP balance description",
+          "default": "disabled"
+        },
+        "MorphoActionProvider_deposit": {
+          "type": "string",
+          "title": "Morphoactionprovider Deposit",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for MorphoActionProvider_deposit",
+          "default": "disabled"
+        },
+        "MorphoActionProvider_withdraw": {
+          "type": "string",
+          "title": "Morphoactionprovider Withdraw",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for MorphoActionProvider_withdraw",
+          "default": "disabled"
+        },
+        "CdpWalletActionProvider_trade": {
+          "type": "string",
+          "title": "Cdpwalletactionprovider Trade",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpWalletActionProvider_trade",
+          "default": "disabled"
+        },
+        "WalletActionProvider_get_balance": {
+          "type": "string",
+          "title": "Walletactionprovider Get Balance",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WalletActionProvider_get_balance",
+          "default": "disabled"
+        },
+        "WethActionProvider_wrap_eth": {
+          "type": "string",
+          "title": "Wethactionprovider Wrap Eth",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WethActionProvider_wrap_eth",
+          "default": "disabled"
+        },
+        "CdpApiActionProvider_address_reputation": {
+          "type": "string",
+          "title": "Cdpapiactionprovider Address Reputation",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpApiActionProvider_address_reputation",
+          "default": "disabled"
+        },
+        "ERC20ActionProvider_transfer": {
+          "type": "string",
+          "title": "Erc20actionprovider Transfer",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for ERC20ActionProvider_transfer",
+          "default": "disabled"
+        },
+        "PythActionProvider_fetch_price_feed_id": {
+          "type": "string",
+          "title": "Pythactionprovider Fetch Price Feed Id",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for PythActionProvider_fetch_price_feed_id",
+          "default": "disabled"
+        },
+        "WalletActionProvider_native_transfer": {
+          "type": "string",
+          "title": "Walletactionprovider Native Transfer",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WalletActionProvider_native_transfer",
+          "default": "disabled"
+        },
+        "WowActionProvider_buy_token": {
+          "type": "string",
+          "title": "Wowactionprovider Buy Token",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WowActionProvider_buy_token",
+          "default": "disabled"
+        },
+        "WowActionProvider_create_token": {
+          "type": "string",
+          "title": "Wowactionprovider Create Token",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WowActionProvider_create_token",
+          "default": "disabled"
+        },
+        "Erc721ActionProvider_transfer": {
+          "type": "string",
+          "title": "Erc721actionprovider Transfer",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for Erc721ActionProvider_transfer",
+          "default": "disabled"
+        },
+        "Erc721ActionProvider_get_balance": {
+          "type": "string",
+          "title": "Erc721actionprovider Get Balance",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for Erc721ActionProvider_get_balance",
+          "default": "disabled"
+        },
+        "CdpWalletActionProvider_deploy_nft": {
+          "type": "string",
+          "title": "Cdpwalletactionprovider Deploy Nft",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpWalletActionProvider_deploy_nft",
+          "default": "disabled"
+        },
+        "PythActionProvider_fetch_price": {
+          "type": "string",
+          "title": "Pythactionprovider Fetch Price",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for PythActionProvider_fetch_price",
+          "default": "disabled"
+        },
+        "WalletActionProvider_get_wallet_details": {
+          "type": "string",
+          "title": "Walletactionprovider Get Wallet Details",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WalletActionProvider_get_wallet_details",
+          "default": "disabled"
+        },
+        "SuperfluidActionProvider_update_flow": {
+          "type": "string",
+          "title": "Superfluidactionprovider Update Flow",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for SuperfluidActionProvider_update_flow",
+          "default": "disabled"
+        },
+        "CdpApiActionProvider_request_faucet_funds": {
+          "type": "string",
+          "title": "Cdpapiactionprovider Request Faucet Funds",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpApiActionProvider_request_faucet_funds",
+          "default": "disabled"
+        },
+        "SuperfluidActionProvider_delete_flow": {
+          "type": "string",
+          "title": "Superfluidactionprovider Delete Flow",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for SuperfluidActionProvider_delete_flow",
+          "default": "disabled"
+        },
+        "BasenameActionProvider_register_basename": {
+          "type": "string",
+          "title": "Basenameactionprovider Register Basename",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for BasenameActionProvider_register_basename",
+          "default": "disabled"
+        },
+        "CdpWalletActionProvider_deploy_token": {
+          "type": "string",
+          "title": "Cdpwalletactionprovider Deploy Token",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpWalletActionProvider_deploy_token",
+          "default": "disabled"
+        },
+        "ERC20ActionProvider_get_balance": {
+          "type": "string",
+          "title": "Erc20actionprovider Get Balance",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for ERC20ActionProvider_get_balance",
+          "default": "disabled"
+        },
+        "Erc721ActionProvider_mint": {
+          "type": "string",
+          "title": "Erc721actionprovider Mint",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for Erc721ActionProvider_mint",
+          "default": "disabled"
+        },
+        "SuperfluidActionProvider_create_flow": {
+          "type": "string",
+          "title": "Superfluidactionprovider Create Flow",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for SuperfluidActionProvider_create_flow",
+          "default": "disabled"
+        },
+        "WowActionProvider_sell_token": {
+          "type": "string",
+          "title": "Wowactionprovider Sell Token",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for WowActionProvider_sell_token",
+          "default": "disabled"
+        },
+        "CdpWalletActionProvider_deploy_contract": {
+          "type": "string",
+          "title": "Cdpwalletactionprovider Deploy Contract",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "State for CdpWalletActionProvider_deploy_contract",
+          "default": "disabled"
         }
       },
       "description": "States for each CDP skill (disabled, public, or private)"
     }
   },
   "required": [
-    "states"
+    "states",
+    "enabled"
   ],
   "additionalProperties": true
 }

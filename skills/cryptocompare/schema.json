@@ -9,6 +9,12 @@
     "Finance"
   ],
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
@@ -20,7 +26,8 @@
             "public",
             "private"
           ],
-          "description": "This tool fetches the latest cryptocurrency news articles for a specific token.\nYou can optionally specify a timestamp to get historical news, otherwise it uses the current time.\nReturns articles in English with details like title, body, source, and publish time."
+          "description": "This tool fetches the latest cryptocurrency news articles for a specific token.\nYou can optionally specify a timestamp to get historical news, otherwise it uses the current time.\nReturns articles in English with details like title, body, source, and publish time.",
+          "default": "disabled"
         },
         "fetch_price": {
           "type": "string",
@@ -30,7 +37,8 @@
             "public",
             "private"
           ],
-          "description": "Provides real-time cryptocurrency pricing with multi-exchange aggregation and historical comparisons"
+          "description": "Provides real-time cryptocurrency pricing with multi-exchange aggregation and historical comparisons",
+          "default": "disabled"
         },
         "fetch_trading_signals": {
           "type": "string",
@@ -40,7 +48,8 @@
             "public",
             "private"
           ],
-          "description": "Generates technical analysis signals using indicators like RSI, MACD, and Bollinger Bands"
+          "description": "Generates technical analysis signals using indicators like RSI, MACD, and Bollinger Bands",
+          "default": "disabled"
         },
         "fetch_top_market_cap": {
           "type": "string",
@@ -50,7 +59,8 @@
             "public",
             "private"
           ],
-          "description": "Tracks top cryptocurrencies by market capitalization with sector breakdowns"
+          "description": "Tracks top cryptocurrencies by market capitalization with sector breakdowns",
+          "default": "disabled"
         },
         "fetch_top_exchanges": {
           "type": "string",
@@ -60,7 +70,8 @@
             "public",
             "private"
           ],
-          "description": "Ranks cryptocurrency exchanges by liquidity and trading volume with market pair analysis"
+          "description": "Ranks cryptocurrency exchanges by liquidity and trading volume with market pair analysis",
+          "default": "disabled"
         },
         "fetch_top_volume": {
           "type": "string",
@@ -70,7 +81,8 @@
             "public",
             "private"
           ],
-          "description": "Analyzes 24h trading volume trends across exchanges and currency pairs"
+          "description": "Analyzes 24h trading volume trends across exchanges and currency pairs",
+          "default": "disabled"
         }
       },
       "description": "States for each CryptoCompare skill (disabled, public, or private)"
@@ -83,7 +95,8 @@
   },
   "required": [
     "states",
-    "api_key"
+    "api_key",
+    "enabled"
   ],
   "additionalProperties": true
 }

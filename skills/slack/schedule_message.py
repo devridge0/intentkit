@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from abstracts.skill import SkillStoreABC
 from skills.slack.base import SlackBaseTool
 
 
@@ -29,20 +28,17 @@ class SlackScheduleMessageSchema(BaseModel):
 class SlackScheduleMessage(SlackBaseTool):
     """Tool for scheduling messages to be sent to a Slack channel or thread."""
 
-    name = "schedule_message"
-    description = (
-        "Schedule a message to be sent to a Slack channel or thread at a specific time"
-    )
-    args_schema = SlackScheduleMessageSchema
-    skill_store: SkillStoreABC
+    name: str = "slack_schedule_message"
+    description: str = "Schedule a message to be sent to a Slack channel or thread at a specific time, if you need current time, use skill common_current_time"
+    args_schema: Type[BaseModel] = SlackScheduleMessageSchema
 
     async def _arun(
         self,
+        config: RunnableConfig,
         channel_id: str,
         text: str,
         post_at: str,
-        thread_ts: Optional[str],
-        config: RunnableConfig,
+        thread_ts: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """Run the tool to schedule a Slack message.

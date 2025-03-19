@@ -1,9 +1,8 @@
-from typing import Optional
+from typing import Optional, Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from abstracts.skill import SkillStoreABC
 from skills.slack.base import SlackBaseTool, SlackMessage
 
 
@@ -25,17 +24,16 @@ class SlackSendMessageSchema(BaseModel):
 class SlackSendMessage(SlackBaseTool):
     """Tool for sending messages to a Slack channel or thread."""
 
-    name = "send_message"
-    description = "Send a message to a Slack channel or thread"
-    args_schema = SlackSendMessageSchema
-    skill_store: SkillStoreABC
+    name: str = "slack_send_message"
+    description: str = "Send a message to a Slack channel or thread"
+    args_schema: Type[BaseModel] = SlackSendMessageSchema
 
     async def _arun(
         self,
+        config: RunnableConfig,
         channel_id: str,
         text: str,
-        thread_ts: Optional[str],
-        config: RunnableConfig,
+        thread_ts: Optional[str] = None,
         **kwargs,
     ) -> SlackMessage:
         """Run the tool to send a Slack message.
