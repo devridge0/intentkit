@@ -21,7 +21,7 @@ echo "Exporting agent [${AGENT_ID}] ..."
 # Using the provided export command
 HTTP_STATUS=$(curl -s -w "%{http_code}" -H "Authorization: Bearer ${TOKEN}" --clobber "${BASE_URL}/agents/${AGENT_ID}/export" -o ${AGENT_ID}.yaml)
 
-if [ $HTTP_STATUS -ge 400 ]; then
+if [ $HTTP_STATUS -ne 200 ]; then
     echo "Export failed with HTTP status ${HTTP_STATUS}"
     exit 1
 fi

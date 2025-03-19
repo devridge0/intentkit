@@ -25,7 +25,7 @@ class SlackSendMessageSchema(BaseModel):
 class SlackSendMessage(SlackBaseTool):
     """Tool for sending messages to a Slack channel or thread."""
 
-    name = "send_message"
+    name = "slack_send_message"
     description = "Send a message to a Slack channel or thread"
     args_schema = SlackSendMessageSchema
     skill_store: SkillStoreABC

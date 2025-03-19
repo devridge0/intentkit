@@ -30,7 +30,7 @@ class SlackGetMessageSchema(BaseModel):
 class SlackGetMessage(SlackBaseTool):
     """Tool for getting messages from a Slack channel or thread."""
 
-    name = "get_message"
+    name = "slack_get_message"
     description = "Get messages from a Slack channel or thread"
     args_schema = SlackGetMessageSchema
     skill_store: SkillStoreABC
