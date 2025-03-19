@@ -72,7 +72,6 @@ from skills.goat import (
     init_smart_wallets,
 )
 from skills.twitter import get_twitter_skill
-from skills.wallet_portfolio import get_skills as get_wallet_portfolio_skills
 
 logger = logging.getLogger(__name__)
 
@@ -110,9 +109,6 @@ async def initialize_agent(aid, is_private=False):
     # init agent store
     agent_store = AgentStore(aid)
     
-    # init chain_provider
-    chain_provider = setup_chain_provider(agent)
-
     # get the agent from the database
     agent: Agent = await Agent.get(aid)
     if not agent:
@@ -303,32 +299,6 @@ async def initialize_agent(aid, is_private=False):
                             logger.warning(e)
                 except Exception as e:
                     logger.warning(e)
-
-    # Wallet Portfolio skills
-    if (
-        agent.wallet_portfolio_skills
-        and len(agent.wallet_portfolio_skills) > 0
-        and agent.wallet_portfolio_config
-        and ("wallet_portfolio" not in agent.skills if agent.skills else True)
-    ):
-        try:
-            wallet_portfolio_tools = get_wallet_portfolio_skills(
-                agent.wallet_portfolio_config,
-                aid,
-                is_private,
-                skill_store,
-                agent_store,
-                chain_provider,
-                (
-                    config.chain_provider
-                    if hasattr(config, "chain_provider") and config.chain_provider
-                    else None
-                ),
-            )
-            tools.extend(wallet_portfolio_tools)
-            logger.info(f"[{aid}] Loaded Wallet Portfolio skills with Solana support")
-        except Exception as e:
-            logger.warning(f"Error loading wallet_portfolio skills: {e}")
 
     # Enso skills
     if (
