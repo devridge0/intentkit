@@ -25,8 +25,8 @@
       "order": 4
     },
     {
-      "id": "social",
-      "title": "Social",
+      "id": "entrypoint",
+      "title": "Entrypoint",
       "order": 5
     },
     {
@@ -53,9 +53,11 @@
   "required": [
     "name",
     "ticker",
+    "picture",
     "purpose",
     "personality",
-    "model"
+    "model",
+    "mode"
   ],
   "properties": {
     "name": {
@@ -65,13 +67,24 @@
       "x-group": "basic",
       "x-placeholder": "Enter agent name"
     },
-    "slug": {
+    "description": {
       "type": "string",
-      "description": "Slug of the agent, used for URL generation",
-      "maxLength": 30,
-      "minLength": 2,
-      "readOnly": true,
-      "x-group": "internal"
+      "description": "Description of the agent, for public view, not contained in prompt",
+      "x-group": "basic",
+      "x-placeholder": "Introduce your agent"
+    },
+    "external_website": {
+      "type": "string",
+      "description": "Link of external website of the agent, if you have one",
+      "format": "uri",
+      "x-group": "basic",
+      "x-placeholder": "Enter agent external website url"
+    },
+    "picture": {
+      "type": "string",
+      "description": "Picture of the agent",
+      "x-group": "basic",
+      "x-placeholder": "Upload a picture of your agent"
     },
     "ticker": {
       "type": "string",
@@ -80,6 +93,37 @@
       "minLength": 3,
       "x-group": "basic",
       "x-placeholder": "Enter agent ticker"
+    },
+    "token_address": {
+      "type": "string",
+      "description": "Token address of the agent",
+      "maxLength": 42,
+      "readOnly": true,
+      "x-group": "internal"
+    },
+    "token_pool": {
+      "type": "string",
+      "description": "Pool of the agent token",
+      "maxLength": 42,
+      "readOnly": true,
+      "x-group": "internal"
+    },
+    "mode": {
+      "type": "string",
+      "description": "Mode of the agent, public or private",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "x-group": "basic"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Slug of the agent, used for URL generation",
+      "maxLength": 30,
+      "minLength": 2,
+      "readOnly": true,
+      "x-group": "internal"
     },
     "purpose": {
       "type": "string",
@@ -164,7 +208,7 @@
     },
     "temperature": {
       "type": "number",
-      "description": "AI model temperature parameter controlling response randomness (0.0~2.0)",
+      "description": "The randomness of the generated results is such that the higher the number, the more creative the results will be. However, this also makes them wilder and increases the likelihood of errors. For creative tasks, you can adjust it to above 1, but for rigorous tasks, such as quantitative trading, it's advisable to set it lower, around 0.2. (0.0~2.0)",
       "default": 0.7,
       "minimum": 0.0,
       "maximum": 2.0,
@@ -172,7 +216,7 @@
     },
     "frequency_penalty": {
       "type": "number",
-      "description": "Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+      "description": "The frequency penalty is a measure of how much the AI is allowed to repeat itself. A lower value means the AI is more likely to repeat previous responses, while a higher value means the AI is more likely to generate new content. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
@@ -180,7 +224,7 @@
     },
     "presence_penalty": {
       "type": "number",
-      "description": "Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+      "description": "The presence penalty is a measure of how much the AI is allowed to deviate from the topic. A higher value means the AI is more likely to deviate from the topic, while a lower value means the AI is more likely to follow the topic. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
@@ -315,14 +359,14 @@
     },
     "twitter_entrypoint_enabled": {
       "type": "boolean",
-      "description": "Whether the agent can receive events from Twitter",
+      "description": "Dangerous, reply all mentions from x.com",
       "default": false,
-      "x-group": "experimental"
+      "x-group": "entrypoint"
     },
     "twitter_config": {
       "type": "object",
-      "description": "Twitter integration configuration settings",
-      "x-group": "experimental"
+      "description": "You must use your own key for twitter entrypoint, it is separated from twitter skills",
+      "x-group": "entrypoint"
     },
     "twitter_skills": {
       "type": "array",
@@ -388,9 +432,6 @@
         },
         "allora": {
           "$ref": "../skills/allora/schema.json"
-        },
-        "enso": {
-          "$ref": "../skills/enso/schema.json"
         },
         "cryptocompare": {
           "$ref": "../skills/cryptocompare/schema.json"
@@ -469,6 +510,33 @@
       "description": "Elfa integration configuration settings",
       "deprecated": true,
       "x-group": "deprecated"
+    },
+    "wallet_provider": {
+      "type": "string",
+      "description": "Provider of the agent's wallet",
+      "enum": [
+        "cdp"
+      ],
+      "x-group": "onchain"
+    },
+    "network_id": {
+      "type": "string",
+      "description": "Network identifier",
+      "default": "base-mainnet",
+      "enum": [
+        "ethereum-mainnet",
+        "ethereum-sepolia",
+        "polygon-mainnet",
+        "polygon-mumbai",
+        "base-mainnet",
+        "base-sepolia",
+        "arbitrum-mainnet",
+        "arbitrum-sepolia",
+        "optimism-mainnet",
+        "optimism-sepolia",
+        "solana"
+      ],
+      "x-group": "onchain"
     }
   },
   "additionalProperties": false
