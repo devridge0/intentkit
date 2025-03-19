@@ -72,7 +72,8 @@
   },
   "required": [
     "states",
-    "enabled"
+    "enabled",
+    "slack_bot_token"
   ],
   "additionalProperties": true
 }
