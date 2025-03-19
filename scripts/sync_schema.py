@@ -22,7 +22,7 @@ def update_enabled_field(schema_path: Path, schema: dict) -> bool:
         bool: True if changes were made, False otherwise
     """
     changes_made = False
-    
+
     # Check if 'enabled' field is in the schema
     if "enabled" in schema.get("properties", {}):
         # Update the default value to False if it's not already
@@ -34,23 +34,23 @@ def update_enabled_field(schema_path: Path, schema: dict) -> bool:
         # Add the 'enabled' field to the schema properties
         if "properties" not in schema:
             schema["properties"] = {}
-        
+
         schema["properties"]["enabled"] = {
             "type": "boolean",
             "title": "Enabled",
             "description": "Whether this skill is enabled",
-            "default": False
+            "default": False,
         }
-        
+
         # Update the required fields if it exists
         if "required" in schema and "enabled" not in schema["required"]:
             schema["required"].append("enabled")
         elif "required" not in schema:
             schema["required"] = ["enabled"]
-        
+
         changes_made = True
         print(f"Added 'enabled' field to {schema_path}")
-    
+
     return changes_made
 
 
@@ -65,35 +65,41 @@ def update_states_field(schema_path: Path, schema: dict) -> bool:
         bool: True if changes were made, False otherwise
     """
     changes_made = False
-    
+
     # Check if 'states' field exists in the schema
     if "states" in schema.get("properties", {}):
         states_schema = schema["properties"]["states"]
-        
+
         # Ensure states has the correct structure
         if "type" not in states_schema:
             states_schema["type"] = "object"
             changes_made = True
-        
+
         if "description" not in states_schema:
             skill_name = schema_path.parent.name.capitalize()
-            states_schema["description"] = f"States for each {skill_name} skill (disabled, public, or private)"
+            states_schema["description"] = (
+                f"States for each {skill_name} skill (disabled, public, or private)"
+            )
             changes_made = True
-        
+
         # Check if properties exists in states
         if "properties" in states_schema:
             # Update each state property to ensure it has the correct enum and default value
             for state_name, state_props in states_schema["properties"].items():
                 # Ensure enum values are correct
-                if "enum" not in state_props or set(state_props["enum"]) != {"disabled", "public", "private"}:
+                if "enum" not in state_props or set(state_props["enum"]) != {
+                    "disabled",
+                    "public",
+                    "private",
+                }:
                     state_props["enum"] = ["disabled", "public", "private"]
                     changes_made = True
-                
+
                 # Add or update default value to "disabled"
                 if "default" not in state_props or state_props["default"] != "disabled":
                     state_props["default"] = "disabled"
                     changes_made = True
-    
+
     return changes_made
 
 
@@ -107,23 +113,23 @@ def reorder_properties(schema: dict) -> bool:
         bool: True if changes were made, False otherwise
     """
     changes_made = False
-    
+
     if "properties" in schema and "enabled" in schema["properties"]:
         # Create a new ordered dictionary with 'enabled' first
         new_properties = OrderedDict()
-        
+
         # Add enabled first
         new_properties["enabled"] = schema["properties"]["enabled"]
-        
+
         # Add all other properties
         for key, value in schema["properties"].items():
             if key != "enabled":
                 new_properties[key] = value
-        
+
         # Replace the properties with the reordered one
         schema["properties"] = new_properties
         changes_made = True
-        
+
     return changes_made
 
 
@@ -137,16 +143,16 @@ def update_schema_json(schema_path: Path) -> None:
     if not schema_path.exists():
         print(f"No schema.json found at {schema_path}")
         return
-    
+
     # Load the existing schema
     with open(schema_path, "r") as f:
         schema = json.load(f)
-    
+
     # Apply updates
     enabled_changes = update_enabled_field(schema_path, schema)
     states_changes = update_states_field(schema_path, schema)
     order_changes = reorder_properties(schema)
-    
+
     # Save the schema if changes were made
     if enabled_changes or states_changes or order_changes:
         with open(schema_path, "w") as f:
@@ -160,7 +166,7 @@ def main():
     """Main function to synchronize all schema.json files."""
     # Find all schema.json files in the skills directory
     schema_files = list(SKILLS_DIR.glob("*/schema.json"))
-    
+
     for schema_path in schema_files:
         update_schema_json(schema_path)
 
