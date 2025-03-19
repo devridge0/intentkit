@@ -15,16 +15,11 @@ class SkillStates(TypedDict):
     get_price_prediction: SkillState
 
 
-class AlloraClientConfig(TypedDict):
-    """Configuration for Allora API client."""
-
-    api_key: str
-
-
-class Config(SkillConfig, AlloraClientConfig):
+class Config(SkillConfig):
     """Configuration for Allora skills."""
 
     states: SkillStates
+    api_key: str
 
 
 def get_skills(

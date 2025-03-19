@@ -65,7 +65,7 @@ class AlloraGetPrice(AlloraBaseTool):
         args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
     """
 
-    name: str = "get_price_prediction"
+    name: str = "allora_get_price_prediction"
     description: str = """
         The Allora Price Prediction Feed tool fetches the price prediction feed from the Allora API.
         Ethereum (ETH) or Bitcoin (BTC) price predictions (5-minute, 8-hour)

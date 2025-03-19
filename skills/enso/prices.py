@@ -2,7 +2,10 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
+
+from skills.base import SkillContext
 
 from .base import EnsoBaseTool, base_url, default_chain_id
 
@@ -31,7 +34,7 @@ class EnsoGetPrices(EnsoBaseTool):
     Tool allows fetching the price in USD for a given blockchain's token.
 
     Attributes:
-        name (str): Name of the tool, specifically "enso_get_tokens".
+        name (str): Name of the tool, specifically "enso_get_prices".
         description (str): Comprehensive description of the tool's purpose and functionality.
         args_schema (Type[BaseModel]): Schema for input arguments, specifying expected parameters.
     """
@@ -40,25 +43,12 @@ class EnsoGetPrices(EnsoBaseTool):
     description: str = "Retrieve the price of a token by chain ID and contract address"
     args_schema: Type[BaseModel] = EnsoGetPricesInput
 
-    def _run(
-        self,
-        chainId: int = default_chain_id,
-        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    ) -> EnsoGetPricesOutput:
-        """Run the tool to get the token price from the API.
-
-        Returns:
-            EnsoGetPricesOutput: A structured output containing the result of token prices.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
+        address: str,
+        config: RunnableConfig,
         chainId: int = default_chain_id,
-        address: str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        **kwargs,
     ) -> EnsoGetPricesOutput:
         """
         Asynchronous function to request the token price from the API.
@@ -72,9 +62,12 @@ class EnsoGetPrices(EnsoBaseTool):
         """
         url = f"{base_url}/api/v1/prices/{str(chainId)}/{address}"
 
+        context: SkillContext = self.context_from_config(config)
+        api_token = self.get_api_token(context)
+
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
         async with httpx.AsyncClient() as client:

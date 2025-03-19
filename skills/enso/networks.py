@@ -1,3 +1,4 @@
+import logging
 from typing import Type
 
 import httpx
@@ -8,6 +9,8 @@ from pydantic import BaseModel, Field
 from skills.base import SkillContext
 
 from .base import EnsoBaseTool, base_url
+
+logger = logging.getLogger(__name__)
 
 
 class EnsoGetNetworksInput(BaseModel):
@@ -44,19 +47,8 @@ class EnsoGetNetworks(EnsoBaseTool):
     """
 
     name: str = "enso_get_networks"
-    description: str = "Retrieve networks supported by the API"
+    description: str = "Retrieve networks supported by the Enso API"
     args_schema: Type[BaseModel] = EnsoGetNetworksInput
-
-    def _run(self) -> EnsoGetNetworksOutput:
-        """Run the tool to get all supported networks.
-
-        Returns:
-            EnsoGetNetworksOutput: A structured output containing the result of the networks.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> EnsoGetNetworksOutput:
         """
@@ -68,9 +60,11 @@ class EnsoGetNetworks(EnsoBaseTool):
         url = f"{base_url}/api/v1/networks"
 
         context: SkillContext = self.context_from_config(config)
+        api_token = self.get_api_token(context)
+        logger.debug(f"api_token: {api_token}")
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
         async with httpx.AsyncClient() as client:
@@ -87,7 +81,9 @@ class EnsoGetNetworks(EnsoBaseTool):
                 for item in json_dict:
                     network = ConnectedNetwork(**item)
                     networks.append(network)
-                    networks_memory[network.id] = network.model_dump(exclude_none=True)
+                    networks_memory[str(network.id)] = network.model_dump(
+                        exclude_none=True
+                    )
 
                 await self.skill_store.save_agent_skill_data(
                     context.agent.id,

@@ -1,24 +1,12 @@
 """Base class for all CryptoCompare tools."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Type
+from typing import Type
 
-from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
-
-
-class AgentContext:
-    def __init__(self, agent_id: str, config: Dict[str, Any]):
-        self.agent = AgentInfo(agent_id)
-        self.config = config
-
-
-class AgentInfo:
-    def __init__(self, agent_id: str):
-        self.id = agent_id
 
 
 class CryptoCompareBaseTool(IntentKitSkill):
@@ -39,21 +27,6 @@ class CryptoCompareBaseTool(IntentKitSkill):
     @property
     def category(self) -> str:
         return "cryptocompare"
-
-    def context_from_config(self, config: RunnableConfig) -> AgentContext:
-        """Extract agent context from RunnableConfig.
-
-        Args:
-            config: The RunnableConfig containing agent information
-
-        Returns:
-            AgentContext: Containing agent information
-        """
-        agent_id = config.get(
-            "agent_id", config.get("configurable", {}).get("agent_id", "default_agent")
-        )
-        agent_config = config.get("configurable", {}).get("config", {})
-        return AgentContext(agent_id, agent_config)
 
     async def check_rate_limit(
         self, max_requests: int = 1, interval: int = 15, agent_id: str = None

@@ -2,8 +2,10 @@ from typing import Type
 
 import httpx
 from langchain.tools.base import ToolException
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
+from skills.base import SkillContext
 from skills.enso.base import (
     EnsoBaseTool,
     base_url,
@@ -136,25 +138,12 @@ class EnsoGetTokens(EnsoBaseTool):
     )
     args_schema: Type[BaseModel] = EnsoGetTokensInput
 
-    def _run(
-        self,
-        chainId: int = default_chain_id,
-        protocolSlug: str | None = None,
-    ) -> EnsoGetTokensOutput:
-        """Run the tool to get the tokens and APYs from the API.
-
-        Returns:
-            EnsoGetPricesOutput: A structured output containing the result of tokens and APYs.
-
-        Raises:
-            Exception: If there's an error accessing the Enso API.
-        """
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
         self,
+        config: RunnableConfig,
         chainId: int = default_chain_id,
         protocolSlug: str | None = None,
+        **kwargs,
     ) -> EnsoGetTokensOutput:
         """Run the tool to get Tokens and APY.
         Args:
@@ -167,9 +156,14 @@ class EnsoGetTokens(EnsoBaseTool):
             Exception: If there's an error accessing the Enso API.
         """
         url = f"{base_url}/api/v1/tokens"
+
+        context: SkillContext = self.context_from_config(config)
+        agent_id = context.agent.id
+        api_token = self.get_api_token(context)
+        main_tokens = self.get_main_tokens(context)
         headers = {
             "accept": "application/json",
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {api_token}",
         }
 
         params = EnsoGetTokensInput(
@@ -187,7 +181,7 @@ class EnsoGetTokens(EnsoBaseTool):
                 json_dict = response.json()
 
                 token_decimals = await self.skill_store.get_agent_skill_data(
-                    self.agent_id,
+                    agent_id,
                     "enso_get_tokens",
                     "decimals",
                 )
@@ -197,10 +191,8 @@ class EnsoGetTokens(EnsoBaseTool):
                 # filter the main tokens from config or the ones that have apy assigned.
                 res = EnsoGetTokensOutput(res=list[TokenResponseCompact]())
                 for item in json_dict["data"]:
-                    self.main_tokens = [item.upper() for item in self.main_tokens]
-                    if item.get("apy") or (
-                        item.get("symbol").upper() in self.main_tokens
-                    ):
+                    main_tokens = [item.upper() for item in main_tokens]
+                    if item.get("apy") or (item.get("symbol").upper() in main_tokens):
                         token_response = TokenResponseCompact(**item)
                         res.res.append(token_response)
                         token_decimals[token_response.address] = token_response.decimals
@@ -212,7 +204,7 @@ class EnsoGetTokens(EnsoBaseTool):
                                 token_decimals[u_token.address] = u_token.decimals
 
                 await self.skill_store.save_agent_skill_data(
-                    self.agent_id,
+                    agent_id,
                     "enso_get_tokens",
                     "decimals",
                     token_decimals,
