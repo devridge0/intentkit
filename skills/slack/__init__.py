@@ -24,7 +24,6 @@ class SkillStates(TypedDict):
 class Config(SkillConfig):
     """Configuration for Slack skills."""
 
-    enabled: bool
     states: SkillStates
     slack_bot_token: str
 

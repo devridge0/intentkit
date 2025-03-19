@@ -29,8 +29,7 @@ class SkillStates(TypedDict):
 class Config(SkillConfig):
     """Configuration for Enso skills."""
 
-    enabled: bool
-    states: SkillState
+    states: SkillStates
     api_token: str
     main_tokens: List[str]
 
