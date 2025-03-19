@@ -176,6 +176,21 @@ class AgentTable(Base):
         nullable=True,
         comment="Slug of the agent, used for URL generation",
     )
+    description = Column(
+        String,
+        nullable=True,
+        comment="Description of the agent, for public view, not contained in prompt",
+    )
+    external_website = Column(
+        String,
+        nullable=True,
+        comment="Link of external website of the agent, if you have one",
+    )
+    picture = Column(
+        String,
+        nullable=True,
+        comment="Picture of the agent",
+    )
     ticker = Column(
         String,
         nullable=True,
@@ -185,6 +200,16 @@ class AgentTable(Base):
         String,
         nullable=True,
         comment="Token address of the agent",
+    )
+    token_pool = Column(
+        String,
+        nullable=True,
+        comment="Pool of the agent token",
+    )
+    mode = Column(
+        String,
+        nullable=True,
+        comment="Mode of the agent, public or private",
     )
     purpose = Column(
         String,
@@ -217,12 +242,23 @@ class AgentTable(Base):
         nullable=True,
         comment="Additional data store for upstream use",
     )
+    wallet_provider = Column(
+        String,
+        nullable=True,
+        comment="Provider of the agent's wallet",
+    )
+    network_id = Column(
+        String,
+        nullable=True,
+        default="base-mainnet",
+        comment="Network identifier",
+    )
     # AI part
     model = Column(
         String,
         nullable=True,
         default="gpt-4o-mini",
-        comment="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, chatgpt-4o-latest, deepseek-chat, deepseek-reasoner, grok-2",
+        comment="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai",
     )
     prompt = Column(
         String,
@@ -238,19 +274,19 @@ class AgentTable(Base):
         Float,
         nullable=True,
         default=0.7,
-        comment="AI model temperature parameter controlling response randomness (0.0~1.0)",
+        comment="Controls response randomness (0.0~2.0). Higher values increase creativity but may reduce accuracy. For rigorous tasks, use lower values.",
     )
     frequency_penalty = Column(
         Float,
         nullable=True,
         default=0.0,
-        comment="Frequency penalty for the AI model, a higher value penalizes new tokens based on their existing frequency in the chat history (-2.0~2.0)",
+        comment="Controls repetition in responses (-2.0~2.0). Higher values reduce repetition, lower values allow more repetition.",
     )
     presence_penalty = Column(
         Float,
         nullable=True,
         default=0.0,
-        comment="Presence penalty for the AI model, a higher value penalizes new tokens based on whether they appear in the chat history (-2.0~2.0)",
+        comment="Controls topic adherence (-2.0~2.0). Higher values allow more topic deviation, lower values enforce stricter topic adherence.",
     )
     # autonomous mode
     autonomous = Column(
@@ -321,12 +357,12 @@ class AgentTable(Base):
         Boolean,
         nullable=True,
         default=False,
-        comment="Whether the agent can receive events from Twitter",
+        comment="Dangerous, reply all mentions from x.com",
     )
     twitter_config = Column(
         JSONB,
         nullable=True,
-        comment="This configuration will be used for entrypoint only",
+        comment="You must use your own key for twitter entrypoint, it is separated from twitter skills",
     )
     # twitter skills require config, but not require twitter_enabled flag.
     # As long as twitter_skills is not empty, the corresponding skills will be loaded.
@@ -457,7 +493,7 @@ class AgentUpdate(BaseModel):
             max_length=50,
             json_schema_extra={
                 "x-group": "basic",
-                "x-placeholder": "Enter agent name",
+                "x-placeholder": "Name your agent",
             },
         ),
     ]
@@ -474,6 +510,40 @@ class AgentUpdate(BaseModel):
             },
         ),
     ]
+    description: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Description of the agent, for public view, not contained in prompt",
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Introduce your agent",
+            },
+        ),
+    ]
+    external_website: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Link of external website of the agent, if you have one",
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Enter agent external website url",
+                "format": "uri",
+            },
+        ),
+    ]
+    picture: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Picture of the agent",
+            json_schema_extra={
+                "x-group": "basic",
+                "x-placeholder": "Upload a picture of your agent",
+            },
+        ),
+    ]
     ticker: Annotated[
         Optional[str],
         PydanticField(
@@ -483,7 +553,7 @@ class AgentUpdate(BaseModel):
             min_length=3,
             json_schema_extra={
                 "x-group": "basic",
-                "x-placeholder": "Enter agent ticker",
+                "x-placeholder": "If one day, your agent has it's own token, what will it be?",
             },
         ),
     ]
@@ -495,6 +565,29 @@ class AgentUpdate(BaseModel):
             max_length=42,
             json_schema_extra={
                 "x-group": "internal",
+                "readOnly": True,
+            },
+        ),
+    ]
+    token_pool: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Pool of the agent token",
+            max_length=42,
+            json_schema_extra={
+                "x-group": "internal",
+                "readOnly": True,
+            },
+        ),
+    ]
+    mode: Annotated[
+        Optional[Literal["public", "private"]],
+        PydanticField(
+            default=None,
+            description="Mode of the agent, public or private",
+            json_schema_extra={
+                "x-group": "basic",
             },
         ),
     ]
@@ -506,7 +599,7 @@ class AgentUpdate(BaseModel):
             max_length=20000,
             json_schema_extra={
                 "x-group": "basic",
-                "x-placeholder": "Enter agent purpose",
+                "x-placeholder": "Enter agent purpose, it will be a part of the system prompt",
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
@@ -522,7 +615,7 @@ class AgentUpdate(BaseModel):
             max_length=20000,
             json_schema_extra={
                 "x-group": "basic",
-                "x-placeholder": "Enter agent personality",
+                "x-placeholder": "Enter agent personality, it will be a part of the system prompt",
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
@@ -538,7 +631,7 @@ class AgentUpdate(BaseModel):
             max_length=20000,
             json_schema_extra={
                 "x-group": "basic",
-                "x-placeholder": "Enter agent principles",
+                "x-placeholder": "Enter agent principles, it will be a part of the system prompt",
                 "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
                 "errorMessage": {
                     "pattern": "Level 1 and 2 headings (# and ##) are not allowed. Please use level 3+ headings (###, ####, etc.) instead."
@@ -732,14 +825,48 @@ class AgentUpdate(BaseModel):
             },
         ),
     ]
+    wallet_provider: Annotated[
+        Optional[Literal["cdp"]],
+        PydanticField(
+            default=None,
+            description="Provider of the agent's wallet",
+            json_schema_extra={
+                "x-group": "onchain",
+            },
+        ),
+    ]
+    network_id: Annotated[
+        Optional[
+            Literal[
+                "ethereum-mainnet",
+                "ethereum-sepolia",
+                "polygon-mainnet",
+                "polygon-mumbai",
+                "base-mainnet",
+                "base-sepolia",
+                "arbitrum-mainnet",
+                "arbitrum-sepolia",
+                "optimism-mainnet",
+                "optimism-sepolia",
+                "solana",
+            ]
+        ],
+        PydanticField(
+            default="base-mainnet",
+            description="Network identifier",
+            json_schema_extra={
+                "x-group": "onchain",
+            },
+        ),
+    ]
     # if cdp_enabled, agent will have a cdp wallet
     cdp_enabled: Annotated[
         Optional[bool],
         PydanticField(
             default=False,
-            description="Whether CDP (Crestal Development Platform) integration is enabled",
+            description="Whether CDP (Coinbase Development Platform) integration is enabled",
             json_schema_extra={
-                "x-group": "onchain",
+                "x-group": "deprecated",
             },
         ),
     ]
@@ -773,7 +900,7 @@ class AgentUpdate(BaseModel):
             default="base-mainnet",
             description="Network identifier for CDP integration",
             json_schema_extra={
-                "x-group": "onchain",
+                "x-group": "deprecated",
             },
         ),
     ]
@@ -813,9 +940,9 @@ class AgentUpdate(BaseModel):
         Optional[bool],
         PydanticField(
             default=False,
-            description="Whether the agent can receive events from Twitter",
+            description="Dangerous, reply all mentions from x.com",
             json_schema_extra={
-                "x-group": "experimental",
+                "x-group": "entrypoint",
             },
         ),
     ]
@@ -823,9 +950,9 @@ class AgentUpdate(BaseModel):
         Optional[dict],
         PydanticField(
             default=None,
-            description="This configuration will be used for entrypoint only",
+            description="You must use your own key for twitter entrypoint, it is separated from twitter skills",
             json_schema_extra={
-                "x-group": "experimental",
+                "x-group": "entrypoint",
             },
         ),
     ]
@@ -844,9 +971,9 @@ class AgentUpdate(BaseModel):
         Optional[bool],
         PydanticField(
             default=False,
-            description="Whether the agent can receive events from Telegram",
+            description="Whether the agent can play telegram bot",
             json_schema_extra={
-                "x-group": "social",
+                "x-group": "entrypoint",
             },
         ),
     ]
@@ -856,7 +983,7 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Telegram integration configuration settings",
             json_schema_extra={
-                "x-group": "social",
+                "x-group": "entrypoint",
             },
         ),
     ]
@@ -1046,7 +1173,7 @@ class AgentUpdate(BaseModel):
             db_agent = await db.get(AgentTable, id)
             if not db_agent:
                 raise HTTPException(status_code=404, detail="Agent not found")
-            # check onwer
+            # check owner
             if self.owner and db_agent.owner != self.owner:
                 raise HTTPException(
                     status_code=403,

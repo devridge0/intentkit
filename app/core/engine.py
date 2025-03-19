@@ -520,6 +520,8 @@ async def execute_agent(
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
+    # make sure reply_to is set
+    message.reply_to = message.id
     input = await message.save()
 
     is_private = False
