@@ -375,6 +375,21 @@ class CreditEventTable(Base):
         default=0.0,
         nullable=False,
     )
+    base_amount = Column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    base_discount_amount = Column(
+        Float,
+        default=0.0,
+        nullable=True,
+    )
+    base_original_amount = Column(
+        Float,
+        default=0.0,
+        nullable=True,
+    )
     base_llm_amount = Column(
         Float,
         default=0.0,
@@ -455,7 +470,20 @@ class CreditEvent(BaseModel):
         Optional[str], Field(None, description="Account ID from which credits flow")
     ]
     total_amount: Annotated[
-        float, Field(default=0.0, description="Total amount of credits involved")
+        float,
+        Field(
+            default=0.0, description="Total amount (after discount) of credits involved"
+        ),
+    ]
+    base_amount: Annotated[
+        float,
+        Field(default=0.0, description="Base amount of credits involved"),
+    ]
+    base_discount_amount: Annotated[
+        Optional[float], Field(default=0.0, description="Base discount amount")
+    ]
+    base_original_amount: Annotated[
+        Optional[float], Field(default=0.0, description="Base original amount")
     ]
     base_llm_amount: Annotated[
         Optional[float], Field(default=0.0, description="Base LLM cost amount")
@@ -582,10 +610,17 @@ class CreditTransaction(BaseModel):
     ]
 
 
-class PriceType(str, Enum):
+class PriceEntity(str, Enum):
     """Type of credit price."""
 
     SKILL_CALL = "skill_call"
+
+
+class DiscountType(str, Enum):
+    """Type of discount."""
+
+    STANDARD = "standard"
+    SELF_KEY = "self_key"
 
 
 DEFAULT_SKILL_CALL_PRICE = 10.0
@@ -604,20 +639,19 @@ class CreditPriceTable(Base):
         String,
         primary_key=True,
     )
-    price_type = Column(
+    price_entity = Column(
         String,
         nullable=False,
     )
-    price_name = Column(
+    price_entity_id = Column(
+        String,
+        nullable=False,
+    )
+    discount_type = Column(
         String,
         nullable=False,
     )
     price = Column(
-        Float,
-        default=0.0,
-        nullable=False,
-    )
-    self_key_price = Column(
         Float,
         default=0.0,
         nullable=False,
@@ -651,14 +685,17 @@ class CreditPrice(BaseModel):
             description="Unique identifier for the credit price",
         ),
     ]
-    price_type: Annotated[
-        PriceType, Field(description="Type of the price (agent or skill_call)")
+    price_entity: Annotated[
+        PriceEntity, Field(description="Type of the price (agent or skill_call)")
     ]
-    price_name: Annotated[str, Field(description="Name of the price")]
+    price_entity_id: Annotated[
+        str, Field(description="ID of the price entity, the skill is the name")
+    ]
+    discount_type: Annotated[
+        DiscountType,
+        Field(default=DiscountType.STANDARD, description="Type of discount"),
+    ]
     price: Annotated[float, Field(default=0.0, description="Standard price")]
-    self_key_price: Annotated[
-        float, Field(default=0.0, description="Price for self-key usage")
-    ]
     created_at: Annotated[
         datetime, Field(description="Timestamp when this price was created")
     ]
@@ -687,17 +724,13 @@ class CreditPriceLogTable(Base):
         Float,
         nullable=False,
     )
-    old_self_key_price = Column(
-        Float,
-        nullable=False,
-    )
     new_price = Column(
         Float,
         nullable=False,
     )
-    new_self_key_price = Column(
-        Float,
-        nullable=False,
+    note = Column(
+        String,
+        nullable=True,
     )
     modified_by = Column(
         String,
@@ -728,9 +761,10 @@ class CreditPriceLog(BaseModel):
     ]
     price_id: Annotated[str, Field(description="ID of the price that was modified")]
     old_price: Annotated[float, Field(description="Previous standard price")]
-    old_self_key_price: Annotated[float, Field(description="Previous self-key price")]
     new_price: Annotated[float, Field(description="New standard price")]
-    new_self_key_price: Annotated[float, Field(description="New self-key price")]
+    note: Annotated[
+        Optional[str], Field(None, description="Note about the modification")
+    ]
     modified_by: Annotated[
         str, Field(description="ID of the user who made the modification")
     ]
