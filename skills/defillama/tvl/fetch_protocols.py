@@ -141,6 +141,7 @@ class DefiLlamaFetchProtocols(DefiLlamaBaseTool):
 
     class EmptyArgsSchema(BaseModel):
         """Empty schema for no input parameters."""
+
         pass
 
     args_schema: Type[BaseModel] = EmptyArgsSchema
