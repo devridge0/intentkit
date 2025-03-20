@@ -2,6 +2,7 @@
 
 from typing import Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_protocol_current_tvl
@@ -49,14 +50,13 @@ class DefiLlamaFetchProtocolCurrentTvl(DefiLlamaBaseTool):
     description: str = FETCH_TVL_PROMPT
     args_schema: Type[BaseModel] = FetchProtocolCurrentTVLInput
 
-    def _run(self, protocol: str) -> FetchProtocolCurrentTVLResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, protocol: str) -> FetchProtocolCurrentTVLResponse:
+    async def _arun(
+        self, config: RunnableConfig, protocol: str
+    ) -> FetchProtocolCurrentTVLResponse:
         """Fetch current TVL for the given protocol.
 
         Args:
+            config: Runnable configuration
             protocol: DeFi protocol slug (e.g., "aave", "curve")
 
         Returns:
@@ -64,7 +64,8 @@ class DefiLlamaFetchProtocolCurrentTvl(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchProtocolCurrentTVLResponse(
                     protocol=protocol, tvl=0, error=error_msg

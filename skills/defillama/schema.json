@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "DeFi Llama Skills Configuration",
+  "x-icon": "https://ai.service.crestal.dev/skills/defillama/defillama.jpeg",
   "description": "Configuration schema for DeFi Llama skills",
   "properties": {
     "enabled": {

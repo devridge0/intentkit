@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_options_overview
@@ -95,13 +96,15 @@ class DefiLlamaFetchOptionsOverview(DefiLlamaBaseTool):
 
     name: str = "defillama_fetch_options_overview"
     description: str = FETCH_OPTIONS_OVERVIEW_PROMPT
-    args_schema: Type[BaseModel] = BaseModel
 
-    def _run(self) -> FetchOptionsOverviewResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
+    class EmptyArgsSchema(BaseModel):
+        """Empty schema for no input parameters."""
 
-    async def _arun(self) -> FetchOptionsOverviewResponse:
+        pass
+
+    args_schema: Type[BaseModel] = EmptyArgsSchema
+
+    async def _arun(self, config: RunnableConfig) -> FetchOptionsOverviewResponse:
         """Fetch overview data for all options protocols.
 
         Returns:
@@ -109,7 +112,8 @@ class DefiLlamaFetchOptionsOverview(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchOptionsOverviewResponse(error=error_msg)
 

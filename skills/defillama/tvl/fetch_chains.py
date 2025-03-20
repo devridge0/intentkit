@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_chains
@@ -74,11 +75,7 @@ class DefiLlamaFetchChains(DefiLlamaBaseTool):
     description: str = FETCH_CHAINS_PROMPT
     args_schema: Type[BaseModel] = FetchChainsInput
 
-    def _run(self) -> FetchChainsResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> FetchChainsResponse:
+    async def _arun(self, config: RunnableConfig) -> FetchChainsResponse:
         """Fetch TVL data for all chains.
 
         Returns:
@@ -86,7 +83,8 @@ class DefiLlamaFetchChains(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchChainsResponse(chains=[], total_tvl=0, error=error_msg)
 

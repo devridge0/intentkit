@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_first_price
@@ -66,14 +67,13 @@ class DefiLlamaFetchFirstPrice(DefiLlamaBaseTool):
     description: str = FETCH_FIRST_PRICE_PROMPT
     args_schema: Type[BaseModel] = FetchFirstPriceInput
 
-    def _run(self, coins: List[str]) -> FetchFirstPriceResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, coins: List[str]) -> FetchFirstPriceResponse:
+    async def _arun(
+        self, config: RunnableConfig, coins: List[str]
+    ) -> FetchFirstPriceResponse:
         """Fetch first recorded prices for the given tokens.
 
         Args:
+            config: Runnable configuration
             coins: List of token identifiers to fetch first prices for
 
         Returns:
@@ -81,7 +81,8 @@ class DefiLlamaFetchFirstPrice(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchFirstPriceResponse(error=error_msg)
 
