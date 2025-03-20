@@ -6,7 +6,7 @@ from typing import Type
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
-from skills.base import IntentKitSkill
+from skills.base import IntentKitSkill, SkillContext
 from skills.defillama.config.chains import (
     get_chain_from_alias,
 )
@@ -27,7 +27,6 @@ class DefiLlamaBaseTool(IntentKitSkill):
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
     args_schema: Type[BaseModel]
-    agent_id: str = Field(description="The ID of the agent")
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
@@ -35,20 +34,25 @@ class DefiLlamaBaseTool(IntentKitSkill):
         default=DEFILLAMA_BASE_URL, description="Base URL for DeFi Llama API"
     )
 
+    @property
+    def category(self) -> str:
+        return "defillama"
+
     async def check_rate_limit(
-        self, max_requests: int = 30, interval: int = 1
+        self, context: SkillContext, max_requests: int = 30, interval: int = 5
     ) -> tuple[bool, str | None]:
         """Check if the rate limit has been exceeded.
 
         Args:
+            context: Skill context
             max_requests: Maximum requests allowed in the interval (default: 30)
-            interval: Time interval in minutes (default: 1)
+            interval: Time interval in minutes (default: 5)
 
         Returns:
             Rate limit status and error message if limited
         """
         rate_limit = await self.skill_store.get_agent_skill_data(
-            self.agent_id, self.name, "rate_limit"
+            context.agent.id, self.name, "rate_limit"
         )
         current_time = datetime.now(tz=timezone.utc)
 
@@ -63,7 +67,7 @@ class DefiLlamaBaseTool(IntentKitSkill):
 
             rate_limit["count"] += 1
             await self.skill_store.save_agent_skill_data(
-                self.agent_id, self.name, "rate_limit", rate_limit
+                context.agent.id, self.name, "rate_limit", rate_limit
             )
             return False, None
 
@@ -72,7 +76,7 @@ class DefiLlamaBaseTool(IntentKitSkill):
             "reset_time": (current_time + timedelta(minutes=interval)).isoformat(),
         }
         await self.skill_store.save_agent_skill_data(
-            self.agent_id, self.name, "rate_limit", new_rate_limit
+            context.agent.id, self.name, "rate_limit", new_rate_limit
         )
         return False, None
 
