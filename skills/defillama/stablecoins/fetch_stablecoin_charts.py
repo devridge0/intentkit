@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_stablecoin_charts
@@ -83,16 +84,13 @@ class DefiLlamaFetchStablecoinCharts(DefiLlamaBaseTool):
     description: str = FETCH_STABLECOIN_CHARTS_PROMPT
     args_schema: Type[BaseModel] = FetchStablecoinChartsInput
 
-    def _run(self, stablecoin_id: str) -> FetchStablecoinChartsResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, stablecoin_id: str, chain: Optional[str] = None
+        self, config: RunnableConfig, stablecoin_id: str, chain: Optional[str] = None
     ) -> FetchStablecoinChartsResponse:
         """Fetch historical chart data for the given stablecoin.
 
         Args:
+            config: Runnable configuration
             stablecoin_id: ID of the stablecoin to fetch data for
             chain: Optional chain name for chain-specific data
 
@@ -110,7 +108,8 @@ class DefiLlamaFetchStablecoinCharts(DefiLlamaBaseTool):
                 chain = normalized_chain
 
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchStablecoinChartsResponse(error=error_msg)
 

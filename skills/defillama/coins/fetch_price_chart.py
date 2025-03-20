@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_price_chart
@@ -75,14 +76,13 @@ class DefiLlamaFetchPriceChart(DefiLlamaBaseTool):
     description: str = FETCH_PRICE_CHART_PROMPT
     args_schema: Type[BaseModel] = FetchPriceChartInput
 
-    def _run(self, coins: List[str]) -> FetchPriceChartResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, coins: List[str]) -> FetchPriceChartResponse:
+    async def _arun(
+        self, config: RunnableConfig, coins: List[str]
+    ) -> FetchPriceChartResponse:
         """Fetch price charts for the given tokens.
 
         Args:
+            config: Runnable configuration
             coins: List of token identifiers to fetch price charts for
 
         Returns:
@@ -90,7 +90,8 @@ class DefiLlamaFetchPriceChart(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchPriceChartResponse(error=error_msg)
 
