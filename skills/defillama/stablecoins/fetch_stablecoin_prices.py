@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_stablecoin_prices
@@ -53,11 +54,7 @@ class DefiLlamaFetchStablecoinPrices(DefiLlamaBaseTool):
     description: str = FETCH_STABLECOIN_PRICES_PROMPT
     args_schema: None = None  # No input parameters needed
 
-    def _run(self) -> FetchStablecoinPricesResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> FetchStablecoinPricesResponse:
+    async def _arun(self, config: RunnableConfig) -> FetchStablecoinPricesResponse:
         """Fetch stablecoin price data.
 
         Returns:
@@ -65,7 +62,8 @@ class DefiLlamaFetchStablecoinPrices(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchStablecoinPricesResponse(error=error_msg)
 

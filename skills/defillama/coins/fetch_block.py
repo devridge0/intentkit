@@ -2,6 +2,7 @@
 
 from typing import Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_block
@@ -57,14 +58,11 @@ class DefiLlamaFetchBlock(DefiLlamaBaseTool):
     description: str = FETCH_BLOCK_PROMPT
     args_schema: Type[BaseModel] = FetchBlockInput
 
-    def _run(self, chain: str) -> FetchBlockResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, chain: str) -> FetchBlockResponse:
+    async def _arun(self, config: RunnableConfig, chain: str) -> FetchBlockResponse:
         """Fetch current block data for the given chain.
 
         Args:
+            config: Runnable configuration
             chain: Chain name to fetch block data for
 
         Returns:
@@ -77,7 +75,8 @@ class DefiLlamaFetchBlock(DefiLlamaBaseTool):
                 return FetchBlockResponse(chain=chain, error=f"Invalid chain: {chain}")
 
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchBlockResponse(chain=normalized_chain, error=error_msg)
 
