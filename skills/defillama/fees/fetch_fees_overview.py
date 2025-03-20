@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_fees_overview
@@ -94,13 +95,15 @@ class DefiLlamaFetchFeesOverview(DefiLlamaBaseTool):
 
     name: str = "defillama_fetch_fees_overview"
     description: str = FETCH_FEES_OVERVIEW_PROMPT
-    args_schema: Type[BaseModel] = BaseModel
 
-    def _run(self) -> FetchFeesOverviewResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
+    class EmptyArgsSchema(BaseModel):
+        """Empty schema for no input parameters."""
 
-    async def _arun(self) -> FetchFeesOverviewResponse:
+        pass
+
+    args_schema: Type[BaseModel] = EmptyArgsSchema
+
+    async def _arun(self, config: RunnableConfig) -> FetchFeesOverviewResponse:
         """Fetch overview data for protocol fees.
 
         Returns:
@@ -108,7 +111,8 @@ class DefiLlamaFetchFeesOverview(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchFeesOverviewResponse(error=error_msg)
 

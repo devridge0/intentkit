@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_dex_overview
@@ -129,11 +130,7 @@ class DefiLlamaFetchDexOverview(DefiLlamaBaseTool):
     description: str = FETCH_DEX_OVERVIEW_PROMPT
     args_schema: None = None  # No input parameters needed
 
-    def _run(self) -> FetchDexOverviewResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> FetchDexOverviewResponse:
+    async def _arun(self, config: RunnableConfig) -> FetchDexOverviewResponse:
         """Fetch DEX overview data.
 
         Returns:
@@ -141,7 +138,8 @@ class DefiLlamaFetchDexOverview(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchDexOverviewResponse(error=error_msg)
 

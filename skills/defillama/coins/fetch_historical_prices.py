@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_historical_prices
@@ -75,16 +76,13 @@ class DefiLlamaFetchHistoricalPrices(DefiLlamaBaseTool):
     description: str = FETCH_HISTORICAL_PRICES_PROMPT
     args_schema: Type[BaseModel] = FetchHistoricalPricesInput
 
-    def _run(self, timestamp: int, coins: List[str]) -> FetchHistoricalPricesResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
     async def _arun(
-        self, timestamp: int, coins: List[str]
+        self, config: RunnableConfig, timestamp: int, coins: List[str]
     ) -> FetchHistoricalPricesResponse:
         """Fetch historical prices for the given tokens at the specified time.
 
         Args:
+            config: Runnable configuration
             timestamp: Unix timestamp for historical price lookup
             coins: List of token identifiers to fetch prices for
 
@@ -93,7 +91,8 @@ class DefiLlamaFetchHistoricalPrices(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchHistoricalPricesResponse(error=error_msg)
 

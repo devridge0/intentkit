@@ -1,7 +1,9 @@
 """DeFi Llama skills."""
 
+from typing import TypedDict
+
 from abstracts.skill import SkillStoreABC
-from skills.base import SkillConfig
+from skills.base import SkillConfig, SkillState
 from skills.defillama.base import DefiLlamaBaseTool
 from skills.defillama.coins.fetch_batch_historical_prices import (
     DefiLlamaFetchBatchHistoricalPrices,
@@ -55,45 +57,82 @@ from skills.defillama.yields.fetch_pool_chart import DefiLlamaFetchPoolChart
 # Yields Tools
 from skills.defillama.yields.fetch_pools import DefiLlamaFetchPools
 
+# we cache skills in system level, because they are stateless
+_cache: dict[str, DefiLlamaBaseTool] = {}
+
+
+class SkillStates(TypedDict):
+    # TVL Skills
+    fetch_protocols: SkillState
+    fetch_protocol: SkillState
+    fetch_historical_tvl: SkillState
+    fetch_chain_historical_tvl: SkillState
+    fetch_protocol_current_tvl: SkillState
+    fetch_chains: SkillState
+
+    # Coins Skills
+    fetch_current_prices: SkillState
+    fetch_historical_prices: SkillState
+    fetch_batch_historical_prices: SkillState
+    fetch_price_chart: SkillState
+    fetch_price_percentage: SkillState
+    fetch_first_price: SkillState
+    fetch_block: SkillState
+
+    # Stablecoins Skills
+    fetch_stablecoins: SkillState
+    fetch_stablecoin_charts: SkillState
+    fetch_stablecoin_chains: SkillState
+    fetch_stablecoin_prices: SkillState
+
+    # Yields Skills
+    fetch_pools: SkillState
+    fetch_pool_chart: SkillState
+
+    # Volumes Skills
+    fetch_dex_overview: SkillState
+    fetch_dex_summary: SkillState
+    fetch_options_overview: SkillState
+
+    # Fees Skills
+    fetch_fees_overview: SkillState
+
 
 class Config(SkillConfig):
     """Configuration for DeFi Llama skills."""
 
+    states: SkillStates
+
 
 def get_skills(
     config: "Config",
-    agent_id: str,
     is_private: bool,
     store: SkillStoreABC,
     **_,
 ) -> list[DefiLlamaBaseTool]:
     """Get all DeFi Llama skills."""
-    # always return public skills
-    resp = [
-        get_defillama_skill(name, store, agent_id) for name in config["public_skills"]
-    ]
-    # return private skills only if is_private
-    if is_private:
-        resp.extend(
-            get_defillama_skill(name, store, agent_id)
-            for name in config["private_skills"]
-            # remove duplicates
-            if name not in config["public_skills"]
-        )
-    return resp
+    available_skills = []
+
+    # Include skills based on their state
+    for skill_name, state in config["states"].items():
+        if state == "disabled":
+            continue
+        elif state == "public" or (state == "private" and is_private):
+            available_skills.append(skill_name)
+
+    # Get each skill using the cached getter
+    return [get_defillama_skill(name, store) for name in available_skills]
 
 
 def get_defillama_skill(
     name: str,
     store: SkillStoreABC,
-    agent_id: str,
 ) -> DefiLlamaBaseTool:
     """Get a DeFi Llama skill by name.
 
     Args:
         name: The name of the skill to get
         store: The skill store for persisting data
-        agent_id: The ID of the agent
 
     Returns:
         The requested DeFi Llama skill
@@ -108,136 +147,157 @@ def get_defillama_skill(
     """
     # TVL Skills
     if name == "fetch_protocols":
-        return DefiLlamaFetchProtocols(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchProtocols(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_protocol":
-        return DefiLlamaFetchProtocol(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchProtocol(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_historical_tvl":
-        return DefiLlamaFetchHistoricalTvl(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchHistoricalTvl(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_chain_historical_tvl":
-        return DefiLlamaFetchChainHistoricalTvl(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchChainHistoricalTvl(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_protocol_current_tvl":
-        return DefiLlamaFetchProtocolCurrentTvl(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchProtocolCurrentTvl(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_chains":
-        return DefiLlamaFetchChains(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchChains(
+                skill_store=store,
+            )
+        return _cache[name]
 
     # Coins Skills
     elif name == "fetch_current_prices":
-        return DefiLlamaFetchCurrentPrices(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchCurrentPrices(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_historical_prices":
-        return DefiLlamaFetchHistoricalPrices(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchHistoricalPrices(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_batch_historical_prices":
-        return DefiLlamaFetchBatchHistoricalPrices(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchBatchHistoricalPrices(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_price_chart":
-        return DefiLlamaFetchPriceChart(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchPriceChart(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_price_percentage":
-        return DefiLlamaFetchPricePercentage(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchPricePercentage(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_first_price":
-        return DefiLlamaFetchFirstPrice(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchFirstPrice(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_block":
-        return DefiLlamaFetchBlock(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchBlock(
+                skill_store=store,
+            )
+        return _cache[name]
 
     # Stablecoins Skills
     elif name == "fetch_stablecoins":
-        return DefiLlamaFetchStablecoins(
-            skill_store=store,
-            agent_id=agent_id,
-        )
-    elif (
-        name == "fetch_stablecoin_charts"
-    ):  # Handles both all and chain-specific charts
-        return DefiLlamaFetchStablecoinCharts(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchStablecoins(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "fetch_stablecoin_charts":
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchStablecoinCharts(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_stablecoin_chains":
-        return DefiLlamaFetchStablecoinChains(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchStablecoinChains(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_stablecoin_prices":
-        return DefiLlamaFetchStablecoinPrices(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchStablecoinPrices(
+                skill_store=store,
+            )
+        return _cache[name]
 
     # Yields Skills
     elif name == "fetch_pools":
-        return DefiLlamaFetchPools(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchPools(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_pool_chart":
-        return DefiLlamaFetchPoolChart(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchPoolChart(
+                skill_store=store,
+            )
+        return _cache[name]
 
     # Volumes Skills
     elif name == "fetch_dex_overview":  # Handles both base and chain-specific overviews
-        return DefiLlamaFetchDexOverview(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchDexOverview(
+                skill_store=store,
+            )
+        return _cache[name]
     elif name == "fetch_dex_summary":
-        return DefiLlamaFetchDexSummary(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchDexSummary(
+                skill_store=store,
+            )
+        return _cache[name]
     elif (
         name == "fetch_options_overview"
     ):  # Handles both base and chain-specific overviews
-        return DefiLlamaFetchOptionsOverview(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchOptionsOverview(
+                skill_store=store,
+            )
+        return _cache[name]
 
     # Fees Skills
     elif (
         name == "fetch_fees_overview"
     ):  # Handles both base and chain-specific overviews
-        return DefiLlamaFetchFeesOverview(
-            skill_store=store,
-            agent_id=agent_id,
-        )
+        if name not in _cache:
+            _cache[name] = DefiLlamaFetchFeesOverview(
+                skill_store=store,
+            )
+        return _cache[name]
 
     else:
         raise ValueError(f"Unknown DeFi Llama skill: {name}")
