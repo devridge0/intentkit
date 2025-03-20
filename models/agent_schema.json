@@ -381,12 +381,12 @@
       "type": "boolean",
       "description": "Whether the agent can receive events from Telegram",
       "default": false,
-      "x-group": "social"
+      "x-group": "entrypoint"
     },
     "telegram_config": {
       "type": "object",
       "description": "Telegram integration configuration settings",
-      "x-group": "social"
+      "x-group": "entrypoint"
     },
     "telegram_skills": {
       "type": "array",
@@ -438,6 +438,9 @@
         },
         "elfa": {
           "$ref": "../skills/elfa/schema.json"
+        },
+        "enso": {
+          "$ref": "../skills/enso/schema.json"
         },
         "slack": {
           "$ref": "../skills/slack/schema.json"
