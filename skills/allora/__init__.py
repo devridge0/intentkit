@@ -1,6 +1,6 @@
 """Allora skill module."""
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.allora.base import AlloraBaseTool
@@ -19,7 +19,7 @@ class Config(SkillConfig):
     """Configuration for Allora skills."""
 
     states: SkillStates
-    api_key: str
+    api_key: NotRequired[str]
 
 
 def get_skills(
