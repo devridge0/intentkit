@@ -15,7 +15,6 @@ import logging
 import textwrap
 import time
 from datetime import datetime
-from utils.chain_helpers import setup_chain_provider
 
 import sqlalchemy
 from coinbase_agentkit import (
@@ -106,9 +105,10 @@ async def initialize_agent(aid, is_private=False):
     Raises:
         HTTPException: If agent not found (404) or database error (500)
     """
+    """Initialize the agent with CDP Agentkit."""
     # init agent store
     agent_store = AgentStore(aid)
-    
+
     # get the agent from the database
     agent: Agent = await Agent.get(aid)
     if not agent:
@@ -430,6 +430,7 @@ async def initialize_agent(aid, is_private=False):
     else:
         _agents[aid] = executor
         _agents_updated[aid] = agent.updated_at
+
 
 async def agent_executor(agent_id: str, is_private: bool) -> (CompiledGraph, float):
     start = time.perf_counter()
