@@ -1,33 +1,35 @@
-"""Tool for fetching transaction history for a wallet."""
+"""fetching transaction history for a wallet."""
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Type
 from pydantic import BaseModel, Field
+import logging
 from datetime import datetime
 
-from .base import WalletPortfolioBaseTool
-from .api import fetch_transaction_history
+from skills.wallet.api import fetch_transaction_history
+from skills.wallet.base import WalletBaseTool
 
-FETCH_TRANSACTION_HISTORY_PROMPT = """
-This tool fetches transaction history for a wallet address.
-Provide a wallet address and optionally a chain ID to get detailed transaction data.
-Returns:
-- Transaction details (hash, timestamp, value, etc.)
-- Transaction type (transfer, swap, approval, etc.)
-- Token movements (from, to, amount)
-- Gas costs
-"""
+logger = logging.getLogger(__name__)
 
 class FetchTransactionHistoryInput(BaseModel):
-    """Input schema for fetching transaction history."""
+    """Input for FetchTransactionHistory tool."""
     
     address: str = Field(..., description="Wallet address")
-    chain_id: Optional[int] = Field(None, description="Chain ID (if not specified, fetches from all supported chains)")
-    limit: Optional[int] = Field(100, description="Maximum number of transactions to return")
-    cursor: Optional[str] = Field(None, description="Cursor for pagination")
+    chain_id: Optional[int] = Field(
+        None, 
+        description="Chain ID (if not specified, fetches from Ethereum mainnet)"
+    )
+    limit: Optional[int] = Field(
+        100, 
+        description="Maximum number of transactions to return"
+    )
+    cursor: Optional[str] = Field(
+        None, 
+        description="Cursor for pagination"
+    )
 
 
 class TokenTransfer(BaseModel):
-    """Model representing a token transfer within a transaction."""
+    """Model for a token transfer within a transaction."""
     
     token_address: str = Field(..., description="Token contract address")
     token_name: Optional[str] = Field(None, description="Token name")
@@ -41,7 +43,7 @@ class TokenTransfer(BaseModel):
 
 
 class Transaction(BaseModel):
-    """Model representing a transaction."""
+    """Model for a transaction."""
     
     hash: str = Field(..., description="Transaction hash")
     block_number: int = Field(..., description="Block number")
@@ -58,10 +60,11 @@ class Transaction(BaseModel):
     method: Optional[str] = Field(None, description="Contract method name if available")
     token_transfers: List[TokenTransfer] = Field(default_factory=list, description="Token transfers in this transaction")
     transaction_type: Optional[str] = Field(None, description="Transaction type (transfer, swap, approval, etc.)")
+    chain: str = Field("eth", description="Blockchain network")
 
 
 class TransactionHistoryOutput(BaseModel):
-    """Response schema for transaction history."""
+    """Output for FetchTransactionHistory tool."""
     
     address: str = Field(..., description="Wallet address")
     chain_id: Optional[int] = Field(None, description="Chain ID if specified")
@@ -73,39 +76,39 @@ class TransactionHistoryOutput(BaseModel):
     error: Optional[str] = Field(None, description="Error message if any")
 
 
-class FetchTransactionHistory(WalletPortfolioBaseTool):
+class FetchTransactionHistory(WalletBaseTool):
     """Tool for fetching transaction history for a wallet.
     
     This tool retrieves detailed transaction data for a wallet address,
     including token transfers, gas costs, and USD values when available.
     """
-    
+
     name: str = "fetch_transaction_history"
-    description: str = FETCH_TRANSACTION_HISTORY_PROMPT
-    args_schema = FetchTransactionHistoryInput
-    
-    def _run(
-        self, 
-        address: str, 
-        chain_id: Optional[int] = None,
-        limit: int = 100,
-        cursor: Optional[str] = None
-    ) -> TransactionHistoryOutput:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-    
+    description: str = (
+        "This tool fetches transaction history for a wallet address.\n"
+        "Provide a wallet address and optionally a chain ID to get detailed transaction data.\n"
+        "Returns:\n"
+        "- Transaction details (hash, timestamp, value, etc.)\n"
+        "- Transaction type (transfer, swap, approval, etc.)\n"
+        "- Token movements (from, to, amount)\n"
+        "- Gas costs\n"
+        "Use this tool whenever a user wants to see their recent transactions."
+    )
+    args_schema: Type[BaseModel] = FetchTransactionHistoryInput
+
     async def _arun(
         self, 
         address: str, 
         chain_id: Optional[int] = None,
         limit: int = 100,
-        cursor: Optional[str] = None
+        cursor: Optional[str] = None,
+        **kwargs
     ) -> TransactionHistoryOutput:
         """Fetch transaction history for a wallet.
         
         Args:
             address: Wallet address to fetch transactions for
-            chain_id: Chain ID to fetch transactions for (if None, fetches from all supported chains)
+            chain_id: Chain ID to fetch transactions for (if None, fetches from Ethereum mainnet)
             limit: Maximum number of transactions to return
             cursor: Cursor for pagination
             
@@ -113,15 +116,14 @@ class FetchTransactionHistory(WalletPortfolioBaseTool):
             TransactionHistoryOutput containing transaction history data
         """
         try:
-            # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
-            if is_rate_limited:
-                return TransactionHistoryOutput(
-                    address=address,
-                    chain_id=chain_id,
-                    chain_name=self._get_chain_name(chain_id) if chain_id else None,
-                    error=error_msg
-                )
+            # Get context from config if available
+            context = None
+            if 'config' in kwargs:
+                context = self.context_from_config(kwargs['config'])
+            
+            # Default to Ethereum mainnet if chain_id is not specified
+            if chain_id is None:
+                chain_id = 1  # Ethereum mainnet
             
             # Fetch transaction history
             tx_data = await fetch_transaction_history(
@@ -136,15 +138,16 @@ class FetchTransactionHistory(WalletPortfolioBaseTool):
                 return TransactionHistoryOutput(
                     address=address,
                     chain_id=chain_id,
-                    chain_name=self._get_chain_name(chain_id) if chain_id else None,
+                    chain_name=self._get_chain_name(chain_id),
                     error=tx_data["error"]
                 )
             
             # Process the data
+            chain_name = self._get_chain_name(chain_id)
             result = {
                 "address": address,
                 "chain_id": chain_id,
-                "chain_name": self._get_chain_name(chain_id) if chain_id else None,
+                "chain_name": chain_name,
                 "transactions": [],
                 "total_count": tx_data.get("total"),
                 "page_size": tx_data.get("page_size", limit),
@@ -193,29 +196,35 @@ class FetchTransactionHistory(WalletPortfolioBaseTool):
                     tx_type = "token_transfer"
                 
                 # Create transaction
-                transaction = Transaction(
-                    hash=tx.get("hash", ""),
-                    block_number=int(tx.get("block_number", 0)),
-                    timestamp=datetime.fromtimestamp(int(tx.get("block_timestamp", 0))),
-                    from_address=tx.get("from_address", ""),
-                    to_address=tx.get("to_address"),
-                    value=tx.get("value", "0"),
-                    value_decimal=float(tx.get("value_decimal", 0)),
-                    value_usd=tx.get("value_usd"),
-                    gas_price=tx.get("gas_price", "0"),
-                    gas_used=tx.get("gas_used"),
-                    fee=tx.get("fee"),
-                    fee_usd=tx.get("fee_usd"),
-                    method=tx.get("method"),
-                    token_transfers=token_transfers,
-                    transaction_type=tx_type
-                )
-                
-                result["transactions"].append(transaction)
+                try:
+                    transaction = Transaction(
+                        hash=tx.get("hash", ""),
+                        block_number=int(tx.get("block_number", 0)),
+                        timestamp=datetime.fromtimestamp(int(tx.get("block_timestamp", 0))),
+                        from_address=tx.get("from_address", ""),
+                        to_address=tx.get("to_address"),
+                        value=tx.get("value", "0"),
+                        value_decimal=float(tx.get("value_decimal", 0)),
+                        value_usd=tx.get("value_usd"),
+                        gas_price=tx.get("gas_price", "0"),
+                        gas_used=tx.get("gas_used"),
+                        fee=tx.get("fee"),
+                        fee_usd=tx.get("fee_usd"),
+                        method=tx.get("method"),
+                        token_transfers=token_transfers,
+                        transaction_type=tx_type,
+                        chain=chain_name
+                    )
+                    
+                    result["transactions"].append(transaction)
+                except Exception as e:
+                    logger.warning(f"Error processing transaction {tx.get('hash', '')}: {str(e)}")
+                    continue
             
             return TransactionHistoryOutput(**result)
             
         except Exception as e:
+            logger.error(f"Error fetching transaction history: {str(e)}")
             return TransactionHistoryOutput(
                 address=address,
                 chain_id=chain_id,

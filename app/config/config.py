@@ -86,16 +86,6 @@ class Config:
         self.crossmint_api_base_url = self.load(
             "CROSSMINT_API_BASE_URL", "https://staging.crossmint.com"
         )
-        # Covalent
-        self.covalent_api_key = self.load("COVALENT_API_KEY")
-        self.covalent_api_base_url = self.load(
-            "COVALENT_API_BASE_URL", "https://api.covalenthq.com/v1"
-        )
-        # Moralis
-        self.moralis_api_key = self.load("MORALIS_API_KEY")
-        self.moralis_api_base_url = self.load(
-            "MORALIS_API_BASE_URL", "https://deep-index.moralis.io/api/v2"
-        )
         # AI
         self.openai_api_key = self.load("OPENAI_API_KEY")
         self.deepseek_api_key = self.load("DEEPSEEK_API_KEY")

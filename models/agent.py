@@ -446,17 +446,6 @@ class AgentTable(Base):
         nullable=True,
         comment="Elfa integration configuration settings",
     )
-    # Wallet Portfolio
-    wallet_portfolio_skills = Column(
-        ARRAY(String),
-        nullable=True,
-        comment="List of Wallet Portfolio skills available to this agent",
-    )
-    wallet_portfolio_config = Column(
-        JSONB,
-        nullable=True,
-        comment="Wallet Portfolio integration configurations",
-    )
     # auto timestamp
     created_at = Column(
         DateTime(timezone=True),
@@ -1115,40 +1104,6 @@ class AgentUpdate(BaseModel):
             },
         ),
     ]
-    # Wallet Portfolio skills
-    wallet_portfolio_skills: Annotated[
-        Optional[List[str]],
-        PydanticField(
-            default=None,
-            description="List of Wallet Portfolio skills available to this agent",
-            json_schema_extra={
-                "x-group": "onchain",
-            },
-        ),
-    ]
-    wallet_portfolio_config: Annotated[
-        Optional[dict],
-        PydanticField(
-            default={
-                "api_key": "",
-                "public_skills": [
-                    "fetch_wallet_portfolio",
-                    "fetch_chain_portfolio",
-                    "fetch_nft_portfolio",
-                    "fetch_transaction_history",
-                    "fetch_solana_portfolio"
-                ],
-                "supported_chains": {
-                    "evm": True,
-                    "solana": True
-                }
-            },
-            description="Wallet Portfolio integration configurations",
-            json_schema_extra={
-                "x-group": "onchain",
-            },
-        ),
-    ]
 
     @field_validator("purpose", "personality", "principles", "prompt", "prompt_append")
     @classmethod
@@ -1459,10 +1414,6 @@ class AgentResponse(Agent):
         Optional[str],
         PydanticField(description="The name of the linked Telegram account"),
     ]
-    
-    solana_wallet_address: Annotated[
-        Optional[str], PydanticField(description="Solana wallet address for the agent")
-    ]
 
     def etag(self) -> str:
         """Generate an ETag for this agent response.
@@ -1547,13 +1498,6 @@ class AgentResponse(Agent):
             if agent_data:
                 linked_telegram_username = agent_data.telegram_username
                 linked_telegram_name = agent_data.telegram_name
-                
-        solana_wallet_address = None
-        if agent_data and agent_data.solana_wallet_data:
-            try:
-                solana_wallet_address = agent_data.solana_wallet_address
-            except (AttributeError):
-                pass
 
         # Add processed fields to response
         data.update(
@@ -1566,7 +1510,6 @@ class AgentResponse(Agent):
                 "has_telegram_self_key": has_telegram_self_key,
                 "linked_telegram_username": linked_telegram_username,
                 "linked_telegram_name": linked_telegram_name,
-                "solana_wallet_address": solana_wallet_address,
             }
         )
 
@@ -1598,8 +1541,6 @@ class AgentDataTable(Base):
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
     telegram_name = Column(String, nullable=True, comment="Telegram display name")
-    solana_wallet_data = Column(JSONB, nullable=True, comment="Solana wallet information")
-    solana_wallet_address = Column(String, nullable=True, comment="Primary Solana wallet address")
     error_message = Column(String, nullable=True, comment="Last error message")
     created_at = Column(
         DateTime(timezone=True),
@@ -1702,20 +1643,6 @@ class AgentData(BaseModel):
         PydanticField(
             default=None,
             description="Telegram display name",
-        ),
-    ]
-    solana_wallet_data: Annotated[
-        Optional[dict],
-        PydanticField(
-            default=None,
-            description="Solana wallet information",
-        ),
-    ]
-    solana_wallet_address: Annotated[
-        Optional[str],
-        PydanticField(
-            default=None,
-            description="Primary Solana wallet address",
         ),
     ]
     error_message: Annotated[
