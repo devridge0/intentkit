@@ -2,6 +2,7 @@
 
 from typing import List, Type
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_chain_historical_tvl
@@ -59,14 +60,13 @@ class DefiLlamaFetchChainHistoricalTvl(DefiLlamaBaseTool):
     description: str = FETCH_HISTORICAL_TVL_PROMPT
     args_schema: Type[BaseModel] = FetchChainHistoricalTVLInput
 
-    def _run(self, chain: str) -> FetchChainHistoricalTVLResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self, chain: str) -> FetchChainHistoricalTVLResponse:
+    async def _arun(
+        self, config: RunnableConfig, chain: str
+    ) -> FetchChainHistoricalTVLResponse:
         """Fetch historical TVL data for the given chain.
 
         Args:
+            config: Runnable configuration
             chain: Blockchain name (e.g., "ethereum", "solana")
 
         Returns:
@@ -74,7 +74,8 @@ class DefiLlamaFetchChainHistoricalTvl(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchChainHistoricalTVLResponse(chain=chain, error=error_msg)
 

@@ -1,7 +1,8 @@
 """Tool for fetching pool data via DeFi Llama API."""
 
-from typing import List, Optional
+from typing import Optional
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_pools
@@ -40,7 +41,7 @@ class PoolData(BaseModel):
     apyBase: Optional[float] = Field(None, description="Base APY without rewards")
     apyReward: Optional[float] = Field(None, description="Additional APY from rewards")
     apy: Optional[float] = Field(None, description="Total APY including rewards")
-    rewardTokens: Optional[List[str]] = Field(
+    rewardTokens: Optional[list[str]] = Field(
         None, description="List of reward token addresses"
     )
     pool: Optional[str] = Field(None, description="Pool identifier")
@@ -58,7 +59,7 @@ class PoolData(BaseModel):
     sigma: Optional[float] = Field(None, description="APY standard deviation")
     count: Optional[int] = Field(None, description="Number of data points")
     outlier: bool = Field(False, description="Whether pool is an outlier")
-    underlyingTokens: Optional[List[str]] = Field(
+    underlyingTokens: Optional[list[str]] = Field(
         None, description="List of underlying token addresses"
     )
     il7d: Optional[float] = Field(None, description="7-day impermanent loss")
@@ -75,7 +76,7 @@ class FetchPoolsResponse(BaseModel):
     """Response schema for pool data."""
 
     status: str = Field("success", description="Response status")
-    data: List[PoolData] = Field(default_factory=list, description="List of pool data")
+    data: list[PoolData] = Field(default_factory=list, description="List of pool data")
     error: Optional[str] = Field(None, description="Error message if any")
 
 
@@ -98,11 +99,7 @@ class DefiLlamaFetchPools(DefiLlamaBaseTool):
     description: str = FETCH_POOLS_PROMPT
     args_schema: None = None  # No input parameters needed
 
-    def _run(self) -> FetchPoolsResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> FetchPoolsResponse:
+    async def _arun(self, config: RunnableConfig) -> FetchPoolsResponse:
         """Fetch pool data.
 
         Returns:
@@ -110,7 +107,8 @@ class DefiLlamaFetchPools(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchPoolsResponse(error=error_msg)
 

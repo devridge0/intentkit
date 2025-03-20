@@ -313,17 +313,7 @@ async def initialize_agent(aid, is_private=False):
             try:
                 s = get_enso_skill(
                     skill,
-                    agent.enso_config.get("api_token"),
-                    agent.enso_config.get("main_tokens", list[str]()),
-                    cdp_wallet_provider._wallet if cdp_wallet_provider else None,
-                    (
-                        config.chain_provider
-                        if hasattr(config, "chain_provider") and config.chain_provider
-                        else None
-                    ),
                     skill_store,
-                    agent_store,
-                    aid,
                 )
                 tools.append(s)
             except Exception as e:
@@ -347,14 +337,12 @@ async def initialize_agent(aid, is_private=False):
     if (
         agent.allora_skills
         and len(agent.allora_skills) > 0
-        and agent.allora_config
         and ("allora" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.allora_skills:
             try:
                 s = get_allora_skill(
                     skill,
-                    agent.allora_config.get("api_key"),
                     skill_store,
                 )
                 tools.append(s)
@@ -364,14 +352,12 @@ async def initialize_agent(aid, is_private=False):
     if (
         agent.elfa_skills
         and len(agent.elfa_skills) > 0
-        and agent.elfa_config
         and ("elfa" not in agent.skills if agent.skills else True)
     ):
         for skill in agent.elfa_skills:
             try:
                 s = get_elfa_skill(
                     skill,
-                    agent.elfa_config.get("api_key"),
                     skill_store,
                 )
                 tools.append(s)

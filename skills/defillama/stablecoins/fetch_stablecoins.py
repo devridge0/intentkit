@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 
+from langchain.schema.runnable import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.defillama.api import fetch_stablecoins
@@ -98,11 +99,7 @@ class DefiLlamaFetchStablecoins(DefiLlamaBaseTool):
     description: str = FETCH_STABLECOINS_PROMPT
     args_schema: None = None  # No input parameters needed
 
-    def _run(self) -> FetchStablecoinsResponse:
-        """Synchronous implementation - not supported."""
-        raise NotImplementedError("Use _arun instead")
-
-    async def _arun(self) -> FetchStablecoinsResponse:
+    async def _arun(self, config: RunnableConfig) -> FetchStablecoinsResponse:
         """Fetch stablecoin data.
 
         Returns:
@@ -110,7 +107,8 @@ class DefiLlamaFetchStablecoins(DefiLlamaBaseTool):
         """
         try:
             # Check rate limiting
-            is_rate_limited, error_msg = await self.check_rate_limit()
+            context = self.context_from_config(config)
+            is_rate_limited, error_msg = await self.check_rate_limit(context)
             if is_rate_limited:
                 return FetchStablecoinsResponse(error=error_msg)
 

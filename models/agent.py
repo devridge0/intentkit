@@ -539,7 +539,7 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Picture of the agent",
             json_schema_extra={
-                "x-group": "basic",
+                "x-group": "experimental",
                 "x-placeholder": "Upload a picture of your agent",
             },
         ),
@@ -1016,9 +1016,10 @@ class AgentUpdate(BaseModel):
         Optional[bool],
         PydanticField(
             default=False,
+            deprecated="Please use skills instead",
             description="Whether Enso integration is enabled",
             json_schema_extra={
-                "x-group": "experimental",
+                "x-group": "deprecated",
             },
         ),
     ]
@@ -1027,10 +1028,10 @@ class AgentUpdate(BaseModel):
         Optional[List[str]],
         PydanticField(
             default=None,
-            deprecated="Please use enso_enabled instead",
+            deprecated="Please use skills instead",
             description="List of Enso-specific skills available to this agent",
             json_schema_extra={
-                "x-group": "experimental",
+                "x-group": "deprecated",
             },
         ),
     ]
@@ -1041,7 +1042,7 @@ class AgentUpdate(BaseModel):
             deprecated="Please use skills instead",
             description="Enso integration configuration settings",
             json_schema_extra={
-                "x-group": "experimental",
+                "x-group": "deprecated",
             },
         ),
     ]
