@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import json
 import logging
 
@@ -37,6 +38,7 @@ from models.agent import (
     AgentUpdate,
 )
 from models.db import get_db
+from skills import __all__ as skill_categories
 from utils.middleware import create_jwt_middleware
 from utils.slack_alert import send_slack_message
 
@@ -581,7 +583,43 @@ async def export_agent(
     agent = await Agent.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    # Ensure agent.skills is initialized
+    if agent.skills is None:
+        agent.skills = {}
 
+    # Process all skill categories
+    for category in skill_categories:
+        try:
+            # Dynamically import the skill module
+            skill_module = importlib.import_module(f"skills.{category}")
+
+            # Check if the module has a Config class and get_skills function
+            if hasattr(skill_module, "Config") and hasattr(skill_module, "get_skills"):
+                # Get or create the config for this category
+                category_config = agent.skills.get(category, {})
+
+                # Ensure states dict exists
+                if "states" not in category_config:
+                    category_config["states"] = {}
+
+                # Get all available skill states from the module
+                available_skills = []
+                if hasattr(skill_module, "SkillStates") and hasattr(
+                    skill_module.SkillStates, "__annotations__"
+                ):
+                    available_skills = list(
+                        skill_module.SkillStates.__annotations__.keys()
+                    )
+                # Add missing skills with disabled state
+                for skill_name in available_skills:
+                    if skill_name not in category_config["states"]:
+                        category_config["states"][skill_name] = "disabled"
+
+                # Update the agent's skills config
+                agent.skills[category] = category_config
+        except (ImportError, AttributeError):
+            # Skip if module import fails or doesn't have required components
+            pass
     yaml_content = agent.to_yaml()
     return Response(
         content=yaml_content,
