@@ -1,6 +1,6 @@
 """CryptoCompare skills."""
 
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
