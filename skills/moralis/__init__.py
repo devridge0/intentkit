@@ -6,21 +6,21 @@ from abstracts.agent import AgentStoreABC
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.wallet.base import WalletBaseTool
-from skills.wallet.fetch_wallet_portfolio import FetchWalletPortfolio
-from skills.wallet.fetch_chain_portfolio import FetchChainPortfolio
-from skills.wallet.fetch_nft_portfolio import FetchNftPortfolio
-from skills.wallet.fetch_transaction_history import FetchTransactionHistory
-from skills.wallet.fetch_solana_portfolio import FetchSolanaPortfolio
+from skills.wallet.moralis_fetch_wallet_portfolio import FetchWalletPortfolio
+from skills.wallet.moralis_fetch_chain_portfolio import FetchChainPortfolio
+from skills.wallet.moralis_fetch_nft_portfolio import FetchNftPortfolio
+from skills.wallet.moralis_fetch_transaction_history import FetchTransactionHistory
+from skills.wallet.moralis_fetch_solana_portfolio import FetchSolanaPortfolio
 
 # Define skill state configuration
 class SkillStates(TypedDict):
     """Configuration of states for wallet skills."""
     
-    fetch_wallet_portfolio: SkillState
-    fetch_chain_portfolio: SkillState
-    fetch_nft_portfolio: SkillState
-    fetch_transaction_history: SkillState
-    fetch_solana_portfolio: SkillState
+    moralis_fetch_wallet_portfolio: SkillState
+    moralis_fetch_chain_portfolio: SkillState
+    moralis_fetch_nft_portfolio: SkillState
+    moralis_fetch_transaction_history: SkillState
+    moralis_etch_solana_portfolio: SkillState
 
 
 class Config(SkillConfig):
@@ -32,7 +32,7 @@ class Config(SkillConfig):
 
 
 def get_skills(
-    config: Config,
+    config: "Config",
     is_private: bool,
     store: SkillStoreABC,
     agent_id: str,

@@ -8,18 +8,18 @@ from datetime import datetime, timedelta
 
 from skills.wallet.base import WalletBaseTool
 from skills.wallet.api import (
-    fetch_moralis_data,
-    fetch_wallet_balances,
-    fetch_nft_data,
-    fetch_transaction_history,
+    moralis_fetch_moralis_data,
+    moralis_fetch_wallet_balances,
+    moralis_fetch_nft_data,
+    moralis_fetch_transaction_history,
     get_solana_portfolio,
     get_solana_balance
 )
-from skills.wallet.fetch_wallet_portfolio import FetchWalletPortfolio
-from skills.wallet.fetch_chain_portfolio import FetchChainPortfolio
-from skills.wallet.fetch_nft_portfolio import FetchNftPortfolio
-from skills.wallet.fetch_transaction_history import FetchTransactionHistory
-from skills.wallet.fetch_solana_portfolio import FetchSolanaPortfolio
+from skills.wallet.moralis_fetch_wallet_portfolio import FetchWalletPortfolio
+from skills.wallet.moralis_fetch_chain_portfolio import FetchChainPortfolio
+from skills.wallet.moralis_fetch_nft_portfolio import FetchNftPortfolio
+from skills.wallet.moralis_fetch_transaction_history import FetchTransactionHistory
+from skills.wallet.moralis_fetch_solana_portfolio import FetchSolanaPortfolio
 from skills.wallet import get_skills, get_wallet_skill
 
 

@@ -79,7 +79,7 @@ class FetchNftPortfolio(WalletBaseTool):
     including metadata, media URLs, and floor prices when available.
     """
 
-    name: str = "fetch_nft_portfolio"
+    name: str = "moralis_fetch_nft_portfolio"
     description: str = (
         "This tool fetches NFT holdings for a wallet address.\n"
         "Provide a wallet address and optionally a chain ID to get detailed information about NFTs.\n"

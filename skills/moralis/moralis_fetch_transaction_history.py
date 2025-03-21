@@ -83,7 +83,7 @@ class FetchTransactionHistory(WalletBaseTool):
     including token transfers, gas costs, and USD values when available.
     """
 
-    name: str = "fetch_transaction_history"
+    name: str = "moralis_fetch_transaction_history"
     description: str = (
         "This tool fetches transaction history for a wallet address.\n"
         "Provide a wallet address and optionally a chain ID to get detailed transaction data.\n"

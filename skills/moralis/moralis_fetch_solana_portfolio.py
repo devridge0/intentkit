@@ -87,7 +87,7 @@ class FetchSolanaPortfolio(WalletBaseTool):
     including native SOL, SPL tokens, and optionally NFTs.
     """
 
-    name: str = "fetch_solana_portfolio"
+    name: str = "moralis_fetch_solana_portfolio"
     description: str = (
         "Get comprehensive portfolio data for a Solana wallet including:\n"
         "- Native SOL balance\n"
