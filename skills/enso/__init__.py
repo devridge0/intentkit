@@ -1,6 +1,6 @@
 """Enso skills."""
 
-from typing import List, TypedDict
+from typing import List, NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
@@ -30,7 +30,7 @@ class Config(SkillConfig):
     """Configuration for Enso skills."""
 
     states: SkillStates
-    api_token: str
+    api_token: NotRequired[str]
     main_tokens: List[str]
 
 

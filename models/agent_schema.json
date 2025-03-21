@@ -487,6 +487,10 @@
           "title": "Cryptocompare",
           "$ref": "../skills/cryptocompare/schema.json"
         },
+        "defillama": {
+          "title": "Defillama",
+          "$ref": "../skills/defillama/schema.json"
+        },
         "elfa": {
           "title": "Elfa",
           "$ref": "../skills/elfa/schema.json"
