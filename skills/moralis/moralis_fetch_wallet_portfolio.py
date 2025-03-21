@@ -65,7 +65,7 @@ class FetchWalletPortfolio(WalletBaseTool):
     of the total portfolio value.
     """
 
-    name: str = "fetch_wallet_portfolio"
+    name: str = "moralis_fetch_wallet_portfolio"
     description: str = (
         "Get comprehensive portfolio data for a wallet including:\n"
         "- Token balances and prices across multiple chains (EVM and Solana)\n"

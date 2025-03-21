@@ -44,7 +44,7 @@ class WalletBaseTool(IntentKitSkill):
     
     @property
     def category(self) -> str:
-        return "wallet"
+        return "moralis"
     
     def _get_chain_name(self, chain_id: int) -> str:
         """Convert chain ID to chain name for API calls.

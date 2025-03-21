@@ -66,7 +66,7 @@ class FetchChainPortfolio(WalletBaseTool):
     blockchain, including token balances, USD values, and optionally token approvals.
     """
 
-    name: str = "fetch_chain_portfolio"
+    name: str = "moralis_fetch_chain_portfolio"
     description: str = (
         "This tool fetches wallet portfolio data for a specific blockchain.\n"
         "Provide a wallet address and chain ID to get detailed information about tokens and their values.\n"
