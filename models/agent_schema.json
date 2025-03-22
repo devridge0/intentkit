@@ -97,14 +97,12 @@
       "type": "string",
       "description": "Mode of the agent, public or private",
       "enum": [
-        {
-          "value": "public",
-          "title": "Public App"
-        },
-        {
-          "value": "private",
-          "title": "Personal Assistant"
-        }
+        "public",
+        "private"
+      ],
+      "x-enum-title": [
+        "Public App",
+        "Personal Assistant"
       ],
       "x-group": "basic"
     },
