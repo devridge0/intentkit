@@ -15,23 +15,23 @@
       "order": 2
     },
     {
-      "id": "autonomous",
-      "title": "Autonomous",
+      "id": "onchain",
+      "title": "On-Chain",
       "order": 3
     },
     {
-      "id": "onchain",
-      "title": "On-Chain",
-      "order": 4
-    },
-    {
       "id": "entrypoint",
-      "title": "Entrypoint",
-      "order": 5
+      "title": "Communication Channels",
+      "order": 4
     },
     {
       "id": "skills",
       "title": "Skills",
+      "order": 5
+    },
+    {
+      "id": "autonomous",
+      "title": "Autonomous",
       "order": 6
     },
     {
@@ -52,7 +52,6 @@
   ],
   "required": [
     "name",
-    "ticker",
     "model",
     "purpose",
     "personality",
@@ -61,7 +60,7 @@
   ],
   "properties": {
     "name": {
-      "title": "Name",
+      "title": "Agent Name",
       "type": "string",
       "description": "Display name of the agent",
       "maxLength": 50,
@@ -94,12 +93,16 @@
       "x-group": "internal"
     },
     "mode": {
-      "title": "Mode",
+      "title": "Usage Type",
       "type": "string",
       "description": "Mode of the agent, public or private",
       "enum": [
         "public",
         "private"
+      ],
+      "x-enum-title": [
+        "Public App",
+        "Personal Assistant"
       ],
       "x-group": "basic"
     },
@@ -107,6 +110,7 @@
       "title": "Description",
       "type": "string",
       "description": "Description of the agent, for public view, not contained in prompt",
+      "maxLength": 3000,
       "x-group": "basic",
       "x-placeholder": "Introduce your agent"
     },
@@ -151,9 +155,9 @@
       "x-group": "internal"
     },
     "model": {
-      "title": "Model",
+      "title": "AI Model",
       "type": "string",
-      "description": "AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai",
+      "description": "Select the LLM for your agent. Note that each LLM has its specific advantages, behaviour and cost.",
       "default": "gpt-4o-mini",
       "enum": [
         "gpt-4o",
@@ -168,7 +172,7 @@
     "purpose": {
       "title": "Purpose",
       "type": "string",
-      "description": "Purpose or role of the agent, part of the system prompt",
+      "description": "Tell the agent what’s its purpose and what needs should it serve.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -180,7 +184,7 @@
     "personality": {
       "title": "Personality",
       "type": "string",
-      "description": "Personality traits of the agent, part of the system prompt",
+      "description": "Tell the agent what personality it should have and how it should communicate with the users.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -192,7 +196,7 @@
     "principles": {
       "title": "Principles",
       "type": "string",
-      "description": "Principles or values of the agent, part of the system prompt",
+      "description": "Tell the agents what it should and shouldn’t do when it interacts with users or skills.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -202,9 +206,9 @@
       "x-placeholder": "Enter agent principles"
     },
     "prompt": {
-      "title": "Prompt",
+      "title": "Knowledge Base",
       "type": "string",
-      "description": "More system prompt",
+      "description": "Give the agent any additional knowledge. Text only.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -213,7 +217,7 @@
       "x-group": "llm"
     },
     "prompt_append": {
-      "title": "Prompt Append",
+      "title": "Advanced",
       "type": "string",
       "description": "Additional system prompt that has higher priority than initial system prompt, only some models support this, if not supported, this part will append to the end of initial system prompt",
       "maxLength": 20000,
@@ -226,7 +230,7 @@
     "temperature": {
       "title": "Temperature",
       "type": "number",
-      "description": "The randomness of the generated results is such that the higher the number, the more creative the results will be. However, this also makes them wilder and increases the likelihood of errors. For creative tasks, you can adjust it to above 1, but for rigorous tasks, such as quantitative trading, it's advisable to set it lower, around 0.2. (0.0~2.0)",
+      "description": "Controls creativity: higher values are more creative, lower values are more precise.",
       "default": 0.7,
       "minimum": 0.0,
       "maximum": 2.0,
@@ -235,7 +239,7 @@
     "frequency_penalty": {
       "title": "Frequency Penalty",
       "type": "number",
-      "description": "The frequency penalty is a measure of how much the AI is allowed to repeat itself. A lower value means the AI is more likely to repeat previous responses, while a higher value means the AI is more likely to generate new content. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
+      "description": "Adjusts repetition: higher values encourage new topics, lower values allow repetition.",
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
@@ -244,136 +248,18 @@
     "presence_penalty": {
       "title": "Presence Penalty",
       "type": "number",
-      "description": "The presence penalty is a measure of how much the AI is allowed to deviate from the topic. A higher value means the AI is more likely to deviate from the topic, while a lower value means the AI is more likely to follow the topic. For creative tasks, you can adjust it to 1 or a bit higher. (-2.0~2.0)",
+      "description": "Controls topic focus: higher values promote diversity, lower values stay closely on topic.",
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
       "x-group": "llm"
     },
-    "autonomous": {
-      "title": "Autonomous",
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "title": "ID",
-            "type": "string",
-            "description": "Unique identifier for the autonomous configuration",
-            "minLength": 1,
-            "maxLength": 20,
-            "pattern": "^[a-z0-9-]+$",
-            "x-group": "autonomous"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string",
-            "description": "Display name of the autonomous configuration",
-            "maxLength": 50,
-            "x-group": "autonomous"
-          },
-          "description": {
-            "title": "Description",
-            "type": "string",
-            "description": "Description of the autonomous configuration",
-            "maxLength": 200,
-            "x-group": "autonomous"
-          },
-          "minutes": {
-            "title": "Minutes",
-            "type": "integer",
-            "description": "Interval in minutes between operations, mutually exclusive with cron",
-            "default": 1440,
-            "x-group": "autonomous"
-          },
-          "cron": {
-            "title": "Cron",
-            "type": "string",
-            "description": "Cron expression for scheduling operations, mutually exclusive with minutes",
-            "x-group": "autonomous"
-          },
-          "prompt": {
-            "title": "Prompt",
-            "type": "string",
-            "description": "Special prompt used during autonomous operation",
-            "maxLength": 20000,
-            "x-group": "autonomous"
-          },
-          "enabled": {
-            "title": "Enabled",
-            "type": "boolean",
-            "description": "Whether the autonomous configuration is enabled",
-            "default": false,
-            "x-group": "autonomous"
-          }
-        },
-        "required": [
-          "id",
-          "prompt"
-        ]
-      },
-      "description": "Autonomous agent configurations.\nautonomous:\n  - id: a\n    name: TestA\n    minutes: 1\n    prompt: |-\n      Say hello [sequence], use number for sequence.\n  - id: b\n    name: TestB\n    cron: \"0/3 * * * *\"\n    prompt: |-\n      Say hi [sequence], use number for sequence.",
-      "x-group": "autonomous",
-      "x-inline": true
-    },
-    "autonomous_minutes": {
-      "title": "Autonomous Minutes",
-      "type": "integer",
-      "description": "Interval in minutes between autonomous operations when enabled",
-      "default": 240,
-      "deprecated": true,
-      "x-group": "deprecated"
-    },
-    "autonomous_prompt": {
-      "title": "Autonomous Prompt",
-      "type": "string",
-      "description": "Special prompt used during autonomous operation mode",
-      "deprecated": true,
-      "x-group": "deprecated"
-    },
-    "autonomous_enabled": {
-      "title": "Autonomous Enabled",
-      "type": "boolean",
-      "description": "Whether the agent can operate autonomously without user input",
-      "default": false,
-      "deprecated": true,
-      "x-group": "deprecated"
-    },
     "cdp_enabled": {
       "title": "CDP Enabled",
       "type": "boolean",
       "description": "Whether CDP (Crestal Development Platform) integration is enabled",
-      "default": false,
-      "x-group": "onchain"
-    },
-    "cdp_skills": {
-      "title": "CDP Skills",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of CDP skills available to this agent",
-      "deprecated": true,
+      "default": true,
       "x-group": "deprecated"
-    },
-    "cdp_network_id": {
-      "title": "CDP Network ID",
-      "type": "string",
-      "description": "Network identifier for CDP integration",
-      "default": "base-mainnet",
-      "enum": [
-        "ethereum-mainnet",
-        "ethereum-sepolia",
-        "polygon-mainnet",
-        "polygon-mumbai",
-        "base-mainnet",
-        "base-sepolia",
-        "arbitrum-mainnet",
-        "arbitrum-sepolia",
-        "optimism-mainnet",
-        "optimism-sepolia"
-      ],
-      "x-group": "onchain"
     },
     "crossmint_config": {
       "title": "Crossmint Configuration",
@@ -394,71 +280,57 @@
       "description": "Dict of GOAT skills and their corresponding configurations",
       "x-group": "experimental"
     },
-    "twitter_entrypoint_enabled": {
-      "title": "Twitter Entrypoint Enabled",
-      "type": "boolean",
-      "description": "Dangerous, reply all mentions from x.com",
-      "default": false,
-      "x-group": "entrypoint"
-    },
-    "twitter_config": {
-      "title": "Twitter Configuration",
-      "type": "object",
-      "description": "You must use your own key for twitter entrypoint, it is separated from twitter skills",
-      "x-group": "entrypoint"
-    },
-    "twitter_skills": {
-      "title": "Twitter Skills",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of Twitter-specific skills available to this agent",
-      "deprecated": true,
-      "x-group": "deprecated"
-    },
     "telegram_entrypoint_enabled": {
-      "title": "Telegram Entrypoint Enabled",
+      "title": "Enable Telegram Communication",
       "type": "boolean",
-      "description": "Whether the agent can receive events from Telegram",
+      "description": "Allow agent to respond to Telegram messages",
       "default": false,
       "x-group": "entrypoint"
     },
     "telegram_config": {
       "title": "Telegram Configuration",
       "type": "object",
-      "description": "Telegram integration configuration settings",
+      "description": "Configure your Telegram integration settings",
       "x-group": "entrypoint"
     },
-    "telegram_skills": {
-      "title": "Telegram Skills",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of Telegram-specific skills available to this agent",
-      "deprecated": true,
-      "x-group": "deprecated"
+    "twitter_entrypoint_enabled": {
+      "title": "Enable Twitter Communication",
+      "type": "boolean",
+      "description": "Agent replies automatically to all Twitter mentions (use cautiously)",
+      "default": false,
+      "x-group": "entrypoint"
     },
-    "crestal_skills": {
-      "title": "Crestal Skills",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of Crestal platform-specific skills available to this agent",
-      "deprecated": true,
-      "x-group": "deprecated"
-    },
-    "common_skills": {
-      "title": "Common Skills",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of general-purpose skills available to this agent",
-      "deprecated": true,
-      "x-group": "deprecated"
+    "twitter_config": {
+      "title": "Enter your Twitter API key",
+      "type": "object",
+      "description": "You must use your own key for twitter entrypoint, it is separated from twitter skills",
+      "x-group": "entrypoint",
+      "properties": {
+        "consumer_key": {
+          "type": "string",
+          "title": "Twitter API consumer key",
+          "description": "Twitter API consumer key",
+          "maxLength": 100
+        },
+        "consumer_secret": {
+          "type": "string",
+          "title": "Twitter API consumer secret",
+          "description": "Twitter API consumer secret",
+          "maxLength": 100
+        },
+        "access_token": {
+          "type": "string",
+          "title": "Twitter API access token",
+          "description": "Twitter API access token",
+          "maxLength": 100
+        },
+        "access_token_secret": {
+          "type": "string",
+          "title": "Twitter API access token secret",
+          "description": "Twitter API access token secret",
+          "maxLength": 100
+        }
+      }
     },
     "skills": {
       "title": "Skills",
@@ -468,7 +340,7 @@
       "x-inline": true,
       "properties": {
         "cdp": {
-          "title": "CDP",
+          "title": "Coinbase Wallet",
           "$ref": "../skills/cdp/schema.json"
         },
         "twitter": {
@@ -487,6 +359,10 @@
           "title": "Cryptocompare",
           "$ref": "../skills/cryptocompare/schema.json"
         },
+        "defillama": {
+          "title": "Defillama",
+          "$ref": "../skills/defillama/schema.json"
+        },
         "elfa": {
           "title": "Elfa",
           "$ref": "../skills/elfa/schema.json"
@@ -504,6 +380,72 @@
           "$ref": "../skills/common/schema.json"
         }
       }
+    },
+    "autonomous": {
+      "title": "Autonomous",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "title": "ID",
+            "type": "string",
+            "description": "Unique identifier for the autonomous configuration",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^[a-z0-9-]+$",
+            "readOnly": true,
+            "x-group": "internal"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "description": "Name for this automated task",
+            "maxLength": 50,
+            "x-group": "autonomous"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string",
+            "description": "Briefly describe what this automation does",
+            "maxLength": 200,
+            "x-group": "autonomous"
+          },
+          "minutes": {
+            "title": "Frequency in Minutes",
+            "type": "integer",
+            "description": "How often to run (in minutes)",
+            "default": 1440,
+            "x-group": "autonomous"
+          },
+          "cron": {
+            "title": "Schedule",
+            "type": "string",
+            "description": "Advanced scheduling (cron format), mutually exclusive with minutes",
+            "x-group": "autonomous"
+          },
+          "prompt": {
+            "title": "Task Prompt",
+            "type": "string",
+            "description": "Prompt the agent will execute on schedule",
+            "maxLength": 20000,
+            "x-group": "autonomous"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean",
+            "description": "Turn automation on/off",
+            "default": false,
+            "x-group": "autonomous"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "description": "Set automated prompts and schedules for your agent.",
+      "x-group": "autonomous",
+      "x-inline": true
     },
     "enso_enabled": {
       "title": "Enso Enabled",
@@ -585,7 +527,8 @@
       "enum": [
         "cdp"
       ],
-      "x-group": "onchain"
+      "default": "cdp",
+      "x-group": "internal"
     },
     "network_id": {
       "title": "Network ID",
@@ -605,7 +548,7 @@
         "optimism-sepolia",
         "solana"
       ],
-      "x-group": "onchain"
+      "x-group": "internal"
     }
   },
   "additionalProperties": false

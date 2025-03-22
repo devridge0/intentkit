@@ -107,7 +107,12 @@
       "items": {
         "type": "string"
       },
-      "description": "List of main tokens to use"
+      "description": "List of main tokens to use",
+      "default": [
+        "ETH",
+        "UDSC",
+        "USDT"
+      ]
     }
   },
   "required": [
