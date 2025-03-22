@@ -38,6 +38,7 @@ class AgentAutonomous(BaseModel):
         str,
         PydanticField(
             description="Unique identifier for the autonomous configuration",
+            default_factory=lambda: str(XID()),
             min_length=1,
             max_length=20,
             pattern=r"^[a-z0-9-]+$",
@@ -817,7 +818,7 @@ class AgentUpdate(BaseModel):
     wallet_provider: Annotated[
         Optional[Literal["cdp"]],
         PydanticField(
-            default=None,
+            default="cdp",
             description="Provider of the agent's wallet",
             json_schema_extra={
                 "x-group": "onchain",
