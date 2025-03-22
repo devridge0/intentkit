@@ -628,13 +628,15 @@ async def export_agent(
                     if base is TypedDict or base is dict or base is object:
                         continue
                     all_bases.append(base)
-                
+
                 # Collect all required fields from Config and its base classes
                 for base in all_bases:
                     if hasattr(base, "__annotations__"):
                         for field_name, field_type in base.__annotations__.items():
                             # Skip fields already set or marked as NotRequired
-                            if field_name in category_config or "NotRequired" in str(field_type):
+                            if field_name in category_config or "NotRequired" in str(
+                                field_type
+                            ):
                                 continue
                             # Add default value based on type
                             if field_name != "states":  # states already handled above
@@ -646,9 +648,13 @@ async def export_agent(
                                     category_config[field_name] = 0
                                 elif "float" in str(field_type):
                                     category_config[field_name] = 0.0
-                                elif "list" in str(field_type) or "List" in str(field_type):
+                                elif "list" in str(field_type) or "List" in str(
+                                    field_type
+                                ):
                                     category_config[field_name] = []
-                                elif "dict" in str(field_type) or "Dict" in str(field_type):
+                                elif "dict" in str(field_type) or "Dict" in str(
+                                    field_type
+                                ):
                                     category_config[field_name] = {}
 
                 # Update the agent's skills config
