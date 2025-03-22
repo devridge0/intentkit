@@ -1,6 +1,8 @@
 import asyncio
+import importlib
 import json
 import logging
+from typing import TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramConflictError, TelegramUnauthorizedError
@@ -37,6 +39,7 @@ from models.agent import (
     AgentUpdate,
 )
 from models.db import get_db
+from skills import __all__ as skill_categories
 from utils.middleware import create_jwt_middleware
 from utils.slack_alert import send_slack_message
 
@@ -581,7 +584,84 @@ async def export_agent(
     agent = await Agent.get(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    # Ensure agent.skills is initialized
+    if agent.skills is None:
+        agent.skills = {}
 
+    # Process all skill categories
+    for category in skill_categories:
+        try:
+            # Dynamically import the skill module
+            skill_module = importlib.import_module(f"skills.{category}")
+
+            # Check if the module has a Config class and get_skills function
+            if hasattr(skill_module, "Config") and hasattr(skill_module, "get_skills"):
+                # Get or create the config for this category
+                category_config = agent.skills.get(category, {})
+
+                # Ensure 'enabled' field exists (required by SkillConfig)
+                if "enabled" not in category_config:
+                    category_config["enabled"] = False
+
+                # Ensure states dict exists
+                if "states" not in category_config:
+                    category_config["states"] = {}
+
+                # Get all available skill states from the module
+                available_skills = []
+                if hasattr(skill_module, "SkillStates") and hasattr(
+                    skill_module.SkillStates, "__annotations__"
+                ):
+                    available_skills = list(
+                        skill_module.SkillStates.__annotations__.keys()
+                    )
+                # Add missing skills with disabled state
+                for skill_name in available_skills:
+                    if skill_name not in category_config["states"]:
+                        category_config["states"][skill_name] = "disabled"
+
+                # Get all required fields from Config class and its base classes
+                config_class = skill_module.Config
+                # Get all base classes of Config
+                all_bases = [config_class]
+                for base in config_class.__mro__[1:]:
+                    if base is TypedDict or base is dict or base is object:
+                        continue
+                    all_bases.append(base)
+
+                # Collect all required fields from Config and its base classes
+                for base in all_bases:
+                    if hasattr(base, "__annotations__"):
+                        for field_name, field_type in base.__annotations__.items():
+                            # Skip fields already set or marked as NotRequired
+                            if field_name in category_config or "NotRequired" in str(
+                                field_type
+                            ):
+                                continue
+                            # Add default value based on type
+                            if field_name != "states":  # states already handled above
+                                if "str" in str(field_type):
+                                    category_config[field_name] = ""
+                                elif "bool" in str(field_type):
+                                    category_config[field_name] = False
+                                elif "int" in str(field_type):
+                                    category_config[field_name] = 0
+                                elif "float" in str(field_type):
+                                    category_config[field_name] = 0.0
+                                elif "list" in str(field_type) or "List" in str(
+                                    field_type
+                                ):
+                                    category_config[field_name] = []
+                                elif "dict" in str(field_type) or "Dict" in str(
+                                    field_type
+                                ):
+                                    category_config[field_name] = {}
+
+                # Update the agent's skills config
+                agent.skills[category] = category_config
+        except (ImportError, AttributeError):
+            # Skip if module import fails or doesn't have required components
+            pass
     yaml_content = agent.to_yaml()
     return Response(
         content=yaml_content,
