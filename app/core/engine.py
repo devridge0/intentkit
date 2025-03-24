@@ -179,7 +179,7 @@ async def initialize_agent(aid, is_private=False):
             try:
                 skill_module = importlib.import_module(f"skills.{k}")
                 if hasattr(skill_module, "get_skills"):
-                    skill_tools = skill_module.get_skills(
+                    skill_tools = await skill_module.get_skills(
                         v, is_private, skill_store, agent_id=aid
                     )
                     if skill_tools and len(skill_tools) > 0:
