@@ -234,7 +234,8 @@
       "default": 0.7,
       "minimum": 0.0,
       "maximum": 2.0,
-      "x-group": "llm"
+      "x-group": "llm",
+      "x-step": 0.1
     },
     "frequency_penalty": {
       "title": "Frequency Penalty",
@@ -243,7 +244,8 @@
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
-      "x-group": "llm"
+      "x-group": "llm",
+      "x-step": 0.1
     },
     "presence_penalty": {
       "title": "Presence Penalty",
@@ -252,7 +254,8 @@
       "default": 0.0,
       "minimum": -2.0,
       "maximum": 2.0,
-      "x-group": "llm"
+      "x-group": "llm",
+      "x-step": 0.1
     },
     "cdp_enabled": {
       "title": "CDP Enabled",

@@ -28,7 +28,7 @@ class Config(SkillConfig):
     slack_bot_token: str
 
 
-def get_skills(
+async def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,
