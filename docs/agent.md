@@ -36,9 +36,8 @@ sh import.sh example
 You can visit the [API Docs](http://localhost:8000/redoc#tag/Agent) to learn more.
 
 ## The Prompt
-In agent config, there are 6 fields about prompt, they are `purpose`, `personality`, `principles`, `prompt`, `prompt_append` and `autonomous_prompt`.  
+In agent config, there are 5 fields about prompt, they are `purpose`, `personality`, `principles`, `prompt`, `prompt_append`.  
 IntentKit will compose `purpose`, `personality`, `principles`, `prompt` to `system_prompt`.
-About autonomous_prompt, we talk it in autonomous section, let's focus on `system_prompt` and prompt_append.
 
 ### LLM Interaction
 The models cannot remember anything, so every time we interact with it, we have to provide all the 
