@@ -12,7 +12,6 @@ from skills.wallet.moralis_fetch_nft_portfolio import FetchNftPortfolio
 from skills.wallet.moralis_fetch_transaction_history import FetchTransactionHistory
 from skills.wallet.moralis_fetch_solana_portfolio import FetchSolanaPortfolio
 
-# Define skill state configuration
 class SkillStates(TypedDict):
     """Configuration of states for wallet skills."""
     
@@ -35,8 +34,6 @@ def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,
-    agent_id: str,
-    agent_store: AgentStoreABC,
     chain_provider: Any = None,
     **_,
 ) -> List[WalletBaseTool]:
@@ -46,8 +43,6 @@ def get_skills(
         config: Skill configuration
         is_private: Whether the request is from an authenticated user
         store: Skill store for persistence
-        agent_id: ID of the agent
-        agent_store: Agent store for persistence
         chain_provider: Optional chain provider for blockchain interactions
         **_: Additional arguments
         
@@ -72,9 +67,7 @@ def get_skills(
         get_wallet_skill(
             name, 
             config["api_key"], 
-            store, 
-            agent_id, 
-            agent_store,
+            store,                         
             chain_provider
         ) 
         for name in available_skills
@@ -82,22 +75,14 @@ def get_skills(
 
 
 def get_wallet_skill(
-    name: str,
-    api_key: str,
-    store: SkillStoreABC,
-    agent_id: str,
-    agent_store: AgentStoreABC,
-    chain_provider: Any = None,
+    name: str,    
+    store: SkillStoreABC,            
 ) -> WalletBaseTool:
     """Get a specific Wallet Portfolio skill by name.
     
     Args:
-        name: Name of the skill to get
-        api_key: API key for the data provider
-        store: Skill store for persistence
-        agent_id: ID of the agent
-        agent_store: Agent store for persistence
-        chain_provider: Optional chain provider for blockchain interactions
+        name: Name of the skill to get       
+        store: Skill store for persistence                  
         
     Returns:
         The requested skill
@@ -118,6 +103,5 @@ def get_wallet_skill(
     
     return skill_classes[name](
         api_key=api_key,
-        skill_store=store,
-        agent_id=agent_id
+        skill_store=store,        
     )

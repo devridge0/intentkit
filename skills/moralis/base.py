@@ -2,7 +2,6 @@
 
 from typing import Type, Optional, Dict, List
 from pydantic import BaseModel, Field
-from langchain_core.runnables import RunnableConfig
 
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
@@ -32,9 +31,7 @@ class WalletBaseTool(IntentKitSkill):
     args_schema: Type[BaseModel]
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
-    )
-    api_key: str = Field(description="API key for the wallet data provider")
-    agent_id: str = Field(description="ID of the agent using this skill")
+    )        
     
     # Optional fields for blockchain providers
     solana_networks: Optional[List[str]] = Field(
