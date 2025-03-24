@@ -32,7 +32,7 @@ class Config(SkillConfig):
     api_key: str
 
 
-def get_skills(
+async def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,
