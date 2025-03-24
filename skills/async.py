@@ -1,35 +1,3 @@
-"""Wallet Portfolio Skills for IntentKit."""
-
-from typing import Dict, List, Optional, TypedDict, Union, Any, NotRequired
-
-from abstracts.agent import AgentStoreABC
-from abstracts.skill import SkillStoreABC
-from skills.base import SkillConfig, SkillState
-from skills.wallet.base import WalletBaseTool
-from skills.wallet.moralis_fetch_wallet_portfolio import FetchWalletPortfolio
-from skills.wallet.moralis_fetch_chain_portfolio import FetchChainPortfolio
-from skills.wallet.moralis_fetch_nft_portfolio import FetchNftPortfolio
-from skills.wallet.moralis_fetch_transaction_history import FetchTransactionHistory
-from skills.wallet.moralis_fetch_solana_portfolio import FetchSolanaPortfolio
-
-class SkillStates(TypedDict):
-    """Configuration of states for wallet skills."""
-    
-    moralis_fetch_wallet_portfolio: SkillState
-    moralis_fetch_chain_portfolio: SkillState
-    moralis_fetch_nft_portfolio: SkillState
-    moralis_fetch_transaction_history: SkillState
-    moralis_etch_solana_portfolio: SkillState
-
-
-class Config(SkillConfig):
-    """Configuration for Wallet Portfolio skills."""
-    
-    api_key: str
-    states: SkillStates
-    supported_chains: NotRequired[Dict[str, bool]] = {"evm": True, "solana": True}
-
-
 async def get_skills(
     config: "Config",
     is_private: bool,
@@ -76,15 +44,19 @@ async def get_skills(
     return result
 
 
-def get_wallet_skill(
-    name: str,    
-    store: SkillStoreABC,            
+async def get_wallet_skill(
+    name: str,
+    api_key: str,    
+    store: SkillStoreABC,
+    chain_provider: Any = None,            
 ) -> WalletBaseTool:
     """Get a specific Wallet Portfolio skill by name.
     
     Args:
-        name: Name of the skill to get       
-        store: Skill store for persistence                  
+        name: Name of the skill to get
+        api_key: API key for service authentication
+        store: Skill store for persistence
+        chain_provider: Optional chain provider for blockchain interactions
         
     Returns:
         The requested skill
@@ -103,7 +75,14 @@ def get_wallet_skill(
     if name not in skill_classes:
         raise ValueError(f"Unknown Wallet Portfolio skill: {name}")
     
-    return skill_classes[name](
+    skill = skill_classes[name](
         api_key=api_key,
-        skill_store=store,        
+        skill_store=store,
+        chain_provider=chain_provider,
     )
+    
+    # If the skill has an async initialization method, call it
+    if hasattr(skill, "async_init") and callable(skill.async_init):
+        await skill.async_init()
+    
+    return skill
