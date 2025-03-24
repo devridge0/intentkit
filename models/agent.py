@@ -18,7 +18,6 @@ from sqlalchemy import (
     DateTime,
     Float,
     Identity,
-    Integer,
     String,
     func,
     select,
@@ -294,23 +293,6 @@ class AgentTable(Base):
         JSONB,
         nullable=True,
         comment="Autonomous agent configurations",
-    )
-    autonomous_enabled = Column(
-        Boolean,
-        nullable=True,
-        default=False,
-        comment="Whether the agent can operate autonomously without user input",
-    )
-    autonomous_minutes = Column(
-        Integer,
-        nullable=True,
-        default=240,
-        comment="Interval in minutes between autonomous operations when enabled",
-    )
-    autonomous_prompt = Column(
-        String,
-        nullable=True,
-        comment="Special prompt used during autonomous operation mode",
     )
     # skills
     skills = Column(
@@ -767,39 +749,6 @@ class AgentUpdate(BaseModel):
             json_schema_extra={
                 "x-group": "autonomous",
                 "x-inline": True,
-            },
-        ),
-    ]
-    autonomous_enabled: Annotated[
-        Optional[bool],
-        PydanticField(
-            default=False,
-            deprecated="Please use autonomous instead",
-            description="Whether the agent can operate autonomously without user input",
-            json_schema_extra={
-                "x-group": "deprecated",
-            },
-        ),
-    ]
-    autonomous_minutes: Annotated[
-        Optional[int],
-        PydanticField(
-            default=240,
-            deprecated="Please use autonomous instead",
-            description="Interval in minutes between autonomous operations when enabled",
-            json_schema_extra={
-                "x-group": "deprecated",
-            },
-        ),
-    ]
-    autonomous_prompt: Annotated[
-        Optional[str],
-        PydanticField(
-            default=None,
-            deprecated="Please use autonomous instead",
-            description="Special prompt used during autonomous operation mode",
-            json_schema_extra={
-                "x-group": "deprecated",
             },
         ),
     ]

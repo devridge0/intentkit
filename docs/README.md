@@ -3,7 +3,7 @@
 ## General
 
 - [IntentKit Architecture](architecture.md)
-- [API Docs](api.md)
+- [API Docs](http://localhost:8000/redoc) (Only available after you start the API server in localhost)
 - [How to Guides](how_to/)
 
 ## Developing
