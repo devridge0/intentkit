@@ -12,7 +12,7 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 
 from app.config.config import config
-from app.entrypoints.autonomous import run_autonomous_agents, run_autonomous_task
+from app.entrypoints.autonomous import run_autonomous_task
 from models.agent import Agent, AgentTable
 from models.db import get_session, init_db
 
@@ -22,19 +22,19 @@ logger = logging.getLogger(__name__)
 autonomous_tasks_updated_at: Dict[str, datetime] = {}
 
 # Global scheduler instance
-_scheduler = None
+jobstores = {}
+if config.redis_host:
+    jobstores["default"] = RedisJobStore(
+        host=config.redis_host,
+        port=config.redis_port,
+        jobs_key="intentkit:autonomous:jobs",
+        run_times_key="intentkit:autonomous:run_times",
+    )
+    logger.info(f"autonomous scheduler use redis store: {config.redis_host}")
+scheduler = AsyncIOScheduler(jobstores=jobstores)
 
-
-def get_scheduler() -> AsyncIOScheduler:
-    """Get the global scheduler instance"""
-    global _scheduler
-    return _scheduler
-
-
-def set_scheduler(scheduler: AsyncIOScheduler):
-    """Set the global scheduler instance"""
-    global _scheduler
-    _scheduler = scheduler
+# Head job ID, it schedules the other jobs
+HEAD_JOB_ID = "head"
 
 
 if config.sentry_dsn:
@@ -56,11 +56,8 @@ async def schedule_agent_autonomous_tasks():
     """
     logger.info("Checking for agent autonomous tasks...")
 
-    # Get the global scheduler instance
-    scheduler = get_scheduler()
-    if not scheduler:
-        logger.error("Scheduler not initialized")
-        return
+    # List of jobs to schedule, will delete jobs not in this list
+    planned_jobs = [HEAD_JOB_ID]
 
     async with get_session() as db:
         # Get all agents with autonomous configuration
@@ -78,6 +75,7 @@ async def schedule_agent_autonomous_tasks():
 
                 # Create a unique task ID for this autonomous task
                 task_id = f"{agent.id}-{autonomous.id}"
+                planned_jobs.append(task_id)
 
                 # Check if task exists and needs updating
                 if (
@@ -119,6 +117,14 @@ async def schedule_agent_autonomous_tasks():
                 # Update the last updated time
                 autonomous_tasks_updated_at[task_id] = agent.updated_at
 
+    # Delete jobs not in the list
+    logger.debug(f"Current jobs: {planned_jobs}")
+    jobs = scheduler.get_jobs()
+    for job in jobs:
+        if job.id not in planned_jobs:
+            scheduler.remove_job(job.id)
+            logger.info(f"Removed job {job.id}")
+
 
 if __name__ == "__main__":
 
@@ -126,34 +132,19 @@ if __name__ == "__main__":
         # Initialize database
         await init_db(**config.db)
 
-        # Job Store
-        jobstores = {}
-        if config.redis_host:
-            jobstores["default"] = RedisJobStore(
-                host=config.redis_host,
-                port=config.redis_port,
-                jobs_key="intentkit:autonomous:jobs",
-                run_times_key="intentkit:autonomous:run_times",
-            )
-            logger.info(f"autonomous scheduler use redis store: {config.redis_host}")
-
-        # Initialize scheduler
-        scheduler = AsyncIOScheduler(jobstores=jobstores)
-
-        # Set the global scheduler instance
-        set_scheduler(scheduler)
-
-        # Add job to run legacy autonomous agents every minute
-        scheduler.add_job(run_autonomous_agents, "interval", minutes=100)
-
         # Add job to schedule agent autonomous tasks every 5 minutes
         # Run it immediately on startup and then every 5 minutes
-        scheduler.add_job(
-            schedule_agent_autonomous_tasks,
-            "interval",
-            minutes=5,
-            next_run_time=datetime.now(),
-        )
+        jobs = scheduler.get_jobs()
+        job_ids = [job.id for job in jobs]
+        if HEAD_JOB_ID not in job_ids:
+            scheduler.add_job(
+                schedule_agent_autonomous_tasks,
+                "interval",
+                id=HEAD_JOB_ID,
+                minutes=1,
+                next_run_time=datetime.now(),
+                replace_existing=True,
+            )
 
         # Signal handler for graceful shutdown
         def signal_handler(signum, frame):

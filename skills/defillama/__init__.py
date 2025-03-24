@@ -104,7 +104,7 @@ class Config(SkillConfig):
     states: SkillStates
 
 
-def get_skills(
+async def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,

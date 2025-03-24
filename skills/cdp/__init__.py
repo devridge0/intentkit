@@ -68,7 +68,7 @@ class Config(SkillConfig):
 
 # CDP skills is not stateless for agents, so we need agent_id here
 # If you are skill contributor, please do not follow this pattern
-def get_skills(
+async def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,
@@ -96,9 +96,9 @@ def get_skills(
             available_skills.append(skill_name)
 
     # Initialize CDP client
-    cdp_client: CdpClient = get_cdp_client(agent_id, store)
-    cdp_wallet_provider: CdpWalletProvider = cdp_client.get_wallet_provider()
-    cdp_provider_config = cdp_client.get_provider_config()
+    cdp_client: CdpClient = await get_cdp_client(agent_id, store)
+    cdp_wallet_provider: CdpWalletProvider = await cdp_client.get_wallet_provider()
+    cdp_provider_config = await cdp_client.get_provider_config()
     agent_kit = AgentKit(
         AgentKitConfig(
             wallet_provider=cdp_wallet_provider,
