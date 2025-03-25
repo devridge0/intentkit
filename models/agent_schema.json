@@ -381,6 +381,10 @@
         "common": {
           "title": "Common",
           "$ref": "../skills/common/schema.json"
+        },
+        "moralis": {
+          "title": "Moralis",
+          "$ref": "../skills/moralis/schema.json"
         }
       }
     },

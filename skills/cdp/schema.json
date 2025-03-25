@@ -25,6 +25,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Provides real-time collateral/debt ratios with automatic currency conversion and risk threshold alerts. Final CDP balance description",
           "default": "disabled"
         },
@@ -35,6 +40,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for MorphoActionProvider_deposit",
           "default": "disabled"
@@ -47,6 +57,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for MorphoActionProvider_withdraw",
           "default": "disabled"
         },
@@ -57,6 +72,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for CdpWalletActionProvider_trade",
           "default": "disabled"
@@ -69,6 +89,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for WalletActionProvider_get_balance",
           "default": "disabled"
         },
@@ -79,6 +104,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for WethActionProvider_wrap_eth",
           "default": "disabled"
@@ -91,6 +121,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for CdpApiActionProvider_address_reputation",
           "default": "disabled"
         },
@@ -101,6 +136,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for ERC20ActionProvider_transfer",
           "default": "disabled"
@@ -113,6 +153,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for PythActionProvider_fetch_price_feed_id",
           "default": "disabled"
         },
@@ -123,6 +168,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for WalletActionProvider_native_transfer",
           "default": "disabled"
@@ -135,6 +185,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for WowActionProvider_buy_token",
           "default": "disabled"
         },
@@ -145,6 +200,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for WowActionProvider_create_token",
           "default": "disabled"
@@ -157,6 +217,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for Erc721ActionProvider_transfer",
           "default": "disabled"
         },
@@ -167,6 +232,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for Erc721ActionProvider_get_balance",
           "default": "disabled"
@@ -179,6 +249,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for CdpWalletActionProvider_deploy_nft",
           "default": "disabled"
         },
@@ -189,6 +264,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for PythActionProvider_fetch_price",
           "default": "disabled"
@@ -201,6 +281,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for WalletActionProvider_get_wallet_details",
           "default": "disabled"
         },
@@ -211,6 +296,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for SuperfluidActionProvider_update_flow",
           "default": "disabled"
@@ -223,6 +313,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for CdpApiActionProvider_request_faucet_funds",
           "default": "disabled"
         },
@@ -233,6 +328,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for SuperfluidActionProvider_delete_flow",
           "default": "disabled"
@@ -245,6 +345,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for BasenameActionProvider_register_basename",
           "default": "disabled"
         },
@@ -255,6 +360,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for CdpWalletActionProvider_deploy_token",
           "default": "disabled"
@@ -267,6 +377,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for ERC20ActionProvider_get_balance",
           "default": "disabled"
         },
@@ -277,6 +392,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for Erc721ActionProvider_mint",
           "default": "disabled"
@@ -289,6 +409,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for SuperfluidActionProvider_create_flow",
           "default": "disabled"
         },
@@ -300,6 +425,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "State for WowActionProvider_sell_token",
           "default": "disabled"
         },
@@ -310,6 +440,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "State for CdpWalletActionProvider_deploy_contract",
           "default": "disabled"

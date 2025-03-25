@@ -25,6 +25,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "This tool uses the Elfa AI API to query hourly-updated tweets from \"smart accounts\" \u2013 accounts identified as influential or relevant \u2013 that have received at least 10 interactions (comments, retweets, quote tweets).",
           "default": "disabled"
         },
@@ -35,6 +40,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "This tool uses the Elfa API to query tweets mentioning a specific stock ticker. The tweets are ranked by view count, providing insight into the most visible and potentially influential discussions surrounding the stock. The results are updated hourly, allowing for real-time monitoring of market sentiment.",
           "default": "disabled"
@@ -47,6 +57,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "This tool uses the Elfa API to search tweets mentioning up to five keywords. It can search within the past 30 days of data, which is updated every 5 minutes, or access up to six months of historical tweet data.",
           "default": "disabled"
         },
@@ -58,6 +73,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "This tool ranks the most discussed tokens based on smart mentions count for a given period, with updates every 5 minutes via the Elfa API. Smart mentions provide a more sophisticated measure of discussion volume than simple keyword counts.",
           "default": "disabled"
         },
@@ -68,6 +88,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "This tool uses the Elfa API to retrieve key social media metrics for a given username. These metrics include Smart Following Count, Engagement Score, and Engagement Ratio.",
           "default": "disabled"
