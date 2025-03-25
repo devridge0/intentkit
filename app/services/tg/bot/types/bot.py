@@ -1,3 +1,5 @@
+from typing import NotRequired, TypedDict
+
 from aiogram import Bot
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -5,6 +7,15 @@ from aiogram.enums import ParseMode
 from app.services.tg.bot.types.kind import is_valid_kind
 from app.services.tg.utils.cleanup import clean_token_str
 from models.agent import Agent
+
+
+class TelegramConfig(TypedDict):
+    token: str
+    kind: NotRequired[int] = 1
+    group_memory_public: NotRequired[bool]
+    whitelist_chat_ids: NotRequired[list[int]]
+    greeting_group: NotRequired[str]
+    greeting_user: NotRequired[str]
 
 
 class BotPoolItem:
@@ -29,7 +40,7 @@ class BotPoolItem:
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         )
 
-    def update_conf(self, cfg):
+    def update_conf(self, cfg: TelegramConfig):
         self._is_public_memory = cfg.get("group_memory_public", True)
         self._whitelist_chat_ids = cfg.get("whitelist_chat_ids")
         self._greeting_group = cfg.get(
