@@ -1,26 +1,25 @@
 """Wallet Portfolio Skills for IntentKit."""
 
-from typing import Any, Dict, List, NotRequired, TypedDict
+from typing import Dict, List, NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
-from app.config.config import config
 from skills.base import SkillConfig, SkillState
 from skills.moralis.base import WalletBaseTool
-from skills.moralis.moralis_fetch_chain_portfolio import FetchChainPortfolio
-from skills.moralis.moralis_fetch_nft_portfolio import FetchNftPortfolio
-from skills.moralis.moralis_fetch_solana_portfolio import FetchSolanaPortfolio
-from skills.moralis.moralis_fetch_transaction_history import FetchTransactionHistory
-from skills.moralis.moralis_fetch_wallet_portfolio import FetchWalletPortfolio
+from skills.moralis.fetch_chain_portfolio import FetchChainPortfolio
+from skills.moralis.fetch_nft_portfolio import FetchNftPortfolio
+from skills.moralis.fetch_solana_portfolio import FetchSolanaPortfolio
+from skills.moralis.fetch_transaction_history import FetchTransactionHistory
+from skills.moralis.fetch_wallet_portfolio import FetchWalletPortfolio
 
 
 class SkillStates(TypedDict):
     """Configuration of states for wallet skills."""
 
-    moralis_fetch_wallet_portfolio: SkillState
-    moralis_fetch_chain_portfolio: SkillState
-    moralis_fetch_nft_portfolio: SkillState
-    moralis_fetch_transaction_history: SkillState
-    moralis_etch_solana_portfolio: SkillState
+    fetch_wallet_portfolio: SkillState
+    fetch_chain_portfolio: SkillState
+    fetch_nft_portfolio: SkillState
+    fetch_transaction_history: SkillState
+    fetch_solana_portfolio: SkillState
 
 
 class Config(SkillConfig):
@@ -35,7 +34,6 @@ async def get_skills(
     config: "Config",
     is_private: bool,
     store: SkillStoreABC,
-    chain_provider: Any = None,
     **_,
 ) -> List[WalletBaseTool]:
     """Get all Wallet Portfolio skills.
@@ -68,7 +66,7 @@ async def get_skills(
     # Get each skill using the getter
     result = []
     for name in available_skills:
-        skill = await get_wallet_skill(name, config["api_key"], store, chain_provider)
+        skill = get_wallet_skill(name, config["api_key"], store)
         result.append(skill)
 
     return result
@@ -76,12 +74,14 @@ async def get_skills(
 
 def get_wallet_skill(
     name: str,
+    api_key: str,
     store: SkillStoreABC,
 ) -> WalletBaseTool:
     """Get a specific Wallet Portfolio skill by name.
 
     Args:
         name: Name of the skill to get
+        api_key: API key for Moralis
         store: Skill store for persistence
 
     Returns:
@@ -102,6 +102,6 @@ def get_wallet_skill(
         raise ValueError(f"Unknown Wallet Portfolio skill: {name}")
 
     return skill_classes[name](
-        api_key=config.api_key,
+        api_key=api_key,
         skill_store=store,
     )
