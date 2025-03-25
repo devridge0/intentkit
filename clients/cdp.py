@@ -24,12 +24,13 @@ class CdpClient:
             return self._wallet_provider
         agent: Agent = await self._skill_store.get_agent_config(self._agent_id)
         agent_data: AgentData = await self._skill_store.get_agent_data(self._agent_id)
+        network_id = agent.network_id or agent.cdp_network_id
         self._wallet_provider_config = CdpWalletProviderConfig(
             api_key_name=self._skill_store.get_system_config("cdp_api_key_name"),
             api_key_private_key=self._skill_store.get_system_config(
                 "cdp_api_key_private_key"
             ),
-            network_id=agent.cdp_network_id,
+            network_id=network_id,
             wallet_data=agent_data.cdp_wallet_data,
         )
         self._wallet_provider = CdpWalletProvider(self._wallet_provider_config)
