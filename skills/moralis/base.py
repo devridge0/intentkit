@@ -32,6 +32,7 @@ class WalletBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
+    api_key: str = Field(description="API key for Moralis")
 
     # Optional fields for blockchain providers
     solana_networks: Optional[List[str]] = Field(
