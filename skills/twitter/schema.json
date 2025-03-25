@@ -25,6 +25,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Retrieves tweets that mention the authenticated user from the past 24 hours. Supports pagination and includes detailed tweet metadata like media attachments, referenced tweets, and author information.",
           "default": "disabled"
         },
@@ -35,6 +40,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Publishes tweets with media attachments, thread support, and content moderation checks",
           "default": "disabled"
@@ -47,6 +57,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Constructs contextual replies to tweets with mention handling and conversation threading",
           "default": "disabled"
         },
@@ -57,6 +72,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetches user's home timeline with recent tweets.\nSupports pagination for historical data access.\nFilters sensitive content and implements rate limiting.",
           "default": "disabled"
@@ -69,6 +89,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Initiates following of Twitter accounts with rate limit handling and anti-spam safeguards",
           "default": "disabled"
         },
@@ -79,6 +104,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Records tweet engagements with rate limiting and duplicate prevention",
           "default": "disabled"
@@ -91,6 +121,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Shares tweets with attribution tracking and duplicate prevention mechanisms",
           "default": "disabled"
         },
@@ -101,6 +136,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Executes advanced Twitter searches with keyword filters, date ranges, and engagement thresholds",
           "default": "disabled"
