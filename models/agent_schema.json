@@ -160,12 +160,28 @@
       "description": "Select the LLM for your agent. Note that each LLM has its specific advantages, behaviour and cost.",
       "default": "gpt-4o-mini",
       "enum": [
-        "gpt-4o",
         "gpt-4o-mini",
         "deepseek-chat",
         "deepseek-reasoner",
+        "gpt-4o",
         "grok-2",
         "eternalai"
+      ],
+      "x-enum-title": [
+        "GPT-4o mini",
+        "DeepSeek V3",
+        "DeepSeek R1",
+        "GPT-4o",
+        "Grok-2",
+        "EternalAI"
+      ],
+      "x-support-skill": [
+        true,
+        true,
+        false,
+        false,
+        false,
+        false
       ],
       "x-group": "llm"
     },
@@ -294,7 +310,49 @@
       "title": "Telegram Configuration",
       "type": "object",
       "description": "Configure your Telegram integration settings",
-      "x-group": "entrypoint"
+      "x-group": "entrypoint",
+      "properties": {
+        "token": {
+          "title": "Bot Token",
+          "type": "string",
+          "description": "Telegram bot token obtained from BotFather"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "integer",
+          "description": "Reserved for future use",
+          "enum": [
+            1
+          ],
+          "default": 1
+        },
+        "group_memory_public": {
+          "title": "Group Memory Public",
+          "type": "boolean",
+          "description": "Whether group memory is public"
+        },
+        "whitelist_chat_ids": {
+          "title": "Whitelist Chat IDs",
+          "type": "array",
+          "description": "List of chat IDs that are allowed to interact with the bot",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "greeting_group": {
+          "title": "Group Greeting",
+          "type": "string",
+          "description": "Custom greeting message for groups"
+        },
+        "greeting_user": {
+          "title": "User Greeting",
+          "type": "string",
+          "description": "Custom greeting message for individual users"
+        }
+      },
+      "required": [
+        "token"
+      ]
     },
     "twitter_entrypoint_enabled": {
       "title": "Enable Twitter Communication",

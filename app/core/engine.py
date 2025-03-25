@@ -186,8 +186,8 @@ async def initialize_agent(aid, is_private=False):
                         tools.extend(skill_tools)
                 else:
                     logger.error(f"Skill {k} does not have get_skills function")
-            except ImportError:
-                logger.error(f"Could not import skill module: {k}")
+            except ImportError as e:
+                logger.error(f"Could not import skill module: {k} ({e})")
 
     # Configure CDP Agentkit Langchain Extension.
     cdp_wallet_provider = None

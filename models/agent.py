@@ -24,6 +24,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
+from app.services.tg.bot.types.bot import TelegramConfig
 from models.base import Base
 from models.db import get_session
 
@@ -917,7 +918,7 @@ class AgentUpdate(BaseModel):
         ),
     ]
     telegram_config: Annotated[
-        Optional[dict],
+        Optional[TelegramConfig],
         PydanticField(
             default=None,
             description="Telegram integration configuration settings",
