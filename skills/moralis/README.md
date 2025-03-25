@@ -1,14 +1,16 @@
-# Wallet Portfolio Skills
+# Wallet Portfolio & Blockchain Analysis Skills
 
 ## Overview
 
-The Wallet Portfolio Skills module provides comprehensive blockchain wallet analysis capabilities across EVM-compatible chains (Ethereum, BSC, Polygon, etc.) and Solana. This module integrates with Moralis API to fetch wallet balances, transaction history, NFT holdings, and more.
+The Wallet Portfolio & Blockchain Analysis Skills module provides comprehensive blockchain wallet analysis and transaction exploration capabilities across EVM-compatible chains (Ethereum, BSC, Polygon, etc.) and Solana. This module integrates with Moralis API to fetch wallet balances, transaction data, block information, NFT holdings, and more.
 
 ## Features
 
 - Multi-chain portfolio analysis
 - Token balances with USD values
 - Transaction history with detailed metadata
+- Transaction exploration and decoding
+- Block data retrieval and analysis
 - NFT holdings with metadata
 - Solana-specific portfolio analysis
 - Token approval monitoring
@@ -26,7 +28,11 @@ The Wallet Portfolio Skills module provides comprehensive blockchain wallet anal
     "fetch_chain_portfolio": "public",
     "fetch_nft_portfolio": "public",
     "fetch_transaction_history": "public",
-    "fetch_solana_portfolio": "public"
+    "fetch_solana_portfolio": "public",
+    "fetch_transaction_by_hash": "public",
+    "fetch_latest_block": "public",
+    "fetch_block_by_hash_or_number": "public",
+    "fetch_block_by_date": "public"
   },
   "supported_chains": {
     "evm": true,
@@ -35,7 +41,7 @@ The Wallet Portfolio Skills module provides comprehensive blockchain wallet anal
 }
 ```
 
-## Skills
+## Wallet Portfolio Skills
 
 ### 1. Fetch Wallet Portfolio (`fetch_wallet_portfolio`)
 
@@ -159,7 +165,7 @@ Polygon NFTs:
 
 ### 4. Fetch Transaction History (`fetch_transaction_history`)
 
-Retrieves detailed transaction history for a wallet address.
+Retrieves detailed transaction history for a wallet address with enhanced analytics.
 
 #### Sample Prompts:
 
@@ -176,10 +182,19 @@ What are my latest swaps on Ethereum for wallet 0x742d35Cc6634C0532925a3b844Bc45
 ```
 Here are the recent transactions for 0x742d35Cc6634C0532925a3b844Bc454e4438f44e on Ethereum:
 
+Transaction Statistics:
+- Total Transactions: 156
+- Swaps: 42
+- Transfers: 87
+- Approvals: 12
+- Other: 15
+
+Recent Activity:
 1. Swap (2 hours ago)
    - Hash: 0x3a5e...f781
    - Swapped 1,000 USDT for 0.25 ETH on Uniswap
    - Fee: 0.005 ETH ($19.25)
+   - Function: swap(uint256,uint256,address[],address)
 
 2. Token Transfer (1 day ago)
    - Hash: 0x8f72...d4e3
@@ -245,17 +260,132 @@ Associated Token Addresses:
 [more addresses...]
 ```
 
+## Blockchain Data Skills
+
+### 6. Fetch Transaction By Hash (`fetch_transaction_by_hash`)
+
+Retrieves detailed information about a specific transaction by its hash.
+
+#### Sample Prompts:
+
+```
+Show me details for transaction 0xfeda0e8f0d6e54112c28d319c0d303c065d1125c9197bd653682f5fcb0a6c81e
+```
+
+```
+What happened in this transaction: 0x1ed85b3757a6d31d01a4d6677fc52fd3911d649a0af21fe5ca3f886b153773ed?
+```
+
+#### Example Response:
+
+```
+Transaction 0x1ed85b3757a6d31d01a4d6677fc52fd3911d649a0af21fe5ca3f886b153773ed
+Status: Success
+Type: Transfer
+From: 0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0 (Binance 1)
+To: 0x003dde3494f30d861d063232c6a8c04394b686ff (Binance 2)
+Value: 0.115580 ETH
+Block: 12386788
+Timestamp: 2021-05-07T11:08:35.000Z
+
+This transaction was a simple ETH transfer between two addresses. The transaction was successful and used 21,000 gas at a price of 52.5 Gwei, resulting in a fee of 0.0011025 ETH.
+
+The transaction occurred on the Ethereum mainnet and did not involve any smart contract interactions or token transfers.
+```
+
+### 7. Fetch Latest Block (`fetch_latest_block`)
+
+Retrieves the latest block number from a blockchain network.
+
+#### Sample Prompts:
+
+```
+What's the latest block on Ethereum?
+```
+
+```
+Show me the current block height for BSC
+```
+
+#### Example Response:
+
+```
+The latest block on Ethereum (Chain ID: 1) is 18243567.
+
+This block was mined approximately 12 seconds ago.
+```
+
+### 8. Fetch Block By Hash or Number (`fetch_block_by_hash_or_number`)
+
+Retrieves detailed information about a block by its hash or number.
+
+#### Sample Prompts:
+
+```
+Show me block 17000000 on Ethereum
+```
+
+```
+Get details for block 0x9b559aef7ea858608c2e554246fe4a24287e7aeeb976848df2b9a2531f4b9171
+```
+
+#### Example Response:
+
+```
+Block #17000000 on Ethereum (Chain ID: 1)
+
+Block Details:
+- Hash: 0x2241c2a0926e7c876af6c0bb355461fe5ef7a682fa0441125575fa5c5af5fe90
+- Timestamp: 2023-06-13T10:42:15.000Z
+- Miner: 0xea674fdde714fd979de3edf0f56aa9716b898ec8
+- Gas Used: 29,892,458 (99.87% of gas limit)
+- Size: 142,157 bytes
+- Transactions: 318
+
+This block contains 318 transactions and was mined by Ethermine (0xea674fdde714fd979de3edf0f56aa9716b898ec8). The total gas used was 29,892,458, which is 99.87% of the block's gas limit.
+```
+
+### 9. Fetch Block By Date (`fetch_block_by_date`)
+
+Retrieves block information based on a specific date.
+
+#### Sample Prompts:
+
+```
+What block was mined on June 15, 2023 on Ethereum?
+```
+
+```
+Show me the blockchain state on 2023-01-01
+```
+
+#### Example Response:
+
+```
+On June 15, 2023, block #17034268 was mined on Ethereum (Chain ID: 1).
+
+Block Details:
+- Hash: 0x3a33181831a3d5c23072378163e43179743f79f8921c2a07e23da3c953502742
+- Timestamp: 2023-06-15T00:00:12.000Z
+- Miner: 0xea674fdde714fd979de3edf0f56aa9716b898ec8
+- Gas Used: 29,956,842 (99.86% of gas limit)
+- Size: 143,965 bytes
+- Transactions: 327
+
+This block was mined by Ethermine (0xea674fdde714fd979de3edf0f56aa9716b898ec8) at the beginning of June 15, 2023.
+```
+
 ## Advanced Usage
 
 ### Combining Skills
 
-The wallet portfolio skills can be combined for comprehensive analysis. For example:
+The wallet portfolio and blockchain data skills can be combined for comprehensive analysis. For example:
 
 ```
 Can you analyze wallet 0x742d35Cc6634C0532925a3b844Bc454e4438f44e and show me:
 1. Total portfolio value
 2. NFT holdings
-3. Recent transactions
+3. Recent transactions and decode the last swap transaction
 ```
 
 ### Response Example:
@@ -285,14 +415,51 @@ Notable NFTs:
 3. Sandbox Land (-12, 40) (Polygon)
 
 RECENT TRANSACTIONS:
-1. Swap (2 hours ago)
-   - Swapped 1,000 USDT for 0.25 ETH on Uniswap
-2. Token Transfer (1 day ago)
-   - Sent 50 LINK to 0x91B...5a4c
-3. NFT Purchase (2 days ago)
-   - Bought Bored Ape #2534 for 38.2 ETH
+Most recent swap transaction (3 hours ago):
+- Hash: 0x3a5e...f781
+- Function: swapExactTokensForETH(uint256,uint256,address[],address,uint256)
+- Parameters:
+  - amountIn: 1000000000 (uint256) - 1,000 USDT with 6 decimals
+  - amountOutMin: 249158750524475790 (uint256) - Minimum 0.249 ETH expected
+  - path: ["0xdAC17F958D2ee523a2206206994597C13D831ec7","0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"] - USDT to WETH path
+  - to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" - Your address
+  - deadline: 1689542498 (uint256) - Transaction deadline timestamp
+
+The transaction successfully swapped 1,000 USDT for 0.25 ETH using Uniswap Router.
 
 Would you like me to focus on any specific aspect of this wallet?
+```
+
+### Transaction Analysis
+
+The transaction analysis skills can provide deep insights into on-chain activity:
+
+```
+Can you analyze this transaction 0xfeda0e8f0d6e54112c28d319c0d303c065d1125c9197bd653682f5fcb0a6c81e and explain what happened in simple terms?
+```
+
+### Response Example:
+
+```
+I've analyzed transaction 0xfeda0e8f0d6e54112c28d319c0d303c065d1125c9197bd653682f5fcb0a6c81e:
+
+TRANSACTION SUMMARY:
+This was an interaction with the Uniswap V2 Router on Ethereum, executed on May 7, 2021.
+
+WHAT HAPPENED:
+In simple terms, someone swapped approximately 5,000 USDT for 1.89 ETH using Uniswap.
+
+DETAILS:
+- Type: Token Swap (DEX)
+- Platform: Uniswap V2
+- Function Called: swapExactTokensForETH
+- Tokens Involved:
+  * Sent: 5,000 USDT
+  * Received: 1.89 ETH
+- Fee Paid: 0.0084 ETH (approximately $21.50 at that time)
+- Result: Successful
+
+This transaction represents a typical decentralized exchange swap where USDT stablecoin was exchanged for ETH. The transaction was initiated by a wallet associated with Binance and executed through the Uniswap V2 protocol.
 ```
 
 ## Error Handling
@@ -303,6 +470,8 @@ The skills handle various error conditions gracefully:
 - Unsupported chains
 - API rate limiting
 - Network issues
+- Malformed transaction hashes
+- Non-existent blocks
 
 Each skill includes an `error` field in the response that will be populated with error information when applicable.
 
@@ -313,7 +482,9 @@ Each skill includes an `error` field in the response that will be populated with
 - Transactions are limited to 100 per request by default
 - NFT metadata and images may not be available for all NFTs
 - Token approvals analysis may not identify all high-risk approvals
+- Transaction decoding depends on verified ABIs in the Moralis database
+- Block data for very old blocks may be slower to retrieve
 
 ## Contributing
 
-Contributions to improve the Wallet Portfolio Skills are welcome. Please ensure that your code follows the project's style and includes appropriate tests.
+Contributions to improve the Wallet Portfolio & Blockchain Analysis Skills are welcome. Please ensure that your code follows the project's style and includes appropriate tests.
