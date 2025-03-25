@@ -108,7 +108,8 @@ async def _process_agent_post_actions(
             api_key_name=config.cdp_api_key_name,
             private_key=config.cdp_api_key_private_key.replace("\\n", "\n"),
         )
-        wallet = Wallet.create(network_id=agent.cdp_network_id)
+        network_id = agent.network_id or agent.cdp_network_id
+        wallet = Wallet.create(network_id=network_id)
         wallet_data = wallet.export_data().to_dict()
         wallet_data["default_address_id"] = wallet.default_address.address_id
         if not agent_data:
@@ -212,17 +213,17 @@ def _send_agent_notification(
                         "value": agent_data.telegram_username,
                     },
                     {
-                        "title": "CDP Enabled",
+                        "title": "Wallet Provider",
                         "short": True,
-                        "value": str(agent.cdp_enabled),
+                        "value": agent.wallet_provider,
                     },
                     {
-                        "title": "CDP Network",
+                        "title": "Network",
                         "short": True,
-                        "value": agent.cdp_network_id or "Default",
+                        "value": agent.network_id or agent.cdp_network_id or "Default",
                     },
                     {
-                        "title": "CDP Wallet Address",
+                        "title": "Wallet Address",
                         "value": wallet_data.get("default_address_id"),
                     },
                     {
