@@ -190,6 +190,7 @@ async def initialize_agent(aid, is_private=False):
                 logger.error(f"Could not import skill module: {k} ({e})")
 
     # Configure CDP Agentkit Langchain Extension.
+    # Deprecated
     cdp_wallet_provider = None
     if (
         agent.cdp_enabled
