@@ -73,7 +73,7 @@
                         "Agent Owner + All Users",
                         "Agent Owner Only"
                     ],
-                    "description": "Fetches transaction history for a wallet, retrieving detailed transaction data including token transfers, gas costs, and USD values when available."
+                    "description": "Fetches transaction history for a wallet with enhanced capabilities, retrieving detailed transaction data including token transfers, gas costs, decoded function calls, and statistics."
                 },
                 "fetch_solana_portfolio": {
                     "type": "string",
@@ -89,6 +89,66 @@
                         "Agent Owner Only"
                     ],
                     "description": "Fetches Solana wallet portfolio, retrieving detailed information about a Solana wallet's holdings, including native SOL, SPL tokens, and optionally NFTs."
+                },
+                "fetch_transaction_by_hash": {
+                    "type": "string",
+                    "title": "Fetch Transaction By Hash",
+                    "enum": [
+                        "disabled",
+                        "public",
+                        "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
+                    "description": "Fetches detailed transaction data by transaction hash, including sender/receiver information, value, gas costs, contract interactions, decoded function calls, and optional internal transactions."
+                },
+                "fetch_latest_block": {
+                    "type": "string",
+                    "title": "Fetch Latest Block",
+                    "enum": [
+                        "disabled",
+                        "public",
+                        "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
+                    "description": "Fetches the latest block number from a blockchain network to determine the current chain state."
+                },
+                "fetch_block_by_hash_or_number": {
+                    "type": "string",
+                    "title": "Fetch Block By Hash or Number",
+                    "enum": [
+                        "disabled",
+                        "public",
+                        "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
+                    "description": "Fetches detailed block data by block hash or number, including transactions, timestamp, gas used, and other block properties."
+                },
+                "fetch_block_by_date": {
+                    "type": "string",
+                    "title": "Fetch Block By Date",
+                    "enum": [
+                        "disabled",
+                        "public",
+                        "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
+                    "description": "Fetches block data by date, finding the block that was mined closest to the specified date."
                 }
             },
             "required": [
@@ -96,7 +156,11 @@
                 "fetch_chain_portfolio",
                 "fetch_nft_portfolio",
                 "fetch_transaction_history",
-                "fetch_solana_portfolio"
+                "fetch_solana_portfolio",
+                "fetch_transaction_by_hash",
+                "fetch_latest_block",
+                "fetch_block_by_hash_or_number",
+                "fetch_block_by_date"
             ]
         },
         "supported_chains": {
