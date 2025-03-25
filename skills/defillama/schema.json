@@ -21,6 +21,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch batch historical prices",
           "default": "disabled"
         },
@@ -30,6 +35,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch block",
           "default": "disabled"
@@ -41,6 +51,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch current prices",
           "default": "disabled"
         },
@@ -50,6 +65,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Retrieves inaugural trading price data for assets with historical context",
           "default": "disabled"
@@ -61,6 +81,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch historical prices",
           "default": "disabled"
         },
@@ -71,6 +96,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch price chart",
           "default": "disabled"
         },
@@ -80,6 +110,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch price percentage",
           "default": "disabled"
@@ -92,6 +127,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Provides aggregated fee statistics across DEXs, lending protocols, and other fee-generating DeFi primitives",
           "default": "disabled"
         },
@@ -101,6 +141,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Shows blockchain distribution of stablecoin supply with chain-specific circulation metrics",
           "default": "disabled"
@@ -112,6 +157,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Generates historical charts for stablecoin market cap, supply changes, and chain dominance",
           "default": "disabled"
         },
@@ -121,6 +171,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch stablecoin prices",
           "default": "disabled"
@@ -132,6 +187,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch stablecoins",
           "default": "disabled"
         },
@@ -141,6 +201,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Retrieves historical TVL data for specific blockchain chains with daily granularity",
           "default": "disabled"
@@ -152,6 +217,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch chains",
           "default": "disabled"
         },
@@ -161,6 +231,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Provides historical TVL trends for the entire DeFi ecosystem or specific protocol categories",
           "default": "disabled"
@@ -172,6 +247,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch protocol",
           "default": "disabled"
         },
@@ -181,6 +261,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch protocol current TVL",
           "default": "disabled"
@@ -192,6 +277,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Retrieves comprehensive list of all tracked DeFi protocols with their category, chain, and TVL data",
           "default": "disabled"
         },
@@ -201,6 +291,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Provides aggregated DEX metrics including total volume, top trading pairs, and liquidity distribution",
           "default": "disabled"
@@ -212,6 +307,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch dex summary",
           "default": "disabled"
         },
@@ -221,6 +321,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch options overview",
           "default": "disabled"
@@ -232,6 +337,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Fetch pool chart",
           "default": "disabled"
         },
@@ -241,6 +351,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Fetch pools",
           "default": "disabled"

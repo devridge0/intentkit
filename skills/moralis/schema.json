@@ -2,6 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "title": "Wallet Portfolio",
+    "x-icon": "https://ai.service.crestal.dev/skills/moralis/moralis.jpg",
     "description": "Configuration schema for wallet portfolio skills (EVM chains and Solana)",
     "properties": {
         "api_key": {
@@ -22,6 +23,11 @@
                         "public",
                         "private"
                     ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
                     "description": "State of the fetch_wallet_portfolio skill"
                 },
                 "fetch_chain_portfolio": {
@@ -31,6 +37,11 @@
                         "disabled",
                         "public",
                         "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
                     ],
                     "description": "State of the fetch_chain_portfolio skill"
                 },
@@ -42,6 +53,11 @@
                         "public",
                         "private"
                     ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
                     "description": "State of the fetch_nft_portfolio skill"
                 },
                 "fetch_transaction_history": {
@@ -52,6 +68,11 @@
                         "public",
                         "private"
                     ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
+                    ],
                     "description": "State of the fetch_transaction_history skill"
                 },
                 "fetch_solana_portfolio": {
@@ -61,6 +82,11 @@
                         "disabled",
                         "public",
                         "private"
+                    ],
+                    "x-enum-title": [
+                        "Disabled",
+                        "Agent Owner + All Users",
+                        "Agent Owner Only"
                     ],
                     "description": "State of the fetch_solana_portfolio skill"
                 }

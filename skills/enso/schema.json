@@ -25,6 +25,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Retrieve networks supported by the Enso API",
           "default": "disabled"
         },
@@ -35,6 +40,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Enso Finance Token Information Tool: Retrieves detailed token information from the Enso Finance API, including APY, symbol, address, protocol slug, token type, and underlying tokens.",
           "default": "disabled"
@@ -47,6 +57,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Retrieve the price of a token by chain ID and contract address",
           "default": "disabled"
         },
@@ -57,6 +72,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Retrieve token spend approvals for a wallet on a specified blockchain network.",
           "default": "disabled"
@@ -69,6 +89,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Retrieve token balances of a wallet on a specified blockchain network.",
           "default": "disabled"
         },
@@ -80,6 +105,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token.",
           "default": "disabled"
         },
@@ -90,6 +120,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId.",
           "default": "disabled"
