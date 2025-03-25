@@ -16,9 +16,11 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
     if agent.ticker:
         prompt += f"Your ticker symbol is {agent.ticker}.\n"
     if agent_data:
-        if agent_data.cdp_wallet_data and agent.cdp_enabled:
+        # TODO: remember to change here after integrate goat
+        if agent_data.cdp_wallet_data:
+            network_id = agent.network_id or agent.cdp_network_id
             wallet_data = json.loads(agent_data.cdp_wallet_data)
-            prompt += f"Your CDP wallet address in {agent.cdp_network_id} is {wallet_data['default_address_id']} .\n"
+            prompt += f"Your CDP wallet address in {network_id} is {wallet_data['default_address_id']} .\n"
             prompt += (
                 "## Crypto Wallet\n\n"
                 "Wallet addresses are public information. If someone asks for your default wallet, current wallet, "
@@ -28,7 +30,7 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
             prompt += "When you get balance from tools, or pass amount to tools, don't forget they have decimals.\n"
             prompt += "USDC and USDT has 6 decimals, you must divide the amount you get by 10^6, multiply 10^6 when passing to tools.\n"
             prompt += "Other currencies include native ETH usually has 18 decimals, you need divide or multiply 10^18.\n"
-            if agent.cdp_network_id == "base-mainnet":
+            if network_id == "base-mainnet":
                 prompt += "The USDC contract address in base-mainnet is 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\n"
         if agent_data.twitter_id:
             prompt += f"Your twitter id is {agent_data.twitter_id}, never reply or retweet yourself.\n"
@@ -51,7 +53,7 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
         prompt += f"## Principles\n\n{agent.principles}\n\n"
     if agent.prompt:
         prompt += f"## Initial Rules\n\n{agent.prompt}\n\n"
-    if agent.enso_skills and len(agent.enso_skills) > 0:
+    if "enso" in agent.skills and agent.skills["enso"].get("enabled", False):
         prompt += """## ENSO Skills Guide\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
         including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
         ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
