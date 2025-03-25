@@ -26,6 +26,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "This tool fetches the latest cryptocurrency news articles for a specific token.\nYou can optionally specify a timestamp to get historical news, otherwise it uses the current time.\nReturns articles in English with details like title, body, source, and publish time.",
           "default": "disabled"
         },
@@ -36,6 +41,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Provides real-time cryptocurrency pricing with multi-exchange aggregation and historical comparisons",
           "default": "disabled"
@@ -48,6 +58,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Generates technical analysis signals using indicators like RSI, MACD, and Bollinger Bands",
           "default": "disabled"
         },
@@ -58,6 +73,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Tracks top cryptocurrencies by market capitalization with sector breakdowns",
           "default": "disabled"
@@ -70,6 +90,11 @@
             "public",
             "private"
           ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
           "description": "Ranks cryptocurrency exchanges by liquidity and trading volume with market pair analysis",
           "default": "disabled"
         },
@@ -80,6 +105,11 @@
             "disabled",
             "public",
             "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
           ],
           "description": "Analyzes 24h trading volume trends across exchanges and currency pairs",
           "default": "disabled"

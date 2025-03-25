@@ -9,6 +9,7 @@ from models.credit import (
     CreditAccount,
     CreditEvent,
     CreditType,
+    EventType,
     OwnerType,
 )
 from utils.middleware import create_jwt_middleware
@@ -82,7 +83,12 @@ class CreditEventResponse(BaseModel):
 
 
 # ===== API Endpoints =====
-@credit_router.get("/accounts/{owner_type}/{owner_id}", response_model=CreditAccount)
+@credit_router.get(
+    "/accounts/{owner_type}/{owner_id}",
+    response_model=CreditAccount,
+    operation_id="get_account",
+    title="Get Account",
+)
 async def get_account(owner_type: OwnerType, owner_id: str):
     """Get a credit account by owner type and ID.
 
@@ -98,7 +104,11 @@ async def get_account(owner_type: OwnerType, owner_id: str):
 
 
 @credit_router.post(
-    "/recharge", response_model=CreditAccount, status_code=status.HTTP_200_OK
+    "/recharge",
+    response_model=CreditAccount,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="recharge_account",
+    title="Recharge",
 )
 async def recharge_user_account(request: RechargeRequest):
     """Recharge a user account with credits.
@@ -114,7 +124,11 @@ async def recharge_user_account(request: RechargeRequest):
 
 
 @credit_router.post(
-    "/reward", response_model=CreditAccount, status_code=status.HTTP_200_OK
+    "/reward",
+    response_model=CreditAccount,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="reward_account",
+    title="Reward",
 )
 async def reward_user_account(request: RewardRequest):
     """Reward a user account with credits.
@@ -130,7 +144,11 @@ async def reward_user_account(request: RewardRequest):
 
 
 @credit_router.post(
-    "/adjust", response_model=CreditAccount, status_code=status.HTTP_200_OK
+    "/adjust",
+    response_model=CreditAccount,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="adjust_account",
+    title="Adjust",
 )
 async def adjust_user_account(request: AdjustmentRequest):
     """Adjust a user account's credits.
@@ -149,6 +167,8 @@ async def adjust_user_account(request: AdjustmentRequest):
     "/accounts/users/{user_id}/daily-quota",
     response_model=CreditAccount,
     status_code=status.HTTP_200_OK,
+    operation_id="update_account_daily_quota",
+    title="Update Daily Quota",
 )
 async def update_account_daily_quota(
     user_id: str, request: UpdateDailyQuotaRequest
@@ -167,7 +187,10 @@ async def update_account_daily_quota(
 
 
 @credit_router_readonly.get(
-    "/event/users/{user_id}/expense", response_model=List[CreditEvent]
+    "/event/users/{user_id}/expense",
+    response_model=List[CreditEvent],
+    operation_id="list_user_expense_events",
+    title="List User Expense",
 )
 async def list_user_expense_events(
     user_id: str,
@@ -187,16 +210,21 @@ async def list_user_expense_events(
 
 
 @credit_router_readonly.get(
-    "/event/users/{user_id}/income", response_model=List[CreditEvent]
+    "/event/users/{user_id}/income",
+    response_model=List[CreditEvent],
+    operation_id="list_user_income_events",
+    title="List User Income",
 )
 async def list_user_income_events(
     user_id: str,
+    event_type: Annotated[Optional[EventType], Query(description="Event type")] = None,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
 ) -> List[CreditEvent]:
     """List all income events for a user account.
 
     Args:
         user_id: ID of the user
+        event_type: Event type
         cursor: Cursor for pagination
 
     Returns:
@@ -207,7 +235,10 @@ async def list_user_income_events(
 
 
 @credit_router_readonly.get(
-    "/event/agents/{agent_id}/income", response_model=List[CreditEvent]
+    "/event/agents/{agent_id}/income",
+    response_model=List[CreditEvent],
+    operation_id="list_agent_income_events",
+    title="List Agent Income",
 )
 async def list_agent_income_events(
     agent_id: str,
@@ -221,6 +252,30 @@ async def list_agent_income_events(
 
     Returns:
         List of income events
+    """
+    # Implementation will be added later
+    pass
+
+
+@credit_router_readonly.get(
+    "/event",
+    response_model=CreditEvent,
+    operation_id="fetch_credit_event",
+    title="Fetch Credit Event",
+)
+async def fetch_credit_event(
+    upstream_tx_id: Annotated[str, Query(description="Upstream transaction ID")],
+) -> CreditEvent:
+    """Fetch a credit event by its upstream transaction ID.
+
+    Args:
+        upstream_tx_id: ID of the upstream transaction
+
+    Returns:
+        Credit event
+
+    Raises:
+        404: If the credit event is not found
     """
     # Implementation will be added later
     pass
