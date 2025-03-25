@@ -78,7 +78,7 @@ async def get_skill_schema(
 
 
 @schema_router_readonly.get(
-    "/skills/{skill}/icon.{ext}",
+    "/skills/{skill}/{icon_name}.{ext}",
     tags=["Schema"],
     operation_id="get_skill_icon",
     responses={
@@ -89,6 +89,7 @@ async def get_skill_schema(
 )
 async def get_skill_icon(
     skill: str = PathParam(..., description="Skill name", regex="^[a-zA-Z0-9_-]+$"),
+    icon_name: str = PathParam(..., description="Icon name"),
     ext: str = PathParam(
         ..., description="Icon file extension", regex="^(png|svg|jpg|jpeg)$"
     ),
@@ -97,6 +98,7 @@ async def get_skill_icon(
 
     **Path Parameters:**
     * `skill` - Skill name
+    * `icon_name` - Icon name
     * `ext` - Icon file extension (png or svg)
 
     **Returns:**
@@ -106,7 +108,7 @@ async def get_skill_icon(
     * `HTTPException` - If the skill or icon is not found or name is invalid
     """
     base_path = PROJECT_ROOT / "skills"
-    icon_path = base_path / skill / f"icon.{ext}"
+    icon_path = base_path / skill / f"{icon_name}.{ext}"
     normalized_path = icon_path.resolve()
 
     if not normalized_path.is_relative_to(base_path):
@@ -115,5 +117,5 @@ async def get_skill_icon(
     if not normalized_path.exists():
         raise HTTPException(status_code=404, detail="Skill icon not found")
 
-    content_type = "image/svg+xml" if ext == "svg" else "image/png"
+    content_type = "image/svg+xml" if ext == "svg" else "image/png" if ext in ["png"] else "image/jpeg"
     return FileResponse(normalized_path, media_type=content_type)

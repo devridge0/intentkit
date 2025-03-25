@@ -428,11 +428,11 @@ class TestSkillInitialization(unittest.TestCase):
         config = {
             "api_key": "test_api_key",
             "states": {
-                "moralis_fetch_wallet_portfolio": "public",
-                "moralis_fetch_chain_portfolio": "public",
-                "moralis_fetch_nft_portfolio": "private",
-                "moralis_fetch_transaction_history": "private",
-                "moralis_fetch_solana_portfolio": "public",
+                "fetch_wallet_portfolio": "public",
+                "fetch_chain_portfolio": "public",
+                "fetch_nft_portfolio": "private",
+                "fetch_transaction_history": "private",
+                "fetch_solana_portfolio": "public",
             },
             "supported_chains": {"evm": True, "solana": True},
         }
@@ -466,11 +466,11 @@ class TestIntegration(unittest.TestCase):
                 "moralis": {
                     "api_key": "test_api_key",
                     "states": {
-                        "moralis_fetch_wallet_portfolio": "public",
-                        "moralis_fetch_chain_portfolio": "public",
-                        "moralis_fetch_nft_portfolio": "private",
-                        "moralis_fetch_transaction_history": "private",
-                        "moralis_fetch_solana_portfolio": "public",
+                        "fetch_wallet_portfolio": "public",
+                        "fetch_chain_portfolio": "public",
+                        "fetch_nft_portfolio": "private",
+                        "fetch_transaction_history": "private",
+                        "fetch_solana_portfolio": "public",
                     },
                     "supported_chains": {"evm": True, "solana": True},
                 }
@@ -486,11 +486,11 @@ class TestIntegration(unittest.TestCase):
         # Check that all required skills are configured
         states = moralis_config["states"]
         required_skills = [
-            "moralis_fetch_wallet_portfolio",
-            "moralis_fetch_chain_portfolio",
-            "moralis_fetch_nft_portfolio",
-            "moralis_fetch_transaction_history",
-            "moralis_fetch_solana_portfolio",
+            "fetch_wallet_portfolio",
+            "fetch_chain_portfolio",
+            "fetch_nft_portfolio",
+            "fetch_transaction_history",
+            "fetch_solana_portfolio",
         ]
 
         for skill in required_skills:
