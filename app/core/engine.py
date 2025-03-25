@@ -401,7 +401,7 @@ async def initialize_agent(aid, is_private=False):
         return prompt_temp.invoke({"messages": state["messages"]})
 
     # hack for deepseek, it doesn't support tools
-    if agent.model.startswith("deepseek"):
+    if agent.model.startswith("deepseek-reasoner"):
         tools = []
 
     # log all tools
