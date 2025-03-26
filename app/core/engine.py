@@ -74,7 +74,6 @@ from skills.twitter import get_twitter_skill
 
 logger = logging.getLogger(__name__)
 
-_agent_configs: dict[str, Agent] = {}
 
 # Global variable to cache all agent executors
 _agents: dict[str, CompiledGraph] = {}
@@ -424,7 +423,6 @@ async def initialize_agent(aid, is_private=False):
         debug=config.debug_checkpoint,
         input_token_limit=input_token_limit,
     )
-    _agent_configs[aid] = agent
     if is_private:
         _private_agents[aid] = executor
         _private_agents_updated[aid] = agent.updated_at
@@ -484,8 +482,10 @@ async def execute_agent(
     message.reply_to = message.id
     input = await message.save()
 
+    agent = await Agent.get(input.agent_id)
+
     is_private = False
-    if input.chat_id.startswith("owner") or input.chat_id.startswith("autonomous"):
+    if input.user_id == agent.owner:
         is_private = True
 
     resp = []
@@ -518,7 +518,7 @@ async def execute_agent(
     thread_id = f"{input.agent_id}-{input.chat_id}"
     stream_config = {
         "configurable": {
-            "agent": _agent_configs[input.agent_id],
+            "agent": agent,
             "thread_id": thread_id,
             "user_id": input.user_id,
             "entrypoint": input.author_type,
