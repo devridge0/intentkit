@@ -9,26 +9,6 @@ from models.chat import AuthorType, ChatMessageCreate
 logger = logging.getLogger(__name__)
 
 
-async def run_autonomous_action(aid: str, prompt: str):
-    """Run the agent autonomously with specified intervals."""
-    message = ChatMessageCreate(
-        id=str(XID()),
-        agent_id=aid,
-        chat_id="autonomous",
-        user_id="autonomous",
-        author_id="autonomous",
-        author_type=AuthorType.TRIGGER,
-        thread_type=AuthorType.TRIGGER,
-        message=prompt,
-    )
-
-    # Execute agent and get response
-    resp = await execute_agent(message)
-
-    # Log the response
-    logger.info("\n".join(str(m) for m in resp), extra={"aid": aid})
-
-
 async def run_autonomous_task(
     agent_id: str, agent_owner: str, task_id: str, prompt: str
 ):
