@@ -117,5 +117,11 @@ async def get_skill_icon(
     if not normalized_path.exists():
         raise HTTPException(status_code=404, detail="Skill icon not found")
 
-    content_type = "image/svg+xml" if ext == "svg" else "image/png" if ext in ["png"] else "image/jpeg"
+    content_type = (
+        "image/svg+xml"
+        if ext == "svg"
+        else "image/png"
+        if ext in ["png"]
+        else "image/jpeg"
+    )
     return FileResponse(normalized_path, media_type=content_type)
