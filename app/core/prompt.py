@@ -53,7 +53,11 @@ def agent_prompt(agent: Agent, agent_data: AgentData) -> str:
         prompt += f"## Principles\n\n{agent.principles}\n\n"
     if agent.prompt:
         prompt += f"## Initial Rules\n\n{agent.prompt}\n\n"
-    if "enso" in agent.skills and agent.skills["enso"].get("enabled", False):
+    if (
+        agent.skills
+        and "enso" in agent.skills
+        and agent.skills["enso"].get("enabled", False)
+    ):
         prompt += """## ENSO Skills Guide\n\nYou are integrated with the Enso API. You can use enso_get_tokens to retrieve token information,
         including APY, Protocol Slug, Symbol, Address, Decimals, and underlying tokens. When interacting with token amounts,
         ensure to multiply input amounts by the token's decimal places and divide output amounts by the token's decimals. 
