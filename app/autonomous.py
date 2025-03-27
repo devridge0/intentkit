@@ -97,7 +97,7 @@ async def schedule_agent_autonomous_tasks():
                         args=[agent.id, agent.owner, autonomous.id, autonomous.prompt],
                         replace_existing=True,
                     )
-                elif autonomous.minutes is not None:
+                elif autonomous.minutes:
                     logger.info(
                         f"Scheduling interval task {task_id} every {autonomous.minutes} minutes"
                     )
