@@ -305,6 +305,7 @@ async def validate_agent(
         - 400: Invalid agent configuration
         - 500: Server error
     """
+    input.validate_autonomous_schedule()
     return Response(status_code=204)
 
 
