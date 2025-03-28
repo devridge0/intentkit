@@ -498,9 +498,9 @@ async def execute_agent(
     image_urls = []
     if input.attachments:
         image_urls = [
-            att.url
+            att["url"]
             for att in input.attachments
-            if hasattr(att, "type") and att.type == "image" and hasattr(att, "url")
+            if "type" in att and att["type"] == "image" and "url" in att
         ]
 
     # message
