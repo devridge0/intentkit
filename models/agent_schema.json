@@ -323,8 +323,7 @@
           "description": "Reserved for future use",
           "enum": [
             1
-          ],
-          "default": 1
+          ]
         },
         "group_memory_public": {
           "title": "Group Memory Public",
@@ -349,10 +348,7 @@
           "type": "string",
           "description": "Custom greeting message for individual users"
         }
-      },
-      "required": [
-        "token"
-      ]
+      }
     },
     "twitter_entrypoint_enabled": {
       "title": "Enable Twitter Communication",
