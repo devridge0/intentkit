@@ -132,7 +132,7 @@ async def initialize_agent(aid, is_private=False):
     elif agent.model.startswith("grok"):
         llm = ChatXAI(
             model_name=agent.model,
-            openai_api_key=config.xai_api_key,
+            api_key=config.xai_api_key,
             frequency_penalty=agent.frequency_penalty,
             presence_penalty=agent.presence_penalty,
             temperature=agent.temperature,
