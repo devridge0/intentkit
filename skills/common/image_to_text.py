@@ -31,7 +31,7 @@ class ImageToText(CommonBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "image_to_text"
+    name: str = "common_image_to_text"
     description: str = (
         "Convert an image to detailed text description.\n"
         "Provide a URL to the image to analyze and get a comprehensive textual description.\n"
