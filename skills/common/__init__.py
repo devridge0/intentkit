@@ -11,7 +11,6 @@ from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
-from skills.common.image_edit import ImageEdit
 from skills.common.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
@@ -22,7 +21,6 @@ class SkillStates(TypedDict):
     current_time: SkillState
     image_generation: SkillState
     image_to_text: SkillState
-    # image_edit: SkillState
 
 
 class Config(SkillConfig):
@@ -90,12 +88,6 @@ def get_common_skill(
                     quality="hd",
                     api_key=store.get_system_config("openai_api_key"),
                 ),
-            )
-        return _cache[name]
-    elif name == "image_edit":
-        if name not in _cache:
-            _cache[name] = ImageEdit(
-                skill_store=store,
             )
         return _cache[name]
     elif name == "image_to_text":
