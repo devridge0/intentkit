@@ -2,10 +2,16 @@
 
 from typing import TypedDict
 
+from langchain_community.tools.openai_dalle_image_generation import (
+    OpenAIDALLEImageGenerationTool,
+)
+from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
+
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
+from skills.common.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CommonBaseTool] = {}
@@ -13,6 +19,8 @@ _cache: dict[str, CommonBaseTool] = {}
 
 class SkillStates(TypedDict):
     current_time: SkillState
+    image_generation: SkillState
+    image_to_text: SkillState
 
 
 class Config(SkillConfig):
@@ -69,6 +77,22 @@ def get_common_skill(
     if name == "current_time":
         if name not in _cache:
             _cache[name] = CurrentTime(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation":
+        if name not in _cache:
+            _cache[name] = OpenAIDALLEImageGenerationTool(
+                api_wrapper=DallEAPIWrapper(
+                    model="dall-e-3",
+                    quality="hd",
+                    api_key=store.get_system_config("openai_api_key"),
+                ),
+            )
+        return _cache[name]
+    elif name == "image_to_text":
+        if name not in _cache:
+            _cache[name] = ImageToText(
                 skill_store=store,
             )
         return _cache[name]
