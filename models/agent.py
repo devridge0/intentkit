@@ -1073,33 +1073,30 @@ class AgentUpdate(BaseModel):
 
     def validate_autonomous_schedule(self) -> None:
         """Validate the schedule settings for autonomous configurations.
-        
+
         This validation ensures:
         1. Only one scheduling method (minutes or cron) is set per autonomous config
         2. The minimum interval is 1 hour for both types of schedules
         """
         if not self.autonomous:
             return
-            
+
         for config in self.autonomous:
             # Check that exactly one scheduling method is provided
             if not config.minutes and not config.cron:
                 raise HTTPException(
-                    status_code=400,
-                    detail="either minutes or cron must have a value"
+                    status_code=400, detail="either minutes or cron must have a value"
                 )
 
             if config.minutes and config.cron:
                 raise HTTPException(
-                    status_code=400,
-                    detail="only one of minutes or cron can be set"
+                    status_code=400, detail="only one of minutes or cron can be set"
                 )
 
             # Validate minimum interval of 1 hour
             if config.minutes and config.minutes < 60:
                 raise HTTPException(
-                    status_code=400,
-                    detail="The shortest execution interval is 1 hour"
+                    status_code=400, detail="The shortest execution interval is 1 hour"
                 )
 
             # Validate cron expression to ensure interval is at least 1 hour
@@ -1107,8 +1104,7 @@ class AgentUpdate(BaseModel):
                 parts = config.cron.split()
                 if len(parts) < 5:
                     raise HTTPException(
-                        status_code=400,
-                        detail="Invalid cron expression format"
+                        status_code=400, detail="Invalid cron expression format"
                     )
 
                 minute, hour, day_of_month, month, day_of_week = parts[:5]
@@ -1118,7 +1114,7 @@ class AgentUpdate(BaseModel):
                     # If both minute and hour are wildcards, it would run every minute
                     raise HTTPException(
                         status_code=400,
-                        detail="The shortest execution interval is 1 hour"
+                        detail="The shortest execution interval is 1 hour",
                     )
 
                 if "/" in minute:
@@ -1127,20 +1123,20 @@ class AgentUpdate(BaseModel):
                     if step < 60 and hour == "*":
                         raise HTTPException(
                             status_code=400,
-                            detail="The shortest execution interval is 1 hour"
+                            detail="The shortest execution interval is 1 hour",
                         )
 
                 # Check for comma-separated values or ranges that might result in multiple executions per hour
                 if ("," in minute or "-" in minute) and hour == "*":
                     raise HTTPException(
                         status_code=400,
-                        detail="The shortest execution interval is 1 hour"
+                        detail="The shortest execution interval is 1 hour",
                     )
 
     async def update(self, id: str) -> "Agent":
         # The validation is now handled by field validators
         # No need to call check_prompt() anymore
-        
+
         # Validate autonomous schedule settings if present
         if "autonomous" in self.model_dump(exclude_unset=True):
             self.validate_autonomous_schedule()
@@ -1193,11 +1189,11 @@ class AgentCreate(AgentUpdate):
     async def create(self) -> "Agent":
         # Validation is now handled by field validators
         await self.check_upstream_id()
-        
+
         # Validate autonomous schedule settings if present
         if self.autonomous:
             self.validate_autonomous_schedule()
-            
+
         async with get_session() as db:
             db_agent = AgentTable(**self.model_dump())
             db.add(db_agent)
@@ -1208,11 +1204,11 @@ class AgentCreate(AgentUpdate):
     async def create_or_update(self) -> ("Agent", bool):
         # Validation is now handled by field validators
         await self.check_upstream_id()
-        
+
         # Validate autonomous schedule settings if present
         if self.autonomous:
             self.validate_autonomous_schedule()
-            
+
         is_new = False
         async with get_session() as db:
             db_agent = await db.get(AgentTable, self.id)
@@ -1414,7 +1410,7 @@ class AgentResponse(Agent):
     ]
     has_twitter_linked: Annotated[
         bool,
-        PydanticField(description="Whether the agent has linked their Twitter account")
+        PydanticField(description="Whether the agent has linked their Twitter account"),
     ]
     linked_twitter_username: Annotated[
         Optional[str],
