@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Optional, Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -12,6 +12,9 @@ class TwitterReplyTweetInput(BaseModel):
 
     tweet_id: str = Field(description="The ID of the tweet to reply to")
     text: str = Field(description="The text content of the reply tweet", max_length=280)
+    image: Optional[str] = Field(
+        default=None, description="Optional URL of an image to attach to the reply"
+    )
 
 
 class TwitterReplyTweet(TwitterBaseTool):
@@ -30,13 +33,19 @@ class TwitterReplyTweet(TwitterBaseTool):
     args_schema: Type[BaseModel] = TwitterReplyTweetInput
 
     async def _arun(
-        self, tweet_id: str, text: str, config: RunnableConfig, **kwargs
+        self,
+        tweet_id: str,
+        text: str,
+        image: Optional[str] = None,
+        config: RunnableConfig = None,
+        **kwargs,
     ) -> str:
         """Async implementation of the tool to reply to a tweet.
 
         Args:
             tweet_id (str): The ID of the tweet to reply to.
             text (str): The text content of the reply.
+            image (Optional[str]): Optional URL of an image to attach to the reply.
             config (RunnableConfig): The configuration for the runnable, containing agent context.
 
         Returns:
@@ -60,11 +69,28 @@ class TwitterReplyTweet(TwitterBaseTool):
                 )
 
             client = await twitter.get_client()
+            media_ids = []
+
+            # Handle image upload if provided
+            if image:
+                if twitter.use_key:
+                    raise ValueError(
+                        "Image upload is not supported when using API key authentication"
+                    )
+                # Use the base class method to upload the image
+                media_ids = await self.upload_media(context.agent.id, image)
 
             # Post reply tweet using tweepy client
-            response = await client.create_tweet(
-                text=text, user_auth=twitter.use_key, in_reply_to_tweet_id=tweet_id
-            )
+            tweet_params = {
+                "text": text,
+                "user_auth": twitter.use_key,
+                "in_reply_to_tweet_id": tweet_id,
+            }
+
+            if media_ids:
+                tweet_params["media_ids"] = media_ids
+
+            response = await client.create_tweet(**tweet_params)
 
             if "data" in response and "id" in response["data"]:
                 reply_id = response["data"]["id"]
