@@ -1,8 +1,5 @@
-import os
-import tempfile
 from typing import Optional, Type
 
-import httpx
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
@@ -79,68 +76,8 @@ class TwitterPostTweet(TwitterBaseTool):
                     raise ValueError(
                         "Image upload is not supported when using API key authentication"
                     )
-                # Get agent data to access the token
-                agent_data = await self.skill_store.get_agent_data(context.agent.id)
-                if not agent_data or not agent_data.twitter_access_token:
-                    raise ValueError("Twitter access token not found in agent data")
-
-                # Download the image
-                async with httpx.AsyncClient() as session:
-                    response = await session.get(image)
-                    if response.status_code == 200:
-                        # Create a temporary file to store the image
-                        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                            tmp_file.write(response.content)
-                            tmp_file_path = tmp_file.name
-
-                        # tweepy is outdated, we need to use httpx call new API
-                        try:
-                            # Upload the image directly to Twitter using the Media Upload API
-                            headers = {
-                                "Authorization": f"Bearer {agent_data.twitter_access_token}"
-                            }
-
-                            # Upload to Twitter's media/upload endpoint using multipart/form-data
-                            upload_url = "https://api.twitter.com/2/media/upload"
-
-                            # Get the content type from the response headers or default to image/jpeg
-                            content_type = response.headers.get(
-                                "content-type", "image/jpeg"
-                            )
-
-                            # Create a multipart form with the image file using the correct content type
-                            files = {
-                                "media": (
-                                    "image",
-                                    open(tmp_file_path, "rb"),
-                                    content_type,
-                                )
-                            }
-
-                            upload_response = await session.post(
-                                upload_url, headers=headers, files=files
-                            )
-
-                            if upload_response.status_code == 200:
-                                media_data = upload_response.json()
-                                if "id" in media_data:
-                                    media_ids.append(media_data["id"])
-                                else:
-                                    raise ValueError(
-                                        f"Unexpected response format from Twitter media upload: {media_data}"
-                                    )
-                            else:
-                                raise ValueError(
-                                    f"Failed to upload image to Twitter. Status code: {upload_response.status_code}, Response: {upload_response.text}"
-                                )
-                        finally:
-                            # Clean up the temporary file
-                            if os.path.exists(tmp_file_path):
-                                os.unlink(tmp_file_path)
-                    else:
-                        raise ValueError(
-                            f"Failed to download image from URL: {image}. Status code: {response.status_code}"
-                        )
+                # Use the base class method to upload the image
+                media_ids = await self.upload_media(context.agent.id, image)
 
             # Post tweet using tweepy client
             tweet_params = {"text": text, "user_auth": twitter.use_key}
