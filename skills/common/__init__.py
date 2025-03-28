@@ -12,6 +12,7 @@ from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
 from skills.common.image_edit import ImageEdit
+from skills.common.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CommonBaseTool] = {}
@@ -20,7 +21,7 @@ _cache: dict[str, CommonBaseTool] = {}
 class SkillStates(TypedDict):
     current_time: SkillState
     image_generation: SkillState
-    # Not good
+    image_to_text: SkillState
     # image_edit: SkillState
 
 
@@ -94,6 +95,12 @@ def get_common_skill(
     elif name == "image_edit":
         if name not in _cache:
             _cache[name] = ImageEdit(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_to_text":
+        if name not in _cache:
+            _cache[name] = ImageToText(
                 skill_store=store,
             )
         return _cache[name]
