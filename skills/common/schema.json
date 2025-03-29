@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "Common Skills",
-  "description": "Configuration schema for Common skills",
+  "description": "Core utility skills providing essential functionality like time retrieval, image generation, and other common operations that can be used across different domains",
   "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
   "x-tags": [
     "Utility"
@@ -33,22 +33,6 @@
           "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
           "default": "disabled"
         },
-        "image_generation": {
-          "type": "string",
-          "title": "Image Generation",
-          "enum": [
-            "disabled",
-            "public",
-            "private"
-          ],
-          "x-enum-title": [
-            "Disabled",
-            "Agent Owner + All Users",
-            "Agent Owner Only"
-          ],
-          "description": "Generate images using OpenAI's DALL-E model based on text prompts",
-          "default": "disabled"
-        },
         "image_to_text": {
           "type": "string",
           "title": "Image to Text",
@@ -63,6 +47,38 @@
             "Agent Owner Only"
           ],
           "description": "Convert images to detailed text descriptions using OpenAI's GPT-4o model",
+          "default": "disabled"
+        },
+        "dalle_image_generation": {
+          "type": "string",
+          "title": "Image Generation by DALL-E",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate images using OpenAI's DALL-E model based on text prompts",
+          "default": "disabled"
+        },
+        "heurist_image_generation": {
+          "type": "string",
+          "title": "Image Generation by Heurist",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate images using Heurist's AI model based on text prompts",
           "default": "disabled"
         }
       },

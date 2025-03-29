@@ -11,6 +11,7 @@ from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
+from skills.common.heurist_image_generation import HeuristImageGeneration
 from skills.common.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
@@ -19,8 +20,9 @@ _cache: dict[str, CommonBaseTool] = {}
 
 class SkillStates(TypedDict):
     current_time: SkillState
-    image_generation: SkillState
     image_to_text: SkillState
+    dalle_image_generation: SkillState
+    heurist_image_generation: SkillState
 
 
 class Config(SkillConfig):
@@ -80,7 +82,7 @@ def get_common_skill(
                 skill_store=store,
             )
         return _cache[name]
-    elif name == "image_generation":
+    elif name == "dalle_image_generation":
         if name not in _cache:
             _cache[name] = OpenAIDALLEImageGenerationTool(
                 api_wrapper=DallEAPIWrapper(
@@ -93,6 +95,12 @@ def get_common_skill(
     elif name == "image_to_text":
         if name not in _cache:
             _cache[name] = ImageToText(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "heurist_image_generation":
+        if name not in _cache:
+            _cache[name] = HeuristImageGeneration(
                 skill_store=store,
             )
         return _cache[name]

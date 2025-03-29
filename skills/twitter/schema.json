@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema#",
   "type": "object",
   "title": "Twitter Skills",
-  "description": "Configuration schema for Twitter skills",
+  "description": "Integration with Twitter API enabling social media interactions including retrieving tweets, mentions, user information, and posting content with media support",
   "x-icon": "https://ai.service.crestal.dev/skills/twitter/twitter.png",
   "x-tags": [
     "Social"
