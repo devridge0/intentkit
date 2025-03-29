@@ -1153,6 +1153,22 @@ files = [
 ]
 
 [[package]]
+name = "cron-validator"
+version = "1.0.8"
+description = "Unix cron implementation by Python"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "cron-validator-1.0.8.tar.gz", hash = "sha256:dd485257adb6f590b3e9433f641440c801d307015259c1ee3eb6e21c964c8026"},
+    {file = "cron_validator-1.0.8-py3-none-any.whl", hash = "sha256:6477fcc3d60bfbd1ec00a708f0b8b5136c1fef8140c10effea1f45b79d778653"},
+]
+
+[package.dependencies]
+python-dateutil = "*"
+pytz = "*"
+
+[[package]]
 name = "cryptography"
 version = "44.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -5434,4 +5450,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "e625de0055240fedf3b0138d04b2b80310a8eecc641528e36ecadd83bb2cf971"
+content-hash = "f9ae28584a5a735b457e09af5001437eeab39525127813d89f4d64b7c76944f2"
