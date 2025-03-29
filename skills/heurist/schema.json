@@ -1,11 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Common Skills",
-  "description": "Utility skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
+  "title": "Heurist AI Skills",
+  "description": "Skills for interacting with Heurist AI services, including image generation and other AI capabilities",
+  "x-icon": "https://ai.service.crestal.dev/skills/heurist/heurist.png",
   "x-tags": [
-    "Utility"
+    "AI",
+    "Image Generation"
   ],
   "properties": {
     "enabled": {
@@ -17,9 +18,9 @@
     "states": {
       "type": "object",
       "properties": {
-        "current_time": {
+        "heurist_image_generation": {
           "type": "string",
-          "title": "Current Time",
+          "title": "Image Generation by Heurist",
           "enum": [
             "disabled",
             "public",
@@ -30,11 +31,11 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
+          "description": "Generate images using Heurist's AI model based on text prompts",
           "default": "disabled"
         }
       },
-      "description": "States for each common utility skill (disabled, public, or private)"
+      "description": "States for each Heurist AI skill (disabled, public, or private)"
     }
   },
   "required": [
