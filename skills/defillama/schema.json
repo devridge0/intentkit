@@ -3,7 +3,7 @@
   "type": "object",
   "title": "DeFiLlama Skills",
   "x-icon": "https://ai.service.crestal.dev/skills/defillama/defillama.jpeg",
-  "description": "Configuration schema for DeFi Llama skills",
+  "description": "Integration with DeFi Llama API providing comprehensive decentralized finance data including token prices, protocol TVL, DEX volumes, and stablecoin metrics",
   "properties": {
     "enabled": {
       "type": "boolean",

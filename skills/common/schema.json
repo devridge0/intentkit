@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "Common Skills",
-  "description": "Configuration schema for Common skills",
+  "description": "Core utility skills providing essential functionality like time retrieval, image generation, and other common operations that can be used across different domains",
   "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
   "x-tags": [
     "Utility"

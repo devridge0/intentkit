@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "Coinbase Wallet",
-  "description": "Configuration schema for CDP skills",
+  "description": "Integration with Coinbase Wallet (CDP) providing blockchain wallet functionality including balance checking, token transfers, and cryptocurrency trading operations",
   "x-icon": "https://ai.service.crestal.dev/skills/cdp/cdp.png",
   "x-tags": [
     "Blockchain"
