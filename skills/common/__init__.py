@@ -1,5 +1,6 @@
 """Common utility skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -9,6 +10,8 @@ from skills.common.current_time import CurrentTime
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CommonBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -47,7 +50,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_common_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_common_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_common_skill(
@@ -62,9 +70,6 @@ def get_common_skill(
 
     Returns:
         The requested common utility skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "current_time":
         if name not in _cache:
@@ -73,4 +78,5 @@ def get_common_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown common skill: {name}")
+        logger.warning(f"Unknown common skill: {name}")
+        return None

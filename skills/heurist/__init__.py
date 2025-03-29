@@ -1,5 +1,6 @@
 """Heurist AI skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -9,6 +10,8 @@ from skills.heurist.heurist_image_generation import HeuristImageGeneration
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, HeuristBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -47,7 +50,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_heurist_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_heurist_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_heurist_skill(
@@ -62,9 +70,6 @@ def get_heurist_skill(
 
     Returns:
         The requested Heurist AI skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "heurist_image_generation":
         if name not in _cache:
@@ -73,4 +78,5 @@ def get_heurist_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown Heurist skill: {name}")
+        logger.warning(f"Unknown Heurist skill: {name}")
+        return None

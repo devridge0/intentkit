@@ -1,5 +1,6 @@
 """Wallet Portfolio Skills for IntentKit."""
 
+import logging
 from typing import Dict, List, NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -16,6 +17,8 @@ from skills.moralis.fetch_nft_portfolio import FetchNftPortfolio
 from skills.moralis.fetch_solana_portfolio import FetchSolanaPortfolio
 from skills.moralis.fetch_transaction_history import FetchTransactionHistory
 from skills.moralis.fetch_wallet_portfolio import FetchWalletPortfolio
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -77,8 +80,8 @@ async def get_skills(
     result = []
     for name in available_skills:
         skill = get_wallet_skill(name, config["api_key"], store)
-        result.append(skill)
-
+        if skill:
+            result.append(skill)
     return result
 
 
@@ -96,9 +99,6 @@ def get_wallet_skill(
 
     Returns:
         The requested skill
-
-    Raises:
-        ValueError: If the skill name is unknown
     """
     skill_classes = {
         "fetch_wallet_portfolio": FetchWalletPortfolio,
@@ -113,7 +113,8 @@ def get_wallet_skill(
     }
 
     if name not in skill_classes:
-        raise ValueError(f"Unknown Wallet Portfolio skill: {name}")
+        logger.warning(f"Unknown Wallet Portfolio skill: {name}")
+        return None
 
     return skill_classes[name](
         api_key=api_key,

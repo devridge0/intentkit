@@ -1,5 +1,6 @@
 """Acolyt skill module."""
 
+import logging
 from typing import NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -9,6 +10,8 @@ from skills.base import SkillConfig, SkillState
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, AcolytBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -48,13 +51,18 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_acolyt_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_acolyt_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_acolyt_skill(
     name: str,
     store: SkillStoreABC,
-) -> AcolytBaseTool:
+) -> AcolytBaseTool | None:
     """Get an Acolyt skill by name.
 
     Args:
@@ -63,9 +71,6 @@ def get_acolyt_skill(
 
     Returns:
         The requested Acolyt skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "ask_gpt":
         if name not in _cache:
@@ -74,4 +79,5 @@ def get_acolyt_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown Acolyt skill: {name}")
+        logger.warning(f"Unknown Acolyt skill: {name}")
+        return None

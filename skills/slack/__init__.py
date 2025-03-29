@@ -1,5 +1,6 @@
 """Slack skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -12,6 +13,8 @@ from skills.slack.send_message import SlackSendMessage
 
 # we cache skills in system level, because they are stateless
 _cache: dict[str, SlackBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -45,7 +48,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_slack_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_slack_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_slack_skill(
@@ -60,9 +68,6 @@ def get_slack_skill(
 
     Returns:
         The requested Slack skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "get_channel":
         if name not in _cache:
@@ -89,4 +94,5 @@ def get_slack_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown Slack skill: {name}")
+        logger.warning(f"Unknown Slack skill: {name}")
+        return None
