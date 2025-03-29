@@ -33,9 +33,9 @@
           "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
           "default": "disabled"
         },
-        "image_generation": {
+        "dalle_image_generation": {
           "type": "string",
-          "title": "Image Generation",
+          "title": "Image Generation by DALL-E",
           "enum": [
             "disabled",
             "public",

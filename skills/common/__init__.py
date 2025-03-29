@@ -19,7 +19,7 @@ _cache: dict[str, CommonBaseTool] = {}
 
 class SkillStates(TypedDict):
     current_time: SkillState
-    image_generation: SkillState
+    dalle_image_generation: SkillState
     image_to_text: SkillState
 
 
@@ -80,7 +80,7 @@ def get_common_skill(
                 skill_store=store,
             )
         return _cache[name]
-    elif name == "image_generation":
+    elif name == "dalle_image_generation":
         if name not in _cache:
             _cache[name] = OpenAIDALLEImageGenerationTool(
                 api_wrapper=DallEAPIWrapper(

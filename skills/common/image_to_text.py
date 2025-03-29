@@ -1,9 +1,11 @@
+import io
 import logging
 from typing import Type
 
 import aiohttp
 import openai
 from langchain_core.runnables import RunnableConfig
+from PIL import Image
 from pydantic import BaseModel, Field
 
 from skills.common.base import CommonBaseTool
@@ -17,6 +19,14 @@ class ImageToTextInput(BaseModel):
     image: str = Field(
         description="URL of the image to convert to text.",
     )
+
+
+class ImageToTextOutput(BaseModel):
+    """Output for ImageToText tool."""
+
+    description: str = Field(description="Detailed text description of the image.")
+    width: int = Field(description="Width of the processed image.")
+    height: int = Field(description="Height of the processed image.")
 
 
 class ImageToText(CommonBaseTool):
@@ -39,14 +49,14 @@ class ImageToText(CommonBaseTool):
     )
     args_schema: Type[BaseModel] = ImageToTextInput
 
-    async def _arun(self, image: str, config: RunnableConfig, **kwargs) -> str:
+    async def _arun(self, image: str, config: RunnableConfig, **kwargs) -> ImageToTextOutput:
         """Implementation of the tool to convert images to text.
 
         Args:
             image (str): URL of the image to convert to text.
 
         Returns:
-            str: Detailed text description of the image.
+            ImageToTextOutput: Object containing the text description and image dimensions.
         """
         context = self.context_from_config(config)
         logger.debug(f"context: {context}")
@@ -60,9 +70,25 @@ class ImageToText(CommonBaseTool):
             async with aiohttp.ClientSession() as session:
                 async with session.get(image) as response:
                     if response.status != 200:
-                        return f"Error: Failed to download image from URL: {response.status}"
+                        raise Exception(f"Failed to download image from URL: {response.status}")
+                    
+                    # Get image data
+                    image_data = await response.read()
+                    img = Image.open(io.BytesIO(image_data))
+                    
+                    # Get original dimensions
+                    orig_width, orig_height = img.size
+                    
+                    # Calculate new dimensions with longest side as 1024 (for reference only)
+                    max_size = 1024
+                    if orig_width >= orig_height:
+                        scaled_width = max_size
+                        scaled_height = int(orig_height * (max_size / orig_width))
+                    else:
+                        scaled_height = max_size
+                        scaled_width = int(orig_width * (max_size / orig_height))
 
-            # Use OpenAI API to analyze the image
+            # Use OpenAI API to analyze the image (using original image)
             response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -84,9 +110,13 @@ class ImageToText(CommonBaseTool):
                 max_tokens=1000,
             )
 
-            # Return the text description
-            return response.choices[0].message.content
+            # Return the text description and scaled image dimensions
+            return ImageToTextOutput(
+                description=response.choices[0].message.content,
+                width=scaled_width,
+                height=scaled_height
+            )
 
         except Exception as e:
             logger.error(f"Error converting image to text: {e}")
-            return f"Error converting image to text: {str(e)}"
+            raise Exception(f"Error converting image to text: {str(e)}")
