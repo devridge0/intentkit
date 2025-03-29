@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "OpenAI Skills",
+  "description": "Skills for interacting with OpenAI services, including image generation, image-to-text conversion, and other AI capabilities",
+  "x-icon": "https://ai.service.crestal.dev/skills/openai/openai.png",
+  "x-tags": [
+    "AI",
+    "Image Generation",
+    "Image Analysis"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
+    "states": {
+      "type": "object",
+      "properties": {
+        "image_to_text": {
+          "type": "string",
+          "title": "Image to Text",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Convert images to detailed text descriptions using OpenAI's GPT-4o model",
+          "default": "disabled"
+        },
+        "dalle_image_generation": {
+          "type": "string",
+          "title": "Image Generation by DALL-E",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate images using OpenAI's DALL-E model based on text prompts",
+          "default": "disabled"
+        }
+      },
+      "description": "States for each OpenAI skill (disabled, public, or private)"
+    }
+  },
+  "required": [
+    "states",
+    "enabled"
+  ],
+  "additionalProperties": true
+}
