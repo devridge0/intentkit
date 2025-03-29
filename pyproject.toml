@@ -69,7 +69,8 @@ dependencies = [
     "pytz>=2025.1",
     "redis (>=5.2.1,<6.0.0)",
     "telegramify-markdown (>=0.5.0,<0.6.0)",
-    "langchain-mcp-adapters (>=0.0.5,<0.0.6)"
+    "langchain-mcp-adapters (>=0.0.5,<0.0.6)",
+    "cron-validator (>=1.0.8,<2.0.0)"
 ]
 
 [tool.poetry]
