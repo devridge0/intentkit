@@ -207,10 +207,10 @@ def _send_agent_notification(
     skills_formatted = ""
     if agent.skills:
         enabled_categories = []
-        for category, config in agent.skills.items():
-            if config and config.get("enabled") is True:
+        for category, skill_config in agent.skills.items():
+            if skill_config and skill_config.get("enabled") is True:
                 skills_list = []
-                states = config.get("states", {})
+                states = skill_config.get("states", {})
                 public_skills = [
                     skill for skill, state in states.items() if state == "public"
                 ]
