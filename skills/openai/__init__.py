@@ -1,5 +1,6 @@
 """OpenAI skills."""
 
+import logging
 from typing import TypedDict
 
 from langchain_community.tools.openai_dalle_image_generation import (
@@ -14,6 +15,8 @@ from skills.openai.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, OpenAIBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -53,7 +56,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_openai_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_openai_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_openai_skill(
@@ -68,9 +76,6 @@ def get_openai_skill(
 
     Returns:
         The requested OpenAI skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "image_to_text":
         if name not in _cache:
@@ -91,4 +96,5 @@ def get_openai_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown OpenAI skill: {name}")
+        logger.warning(f"Unknown OpenAI skill: {name}")
+        return None
