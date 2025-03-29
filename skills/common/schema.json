@@ -33,6 +33,22 @@
           "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
           "default": "disabled"
         },
+        "image_to_text": {
+          "type": "string",
+          "title": "Image to Text",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Convert images to detailed text descriptions using OpenAI's GPT-4o model",
+          "default": "disabled"
+        },
         "dalle_image_generation": {
           "type": "string",
           "title": "Image Generation by DALL-E",
@@ -49,9 +65,9 @@
           "description": "Generate images using OpenAI's DALL-E model based on text prompts",
           "default": "disabled"
         },
-        "image_to_text": {
+        "heurist_image_generation": {
           "type": "string",
-          "title": "Image to Text",
+          "title": "Image Generation by Heurist",
           "enum": [
             "disabled",
             "public",
@@ -62,7 +78,7 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Convert images to detailed text descriptions using OpenAI's GPT-4o model",
+          "description": "Generate images using Heurist's AI model based on text prompts",
           "default": "disabled"
         }
       },

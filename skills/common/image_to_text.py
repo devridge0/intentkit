@@ -49,7 +49,9 @@ class ImageToText(CommonBaseTool):
     )
     args_schema: Type[BaseModel] = ImageToTextInput
 
-    async def _arun(self, image: str, config: RunnableConfig, **kwargs) -> ImageToTextOutput:
+    async def _arun(
+        self, image: str, config: RunnableConfig, **kwargs
+    ) -> ImageToTextOutput:
         """Implementation of the tool to convert images to text.
 
         Args:
@@ -70,15 +72,17 @@ class ImageToText(CommonBaseTool):
             async with aiohttp.ClientSession() as session:
                 async with session.get(image) as response:
                     if response.status != 200:
-                        raise Exception(f"Failed to download image from URL: {response.status}")
-                    
+                        raise Exception(
+                            f"Failed to download image from URL: {response.status}"
+                        )
+
                     # Get image data
                     image_data = await response.read()
                     img = Image.open(io.BytesIO(image_data))
-                    
+
                     # Get original dimensions
                     orig_width, orig_height = img.size
-                    
+
                     # Calculate new dimensions with longest side as 1024 (for reference only)
                     max_size = 1024
                     if orig_width >= orig_height:
@@ -114,7 +118,7 @@ class ImageToText(CommonBaseTool):
             return ImageToTextOutput(
                 description=response.choices[0].message.content,
                 width=scaled_width,
-                height=scaled_height
+                height=scaled_height,
             )
 
         except Exception as e:
