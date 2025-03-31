@@ -1,5 +1,6 @@
 """Twitter skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -17,6 +18,8 @@ from skills.twitter.search_tweets import TwitterSearchTweets
 
 # we cache skills in system level, because they are stateless
 _cache: dict[str, TwitterBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -53,7 +56,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_twitter_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_twitter_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_twitter_skill(
@@ -68,9 +76,6 @@ def get_twitter_skill(
 
     Returns:
         The requested Twitter skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "get_mentions":
         if name not in _cache:
@@ -121,4 +126,5 @@ def get_twitter_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown Twitter skill: {name}")
+        logger.warning(f"Unknown Twitter skill: {name}")
+        return None

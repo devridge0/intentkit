@@ -1,5 +1,6 @@
 """Allora skill module."""
 
+import logging
 from typing import NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -9,6 +10,8 @@ from skills.base import SkillConfig, SkillState
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, AlloraBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -48,7 +51,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_allora_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_allora_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_allora_skill(
@@ -63,9 +71,6 @@ def get_allora_skill(
 
     Returns:
         The requested Allora skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown or API key is empty
     """
     if name == "get_price_prediction":
         if name not in _cache:
@@ -74,4 +79,5 @@ def get_allora_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown Allora skill: {name}")
+        logger.warning(f"Unknown Allora skill: {name}")
+        return None

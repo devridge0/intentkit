@@ -1,5 +1,6 @@
 """Elfa skills."""
 
+import logging
 from typing import NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -11,6 +12,8 @@ from skills.elfa.tokens import ElfaGetTrendingTokens
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, ElfaBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -54,7 +57,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_elfa_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_elfa_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_elfa_skill(
@@ -65,14 +73,10 @@ def get_elfa_skill(
 
     Args:
         name: The name of the skill to get
-        api_key: The Elfa API key
         store: The skill store for persisting data
 
     Returns:
         The requested Elfa skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
 
     if name == "get_mentions":
@@ -111,4 +115,5 @@ def get_elfa_skill(
         return _cache[name]
 
     else:
-        raise ValueError(f"Unknown Elfa skill: {name}")
+        logger.warning(f"Unknown Elfa skill: {name}")
+        return None

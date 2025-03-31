@@ -127,7 +127,10 @@ async def _process_agent_post_actions(
 
     # Send Slack notification
     slack_message = slack_message or ("Agent Created" if is_new else "Agent Updated")
-    _send_agent_notification(agent, agent_data, wallet_data, slack_message)
+    try:
+        _send_agent_notification(agent, agent_data, wallet_data, slack_message)
+    except Exception as e:
+        logger.error("Failed to send Slack notification: %s", e)
 
     return agent_data
 
@@ -181,6 +184,57 @@ def _send_agent_notification(
         wallet_data: The agent's wallet data
         message: The notification message
     """
+    # Format autonomous configurations - show only enabled ones with their id, name, and schedule
+    autonomous_formatted = ""
+    if agent.autonomous:
+        enabled_autonomous = [auto for auto in agent.autonomous if auto.enabled]
+        if enabled_autonomous:
+            autonomous_items = []
+            for auto in enabled_autonomous:
+                schedule = (
+                    f"cron: {auto.cron}" if auto.cron else f"minutes: {auto.minutes}"
+                )
+                autonomous_items.append(
+                    f"• {auto.id}: {auto.name or 'Unnamed'} ({schedule})"
+                )
+            autonomous_formatted = "\n".join(autonomous_items)
+        else:
+            autonomous_formatted = "No enabled autonomous configurations"
+    else:
+        autonomous_formatted = "None"
+
+    # Format skills - find categories with enabled: true and list skills in public/private states
+    skills_formatted = ""
+    if agent.skills:
+        enabled_categories = []
+        for category, skill_config in agent.skills.items():
+            if skill_config and skill_config.get("enabled") is True:
+                skills_list = []
+                states = skill_config.get("states", {})
+                public_skills = [
+                    skill for skill, state in states.items() if state == "public"
+                ]
+                private_skills = [
+                    skill for skill, state in states.items() if state == "private"
+                ]
+
+                if public_skills:
+                    skills_list.append(f"  Public: {', '.join(public_skills)}")
+                if private_skills:
+                    skills_list.append(f"  Private: {', '.join(private_skills)}")
+
+                if skills_list:
+                    enabled_categories.append(
+                        f"• {category}:\n{chr(10).join(skills_list)}"
+                    )
+
+        if enabled_categories:
+            skills_formatted = "\n".join(enabled_categories)
+        else:
+            skills_formatted = "No enabled skills"
+    else:
+        skills_formatted = "None"
+
     send_slack_message(
         message,
         attachments=[
@@ -228,11 +282,11 @@ def _send_agent_notification(
                     },
                     {
                         "title": "Autonomous",
-                        "value": str(agent.autonomous),
+                        "value": autonomous_formatted,
                     },
                     {
                         "title": "Skills",
-                        "value": str(agent.skills),
+                        "value": skills_formatted,
                     },
                 ],
             }

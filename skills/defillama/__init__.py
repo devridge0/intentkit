@@ -1,5 +1,6 @@
 """DeFi Llama skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -59,6 +60,8 @@ from skills.defillama.yields.fetch_pools import DefiLlamaFetchPools
 
 # we cache skills in system level, because they are stateless
 _cache: dict[str, DefiLlamaBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -121,7 +124,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_defillama_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_defillama_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_defillama_skill(
@@ -136,9 +144,6 @@ def get_defillama_skill(
 
     Returns:
         The requested DeFi Llama skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
 
     Notes:
         Each skill maps to a specific DeFi Llama API endpoint. Some skills handle both
@@ -300,4 +305,5 @@ def get_defillama_skill(
         return _cache[name]
 
     else:
-        raise ValueError(f"Unknown DeFi Llama skill: {name}")
+        logger.warning(f"Unknown DeFi Llama skill: {name}")
+        return None

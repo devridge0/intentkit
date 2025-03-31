@@ -1,5 +1,6 @@
 """Enso skills."""
 
+import logging
 from typing import List, NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -14,6 +15,8 @@ from skills.enso.wallet import (
     EnsoGetWalletBalances,
     EnsoWalletApprove,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -51,13 +54,27 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_enso_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_enso_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_enso_skill(
     name: str,
     skill_store: SkillStoreABC,
 ) -> EnsoBaseTool:
+    """Get an Enso skill by name.
+
+    Args:
+        name: The name of the skill to get
+        skill_store: The skill store for persisting data
+
+    Returns:
+        The requested Enso skill
+    """
     if name == "get_networks":
         return EnsoGetNetworks(
             skill_store=skill_store,
@@ -87,4 +104,5 @@ def get_enso_skill(
             skill_store=skill_store,
         )
     else:
-        raise ValueError(f"Unknown Enso skill: {name}")
+        logger.warning(f"Unknown Enso skill: {name}")
+        return None

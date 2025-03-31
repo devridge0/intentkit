@@ -131,5 +131,7 @@ async def get_skills(
             continue
         for tool in cdp_tools:
             if tool.name.endswith(skill):
+                tool.handle_tool_error = lambda e: f"tool error: {e}"
+                tool.handle_validation_error = lambda e: f"validation error: {e}"
                 tools.append(tool)
     return tools
