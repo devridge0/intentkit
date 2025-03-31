@@ -3,14 +3,10 @@
 import logging
 from typing import TypedDict
 
-from langchain_community.tools.openai_dalle_image_generation import (
-    OpenAIDALLEImageGenerationTool,
-)
-from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
-
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.openai.base import OpenAIBaseTool
+from skills.openai.dalle_image_generation import DALLEImageGeneration
 from skills.openai.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
@@ -85,14 +81,8 @@ def get_openai_skill(
         return _cache[name]
     elif name == "dalle_image_generation":
         if name not in _cache:
-            _cache[name] = OpenAIDALLEImageGenerationTool(
-                api_wrapper=DallEAPIWrapper(
-                    model="dall-e-3",
-                    quality="hd",
-                    api_key=store.get_system_config("openai_api_key"),
-                ),
-                handle_tool_error=lambda e: f"tool error: {e}",
-                handle_validation_error=lambda e: f"validation error: {e}",
+            _cache[name] = DALLEImageGeneration(
+                skill_store=store,
             )
         return _cache[name]
     else:
