@@ -7,6 +7,7 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from skills.heurist.base import HeuristBaseTool
+from utils.s3 import store_image
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,6 @@ class ImageGenerationSDXL(HeuristBaseTool):
             str: URL of the generated image.
         """
         context = self.context_from_config(config)
-        logger.debug(f"context: {context}")
 
         # Get the Heurist API key from the skill store
         api_key = self.skill_store.get_system_config("heurist_api_key")
@@ -102,7 +102,6 @@ class ImageGenerationSDXL(HeuristBaseTool):
             "deadline": 180,
             "priority": 1,
         }
-        logger.debug(f"Heurist API payload: {payload}")
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -116,13 +115,20 @@ class ImageGenerationSDXL(HeuristBaseTool):
                     "http://sequencer.heurist.xyz/submit_job",
                     json=payload,
                     headers=headers,
-                    timeout=180,
+                    timeout=120,
                 )
                 logger.debug(f"Heurist API response: {response.text}")
                 response.raise_for_status()
 
-            # Return the image URL
-            return response.text
+            # Store the image URL
+            image_url = response.text.strip('"')
+            # Generate a key with agent ID as prefix
+            image_key = f"{context.agent.id}/heurist/{job_id}"
+            # Store the image and get the CDN URL
+            stored_url = await store_image(image_url, image_key)
+
+            # Return the stored image URL
+            return stored_url
 
         except httpx.HTTPStatusError as e:
             # Extract error details from response
