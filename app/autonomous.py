@@ -85,33 +85,48 @@ async def schedule_agent_autonomous_tasks():
                     # Task exists and agent hasn't been updated, skip
                     continue
 
-                # Schedule new job based on minutes or cron
-                if autonomous.cron:
-                    logger.info(
-                        f"Scheduling cron task {task_id} with cron: {autonomous.cron}"
-                    )
-                    scheduler.add_job(
-                        run_autonomous_task,
-                        CronTrigger.from_crontab(autonomous.cron),
-                        id=task_id,
-                        args=[agent.id, agent.owner, autonomous.id, autonomous.prompt],
-                        replace_existing=True,
-                    )
-                elif autonomous.minutes:
-                    logger.info(
-                        f"Scheduling interval task {task_id} every {autonomous.minutes} minutes"
-                    )
-                    scheduler.add_job(
-                        run_autonomous_task,
-                        "interval",
-                        id=task_id,
-                        args=[agent.id, agent.owner, autonomous.id, autonomous.prompt],
-                        minutes=autonomous.minutes,
-                        replace_existing=True,
-                    )
-                else:
+                try:
+                    # Schedule new job based on minutes or cron
+                    if autonomous.cron:
+                        logger.info(
+                            f"Scheduling cron task {task_id} with cron: {autonomous.cron}"
+                        )
+                        scheduler.add_job(
+                            run_autonomous_task,
+                            CronTrigger.from_crontab(autonomous.cron),
+                            id=task_id,
+                            args=[
+                                agent.id,
+                                agent.owner,
+                                autonomous.id,
+                                autonomous.prompt,
+                            ],
+                            replace_existing=True,
+                        )
+                    elif autonomous.minutes:
+                        logger.info(
+                            f"Scheduling interval task {task_id} every {autonomous.minutes} minutes"
+                        )
+                        scheduler.add_job(
+                            run_autonomous_task,
+                            "interval",
+                            id=task_id,
+                            args=[
+                                agent.id,
+                                agent.owner,
+                                autonomous.id,
+                                autonomous.prompt,
+                            ],
+                            minutes=autonomous.minutes,
+                            replace_existing=True,
+                        )
+                    else:
+                        logger.error(
+                            f"Invalid autonomous configuration for task {task_id}: {autonomous}"
+                        )
+                except Exception as e:
                     logger.error(
-                        f"Invalid autonomous configuration for task {task_id}: {autonomous}"
+                        f"Failed to schedule autonomous task [{agent.id}] {task_id}: {e}"
                     )
 
                 # Update the last updated time

@@ -245,9 +245,9 @@ class BotPool:
             old_bot_item.update_conf(agent.telegram_config)
             old_agent_item.updated_at = agent.updated_at
 
-            if old_bot_item.kind != agent.telegram_config.get("kind"):
-                await self.stop_bot(agent.id, token)
-                await self.init_new_bot(agent)
+            # if old_bot_item.kind != agent.telegram_config.get("kind"):
+            #     await self.stop_bot(agent.id, token)
+            #     await self.init_new_bot(agent)
             logger.info(
                 f"configurations of the bot with token {token} for agent {agent.id} updated..."
             )
