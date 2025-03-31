@@ -67,6 +67,9 @@ class Config:
         # Redis
         self.redis_host = self.load("REDIS_HOST")
         self.redis_port = int(self.load("REDIS_PORT", "6379"))
+        # AWS
+        self.aws_s3_bucket = self.load("AWS_S3_BUCKET")
+        self.aws_s3_cdn_url = self.load("AWS_S3_CDN_URL")
         # Internal
         self.internal_base_url = self.load("INTERNAL_BASE_URL", "http://intent-api")
         # Admin
@@ -76,6 +79,7 @@ class Config:
         self.debug_username = self.load("DEBUG_USERNAME")
         self.debug_password = self.load("DEBUG_PASSWORD")
         # API
+        self.api_base_url = self.load("API_BASE_URL", "http://localhost:8000")
         self.api_auth_enabled = self.load("API_AUTH_ENABLED", "false") == "true"
         self.api_jwt_secret = self.load("API_JWT_SECRET")
         # CDP
