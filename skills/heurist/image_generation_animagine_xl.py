@@ -1,5 +1,5 @@
 import logging
-from typing import Literal, Optional, Type
+from typing import Optional, Type
 
 import httpx
 from epyxid import XID
@@ -11,14 +11,11 @@ from skills.heurist.base import HeuristBaseTool
 logger = logging.getLogger(__name__)
 
 
-class HeuristImageGenerationInput(BaseModel):
-    """Input for HeuristImageGeneration tool."""
+class ImageGenerationAnimagineXLInput(BaseModel):
+    """Input for ImageGenerationAnimagineXL tool."""
 
     prompt: str = Field(
         description="Text prompt describing the image to generate.",
-    )
-    model_id: Literal["ArthemyComics", "ArthemyReal", "BrainDance"] = Field(
-        description="Model ID to use for generation. ArthemyComics for comic style, ArthemyReal for realistic style, BrainDance for artistic style.",
     )
     neg_prompt: Optional[str] = Field(
         default=None,
@@ -26,19 +23,21 @@ class HeuristImageGenerationInput(BaseModel):
     )
     width: int = Field(
         default=1024,
+        le=1024,
         description="Width of the generated image.",
     )
     height: int = Field(
-        default=1024,
+        default=680,
+        le=1024,
         description="Height of the generated image.",
     )
 
 
-class HeuristImageGeneration(HeuristBaseTool):
-    """Tool for generating images using Heurist AI.
+class ImageGenerationAnimagineXL(HeuristBaseTool):
+    """Tool for generating Japanese anime-style images using Heurist AI's AnimagineXL model.
 
     This tool takes a text prompt and uses Heurist's API to generate
-    an image based on the description.
+    a Japanese anime-style image based on the description.
 
     Attributes:
         name: The name of the tool.
@@ -46,30 +45,28 @@ class HeuristImageGeneration(HeuristBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "heurist_image_generation"
+    name: str = "heurist_image_generation_animagine_xl"
     description: str = (
-        "Generate images using Heurist AI.\n"
-        "Provide a text prompt describing the image you want to generate.\n"
-        "Choose from different model styles: ArthemyComics (comic style), ArthemyReal (realistic style), or BrainDance (artistic style).\n"
+        "Generate Japanese anime-style images using Heurist AI's AnimagineXL model.\n"
+        "Provide a text prompt describing the anime-style image you want to generate.\n"
+        "AnimagineXL specializes in creating high-quality Japanese anime-style illustrations.\n"
         "If you have height and width, remember to specify them.\n"
     )
-    args_schema: Type[BaseModel] = HeuristImageGenerationInput
+    args_schema: Type[BaseModel] = ImageGenerationAnimagineXLInput
 
     async def _arun(
         self,
         prompt: str,
-        model_id: Literal["ArthemyComics", "ArthemyReal", "BrainDance"],
-        neg_prompt: Optional[str] = "(worst quality: 1.4), bad quality, nsfw",
+        neg_prompt: str = "(worst quality: 1.4), bad quality, nsfw",
         width: int = 1024,
-        height: int = 1024,
+        height: int = 680,
         config: RunnableConfig = None,
         **kwargs,
     ) -> str:
-        """Implementation of the tool to generate images using Heurist AI.
+        """Implementation of the tool to generate Japanese anime-style images using Heurist AI's AnimagineXL model.
 
         Args:
             prompt: Text prompt describing the image to generate.
-            model_id: Model ID to use for generation.
             neg_prompt: Negative prompt describing what to avoid in the generated image.
             width: Width of the generated image.
             height: Height of the generated image.
@@ -101,8 +98,8 @@ class HeuristImageGeneration(HeuristBaseTool):
                     "seed": -1,
                 }
             },
-            "model_id": model_id,
-            "deadline": 120,
+            "model_id": "AnimagineXL",
+            "deadline": 180,
             "priority": 1,
         }
         logger.debug(f"Heurist API payload: {payload}")
@@ -119,7 +116,7 @@ class HeuristImageGeneration(HeuristBaseTool):
                     "http://sequencer.heurist.xyz/submit_job",
                     json=payload,
                     headers=headers,
-                    timeout=120,
+                    timeout=180,
                 )
                 logger.debug(f"Heurist API response: {response.text}")
                 response.raise_for_status()
