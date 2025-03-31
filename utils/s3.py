@@ -2,7 +2,9 @@
 S3 utility module for storing and retrieving images from AWS S3.
 """
 
+import imghdr
 import logging
+from io import BytesIO
 from typing import Optional
 
 import boto3
@@ -75,18 +77,30 @@ async def store_image(url: str, key: str) -> str:
             # Prepare the S3 key with prefix
             prefixed_key = f"{_prefix}{key}"
 
+            # Use BytesIO to create a file-like object that implements read
+            file_obj = BytesIO(response.content)
+
+            # Determine the correct content type
+            content_type = response.headers.get("Content-Type", "")
+            if content_type == "binary/octet-stream" or not content_type:
+                # Try to detect the image type from the content
+                img_type = imghdr.what(None, h=response.content)
+                if img_type:
+                    content_type = f"image/{img_type}"
+                else:
+                    # Default to JPEG if detection fails
+                    content_type = "image/jpeg"
+
             # Upload to S3
             _client.upload_fileobj(
-                httpx.ByteStream(response.content),
+                file_obj,
                 _bucket,
                 prefixed_key,
-                ExtraArgs={
-                    "ContentType": response.headers.get("Content-Type", "image/jpeg")
-                },
+                ExtraArgs={"ContentType": content_type, "ContentDisposition": "inline"},
             )
 
             # Return the CDN URL
-            cdn_url = f"{_cdn_url}{prefixed_key}"
+            cdn_url = f"{_cdn_url}/{prefixed_key}"
             logger.info(f"Image uploaded successfully to {cdn_url}")
             return cdn_url
 
