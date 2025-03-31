@@ -18,9 +18,9 @@
     "states": {
       "type": "object",
       "properties": {
-        "heurist_image_generation": {
+        "image_generation_animagine_xl": {
           "type": "string",
-          "title": "Image Generation by Heurist",
+          "title": "Japanese Anime Image Generation",
           "enum": [
             "disabled",
             "public",
@@ -31,7 +31,103 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Generate images using Heurist's AI model based on text prompts",
+          "description": "Generate Japanese anime-style images using Heurist's AnimagineXL model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_arthemy_comics": {
+          "type": "string",
+          "title": "Comic Style Image Generation",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate comic-style images using Heurist's ArthemyComics model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_arthemy_real": {
+          "type": "string",
+          "title": "Realistic Image Generation",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate realistic images using Heurist's ArthemyReal model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_braindance": {
+          "type": "string",
+          "title": "Artistic Image Generation",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate artistic images using Heurist's BrainDance model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_cyber_realistic_xl": {
+          "type": "string",
+          "title": "Cyberpunk Hyperrealistic Image Generation",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate hyperrealistic photographs with a cyberpunk aesthetic using Heurist's CyberRealisticXL model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_flux_1_dev": {
+          "type": "string",
+          "title": "Versatile Image Generation (Flux)",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate versatile images in any style using Heurist's Flux.1-dev model based on text prompts",
+          "default": "disabled"
+        },
+        "image_generation_sdxl": {
+          "type": "string",
+          "title": "High-Quality Image Generation (SDXL)",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Generate high-quality images in any style using Heurist's SDXL model based on text prompts",
           "default": "disabled"
         }
       },

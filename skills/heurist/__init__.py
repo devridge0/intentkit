@@ -6,7 +6,15 @@ from typing import TypedDict
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.heurist.base import HeuristBaseTool
-from skills.heurist.heurist_image_generation import HeuristImageGeneration
+from skills.heurist.image_generation_animagine_xl import ImageGenerationAnimagineXL
+from skills.heurist.image_generation_arthemy_comics import ImageGenerationArthemyComics
+from skills.heurist.image_generation_arthemy_real import ImageGenerationArthemyReal
+from skills.heurist.image_generation_braindance import ImageGenerationBrainDance
+from skills.heurist.image_generation_cyber_realistic_xl import (
+    ImageGenerationCyberRealisticXL,
+)
+from skills.heurist.image_generation_flux_1_dev import ImageGenerationFlux1Dev
+from skills.heurist.image_generation_sdxl import ImageGenerationSDXL
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, HeuristBaseTool] = {}
@@ -15,7 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
-    heurist_image_generation: SkillState
+    image_generation_animagine_xl: SkillState
+    image_generation_arthemy_comics: SkillState
+    image_generation_arthemy_real: SkillState
+    image_generation_braindance: SkillState
+    image_generation_cyber_realistic_xl: SkillState
+    image_generation_flux_1_dev: SkillState
+    image_generation_sdxl: SkillState
 
 
 class Config(SkillConfig):
@@ -71,9 +85,45 @@ def get_heurist_skill(
     Returns:
         The requested Heurist AI skill
     """
-    if name == "heurist_image_generation":
+    if name == "image_generation_animagine_xl":
         if name not in _cache:
-            _cache[name] = HeuristImageGeneration(
+            _cache[name] = ImageGenerationAnimagineXL(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_arthemy_comics":
+        if name not in _cache:
+            _cache[name] = ImageGenerationArthemyComics(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_arthemy_real":
+        if name not in _cache:
+            _cache[name] = ImageGenerationArthemyReal(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_braindance":
+        if name not in _cache:
+            _cache[name] = ImageGenerationBrainDance(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_cyber_realistic_xl":
+        if name not in _cache:
+            _cache[name] = ImageGenerationCyberRealisticXL(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_flux_1_dev":
+        if name not in _cache:
+            _cache[name] = ImageGenerationFlux1Dev(
+                skill_store=store,
+            )
+        return _cache[name]
+    elif name == "image_generation_sdxl":
+        if name not in _cache:
+            _cache[name] = ImageGenerationSDXL(
                 skill_store=store,
             )
         return _cache[name]
