@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import yaml
+from cron_validator import CronValidator
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
@@ -1101,6 +1102,16 @@ class AgentUpdate(BaseModel):
 
             # Validate cron expression to ensure interval is at least 1 hour
             if config.cron:
+                # First validate the cron expression format using cron-validator
+
+                try:
+                    CronValidator.parse(config.cron)
+                except ValueError:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid cron expression format: {config.cron}",
+                    )
+
                 parts = config.cron.split()
                 if len(parts) < 5:
                     raise HTTPException(

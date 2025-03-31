@@ -1,28 +1,21 @@
 """Common utility skills."""
 
+import logging
 from typing import TypedDict
-
-from langchain_community.tools.openai_dalle_image_generation import (
-    OpenAIDALLEImageGenerationTool,
-)
-from langchain_community.utilities.dalle_image_generator import DallEAPIWrapper
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.common.base import CommonBaseTool
 from skills.common.current_time import CurrentTime
-from skills.common.heurist_image_generation import HeuristImageGeneration
-from skills.common.image_to_text import ImageToText
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CommonBaseTool] = {}
 
+logger = logging.getLogger(__name__)
+
 
 class SkillStates(TypedDict):
     current_time: SkillState
-    image_to_text: SkillState
-    dalle_image_generation: SkillState
-    heurist_image_generation: SkillState
 
 
 class Config(SkillConfig):
@@ -57,7 +50,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_common_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_common_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_common_skill(
@@ -72,9 +70,6 @@ def get_common_skill(
 
     Returns:
         The requested common utility skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
     if name == "current_time":
         if name not in _cache:
@@ -82,27 +77,6 @@ def get_common_skill(
                 skill_store=store,
             )
         return _cache[name]
-    elif name == "dalle_image_generation":
-        if name not in _cache:
-            _cache[name] = OpenAIDALLEImageGenerationTool(
-                api_wrapper=DallEAPIWrapper(
-                    model="dall-e-3",
-                    quality="hd",
-                    api_key=store.get_system_config("openai_api_key"),
-                ),
-            )
-        return _cache[name]
-    elif name == "image_to_text":
-        if name not in _cache:
-            _cache[name] = ImageToText(
-                skill_store=store,
-            )
-        return _cache[name]
-    elif name == "heurist_image_generation":
-        if name not in _cache:
-            _cache[name] = HeuristImageGeneration(
-                skill_store=store,
-            )
-        return _cache[name]
     else:
-        raise ValueError(f"Unknown common skill: {name}")
+        logger.warning(f"Unknown common skill: {name}")
+        return None

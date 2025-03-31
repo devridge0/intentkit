@@ -1,5 +1,6 @@
 """CryptoCompare skills."""
 
+import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
@@ -14,6 +15,8 @@ from skills.cryptocompare.fetch_trading_signals import CryptoCompareFetchTrading
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CryptoCompareBaseTool] = {}
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
@@ -58,7 +61,12 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_cryptocompare_skill(name, store) for name in available_skills]
+    result = []
+    for name in available_skills:
+        skill = get_cryptocompare_skill(name, store)
+        if skill:
+            result.append(skill)
+    return result
 
 
 def get_cryptocompare_skill(
@@ -74,9 +82,6 @@ def get_cryptocompare_skill(
 
     Returns:
         The requested CryptoCompare skill
-
-    Raises:
-        ValueError: If the requested skill name is unknown
     """
 
     if name == "fetch_news":
@@ -116,4 +121,5 @@ def get_cryptocompare_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown CryptoCompare skill: {name}")
+        logger.warning(f"Unknown CryptoCompare skill: {name}")
+        return None

@@ -317,14 +317,6 @@
           "type": "string",
           "description": "Telegram bot token obtained from BotFather"
         },
-        "kind": {
-          "title": "Kind",
-          "type": "integer",
-          "description": "Reserved for future use",
-          "enum": [
-            1
-          ]
-        },
         "group_memory_public": {
           "title": "Group Memory Public",
           "type": "boolean",
