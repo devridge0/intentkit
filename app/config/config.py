@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from utils.chain import ChainProvider, QuicknodeChainProvider
 from utils.logging import setup_logging
+from utils.s3 import init_s3
 from utils.slack_alert import init_slack
 
 # Load environment variables from .env file
@@ -149,6 +150,9 @@ class Config:
         # If the slack alert token exists, init it
         if self.slack_alert_token and self.slack_alert_channel:
             init_slack(self.slack_alert_token, self.slack_alert_channel)
+        # If the AWS S3 bucket and CDN URL exist, init it
+        if self.aws_s3_bucket and self.aws_s3_cdn_url:
+            init_s3(self.aws_s3_bucket, self.aws_s3_cdn_url, self.env)
 
     def load(self, key, default=None):
         """Load a secret from the secrets map or env"""

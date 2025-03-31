@@ -71,7 +71,8 @@ dependencies = [
     "telegramify-markdown (>=0.5.0,<0.6.0)",
     "langchain-mcp-adapters (>=0.0.5,<0.0.6)",
     "pillow (>=11.1.0,<12.0.0)",
-    "cron-validator (>=1.0.8,<2.0.0)"
+    "cron-validator (>=1.0.8,<2.0.0)",
+    "boto3 (>=1.37.23,<2.0.0)"
 ]
 
 [tool.poetry]
@@ -83,6 +84,7 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.11.2"
 jsonschema = "^4.21.1"
+mypy-boto3-s3 = "^1.37.0"
 
 [tool.ruff.lint]
 extend-select = ["I"]
