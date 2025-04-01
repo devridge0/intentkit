@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CryptoCompareFetchNewsInput(BaseModel):
     """Input for CryptoCompareFetchNews tool."""
+
     token: str = Field(
         ..., description="Token symbol to fetch news for (e.g., BTC, ETH, SOL)"
     )
@@ -20,15 +21,16 @@ class CryptoCompareFetchNewsInput(BaseModel):
 
 class CryptoCompareFetchNews(CryptoCompareBaseTool):
     """Tool for fetching cryptocurrency news from CryptoCompare.
-    
+
     This tool uses the CryptoCompare API to retrieve the latest news articles
     related to a specific cryptocurrency token.
-    
+
     Attributes:
         name: The name of the tool.
         description: A description of what the tool does.
         args_schema: The schema for the tool's input arguments.
     """
+
     name: str = "cryptocompare_fetch_news"
     description: str = "Fetch the latest cryptocurrency news for a specific token"
     args_schema: Type[BaseModel] = CryptoCompareFetchNewsInput
@@ -53,22 +55,22 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
         """
         try:
             context = self.context_from_config(config)
-            
+
             # Check rate limit
             await self.check_rate_limit(context.agent.id, max_requests=5, interval=60)
-            
+
             # Get API key from context
             api_key = context.config.get("api_key")
             if not api_key:
                 raise ValueError("CryptoCompare API key not found in configuration")
-            
+
             # Fetch news data directly
             news_data = await self.fetch_news(api_key, token)
-            
+
             # Check for errors
             if "error" in news_data:
                 raise ValueError(news_data["error"])
-            
+
             # Convert to list of CryptoNews objects
             result = []
             if "Data" in news_data and news_data["Data"]:
@@ -86,9 +88,9 @@ class CryptoCompareFetchNews(CryptoCompareBaseTool):
                             source_info=article.get("source_info", {}),
                         )
                     )
-            
+
             return result
-            
+
         except Exception as e:
             logger.error("Error fetching news: %s", str(e))
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
