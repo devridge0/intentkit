@@ -30,7 +30,6 @@ class SkillStates(TypedDict):
 
 class Config(SkillConfig):
     """Configuration for CryptoCompare skills."""
-
     states: SkillStates
     api_key: str
 
@@ -77,7 +76,6 @@ def get_cryptocompare_skill(
 
     Args:
         name: The name of the skill to get
-        api_key: The CryptoCompare API key
         store: The skill store for persisting data
 
     Returns:
