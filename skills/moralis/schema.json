@@ -4,7 +4,14 @@
     "title": "Moralis",
     "x-icon": "https://ai.service.crestal.dev/skills/moralis/moralis.png",
     "description": "Comprehensive blockchain data access via Moralis API providing wallet portfolio information, NFT data, and transaction details across multiple EVM chains and Solana networks",
+    "x-api-key": "required",
     "properties": {
+        "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether this skill is enabled",
+            "default": false
+        },
         "api_key": {
             "type": "string",
             "title": "API Key",

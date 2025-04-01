@@ -7,6 +7,7 @@
   "x-tags": [
     "Blockchain"
   ],
+  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
