@@ -83,7 +83,7 @@ class DALLEImageGeneration(OpenAIBaseTool):
         context = self.context_from_config(config)
 
         # Get the OpenAI API key from the skill store
-        api_key = self.skill_store.get_system_config("openai_api_key")
+        api_key = context.config.get("api_key")
 
         # Generate a unique job ID
         job_id = str(XID())
@@ -104,13 +104,13 @@ class DALLEImageGeneration(OpenAIBaseTool):
 
             # Get the image URL from the response
             image_url = response.data[0].url
-            
+
             # Strip potential double quotes from the response
             image_url = image_url.strip('"')
-            
+
             # Generate a key with agent ID as prefix
             image_key = f"{context.agent.id}/dalle/{job_id}"
-            
+
             # Store the image and get the CDN URL
             stored_url = await store_image(image_url, image_key)
 
