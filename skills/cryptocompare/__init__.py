@@ -30,6 +30,7 @@ class SkillStates(TypedDict):
 
 class Config(SkillConfig):
     """Configuration for CryptoCompare skills."""
+
     states: SkillStates
     api_key: str
 
