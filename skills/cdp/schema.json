@@ -7,6 +7,7 @@
   "x-tags": [
     "Blockchain"
   ],
+  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -81,7 +82,6 @@
           "description": "State for CdpApiActionProvider_address_reputation",
           "default": "disabled"
         },
-
         "ERC20ActionProvider_get_balance": {
           "type": "string",
           "title": "Erc20 Get Balance",
@@ -130,7 +130,6 @@
           "description": "State for WethActionProvider_wrap_eth",
           "default": "disabled"
         },
-
         "Erc721ActionProvider_get_balance": {
           "type": "string",
           "title": "Erc721 NFT Get Balance",
@@ -179,7 +178,6 @@
           "description": "State for Erc721ActionProvider_mint",
           "default": "disabled"
         },
-
         "WalletActionProvider_native_transfer": {
           "type": "string",
           "title": "Wallet Native Transfer",
@@ -196,7 +194,6 @@
           "description": "State for WalletActionProvider_native_transfer",
           "default": "disabled"
         },
-
         "CdpWalletActionProvider_trade": {
           "type": "string",
           "title": "CDP Wallet Trade",
@@ -261,7 +258,6 @@
           "description": "State for CdpWalletActionProvider_deploy_contract",
           "default": "disabled"
         },
-
         "CdpApiActionProvider_request_faucet_funds": {
           "type": "string",
           "title": "CDP Request Faucet Funds",
@@ -278,7 +274,6 @@
           "description": "Only available in base-sepolia network",
           "default": "disabled"
         },
-
         "MorphoActionProvider_deposit": {
           "type": "string",
           "title": "Morpho Deposit",
@@ -311,7 +306,6 @@
           "description": "State for MorphoActionProvider_withdraw",
           "default": "disabled"
         },
-
         "PythActionProvider_fetch_price_feed_id": {
           "type": "string",
           "title": "Pyth Fetch Price Feed Id",
@@ -344,7 +338,6 @@
           "description": "State for PythActionProvider_fetch_price",
           "default": "disabled"
         },
-
         "WowActionProvider_buy_token": {
           "type": "string",
           "title": "Wow Buy Token",
@@ -393,7 +386,6 @@
           "description": "State for WowActionProvider_sell_token",
           "default": "disabled"
         },
-
         "SuperfluidActionProvider_create_flow": {
           "type": "string",
           "title": "Superfluid Create Flow",
@@ -442,7 +434,6 @@
           "description": "State for SuperfluidActionProvider_delete_flow",
           "default": "disabled"
         },
-
         "BasenameActionProvider_register_basename": {
           "type": "string",
           "title": "Register Basename",

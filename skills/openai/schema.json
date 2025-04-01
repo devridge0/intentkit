@@ -9,6 +9,7 @@
     "Image Generation",
     "Image Analysis"
   ],
+  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -53,11 +54,17 @@
         }
       },
       "description": "States for each OpenAI skill (disabled, public, or private)"
+    },
+    "api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "OpenAI API key for authentication"
     }
   },
   "required": [
+    "enabled",
     "states",
-    "enabled"
+    "api_key"
   ],
   "additionalProperties": true
 }

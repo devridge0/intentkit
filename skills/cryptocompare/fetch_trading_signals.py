@@ -1,48 +1,107 @@
-"""Tool for fetching trading signals via CryptoCompare API."""
+"""Tool for fetching cryptocurrency trading signals via CryptoCompare API."""
 
-from typing import Any, Dict, Type
+import logging
+from typing import Dict, List, Type
 
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from skills.cryptocompare.api import FetchTradingSignalsInput, fetch_trading_signals
 from skills.cryptocompare.base import CryptoCompareBaseTool
 
-FETCH_TRADING_SIGNALS_PROMPT = """
-This tool retrieves advanced trading signals from IntoTheBlock analytics for a specific cryptocurrency.
-Provide a cryptocurrency symbol (e.g., 'BTC') to get detailed market indicators.
-Returns key metrics like network growth, large transaction patterns, holder composition, and market momentum.
-"""
+logger = logging.getLogger(__name__)
 
 
-class CryptoCompareFetchTradingSignalsOutput(BaseModel):
-    result: Dict[str, Any]
-    error: str | None = None
+class CryptoCompareFetchTradingSignalsInput(BaseModel):
+    """Input for CryptoCompareFetchTradingSignals tool."""
+
+    from_symbol: str = Field(
+        ...,
+        description="Cryptocurrency symbol to fetch trading signals for (e.g., 'BTC')",
+    )
+
+
+class TradingSignal(BaseModel):
+    """Model representing a cryptocurrency trading signal."""
+
+    symbol: str
+    indicator: str
+    value: float
+    signal: str
+    description: str
 
 
 class CryptoCompareFetchTradingSignals(CryptoCompareBaseTool):
+    """Tool for fetching cryptocurrency trading signals from CryptoCompare.
+
+    This tool uses the CryptoCompare API to retrieve the latest trading signals
+    for a specific cryptocurrency. These signals can help inform trading decisions.
+
+    Attributes:
+        name: The name of the tool.
+        description: A description of what the tool does.
+        args_schema: The schema for the tool's input arguments.
+    """
+
     name: str = "cryptocompare_fetch_trading_signals"
-    description: str = FETCH_TRADING_SIGNALS_PROMPT
-    args_schema: Type[BaseModel] = FetchTradingSignalsInput
+    description: str = "Fetch the latest trading signals for a specific cryptocurrency"
+    args_schema: Type[BaseModel] = CryptoCompareFetchTradingSignalsInput
 
     async def _arun(
-        self, from_symbol: str, config: RunnableConfig, **kwargs
-    ) -> CryptoCompareFetchTradingSignalsOutput:
-        try:
-            # Get agent context if available
-            context = self.context_from_config(config)
-            agent_id = context.agent.id if context else None
-            # Check rate limiting with agent_id
-            is_rate_limited, error_msg = await self.check_rate_limit(agent_id=agent_id)
-            if is_rate_limited:
-                return CryptoCompareFetchTradingSignalsOutput(
-                    result={}, error=error_msg
-                )
+        self,
+        from_symbol: str,
+        config: RunnableConfig,
+        **kwargs,
+    ) -> List[TradingSignal]:
+        """Async implementation of the tool to fetch cryptocurrency trading signals.
 
-            # Fetch trading signals from API using API key from context
-            result = await fetch_trading_signals(
-                context.config.get("api_key"), from_symbol
-            )
-            return CryptoCompareFetchTradingSignalsOutput(result=result)
+        Args:
+            from_symbol: Cryptocurrency symbol to fetch trading signals for (e.g., 'BTC')
+            config: The configuration for the runnable, containing agent context.
+
+        Returns:
+            List[TradingSignal]: A list of trading signals for the specified cryptocurrency.
+
+        Raises:
+            Exception: If there's an error accessing the CryptoCompare API.
+        """
+        try:
+            context = self.context_from_config(config)
+
+            # Check rate limit
+            await self.check_rate_limit(context.agent.id, max_requests=5, interval=60)
+
+            # Get API key from context
+            api_key = context.config.get("api_key")
+            if not api_key:
+                raise ValueError("CryptoCompare API key not found in configuration")
+
+            # Fetch trading signals data directly
+            signals_data = await self.fetch_trading_signals(api_key, from_symbol)
+
+            # Check for errors
+            if "error" in signals_data:
+                raise ValueError(signals_data["error"])
+
+            # Convert to list of TradingSignal objects
+            result = []
+            if "Data" in signals_data and signals_data["Data"]:
+                for indicator_name, indicator_data in signals_data["Data"].items():
+                    if (
+                        isinstance(indicator_data, Dict)
+                        and "sentiment" in indicator_data
+                    ):
+                        result.append(
+                            TradingSignal(
+                                symbol=from_symbol,
+                                indicator=indicator_name,
+                                value=indicator_data.get("score", 0.0),
+                                signal=indicator_data.get("sentiment", ""),
+                                description=indicator_data.get("description", ""),
+                            )
+                        )
+
+            return result
+
         except Exception as e:
-            return CryptoCompareFetchTradingSignalsOutput(result={}, error=str(e))
+            logger.error("Error fetching trading signals: %s", str(e))
+            raise type(e)(f"[agent:{context.agent.id}]: {e}") from e

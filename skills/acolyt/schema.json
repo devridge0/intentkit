@@ -8,6 +8,7 @@
     "Blockchain",
     "Oracle"
   ],
+  "x-api-key": "optional",
   "properties": {
     "enabled": {
       "type": "boolean",

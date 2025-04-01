@@ -8,6 +8,7 @@
     "AI",
     "Image Generation"
   ],
+  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
