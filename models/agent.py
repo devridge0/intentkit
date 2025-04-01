@@ -523,7 +523,7 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Ticker symbol of the agent",
             max_length=10,
-            min_length=3,
+            min_length=1,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "If one day, your agent has it's own token, what will it be?",
@@ -1267,6 +1267,18 @@ class Agent(AgentCreate):
         ),
     ]
 
+    def has_image_parser_skill(self) -> bool:
+        if self.skills:
+            for skill, skill_config in self.skills.items():
+                if skill == "openai" and skill_config.get("enabled"):
+                    states = skill_config.get("states", {})
+                    if states.get("image_to_text") in ["public", "private"]:
+                        return True
+        return False
+
+    def is_model_support_image(self) -> bool:
+        return self.model in ["gpt-4o"]
+
     def to_yaml(self) -> str:
         """
         Dump the agent model to YAML format with field descriptions as comments.
@@ -1540,15 +1552,9 @@ class AgentResponse(Agent):
                 linked_telegram_username = agent_data.telegram_username
                 linked_telegram_name = agent_data.telegram_name
 
-        accept_image_input = False
-        if agent.model == "gpt-4o":
-            accept_image_input = True
-        elif agent.skills:
-            for skill, skill_config in agent.skills.items():
-                if skill == "openai" and skill_config.get("enabled"):
-                    states = skill_config.get("states", {})
-                    if states.get("image_to_text") in ["public", "private"]:
-                        accept_image_input = True
+        accept_image_input = (
+            agent.is_model_support_image() or agent.has_image_parser_skill()
+        )
 
         # Add processed fields to response
         data.update(

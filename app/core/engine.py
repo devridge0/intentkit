@@ -504,15 +504,20 @@ async def execute_agent(
         ]
 
     # message
+    # if the model doesn't natively support image parsing, add the image URLs to the message
+    if agent.has_image_parser_skill():
+        input.message += f"\n\nImages:\n{'\n'.join(image_urls)}"
     content = [
         {"type": "text", "text": input.message},
     ]
-    content.extend(
-        [
-            {"type": "image_url", "image_url": {"url": image_url}}
-            for image_url in image_urls
-        ]
-    )
+    if not agent.has_image_parser_skill() and image_urls:
+        # anyway, pass it directly to LLM
+        content.extend(
+            [
+                {"type": "image_url", "image_url": {"url": image_url}}
+                for image_url in image_urls
+            ]
+        )
 
     # stream config
     thread_id = f"{input.agent_id}-{input.chat_id}"
