@@ -72,7 +72,7 @@
       "type": "string",
       "description": "Ticker symbol of the agent",
       "maxLength": 10,
-      "minLength": 3,
+      "minLength": 1,
       "x-group": "basic",
       "x-placeholder": "Enter agent ticker"
     },
