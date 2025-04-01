@@ -523,7 +523,7 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Ticker symbol of the agent",
             max_length=10,
-            min_length=3,
+            min_length=1,
             json_schema_extra={
                 "x-group": "basic",
                 "x-placeholder": "If one day, your agent has it's own token, what will it be?",
