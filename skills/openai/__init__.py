@@ -24,6 +24,7 @@ class Config(SkillConfig):
     """Configuration for OpenAI skills."""
 
     states: SkillStates
+    api_key: str
 
 
 async def get_skills(
