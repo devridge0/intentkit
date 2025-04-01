@@ -77,7 +77,6 @@ def get_cryptocompare_skill(
 
     Args:
         name: The name of the skill to get
-        api_key: The CryptoCompare API key
         store: The skill store for persisting data
 
     Returns:

@@ -8,6 +8,7 @@
     "Blockchain",
     "Finance"
   ],
+  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
