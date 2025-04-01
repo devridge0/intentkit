@@ -1451,6 +1451,10 @@ class AgentResponse(Agent):
         Optional[str],
         PydanticField(description="The name of the linked Telegram account"),
     ]
+    accept_image_input: Annotated[
+        bool,
+        PydanticField(description="Whether the agent accepts image inputs"),
+    ]
 
     def etag(self) -> str:
         """Generate an ETag for this agent response.
@@ -1536,6 +1540,16 @@ class AgentResponse(Agent):
                 linked_telegram_username = agent_data.telegram_username
                 linked_telegram_name = agent_data.telegram_name
 
+        accept_image_input = False
+        if agent.model == "gpt-4o":
+            accept_image_input = True
+        elif agent.skills:
+            for skill, skill_config in agent.skills.items():
+                if skill == "openai" and skill_config.get("enabled"):
+                    states = skill_config.get("states", {})
+                    if states.get("image_to_text") in ["public", "private"]:
+                        accept_image_input = True
+
         # Add processed fields to response
         data.update(
             {
@@ -1547,6 +1561,7 @@ class AgentResponse(Agent):
                 "has_telegram_self_key": has_telegram_self_key,
                 "linked_telegram_username": linked_telegram_username,
                 "linked_telegram_name": linked_telegram_name,
+                "accept_image_input": accept_image_input,
             }
         )
 
