@@ -26,4 +26,4 @@ jobs:
         
     - name: Ruff Check
       run: |
-        poetry run ruff check
+        sh lint.sh ci
