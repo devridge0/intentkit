@@ -176,3 +176,19 @@ def get_twitter_client(
     if agent_id not in _clients:
         _clients[agent_id] = TwitterClient(agent_id, skill_store, config)
     return _clients[agent_id]
+
+
+async def unlink_twitter(agent_id: str) -> AgentData:
+    if agent_id in _clients:
+        del _clients[agent_id]
+    return await AgentData.patch(
+        agent_id,
+        {
+            "twitter_id": None,
+            "twitter_username": None,
+            "twitter_name": None,
+            "twitter_access_token": None,
+            "twitter_access_token_expires_at": None,
+            "twitter_refresh_token": None,
+        },
+    )
