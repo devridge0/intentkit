@@ -400,8 +400,10 @@ async def initialize_agent(aid, is_private=False):
         # logger.debug(f"[{aid}] formatted prompt: {state}")
         return prompt_temp.invoke({"messages": state["messages"]})
 
-    # hack for deepseek, it doesn't support tools
-    if agent.model.startswith("deepseek-reasoner"):
+    # hack for deepseek r1, it doesn't support tools
+    if agent.model in [
+        "deepseek-reasoner",
+    ]:
         tools = []
 
     # log all tools
@@ -478,18 +480,41 @@ async def execute_agent(
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
+    resp = []
+    start = time.perf_counter()
     # make sure reply_to is set
     message.reply_to = message.id
     input = await message.save()
 
     agent = await Agent.get(input.agent_id)
 
+    # hack for temporary disable models
+    if config.env == "testnet-prod" and agent.model in [
+        "gpt-4o",
+        "deepseek-chat",
+        "deepseek-reasoner",
+        "grok-2",
+        "eternalai",
+    ]:
+        error_message_create = ChatMessageCreate(
+            id=str(XID()),
+            agent_id=input.agent_id,
+            chat_id=input.chat_id,
+            user_id=input.user_id,
+            author_id=input.agent_id,
+            author_type=AuthorType.SYSTEM,
+            thread_type=input.author_type,
+            reply_to=input.id,
+            message="This model is currently unavailable. Please switch to a different supported model or wait for further updates from Nation App.",
+            time_cost=time.perf_counter() - start,
+        )
+        error_message = await error_message_create.save()
+        resp.append(error_message)
+        return resp
+
     is_private = False
     if input.user_id == agent.owner:
         is_private = True
-
-    resp = []
-    start = time.perf_counter()
 
     executor, cold_start_cost = await agent_executor(input.agent_id, is_private)
     last = start + cold_start_cost
