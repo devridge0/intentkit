@@ -2,8 +2,16 @@
 set -e
 
 echo "Running code formatters and linters..."
-ruff format
-ruff check --fix
+
+# Check if running in CI mode (no fixes)
+if [ "$1" = "ci" ]; then
+    echo "Running in CI mode - checking only, not fixing..."
+    poetry run ruff format --check
+    poetry run ruff check
+else
+    poetry run ruff format
+    poetry run ruff check --fix
+fi
 
 echo "Validating JSON schema files..."
 
