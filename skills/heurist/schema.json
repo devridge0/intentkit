@@ -8,7 +8,7 @@
     "AI",
     "Image Generation"
   ],
-  "x-api-key": "hosted",
+  "x-api-key": "optional",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -133,6 +133,21 @@
         }
       },
       "description": "States for each Heurist AI skill (disabled, public, or private)"
+    },
+    "api_key": {
+      "type": "string",
+      "title": "Heurist API Key",
+      "description": "API key for Heurist AI services, if you have one, you can set the rate limit for your user"
+    },
+    "rate_limit_number": {
+      "type": "integer",
+      "title": "Rate Limit Number",
+      "description": "Number of requests allowed per time window, only valid if api_key is set"
+    },
+    "rate_limit_minutes": {
+      "type": "integer",
+      "title": "Rate Limit Minutes",
+      "description": "Time window in minutes for rate limiting, only valid if api_key is set"
     }
   },
   "required": [
