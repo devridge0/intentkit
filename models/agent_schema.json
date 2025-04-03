@@ -95,7 +95,7 @@
     "mode": {
       "title": "Usage Type",
       "type": "string",
-      "description": "Mode of the agent, public or private",
+      "description": "Mode of the agent, Public App or Personal Assistant",
       "enum": [
         "public",
         "private"
