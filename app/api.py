@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
     """
     # Initialize database
     await init_db(**config.db)
-    
+
     # Initialize Redis if configured
     if config.redis_host:
         await init_redis(
