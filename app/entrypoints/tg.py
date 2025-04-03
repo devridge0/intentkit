@@ -11,6 +11,7 @@ from app.services.tg.bot.pool import BotPool, bot_by_token
 from app.services.tg.utils.cleanup import clean_token_str
 from models.agent import Agent, AgentData, AgentTable
 from models.db import get_session, init_db
+from models.redis import init_redis
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,13 @@ class AgentScheduler:
 async def run_telegram_server() -> None:
     # Initialize database connection
     await init_db(**config.db)
+
+    # Initialize Redis if configured
+    if config.redis_host:
+        await init_redis(
+            host=config.redis_host,
+            port=config.redis_port,
+        )
 
     # Signal handler for graceful shutdown
     def signal_handler(signum, frame):

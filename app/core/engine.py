@@ -566,7 +566,7 @@ async def execute_agent(
     if (
         agent.twitter_entrypoint_enabled
         and agent.twitter_entrypoint_prompt
-        and input.author_type == AuthorType.WEB
+        and input.author_type == AuthorType.TWITTER
     ):
         entrypoint_prompt = agent.twitter_entrypoint_prompt
         logger.debug("twitter entrypoint prompt added")

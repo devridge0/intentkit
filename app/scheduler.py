@@ -14,6 +14,7 @@ import sentry_sdk
 from app.admin.scheduler import create_scheduler
 from app.config.config import config
 from models.db import init_db
+from models.redis import init_redis
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,13 @@ if __name__ == "__main__":
     async def main():
         # Initialize database
         await init_db(**config.db)
+
+        # Initialize Redis if configured
+        if config.redis_host:
+            await init_redis(
+                host=config.redis_host,
+                port=config.redis_port,
+            )
 
         # Initialize scheduler
         scheduler = create_scheduler()
