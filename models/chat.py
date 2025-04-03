@@ -110,6 +110,7 @@ class ChatMessageRequest(BaseModel):
             description="Content of the message",
             examples=["Hello, how can you help me today?"],
             min_length=1,
+            max_length=65535,
         ),
     ]
     attachments: Annotated[

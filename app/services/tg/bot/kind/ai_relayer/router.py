@@ -15,6 +15,7 @@ from app.services.tg.bot.filter.id import WhitelistedChatIDsFilter
 from app.services.tg.bot.filter.no_bot import NoBotFilter
 from app.services.tg.utils.cleanup import remove_bot_name
 from models.chat import AuthorType, ChatMessageCreate
+from utils.slack_alert import send_slack_message
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,17 @@ async def gp_process_message(message: Message) -> None:
         try:
             # remove bot name tag from text
             message_text = remove_bot_name(bot.username, message.text)
+            if len(message_text) > 65535:
+                send_slack_message(
+                    (
+                        "Message too long from telegram.\n"
+                        f"length: {len(message_text)}\n"
+                        f"chat_id:{message.chat.id}\n"
+                        f"agent:{cached_bot_item.agent_id}\n"
+                        f"user:{message.from_user.id}\n"
+                        f"content:{message_text[:100]}..."
+                    )
+                )
 
             input = ChatMessageCreate(
                 id=str(XID()),
@@ -101,6 +113,9 @@ async def gp_process_message(message: Message) -> None:
         except Exception as e:
             logger.warning(
                 f"error processing in function:{cur_func_name()}, token:{message.bot.token}, err={str(e)}"
+            )
+            await message.answer(
+                text="Server Error", reply_to_message_id=message.message_id
             )
 
 
@@ -131,6 +146,18 @@ async def process_message(message: Message) -> None:
         logger.warning(f"bot with token {message.bot.token} not found in cache.")
         return
 
+    if len(message.text) > 65535:
+        send_slack_message(
+            (
+                "Message too long from telegram.\n"
+                f"length: {len(message.text)}\n"
+                f"chat_id:{message.chat.id}\n"
+                f"agent:{cached_bot_item.agent_id}\n"
+                f"user:{message.from_user.id}\n"
+                f"content:{message.text[:100]}..."
+            )
+        )
+
     try:
         input = ChatMessageCreate(
             id=str(XID()),
@@ -153,4 +180,7 @@ async def process_message(message: Message) -> None:
     except Exception as e:
         logger.warning(
             f"error processing in function:{cur_func_name()}, token:{message.bot.token} err:{str(e)}"
+        )
+        await message.answer(
+            text="Server Error", reply_to_message_id=message.message_id
         )
