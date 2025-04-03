@@ -5,9 +5,9 @@ from typing import Type
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from clients.twitter import get_twitter_client
+from clients.twitter import Tweet, get_twitter_client
 
-from .base import Tweet, TwitterBaseTool
+from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class TwitterSearchTweets(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            result = self.process_tweets_response(tweets)
+            result = twitter.process_tweets_response(tweets)
 
             # Update the since_id in store for the next request
             if tweets.get("meta") and tweets.get("meta").get("newest_id"):
