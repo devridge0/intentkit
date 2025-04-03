@@ -9,6 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config.config import config
 from app.entrypoints.twitter import run_twitter_agents
 from models.db import init_db
+from models.redis import init_redis
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,13 @@ if __name__ == "__main__":
     async def main():
         # Initialize infrastructure
         await init_db(**config.db)
+
+        # Initialize Redis if configured
+        if config.redis_host:
+            await init_redis(
+                host=config.redis_host,
+                port=config.redis_port,
+            )
 
         # Create scheduler
         scheduler = AsyncIOScheduler()

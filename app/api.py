@@ -29,6 +29,7 @@ from app.entrypoints.web import chat_router, chat_router_readonly
 from app.services.twitter.oauth2 import router as twitter_oauth2_router
 from app.services.twitter.oauth2_callback import router as twitter_callback_router
 from models.db import init_db
+from models.redis import init_redis
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -59,6 +60,13 @@ async def lifespan(app: FastAPI):
     """
     # Initialize database
     await init_db(**config.db)
+    
+    # Initialize Redis if configured
+    if config.redis_host:
+        await init_redis(
+            host=config.redis_host,
+            port=config.redis_port,
+        )
 
     logger.info("API server start")
     yield
