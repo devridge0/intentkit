@@ -15,6 +15,7 @@ from app.config.config import config
 from app.entrypoints.autonomous import run_autonomous_task
 from models.agent import Agent, AgentTable
 from models.db import get_session, init_db
+from models.redis import init_redis
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,12 @@ if __name__ == "__main__":
     async def main():
         # Initialize database
         await init_db(**config.db)
+        # Initialize Redis if configured
+        if config.redis_host:
+            await init_redis(
+                host=config.redis_host,
+                port=config.redis_port,
+            )
 
         # Add job to schedule agent autonomous tasks every 5 minutes
         # Run it immediately on startup and then every 5 minutes
