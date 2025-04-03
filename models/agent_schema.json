@@ -291,6 +291,13 @@
       "default": false,
       "x-group": "entrypoint"
     },
+    "telegram_entrypoint_prompt": {
+      "title": "Telegram Entry Prompt",
+      "type": "string",
+      "description": "Extra prompt for telegram entrypoint",
+      "maxLength": 10000,
+      "x-group": "entrypoint"
+    },
     "telegram_config": {
       "title": "Telegram Configuration",
       "type": "object",
@@ -332,6 +339,13 @@
       "type": "boolean",
       "description": "Agent replies automatically to all Twitter mentions (use cautiously)",
       "default": false,
+      "x-group": "entrypoint"
+    },
+    "twitter_entrypoint_prompt": {
+      "title": "Twitter Entry Prompt",
+      "type": "string",
+      "description": "Extra prompt for twitter entrypoint",
+      "maxLength": 10000,
       "x-group": "entrypoint"
     },
     "twitter_config": {
