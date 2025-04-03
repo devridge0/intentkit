@@ -343,6 +343,11 @@ class AgentTable(Base):
         default=False,
         comment="Dangerous, reply all mentions from x.com",
     )
+    twitter_entrypoint_prompt = Column(
+        String,
+        nullable=True,
+        comment="Extra prompt for twitter entrypoint",
+    )
     twitter_config = Column(
         JSONB,
         nullable=True,
@@ -361,6 +366,11 @@ class AgentTable(Base):
         nullable=True,
         default=False,
         comment="Whether the agent can receive events from Telegram",
+    )
+    telegram_entrypoint_prompt = Column(
+        String,
+        nullable=True,
+        comment="Extra prompt for telegram entrypoint",
     )
     telegram_config = Column(
         JSONB,
@@ -886,6 +896,17 @@ class AgentUpdate(BaseModel):
             },
         ),
     ]
+    twitter_entrypoint_prompt: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Extra prompt for twitter entrypoint",
+            max_length=10000,
+            json_schema_extra={
+                "x-group": "entrypoint",
+            },
+        ),
+    ]
     twitter_config: Annotated[
         Optional[dict],
         PydanticField(
@@ -912,6 +933,17 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=False,
             description="Whether the agent can play telegram bot",
+            json_schema_extra={
+                "x-group": "entrypoint",
+            },
+        ),
+    ]
+    telegram_entrypoint_prompt: Annotated[
+        Optional[str],
+        PydanticField(
+            default=None,
+            description="Extra prompt for telegram entrypoint",
+            max_length=10000,
             json_schema_extra={
                 "x-group": "entrypoint",
             },

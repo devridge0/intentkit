@@ -108,7 +108,7 @@ class Config:
         self.twitter_oauth2_client_secret = self.load("TWITTER_OAUTH2_CLIENT_SECRET")
         self.twitter_oauth2_redirect_uri = self.load("TWITTER_OAUTH2_REDIRECT_URI")
         self.twitter_entrypoint_interval = int(
-            self.load("TWITTER_ENTRYPOINT_INTERVAL", "15")
+            self.load("TWITTER_ENTRYPOINT_INTERVAL", "5")
         )  # in minutes
         # Slack Alert
         self.slack_alert_token = self.load(
