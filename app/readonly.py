@@ -9,6 +9,7 @@ from app.admin import admin_router_readonly, health_router, schema_router_readon
 from app.config.config import config
 from app.entrypoints.web import chat_router_readonly
 from models.db import init_db
+from models.redis import init_redis
 
 # init logger
 logger = logging.getLogger(__name__)
@@ -28,6 +29,14 @@ if config.sentry_dsn:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db(**config.db)
+
+    # Initialize Redis if configured
+    if config.redis_host:
+        await init_redis(
+            host=config.redis_host,
+            port=config.redis_port,
+        )
+
     logger.info("Readonly API server starting")
     yield
     logger.info("Readonly API server shutting down")
