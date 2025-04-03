@@ -388,11 +388,12 @@ def create_agent(
                         id=response.id,
                         content="Sorry, need more steps to process this request.",
                     )
-                ]
+                ],
+                "need_clear": False,
             }
         # We return a list, because this will get added to the existing list
         logger.debug(f"Response: {response}")
-        return {"messages": [response]}
+        return {"messages": [response], "need_clear": False}
 
     async def acall_model(state: AgentState, config: RunnableConfig) -> AgentState:
         logger.debug(f"[{aid}] Async calling model")
@@ -439,10 +440,11 @@ def create_agent(
                         id=response.id,
                         content="Sorry, need more steps to process this request.",
                     )
-                ]
+                ],
+                "need_clear": False,
             }
         # We return a list, because this will get added to the existing list
-        return {"messages": [response]}
+        return {"messages": [response], "need_clear": False}
 
     if not tool_calling_enabled:
         # Define a new graph

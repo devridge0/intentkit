@@ -42,6 +42,7 @@ from langchain_core.messages import (
     HumanMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langchain_xai import ChatXAI
@@ -385,20 +386,34 @@ async def initialize_agent(aid, is_private=False):
     escaped_prompt = prompt.replace("{", "{{").replace("}", "}}")
     prompt_array = [
         ("system", escaped_prompt),
+        ("placeholder", "{entrypoint_prompt}"),
         ("placeholder", "{messages}"),
     ]
     if agent.prompt_append:
         # Escape any curly braces in prompt_append
         escaped_append = agent.prompt_append.replace("{", "{{").replace("}", "}}")
         if agent.model.startswith("deepseek"):
-            prompt_array.insert(0, ("system", escaped_append))
+            prompt_array.insert(1, ("system", escaped_append))
         else:
             prompt_array.append(("system", escaped_append))
+
     prompt_temp = ChatPromptTemplate.from_messages(prompt_array)
 
-    def formatted_prompt(state: AgentState) -> list[BaseMessage]:
+    def formatted_prompt(
+        state: AgentState, config: RunnableConfig
+    ) -> list[BaseMessage]:
         # logger.debug(f"[{aid}] formatted prompt: {state}")
-        return prompt_temp.invoke({"messages": state["messages"]})
+        entrypoint_prompt = []
+        if config.get("configurable") and config["configurable"].get(
+            "entrypoint_prompt"
+        ):
+            entrypoint_prompt = [
+                ("system", config["configurable"]["entrypoint_prompt"])
+            ]
+        return prompt_temp.invoke(
+            {"messages": state["messages"], "entrypoint_prompt": entrypoint_prompt},
+            config,
+        )
 
     # hack for deepseek r1, it doesn't support tools
     if agent.model in [
@@ -530,7 +545,7 @@ async def execute_agent(
 
     # message
     # if the model doesn't natively support image parsing, add the image URLs to the message
-    if agent.has_image_parser_skill():
+    if agent.has_image_parser_skill() and image_urls:
         input.message += f"\n\nImages:\n{'\n'.join(image_urls)}"
     content = [
         {"type": "text", "text": input.message},
@@ -543,6 +558,25 @@ async def execute_agent(
                 for image_url in image_urls
             ]
         )
+    messages = [
+        HumanMessage(content=content),
+    ]
+
+    entrypoint_prompt = None
+    if (
+        agent.twitter_entrypoint_enabled
+        and agent.twitter_entrypoint_prompt
+        and input.author_type == AuthorType.WEB
+    ):
+        entrypoint_prompt = agent.twitter_entrypoint_prompt
+        logger.debug("twitter entrypoint prompt added")
+    elif (
+        agent.telegram_entrypoint_enabled
+        and agent.telegram_entrypoint_prompt
+        and input.author_type == AuthorType.TELEGRAM
+    ):
+        entrypoint_prompt = agent.telegram_entrypoint_prompt
+        logger.debug("telegram entrypoint prompt added")
 
     # stream config
     thread_id = f"{input.agent_id}-{input.chat_id}"
@@ -552,14 +586,13 @@ async def execute_agent(
             "thread_id": thread_id,
             "user_id": input.user_id,
             "entrypoint": input.author_type,
+            "entrypoint_prompt": entrypoint_prompt,
         }
     }
 
     # run
     cached_tool_step = None
-    async for chunk in executor.astream(
-        {"messages": [HumanMessage(content=content)]}, stream_config
-    ):
+    async for chunk in executor.astream({"messages": messages}, stream_config):
         try:
             this_time = time.perf_counter()
             # logger.debug(f"stream chunk: {chunk}", extra={"thread_id": thread_id})

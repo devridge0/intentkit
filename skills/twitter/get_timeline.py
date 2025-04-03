@@ -4,9 +4,9 @@ from typing import Type
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
-from clients.twitter import get_twitter_client
+from clients.twitter import Tweet, get_twitter_client
 
-from .base import Tweet, TwitterBaseTool
+from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class TwitterGetTimeline(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            result = self.process_tweets_response(timeline)
+            result = twitter.process_tweets_response(timeline)
 
             # Update the since_id in store for the next request
             if timeline.get("meta") and timeline["meta"].get("newest_id"):
