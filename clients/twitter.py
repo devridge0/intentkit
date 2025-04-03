@@ -1,7 +1,11 @@
 import logging
+import os
+import tempfile
 from datetime import datetime, timezone
-from typing import Dict, NotRequired, Optional, TypedDict
+from typing import Any, Dict, List, NotRequired, Optional, TypedDict
 
+import httpx
+from pydantic import BaseModel, Field
 from tweepy.asynchronous import AsyncClient
 
 from abstracts.skill import SkillStoreABC
@@ -11,6 +15,46 @@ from models.agent import AgentData
 logger = logging.getLogger(__name__)
 
 _clients: Dict[str, "TwitterClient"] = {}
+
+
+class TwitterMedia(BaseModel):
+    """Model representing Twitter media from the API response."""
+
+    media_key: str
+    type: str
+    url: Optional[str] = None
+
+
+class TwitterUser(BaseModel):
+    """Model representing a Twitter user from the API response."""
+
+    id: str
+    name: str
+    username: str
+    description: str
+    public_metrics: dict = Field(
+        description="User metrics including followers_count, following_count, tweet_count, listed_count, like_count, and media_count"
+    )
+    is_following: bool = Field(
+        description="Whether the authenticated user is following this user",
+        default=False,
+    )
+    is_follower: bool = Field(
+        description="Whether this user is following the authenticated user",
+        default=False,
+    )
+
+
+class Tweet(BaseModel):
+    """Model representing a Twitter tweet."""
+
+    id: str
+    text: str
+    author_id: str
+    author: Optional[TwitterUser] = None
+    created_at: datetime
+    referenced_tweets: Optional[List["Tweet"]] = None
+    attachments: Optional[List[TwitterMedia]] = None
 
 
 class TwitterClientConfig(TypedDict):
@@ -168,6 +212,182 @@ class TwitterClient(TwitterABC):
         if not self._agent_data:
             return None
         return self._agent_data.twitter_name
+
+    def process_tweets_response(self, response: Dict[str, Any]) -> List[Tweet]:
+        """Process Twitter API response and convert it to a list of Tweet objects.
+
+        Args:
+            response: Raw Twitter API response containing tweets data and includes.
+
+        Returns:
+            List[Tweet]: List of processed Tweet objects.
+        """
+        result = []
+        if not response.get("data"):
+            return result
+
+        # Create lookup dictionaries from includes
+        users_dict = {}
+        if response.get("includes") and "users" in response.get("includes"):
+            users_dict = {
+                user["id"]: TwitterUser(
+                    id=str(user["id"]),
+                    name=user["name"],
+                    username=user["username"],
+                    description=user["description"],
+                    public_metrics=user["public_metrics"],
+                    is_following="following" in user.get("connection_status", []),
+                    is_follower="followed_by" in user.get("connection_status", []),
+                )
+                for user in response.get("includes", {}).get("users", [])
+            }
+
+        media_dict = {}
+        if response.get("includes") and "media" in response.get("includes"):
+            media_dict = {
+                media["media_key"]: TwitterMedia(
+                    media_key=media["media_key"],
+                    type=media["type"],
+                    url=media.get("url"),
+                )
+                for media in response.get("includes", {}).get("media", [])
+            }
+
+        tweets_dict = {}
+        if response.get("includes") and "tweets" in response.get("includes"):
+            tweets_dict = {
+                tweet["id"]: Tweet(
+                    id=str(tweet["id"]),
+                    text=tweet["text"],
+                    author_id=str(tweet["author_id"]),
+                    created_at=datetime.fromisoformat(
+                        tweet["created_at"].replace("Z", "+00:00")
+                    ),
+                    author=users_dict.get(tweet["author_id"]),
+                    referenced_tweets=None,  # Will be populated in second pass
+                    attachments=None,  # Will be populated in second pass
+                )
+                for tweet in response.get("includes", {}).get("tweets", [])
+            }
+
+        # Process main tweets
+        for tweet_data in response["data"]:
+            tweet_id = tweet_data["id"]
+            author_id = tweet_data["author_id"]
+
+            # Process attachments if present
+            attachments = None
+            if (
+                "attachments" in tweet_data
+                and "media_keys" in tweet_data["attachments"]
+            ):
+                attachments = [
+                    media_dict[media_key]
+                    for media_key in tweet_data["attachments"]["media_keys"]
+                    if media_key in media_dict
+                ]
+
+            # Process referenced tweets if present
+            referenced_tweets = None
+            if "referenced_tweets" in tweet_data:
+                referenced_tweets = [
+                    tweets_dict[ref["id"]]
+                    for ref in tweet_data["referenced_tweets"]
+                    if ref["id"] in tweets_dict
+                ]
+
+            # Create the Tweet object
+            tweet = Tweet(
+                id=str(tweet_id),
+                text=tweet_data["text"],
+                author_id=str(author_id),
+                created_at=datetime.fromisoformat(
+                    tweet_data["created_at"].replace("Z", "+00:00")
+                ),
+                author=users_dict.get(author_id),
+                referenced_tweets=referenced_tweets,
+                attachments=attachments,
+            )
+            result.append(tweet)
+
+        return result
+
+    async def upload_media(self, agent_id: str, image_url: str) -> List[str]:
+        """Upload media to Twitter and return the media IDs.
+
+        Args:
+            agent_id: The ID of the agent.
+            image_url: The URL of the image to upload.
+
+        Returns:
+            List[str]: A list of media IDs for the uploaded media.
+
+        Raises:
+            ValueError: If there's an error uploading the media.
+        """
+        # Get agent data to access the token
+        agent_data = await self._skill_store.get_agent_data(agent_id)
+        if not agent_data or not agent_data.twitter_access_token:
+            raise ValueError("Twitter access token not found in agent data")
+
+        media_ids = []
+        # Download the image
+        async with httpx.AsyncClient() as session:
+            response = await session.get(image_url)
+            if response.status_code == 200:
+                # Create a temporary file to store the image
+                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                    tmp_file.write(response.content)
+                    tmp_file_path = tmp_file.name
+
+                # tweepy is outdated, we need to use httpx call new API
+                try:
+                    # Upload the image directly to Twitter using the Media Upload API
+                    headers = {
+                        "Authorization": f"Bearer {agent_data.twitter_access_token}"
+                    }
+
+                    # Upload to Twitter's media/upload endpoint using multipart/form-data
+                    upload_url = "https://api.twitter.com/2/media/upload"
+
+                    # Get the content type from the response headers or default to image/jpeg
+                    content_type = response.headers.get("content-type", "image/jpeg")
+
+                    # Create a multipart form with the image file using the correct content type
+                    files = {
+                        "media": (
+                            "image",
+                            open(tmp_file_path, "rb"),
+                            content_type,
+                        )
+                    }
+
+                    upload_response = await session.post(
+                        upload_url, headers=headers, files=files
+                    )
+
+                    if upload_response.status_code == 200:
+                        media_data = upload_response.json()
+                        if "id" in media_data:
+                            media_ids.append(media_data["id"])
+                        else:
+                            raise ValueError(
+                                f"Unexpected response format from Twitter media upload: {media_data}"
+                            )
+                    else:
+                        raise ValueError(
+                            f"Failed to upload image to Twitter. Status code: {upload_response.status_code}, Response: {upload_response.text}"
+                        )
+                finally:
+                    # Clean up the temporary file
+                    if os.path.exists(tmp_file_path):
+                        os.unlink(tmp_file_path)
+            else:
+                raise ValueError(
+                    f"Failed to download image from URL: {image_url}. Status code: {response.status_code}"
+                )
+
+        return media_ids
 
 
 def get_twitter_client(

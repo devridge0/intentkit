@@ -5,9 +5,9 @@ from typing import Type
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
-from clients.twitter import get_twitter_client
+from clients.twitter import Tweet, get_twitter_client
 
-from .base import Tweet, TwitterBaseTool
+from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class TwitterGetMentions(TwitterBaseTool):
                 media_fields=["url"],
             )
 
-            result = self.process_tweets_response(mentions)
+            result = twitter.process_tweets_response(mentions)
 
             # Update since_id in store
             if mentions.get("meta") and mentions["meta"].get("newest_id"):
