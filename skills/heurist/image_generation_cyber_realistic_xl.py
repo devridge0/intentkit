@@ -19,15 +19,15 @@ class ImageGenerationCyberRealisticXLInput(BaseModel):
         description="Text prompt describing the image to generate.",
     )
     neg_prompt: Optional[str] = Field(
-        default=None,
+        default="(worst quality: 1.4), bad quality, nsfw",
         description="Negative prompt describing what to avoid in the generated image.",
     )
-    width: int = Field(
+    width: Optional[int] = Field(
         default=1024,
         le=1024,
         description="Width of the generated image.",
     )
-    height: int = Field(
+    height: Optional[int] = Field(
         default=680,
         le=1024,
         description="Height of the generated image.",
@@ -58,9 +58,9 @@ class ImageGenerationCyberRealisticXL(HeuristBaseTool):
     async def _arun(
         self,
         prompt: str,
-        neg_prompt: str = "(worst quality: 1.4), bad quality, nsfw",
-        width: int = 1024,
-        height: int = 680,
+        neg_prompt: Optional[str] = "(worst quality: 1.4), bad quality, nsfw",
+        width: Optional[int] = 1024,
+        height: Optional[int] = 680,
         config: RunnableConfig = None,
         **kwargs,
     ) -> str:
@@ -77,10 +77,22 @@ class ImageGenerationCyberRealisticXL(HeuristBaseTool):
             str: URL of the generated image.
         """
         context = self.context_from_config(config)
-        logger.debug(f"context: {context}")
+        skill_config = context.config
 
         # Get the Heurist API key from the skill store
-        api_key = self.skill_store.get_system_config("heurist_api_key")
+        if "api_key" in skill_config and skill_config["api_key"]:
+            api_key = skill_config["api_key"]
+            if skill_config.get("rate_limit_number") and skill_config.get(
+                "rate_limit_minutes"
+            ):
+                self.user_rate_limit_by_category(
+                    context.user_id,
+                    skill_config["rate_limit_number"],
+                    skill_config["rate_limit_minutes"],
+                )
+        else:
+            api_key = self.skill_store.get_system_config("heurist_api_key")
+            self.user_rate_limit_by_category(context.user_id, 10, 1440)
 
         # Generate a unique job ID
         job_id = str(XID())

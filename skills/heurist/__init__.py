@@ -1,7 +1,7 @@
 """Heurist AI skills."""
 
 import logging
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
@@ -36,6 +36,9 @@ class Config(SkillConfig):
     """Configuration for Heurist AI skills."""
 
     states: SkillStates
+    api_key: NotRequired[str]
+    rate_limit_number: NotRequired[int]
+    rate_limit_minutes: NotRequired[int]
 
 
 async def get_skills(
