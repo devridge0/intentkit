@@ -95,36 +95,36 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
                 )
 
     async def _arun(
-        self, currency: str = "all", filter: str = "hot", config: RunnableConfig = None, **kwargs
-    ) -> CryptopanicNewsOutput:
-        logger.info(f"Fetching news for {currency}")
-        context = kwargs.get("context")  # get context from kwargs
-        if not context:
-            raise ToolException("Context not provided")
-        api_key = self.get_api_key(context)  # use get_api_key
-        if not api_key:
-            raise ToolException("Missing API key in skill config")
-            
-        tasks = [self.fetch_filter_data(currency, f, api_key) for f in FILTERS]
-        filter_results = await asyncio.gather(*tasks)
+    self, currency: str, filter: str = "hot", config: RunnableConfig = None, **kwargs
+) -> CryptopanicSentimentOutput:
+    logger.info(f"Fetching sentiment for {currency}")
+    context = kwargs.get("context")
+    if not context:
+        raise ToolException("Context not provided")
+    api_key = self.get_api_key(context)
+    if not api_key:
+        raise ToolException("Missing API key in skill config")
 
-        total_posts_agg = sum(r.total_posts for r in filter_results)
-        total_positive_agg = sum(r.avg_positive_votes * r.total_posts for r in filter_results)
-        total_negative_agg = sum(r.avg_negative_votes * r.total_posts for r in filter_results)
-        total_votes_agg = total_positive_agg + total_negative_agg
-        bullish_posts_agg = sum(r.total_posts * (r.bullish_percentage / 100) for r in filter_results if r.total_posts > 0)
-        bearish_posts_agg = sum(r.total_posts * (r.bearish_percentage / 100) for r in filter_results if r.total_posts > 0)
-        neutral_posts_agg = total_posts_agg - (bullish_posts_agg + bearish_posts_agg)
-        all_headlines = [headline for r in filter_results for headline in r.headlines]
+    tasks = [self.fetch_filter_data(currency, f, api_key) for f in FILTERS]
+    filter_results = await asyncio.gather(*tasks)
 
-        aggregated = FilterSentiment(
-            filter="aggregated", total_posts=total_posts_agg,
-            bullish_percentage=(total_positive_agg / total_votes_agg * 100) if total_votes_agg > 0 else 0.0,
-            bearish_percentage=(total_negative_agg / total_votes_agg * 100) if total_votes_agg > 0 else 0.0,
-            neutral_percentage=(neutral_posts_agg / total_posts_agg * 100) if total_posts_agg > 0 else 0.0,
-            avg_positive_votes=(total_positive_agg / total_posts_agg) if total_posts_agg > 0 else 0.0,
-            avg_negative_votes=(total_negative_agg / total_posts_agg) if total_posts_agg > 0 else 0.0,
-            headlines=all_headlines
-        )
+    total_posts_agg = sum(r.total_posts for r in filter_results)
+    total_positive_agg = sum(r.avg_positive_votes * r.total_posts for r in filter_results)
+    total_negative_agg = sum(r.avg_negative_votes * r.total_posts for r in filter_results)
+    total_votes_agg = total_positive_agg + total_negative_agg
+    bullish_posts_agg = sum(r.total_posts * (r.bullish_percentage / 100) for r in filter_results if r.total_posts > 0)
+    bearish_posts_agg = sum(r.total_posts * (r.bearish_percentage / 100) for r in filter_results if r.total_posts > 0)
+    neutral_posts_agg = total_posts_agg - (bullish_posts_agg + bearish_posts_agg)
+    all_headlines = [headline for r in filter_results for headline in r.headlines]
 
-        return CryptopanicSentimentOutput(currency=currency, filter_data=filter_results, aggregated=aggregated)
+    aggregated = FilterSentiment(
+        filter="aggregated", total_posts=total_posts_agg,
+        bullish_percentage=(total_positive_agg / total_votes_agg * 100) if total_votes_agg > 0 else 0.0,
+        bearish_percentage=(total_negative_agg / total_votes_agg * 100) if total_votes_agg > 0 else 0.0,
+        neutral_percentage=(neutral_posts_agg / total_posts_agg * 100) if total_posts_agg > 0 else 0.0,
+        avg_positive_votes=(total_positive_agg / total_posts_agg) if total_posts_agg > 0 else 0.0,
+        avg_negative_votes=(total_negative_agg / total_posts_agg) if total_posts_agg > 0 else 0.0,
+        headlines=all_headlines
+    )
+
+    return CryptopanicSentimentOutput(currency=currency, filter_data=filter_results, aggregated=aggregated)
