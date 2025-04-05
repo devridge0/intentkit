@@ -17,11 +17,7 @@ class CryptopanicBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(description="Skill store for data persistence")
 
     def get_api_key(self, context: SkillContext) -> Optional[str]:
-        if hasattr(config, "cryptopanic_api_key") and config.cryptopanic_api_key:
-            return config.cryptopanic_api_key
-        if "api_key" in context.config and context.config["api_key"]:
-            return context.config["api_key"]
-        return self.skill_store.get_system_config("cryptopanic_api_key")
+        return context.config["api_key"]  # only skill config
 
     @property
     def category(self) -> str:
