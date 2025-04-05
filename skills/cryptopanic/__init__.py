@@ -19,7 +19,7 @@ class SkillStates(TypedDict):
 
 class Config(SkillConfig):
     states: SkillStates
-    api_key: NotRequired[str]
+    api_key: str
 
 async def get_skills(
     config: "Config",
