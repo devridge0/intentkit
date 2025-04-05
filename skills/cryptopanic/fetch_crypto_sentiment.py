@@ -66,7 +66,7 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
                 total_posts = len(data)
                 if total_posts == 0:
                     return FilterSentiment(
-                        filter=filter, total_posts=0, bullish_percentage=0.0, bearish_percentage=0.0,
+                        filter=filter, total_posts=0, bullish_percentage=0.0, bearish_percentage=0.0, # new logic req
                         neutral_percentage=0.0, avg_positive_votes=0.0, avg_negative_votes=0.0, headlines=[]
                     )
 # rework needed for sentiment analysis 
@@ -95,13 +95,16 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
                 )
 
     async def _arun(
-        self, currency: str, filter: str = "hot", config: RunnableConfig = None, **kwargs
-    ) -> CryptopanicSentimentOutput:
-        logger.info(f"Fetching sentiment for {currency}")
-        api_key = os.getenv("CRYPTOPANIC_API_KEY")
+        self, currency: str = "all", filter: str = "hot", config: RunnableConfig = None, **kwargs
+    ) -> CryptopanicNewsOutput:
+        logger.info(f"Fetching news for {currency}")
+        context = kwargs.get("context")  # get context from kwargs
+        if not context:
+            raise ToolException("Context not provided")
+        api_key = self.get_api_key(context)  # use get_api_key
         if not api_key:
-            raise ToolException("Missing CRYPTOPANIC_API_KEY in .env")
-
+            raise ToolException("Missing API key in skill config")
+            
         tasks = [self.fetch_filter_data(currency, f, api_key) for f in FILTERS]
         filter_results = await asyncio.gather(*tasks)
 
