@@ -25,10 +25,9 @@
     "api_key": {
       "type": "string",
       "title": "CryptoPanic API Key",
-      "description": "API key for CryptoPanic API (optional if in .env as CRYPTOPANIC_API_KEY)",
-      "default": ""
+      "description": "API key for accessing CryptoPanic API"
     }
   },
-  "required": ["states"],
+  "required": ["states", "api_key"],
   "additionalProperties": true
 }
