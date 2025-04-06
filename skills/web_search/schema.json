@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Web Search Skills",
+  "description": "Web search capabilities for retrieving up-to-date information from the internet",
+  "x-icon": "https://ai.service.crestal.dev/skills/web_search/web_search.jpg",
+  "x-tags": [
+    "Internet",
+    "Search",
+    "Information"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
+    "api_key": {
+      "type": "string",
+      "title": "Tavily API Key",
+      "description": "API key for Tavily search service",
+      "x-sensitive": true
+    },
+    "states": {
+      "type": "object",
+      "properties": {
+        "web_search": {
+          "type": "string",
+          "title": "Web Search",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Search the web for real-time information and recent content",
+          "default": "disabled"
+        }
+      },
+      "description": "States for each web search skill (disabled, public, or private)"
+    }
+  },
+  "required": [
+    "states",
+    "enabled",
+    "api_key"
+  ],
+  "additionalProperties": true
+} 

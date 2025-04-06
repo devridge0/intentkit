@@ -173,7 +173,7 @@
     "purpose": {
       "title": "Purpose",
       "type": "string",
-      "description": "Tell the agent what’s its purpose and what needs should it serve.",
+      "description": "Tell the agent what's its purpose and what needs should it serve.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -197,7 +197,7 @@
     "principles": {
       "title": "Principles",
       "type": "string",
-      "description": "Tell the agents what it should and shouldn’t do when it interacts with users or skills.",
+      "description": "Tell the agents what it should and shouldn't do when it interacts with users or skills.",
       "maxLength": 20000,
       "pattern": "^(([^#].*)|#[^# ].*|#{3,}[ ].*|$)(\n(([^#].*)|#[^# ].*|#{3,}[ ].*|$))*$",
       "errorMessage": {
@@ -438,6 +438,10 @@
         "moralis": {
           "title": "Moralis",
           "$ref": "../skills/moralis/schema.json"
+        },
+        "web_search": {
+          "title": "Web Search",
+          "$ref": "../skills/web_search/schema.json"
         }
       }
     },
