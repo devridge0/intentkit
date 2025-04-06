@@ -1,25 +1,25 @@
-"""Web search skills."""
+"""Tavily search skills."""
 
 import logging
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
-from skills.web_search.base import WebSearchBaseTool
-from skills.web_search.web_search import WebSearch
+from skills.tavily.base import TavilyBaseTool
+from skills.tavily.tavily_search import TavilySearch
 
 # Cache skills at the system level, because they are stateless
-_cache: dict[str, WebSearchBaseTool] = {}
+_cache: dict[str, TavilyBaseTool] = {}
 
 logger = logging.getLogger(__name__)
 
 
 class SkillStates(TypedDict):
-    web_search: SkillState
+    tavily_search: SkillState
 
 
 class Config(SkillConfig):
-    """Configuration for web search skills."""
+    """Configuration for Tavily search skills."""
 
     states: SkillStates
     api_key: str
@@ -30,16 +30,16 @@ async def get_skills(
     is_private: bool,
     store: SkillStoreABC,
     **_,
-) -> list[WebSearchBaseTool]:
-    """Get all web search skills.
+) -> list[TavilyBaseTool]:
+    """Get all Tavily search skills.
 
     Args:
-        config: The configuration for web search skills.
+        config: The configuration for Tavily search skills.
         is_private: Whether to include private skills.
         store: The skill store for persisting data.
 
     Returns:
-        A list of web search skills.
+        A list of Tavily search skills.
     """
     available_skills = []
 
@@ -53,31 +53,31 @@ async def get_skills(
     # Get each skill using the cached getter
     result = []
     for name in available_skills:
-        skill = get_web_search_skill(name, store)
+        skill = get_tavily_skill(name, store)
         if skill:
             result.append(skill)
     return result
 
 
-def get_web_search_skill(
+def get_tavily_skill(
     name: str,
     store: SkillStoreABC,
-) -> WebSearchBaseTool:
-    """Get a web search skill by name.
+) -> TavilyBaseTool:
+    """Get a Tavily search skill by name.
 
     Args:
         name: The name of the skill to get
         store: The skill store for persisting data
 
     Returns:
-        The requested web search skill
+        The requested Tavily search skill
     """
-    if name == "web_search":
+    if name == "tavily_search":
         if name not in _cache:
-            _cache[name] = WebSearch(
+            _cache[name] = TavilySearch(
                 skill_store=store,
             )
         return _cache[name]
     else:
-        logger.warning(f"Unknown web search skill: {name}")
+        logger.warning(f"Unknown Tavily search skill: {name}")
         return None 
