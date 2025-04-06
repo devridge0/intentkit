@@ -6,8 +6,8 @@ from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
 
 
-class WebSearchBaseTool(IntentKitSkill):
-    """Base class for web search tools."""
+class TavilyBaseTool(IntentKitSkill):
+    """Base class for Tavily search tools."""
 
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
@@ -18,4 +18,4 @@ class WebSearchBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "web_search" 
+        return "tavily" 

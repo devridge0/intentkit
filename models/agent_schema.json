@@ -439,9 +439,9 @@
           "title": "Moralis",
           "$ref": "../skills/moralis/schema.json"
         },
-        "web_search": {
-          "title": "Web Search",
-          "$ref": "../skills/web_search/schema.json"
+        "tavily": {
+          "title": "Tavily",
+          "$ref": "../skills/tavily/schema.json"
         }
       }
     },
