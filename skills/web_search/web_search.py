@@ -123,5 +123,5 @@ class WebSearch(WebSearchBaseTool):
                 return formatted_results.strip()
                 
         except Exception as e:
-            logger.error(f"web_search.py: Error searching web: {e}")
-            return f"Error occurred while searching the web: {str(e)}" 
+            logger.error(f"web_search.py: Error searching web: {e}", exc_info=True)
+            return "An error occurred while searching the web. Please try again later."
