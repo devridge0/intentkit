@@ -15,6 +15,7 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
     description: str = "Fetches recent CryptoPanic posts and defines market sentiment via LLM analysis."
     args_schema: Type[BaseModel] = CryptopanicSentimentInput
 
+    #pass to llm for response
     DEFAULT_PROMPT: ClassVar[str] = """
     Hey, you’re a seasoned crypto analyst with a knack for reading the market, and I’ve got {total_posts} fresh CryptoPanic headlines about {currency} for you to break down. Votes are flat (all 0/0 or none), so it’s all about these headlines:
 
