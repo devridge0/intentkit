@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.config import config
 from app.core.engine import execute_agent, thread_stats
 from app.core.prompt import agent_prompt
-from models.agent import Agent, AgentData, AgentQuota
+from models.agent import Agent, AgentData
 from models.chat import (
     AuthorType,
     Chat,
@@ -222,11 +222,6 @@ async def debug_chat(
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
 
-    # Check quota
-    quota = await AgentQuota.get(aid)
-    if quota and not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Quota exceeded")
-
     # get thread_id from request ip
     if not chat_id:
         chat_id = thread if thread else request.client.host
@@ -253,9 +248,6 @@ async def debug_chat(
     resp += "Total time cost: {:.3f} seconds".format(
         sum([message.time_cost + message.cold_start_cost for message in messages])
     )
-
-    # reduce message quota
-    await quota.add_message()
 
     return resp
 
@@ -547,11 +539,6 @@ async def create_chat_deprecated(
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
 
-    # Check quota
-    quota = await AgentQuota.get(aid)
-    if quota and not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Quota exceeded")
-
     # Create user message
     user_message = ChatMessageCreate(
         id=str(XID()),
@@ -581,9 +568,6 @@ async def create_chat_deprecated(
             rounds=1,
         )
         await chat.save()
-
-    # Update quota
-    await quota.add_message()
 
     return response_messages[-1]
 
@@ -631,11 +615,6 @@ async def create_chat(
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent {aid} not found")
 
-    # Check quota
-    quota = await AgentQuota.get(aid)
-    if quota and not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Quota exceeded")
-
     # Create user message
     user_message = ChatMessageCreate(
         id=str(XID()),
@@ -665,9 +644,6 @@ async def create_chat(
             rounds=1,
         )
         await chat.save()
-
-    # Update quota
-    await quota.add_message()
 
     return response_messages
 
