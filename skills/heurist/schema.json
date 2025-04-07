@@ -137,6 +137,8 @@
     "api_key": {
       "type": "string",
       "title": "Heurist API Key",
+      "x-link": "[Get your API key](https://dev-api-form.heurist.ai/)",
+      "x-sensitive": true,
       "description": "API key for Heurist AI services, if you have one, you can set the rate limit for your user"
     },
     "rate_limit_number": {

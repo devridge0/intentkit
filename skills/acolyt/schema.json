@@ -41,6 +41,7 @@
     "api_key": {
       "type": "string",
       "title": "Acolyt API Key",
+      "x-sensitive": true,
       "description": "Acolyt API key for authentication"
     }
   },
