@@ -401,6 +401,7 @@ def get_twitter_client(
 async def unlink_twitter(agent_id: str) -> AgentData:
     if agent_id in _clients:
         del _clients[agent_id]
+    logger.info(f"Unlinking Twitter for agent {agent_id}")
     return await AgentData.patch(
         agent_id,
         {

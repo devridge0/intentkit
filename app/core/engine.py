@@ -57,7 +57,7 @@ from app.core.agent import AgentStore
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
-from models.agent import Agent, AgentData, AgentTable
+from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
@@ -495,11 +495,18 @@ async def execute_agent(
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
+    quota = await AgentQuota.get(message.agent_id)
+    if quota and not quota.has_message_quota():
+        raise HTTPException(status_code=429, detail="Agent Daily Quota exceeded")
+
     resp = []
     start = time.perf_counter()
     # make sure reply_to is set
     message.reply_to = message.id
     input = await message.save()
+
+    # once the input saved, reduce message quota
+    await quota.add_message()
 
     agent = await Agent.get(input.agent_id)
 
