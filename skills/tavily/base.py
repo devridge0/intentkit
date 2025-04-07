@@ -18,4 +18,4 @@ class TavilyBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "tavily" 
+        return "tavily"

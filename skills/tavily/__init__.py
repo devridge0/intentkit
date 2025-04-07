@@ -80,4 +80,4 @@ def get_tavily_skill(
         return _cache[name]
     else:
         logger.warning(f"Unknown Tavily search skill: {name}")
-        return None 
+        return None
