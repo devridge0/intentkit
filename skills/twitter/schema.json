@@ -153,24 +153,29 @@
       "type": "string",
       "title": "Twitter API consumer key",
       "description": "Twitter API consumer key",
+      "x-link": "[Get your API key](https://developer.x.com/)",
+      "x-sensitive": true,
       "maxLength": 100
     },
     "consumer_secret": {
       "type": "string",
       "title": "Twitter API consumer secret",
       "description": "Twitter API consumer secret",
+      "x-sensitive": true,
       "maxLength": 100
     },
     "access_token": {
       "type": "string",
       "title": "Twitter API access token",
       "description": "Twitter API access token",
+      "x-sensitive": true,
       "maxLength": 100
     },
     "access_token_secret": {
       "type": "string",
       "title": "Twitter API access token secret",
       "description": "Twitter API access token secret",
+      "x-sensitive": true,
       "maxLength": 100
     }
   },

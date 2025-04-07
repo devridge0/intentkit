@@ -121,6 +121,8 @@
     "api_key": {
       "type": "string",
       "title": "CryptoCompare API Key",
+      "x-link": "[Get your API key](https://developers.coindesk.com/)",
+      "x-sensitive": true,
       "description": "CryptoCompare API key for authentication"
     }
   },
