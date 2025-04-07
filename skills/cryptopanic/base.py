@@ -17,7 +17,9 @@ class CryptopanicBaseTool(IntentKitSkill):
     def get_api_key(self, context: SkillContext) -> str:
         api_key = context.config.get("api_key")
         if not api_key:
-            raise ValueError("CryptoPanic API key not found in context.config['api_key']")
+            raise ValueError(
+                "CryptoPanic API key not found in context.config['api_key']"
+            )
         return api_key
 
     @property
