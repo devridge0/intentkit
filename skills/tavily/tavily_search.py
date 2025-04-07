@@ -1,5 +1,5 @@
 import logging
-from typing import Type, Optional
+from typing import Type
 
 import httpx
 from langchain_core.runnables import RunnableConfig
@@ -53,13 +53,13 @@ class TavilySearch(TavilyBaseTool):
     args_schema: Type[BaseModel] = TavilySearchInput
 
     async def _arun(
-        self, 
-        query: str, 
-        max_results: int = 5, 
-        include_images: bool = False, 
-        include_raw_content: bool = False, 
-        config: RunnableConfig = None, 
-        **kwargs
+        self,
+        query: str,
+        max_results: int = 5,
+        include_images: bool = False,
+        include_raw_content: bool = False,
+        config: RunnableConfig = None,
+        **kwargs,
     ) -> str:
         """Implementation of the Tavily search tool.
 
@@ -75,15 +75,15 @@ class TavilySearch(TavilyBaseTool):
         """
         context = self.context_from_config(config)
         logger.debug(f"tavily.py: Running web search with context {context}")
-        
+
         # Get the API key from the agent's configuration
         api_key = context.config.get("api_key")
         if not api_key:
             return "Error: No Tavily API key provided in the configuration."
-        
+
         # Limit max_results to a reasonable range
         max_results = max(1, min(max_results, 10))
-        
+
         # Call Tavily search API
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -97,31 +97,33 @@ class TavilySearch(TavilyBaseTool):
                         "include_raw_content": include_raw_content,
                     },
                 )
-                
+
                 if response.status_code != 200:
-                    logger.error(f"tavily.py: Error from Tavily API: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"tavily.py: Error from Tavily API: {response.status_code} - {response.text}"
+                    )
                     return f"Error searching the web: {response.status_code} - {response.text}"
-                
+
                 data = response.json()
                 results = data.get("results", [])
-                
+
                 if not results:
                     return f"No results found for query: '{query}'"
-                
+
                 # Format the results
                 formatted_results = f"Web search results for: '{query}'\n\n"
-                
+
                 for i, result in enumerate(results, 1):
                     title = result.get("title", "No title")
                     content = result.get("content", "No content")
                     url = result.get("url", "No URL")
-                    
+
                     formatted_results += f"{i}. {title}\n"
                     formatted_results += f"{content}\n"
                     formatted_results += f"Source: {url}\n\n"
-                
+
                 return formatted_results.strip()
-                
+
         except Exception as e:
             logger.error(f"tavily.py: Error searching web: {e}", exc_info=True)
-            return "An error occurred while searching the web. Please try again later." 
+            return "An error occurred while searching the web. Please try again later."
