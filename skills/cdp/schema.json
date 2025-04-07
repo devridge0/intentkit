@@ -13,7 +13,7 @@
       "type": "boolean",
       "title": "Enabled",
       "description": "Whether this skill is enabled",
-      "default": false
+      "default": true
     },
     "states": {
       "type": "object",
@@ -31,8 +31,8 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Provides real-time collateral/debt ratios with automatic currency conversion and risk threshold alerts. Final CDP balance description",
-          "default": "disabled"
+          "description": "Use coinbase API to get wallet balance, float result.",
+          "default": "public"
         },
         "WalletActionProvider_get_balance": {
           "type": "string",
@@ -47,7 +47,7 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "State for WalletActionProvider_get_balance",
+          "description": "Get balance, raw bigint result. Use this with professional AI models.",
           "default": "disabled"
         },
         "WalletActionProvider_get_wallet_details": {
@@ -63,8 +63,8 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "State for WalletActionProvider_get_wallet_details",
-          "default": "disabled"
+          "description": "Get wallet details using coinbase API",
+          "default": "public"
         },
         "CdpApiActionProvider_address_reputation": {
           "type": "string",
@@ -192,7 +192,7 @@
             "Agent Owner Only"
           ],
           "description": "State for WalletActionProvider_native_transfer",
-          "default": "disabled"
+          "default": "private"
         },
         "CdpWalletActionProvider_trade": {
           "type": "string",
@@ -208,7 +208,7 @@
             "Agent Owner Only"
           ],
           "description": "State for CdpWalletActionProvider_trade",
-          "default": "disabled"
+          "default": "private"
         },
         "CdpWalletActionProvider_deploy_nft": {
           "type": "string",
@@ -320,7 +320,7 @@
             "Agent Owner Only"
           ],
           "description": "State for PythActionProvider_fetch_price_feed_id",
-          "default": "disabled"
+          "default": "public"
         },
         "PythActionProvider_fetch_price": {
           "type": "string",
@@ -336,7 +336,7 @@
             "Agent Owner Only"
           ],
           "description": "State for PythActionProvider_fetch_price",
-          "default": "disabled"
+          "default": "public"
         },
         "WowActionProvider_buy_token": {
           "type": "string",
