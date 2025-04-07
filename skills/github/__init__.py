@@ -51,4 +51,4 @@ def get_github_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown GitHub skill: {name}") 
+        raise ValueError(f"Unknown GitHub skill: {name}")
