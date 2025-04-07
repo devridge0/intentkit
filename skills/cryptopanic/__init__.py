@@ -1,25 +1,28 @@
 """CryptoPanic skill module."""
 
 import logging
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
-from skills.cryptopanic.base import CryptopanicBaseTool
-from skills.cryptopanic.fetch_crypto_sentiment import FetchCryptoSentiment
-from skills.cryptopanic.fetch_crypto_news import FetchCryptoNews
 from skills.base import SkillConfig, SkillState
+from skills.cryptopanic.base import CryptopanicBaseTool
+from skills.cryptopanic.fetch_crypto_news import FetchCryptoNews
+from skills.cryptopanic.fetch_crypto_sentiment import FetchCryptoSentiment
 
 logger = logging.getLogger(__name__)
 
 _cache: dict[str, CryptopanicBaseTool] = {}
 
+
 class SkillStates(TypedDict):
     fetch_crypto_sentiment: SkillState
     fetch_crypto_news: SkillState
 
+
 class Config(SkillConfig):
     states: SkillStates
     api_key: str
+
 
 async def get_skills(
     config: "Config",
@@ -44,6 +47,7 @@ async def get_skills(
             logger.info(f"Loaded skill: {name}")
             result.append(skill)
     return result
+
 
 def get_cryptopanic_skill(
     name: str,
