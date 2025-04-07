@@ -1,7 +1,7 @@
-from typing import Literal, Type, List
-import httpx
 import asyncio
-from langchain.tools.base import ToolException
+from typing import List, Literal, Type
+
+import httpx
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
@@ -9,9 +9,13 @@ from .base import CryptopanicBaseTool, base_url
 
 FILTERS = ["rising", "hot", "bullish", "bearish", "important", "saved", "lol"]
 
+
 class CryptopanicNewsInput(BaseModel):
     currency: str = Field(default="all")
-    filter: Literal["rising", "hot", "bullish", "bearish", "important", "saved", "lol"] = Field(default="hot")
+    filter: Literal[
+        "rising", "hot", "bullish", "bearish", "important", "saved", "lol"
+    ] = Field(default="hot")
+
 
 class NewsItem(BaseModel):
     title: str = Field()
@@ -19,20 +23,26 @@ class NewsItem(BaseModel):
     source: str = Field()
     filter: str = Field()
 
+
 class CryptopanicNewsOutput(BaseModel):
     currency: str = Field()
     news_items: List[NewsItem] = Field()
     summary: str = Field()
 
+
 class FetchCryptoNews(CryptopanicBaseTool):
     name: str = "fetch_crypto_news"
-    description: str = "Fetches latest crypto market news from CryptoPanic across all filters."
+    description: str = (
+        "Fetches latest crypto market news from CryptoPanic across all filters."
+    )
     args_schema: Type[BaseModel] = CryptopanicNewsInput
 
     def _run(self, question: str):
         raise NotImplementedError("Use _arun")
 
-    async def fetch_filter_news(self, currency: str, filter: str, api_key: str) -> List[NewsItem]:
+    async def fetch_filter_news(
+        self, currency: str, filter: str, api_key: str
+    ) -> List[NewsItem]:
         url = base_url
         params = {"auth_token": api_key, "public": "true", "filter": filter}
         if currency.lower() != "all":
@@ -48,7 +58,7 @@ class FetchCryptoNews(CryptopanicBaseTool):
                     title=post["title"],
                     published_at=post.get("published_at", "Unknown"),
                     source=post.get("source", {}).get("domain", "CryptoPanic"),
-                    filter=filter
+                    filter=filter,
                 )
                 for post in data
             ]
@@ -65,4 +75,6 @@ class FetchCryptoNews(CryptopanicBaseTool):
         active_filters = sum(1 for r in filter_results if r)
 
         summary = f"Found {total_items} news items across {active_filters} filters."
-        return CryptopanicNewsOutput(currency=currency, news_items=all_news_items, summary=summary)
+        return CryptopanicNewsOutput(
+            currency=currency, news_items=all_news_items, summary=summary
+        )
