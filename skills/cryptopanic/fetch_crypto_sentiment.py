@@ -1,21 +1,21 @@
-from typing import Type, List, ClassVar
+from typing import ClassVar, List, Type
+
 import httpx
-import asyncio
-from langchain.tools.base import ToolException
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 from .base import CryptopanicBaseTool, base_url
 
+
 class CryptopanicSentimentInput(BaseModel):
     currency: str = Field(default="BTC")
+
 
 class FetchCryptoSentiment(CryptopanicBaseTool):
     name: str = "fetch_crypto_sentiment"
     description: str = "Fetches recent CryptoPanic posts and defines market sentiment via LLM analysis."
     args_schema: Type[BaseModel] = CryptopanicSentimentInput
 
-    #pass to llm for response
     DEFAULT_PROMPT: ClassVar[str] = """
     Hey, you’re a seasoned crypto analyst with a knack for reading the market, and I’ve got {total_posts} fresh CryptoPanic headlines about {currency} for you to break down. Votes are flat (all 0/0 or none), so it’s all about these headlines:
 
@@ -29,7 +29,12 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
 
     async def fetch_all_posts(self, currency: str, api_key: str) -> List[dict]:
         url = base_url
-        params = {"auth_token": api_key, "public": "true", "currencies": currency.upper()}
+        params = {
+            "auth_token": api_key,
+            "public": "true",
+            "currencies": currency.upper(),
+        }
+
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params, timeout=10)
             response.raise_for_status()
@@ -38,6 +43,8 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
     async def _arun(self, currency: str, config: RunnableConfig, **kwargs):
         context = self.context_from_config(config)
         api_key = self.get_api_key(context)
+
+        # Fetch all recent posts
         posts = await self.fetch_all_posts(currency, api_key)
         total_posts = len(posts)
 
@@ -45,28 +52,32 @@ class FetchCryptoSentiment(CryptopanicBaseTool):
             data = {
                 "total_posts": 0,
                 "headlines": ["No recent posts available"],
-                "votes": "None"
+                "votes": "None",
             }
         else:
-            headlines = [p["title"] for p in posts[:5]]
-            votes = [
-                f"{p['votes']['positive']}/{p['votes']['negative']}"
-                for p in posts[:5]
-            ] if posts and "votes" in posts[0] else "None"
-            data = {
-                "total_posts": total_posts,
-                "headlines": headlines,
-                "votes": votes
-            }
+            headlines = [p["title"] for p in posts[:5]]  # Limit to 5
+            votes = (
+                [
+                    f"{p['votes']['positive']}/{p['votes']['negative']}"
+                    for p in posts[:5]
+                ]
+                if posts and "votes" in posts[0]
+                else "None"
+            )
 
+            data = {"total_posts": total_posts, "headlines": headlines, "votes": votes}
+
+        # Bundle data with prompt for LLM
         formatted_headlines = "\n- ".join([""] + data["headlines"])
-        formatted_votes = "\n- ".join([""] + data["votes"]) if data["votes"] != "None" else "None"
+        formatted_votes = (
+            "\n- ".join([""] + data["votes"]) if data["votes"] != "None" else "None"
+        )
         output = {
             "prompt": self.DEFAULT_PROMPT,
             "currency": currency,
             "total_posts": data["total_posts"],
             "headlines": formatted_headlines,
-            "votes": formatted_votes
+            "votes": formatted_votes,
         }
 
         return output
