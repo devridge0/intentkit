@@ -442,6 +442,10 @@
         "tavily": {
           "title": "Tavily",
           "$ref": "../skills/tavily/schema.json"
+        },
+        "github": {
+          "title": "GitHub",
+          "$ref": "../skills/github/schema.json"
         }
       }
     },
