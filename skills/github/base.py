@@ -18,4 +18,4 @@ class GitHubBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "github" 
+        return "github"

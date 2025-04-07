@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import Type, Optional
+from typing import Type
 
 import httpx
 from langchain_core.runnables import RunnableConfig
@@ -100,9 +100,13 @@ class GitHubSearch(GitHubBaseTool):
                 )
 
                 if response.status_code == 403:
-                    rate_limit = response.headers.get("X-RateLimit-Remaining", "unknown")
+                    rate_limit = response.headers.get(
+                        "X-RateLimit-Remaining", "unknown"
+                    )
                     reset_time = response.headers.get("X-RateLimit-Reset", "unknown")
-                    logger.warning(f"github_search.py: Rate limit reached. Remaining: {rate_limit}, Reset: {reset_time}")
+                    logger.warning(
+                        f"github_search.py: Rate limit reached. Remaining: {rate_limit}, Reset: {reset_time}"
+                    )
                     return (
                         "GitHub API rate limit reached. Please try again in a few minutes. "
                         "The rate limit resets every hour for unauthenticated requests."
@@ -120,7 +124,9 @@ class GitHubSearch(GitHubBaseTool):
                     return f"No results found for query: '{query}'"
 
                 # Format results based on search type
-                formatted_results = f"GitHub search results for '{query}' ({search_type.value}):\n\n"
+                formatted_results = (
+                    f"GitHub search results for '{query}' ({search_type.value}):\n\n"
+                )
 
                 for i, item in enumerate(items, 1):
                     if search_type == SearchType.REPOSITORIES:
@@ -149,11 +155,15 @@ class GitHubSearch(GitHubBaseTool):
                         formatted_results += "\n"
                         if bio:
                             formatted_results += f"Bio: {bio}\n"
-                        formatted_results += f"Followers: {followers} | Public Repos: {public_repos}\n"
+                        formatted_results += (
+                            f"Followers: {followers} | Public Repos: {public_repos}\n"
+                        )
                         formatted_results += f"URL: {url}\n\n"
 
                     elif search_type == SearchType.CODE:
-                        repo = item.get("repository", {}).get("full_name", "No repository")
+                        repo = item.get("repository", {}).get(
+                            "full_name", "No repository"
+                        )
                         path = item.get("path", "No path")
                         url = item.get("html_url", "No URL")
 
@@ -167,5 +177,7 @@ class GitHubSearch(GitHubBaseTool):
             logger.error("github_search.py: Request timed out")
             return "The request to GitHub timed out. Please try again later."
         except Exception as e:
-            logger.error(f"github_search.py: Error searching GitHub: {e}", exc_info=True)
-            return "An error occurred while searching GitHub. Please try again later." 
+            logger.error(
+                f"github_search.py: Error searching GitHub: {e}", exc_info=True
+            )
+            return "An error occurred while searching GitHub. Please try again later."
