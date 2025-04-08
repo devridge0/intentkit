@@ -2,22 +2,53 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "CryptoPanic Skills",
-  "description": "Configuration schema for CryptoPanic skills",
+  "description": "CryptoPanic is a news aggregator platform indicating impact on price and market for traders and cryptocurrency enthusiasts.",
+  "x-icon": "https://ai.service.crestal.dev/skills/cryptopanic/cryptopanic.png",
+  "x-tags": [
+    "Data"
+  ],
+  "x-api-key": "required",
   "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
     "states": {
       "type": "object",
       "properties": {
         "fetch_crypto_sentiment": {
           "type": "string",
           "title": "Fetch Crypto Sentiment",
-          "enum": ["disabled", "public", "private"],
-          "description": "State of the fetch_crypto_sentiment skill"
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "default": "disabled",
+          "description": "Fetches recent CryptoPanic posts and defines market sentiment via LLM analysis."
         },
         "fetch_crypto_news": {
           "type": "string",
           "title": "Fetch Crypto News",
-          "enum": ["disabled", "public", "private"],
-          "description": "State of the fetch_crypto_news skill"
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "default": "disabled",
+          "description": "Fetches latest crypto market news from CryptoPanic across all filters."
         }
       },
       "description": "States for each CryptoPanic skill (disabled, public, or private)"
@@ -25,9 +56,26 @@
     "api_key": {
       "type": "string",
       "title": "CryptoPanic API Key",
+      "x-link": "[Get your API key](https://cryptopanic.com/developers/api/keys)",
+      "x-sensitive": true,
       "description": "API key for accessing CryptoPanic API"
     }
   },
-  "required": ["states", "api_key"],
+  "required": [
+    "enabled",
+    "states"
+  ],
+  "if": {
+    "properties": {
+      "enabled": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "api_key"
+    ]
+  },
   "additionalProperties": true
 }
