@@ -65,8 +65,15 @@
   },
   "required": [
     "enabled",
-    "states",
-    "api_key"
+    "states"
   ],
+  "if": {
+    "properties": {
+      "enabled": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["api_key"]
+  },
   "additionalProperties": true
 }
