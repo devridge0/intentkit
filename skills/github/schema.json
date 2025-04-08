@@ -1,26 +1,27 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Common Skills",
-  "description": "Utility skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
+  "title": "GitHub Search",
+  "description": "Search capabilities for GitHub repositories, users, and code",
+  "x-icon": "https://ai.service.crestal.dev/skills/github/github.jpg",
   "x-tags": [
-    "Utility"
+    "GitHub",
+    "Search",
+    "Code"
   ],
-  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
       "title": "Enabled",
       "description": "Whether this skill is enabled",
-      "default": true
+      "default": false
     },
     "states": {
       "type": "object",
       "properties": {
-        "current_time": {
+        "github_search": {
           "type": "string",
-          "title": "Current Time",
+          "title": "GitHub Search",
           "enum": [
             "disabled",
             "public",
@@ -31,11 +32,11 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
-          "default": "public"
+          "description": "Search GitHub for repositories, users, and code",
+          "default": "disabled"
         }
       },
-      "description": "States for each common utility skill (disabled, public, or private)"
+      "description": "States for each GitHub search skill (disabled, public, or private)"
     }
   },
   "required": [
@@ -43,4 +44,4 @@
     "enabled"
   ],
   "additionalProperties": true
-}
+} 

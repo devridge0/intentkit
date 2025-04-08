@@ -9,6 +9,7 @@
     "Search",
     "Information"
   ],
+  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -20,6 +21,7 @@
       "type": "string",
       "title": "Tavily API Key",
       "description": "API key for Tavily search service",
+      "x-link": "[Get your API key](https://tavily.com/)",
       "x-sensitive": true
     },
     "states": {
@@ -47,8 +49,15 @@
   },
   "required": [
     "states",
-    "enabled",
-    "api_key"
+    "enabled"
   ],
+  "if": {
+    "properties": {
+      "enabled": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["api_key"]
+  },
   "additionalProperties": true
-} 
+}
