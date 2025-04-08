@@ -58,13 +58,22 @@
     "api_key": {
       "type": "string",
       "title": "API Key",
+      "x-link": "[Get your API key](https://platform.openai.com/)",
+      "x-sensitive": true,
       "description": "OpenAI API key for authentication"
     }
   },
   "required": [
     "enabled",
-    "states",
-    "api_key"
+    "states"
   ],
+  "if": {
+    "properties": {
+      "enabled": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["api_key"]
+  },
   "additionalProperties": true
 }
