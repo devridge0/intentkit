@@ -846,3 +846,39 @@ async def import_agent(
     await _process_telegram_config(agent, agent_data)
 
     return "Agent import successful"
+
+
+@admin_router.put(
+    "/agents/{agent_id}/twitter/unlink",
+    tags=["Agent"],
+    operation_id="unlink_twitter",
+    dependencies=[Depends(verify_jwt)],
+    response_class=Response,
+)
+async def unlink_twitter_endpoint(
+    agent_id: str = Path(..., description="ID of the agent to unlink from Twitter"),
+) -> Response:
+    """Unlink Twitter from an agent.
+
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to unlink from Twitter
+
+    **Raises:**
+    * `HTTPException`:
+        - 404: Agent not found
+    """
+    # Check if agent exists
+    agent = await Agent.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Call the unlink_twitter function from clients.twitter
+    agent_data = await unlink_twitter(agent_id)
+
+    agent_response = AgentResponse.from_agent(agent, agent_data)
+
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
