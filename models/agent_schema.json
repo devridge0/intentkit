@@ -387,6 +387,10 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "cryptopanic": {
+          "title": "CryptoPanic",
+          "$ref": "../skills/cryptopanic/schema.json"
+        },
         "tavily": {
           "title": "Tavily",
           "$ref": "../skills/tavily/schema.json"
