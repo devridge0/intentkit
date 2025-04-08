@@ -95,8 +95,15 @@
   },
   "required": [
     "states",
-    "enabled",
-    "slack_bot_token"
+    "enabled"
   ],
+  "if": {
+    "properties": {
+      "enabled": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["slack_bot_token"]
+  },
   "additionalProperties": true
 }
