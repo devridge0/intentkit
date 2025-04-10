@@ -1,16 +1,25 @@
+import json
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, Field, model_validator
+from pydantic.json import pydantic_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
-from app.core.credit import adjustment, recharge, reward, update_daily_quota
+from app.core.credit import (
+    adjustment,
+    list_credit_events_by_owner,
+    recharge,
+    reward,
+    update_daily_quota,
+)
 from models.credit import (
     CreditAccount,
     CreditEvent,
     CreditType,
+    Direction,
     EventType,
     OwnerType,
 )
@@ -241,18 +250,41 @@ async def update_account_free_quota(
 async def list_user_expense_events(
     user_id: str,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all expense events for a user account.
 
     Args:
         user_id: ID of the user
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of expense events
+        Response with list of expense events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        direction=Direction.EXPENSE,
+        cursor=cursor,
+        limit=limit,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
@@ -266,19 +298,43 @@ async def list_user_income_events(
     user_id: str,
     event_type: Annotated[Optional[EventType], Query(description="Event type")] = None,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all income events for a user account.
 
     Args:
         user_id: ID of the user
         event_type: Event type
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of income events
+        Response with list of income events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        direction=Direction.INCOME,
+        cursor=cursor,
+        limit=limit,
+        event_type=event_type,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
@@ -291,18 +347,41 @@ async def list_user_income_events(
 async def list_agent_income_events(
     agent_id: str,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all income events for an agent account.
 
     Args:
         agent_id: ID of the agent
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of income events
+        Response with list of income events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.AGENT,
+        owner_id=agent_id,
+        direction=Direction.INCOME,
+        cursor=cursor,
+        limit=limit,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
