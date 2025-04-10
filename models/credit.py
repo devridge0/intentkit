@@ -71,6 +71,11 @@ class CreditAccountTable(Base):
         default=0.0,
         nullable=False,
     )
+    refill_amount = Column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
     free_credits = Column(
         Float,
         default=0.0,
@@ -127,6 +132,9 @@ class CreditAccount(BaseModel):
     owner_id: Annotated[str, Field(description="ID of the account owner")]
     free_quota: Annotated[
         float, Field(default=0.0, description="Daily credit quota that resets each day")
+    ]
+    refill_amount: Annotated[
+        float, Field(default=0.0, description="Amount to refill hourly, not exceeding free_quota")
     ]
     free_credits: Annotated[
         float, Field(default=0.0, description="Current available daily credits")

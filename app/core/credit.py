@@ -1,6 +1,8 @@
+import logging
 from typing import Optional
 
 from epyxid import XID
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.credit import (
@@ -8,6 +10,7 @@ from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_RECHARGE,
     DEFAULT_PLATFORM_ACCOUNT_REWARD,
     CreditAccount,
+    CreditAccountTable,
     CreditDebit,
     CreditEvent,
     CreditEventTable,
@@ -19,6 +22,8 @@ from models.credit import (
     TransactionType,
     UpstreamType,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def recharge(
@@ -45,7 +50,7 @@ async def recharge(
     await CreditEvent.check_upstream_tx_id_exists(
         session, UpstreamType.API, upstream_tx_id
     )
-    
+
     if amount <= 0:
         raise ValueError("Recharge amount must be positive")
 
@@ -140,7 +145,7 @@ async def reward(
     await CreditEvent.check_upstream_tx_id_exists(
         session, UpstreamType.API, upstream_tx_id
     )
-    
+
     if amount <= 0:
         raise ValueError("Reward amount must be positive")
 
@@ -237,7 +242,7 @@ async def adjustment(
     await CreditEvent.check_upstream_tx_id_exists(
         session, UpstreamType.API, upstream_tx_id
     )
-    
+
     if amount == 0:
         raise ValueError("Adjustment amount cannot be zero")
 
@@ -332,6 +337,86 @@ async def adjustment(
         change_amount=abs_amount,
     )
     session.add(platform_tx)
+
+    # Commit all changes
+    await session.commit()
+
+    return user_account
+
+
+async def update_daily_quota(
+    session: AsyncSession,
+    user_id: str,
+    free_quota: Optional[float] = None,
+    refill_amount: Optional[float] = None,
+    upstream_tx_id: str = "",
+    note: str = "",
+) -> CreditAccount:
+    """
+    Update the daily quota and refill amount of a user's credit account.
+
+    Args:
+        session: Async session to use for database operations
+        user_id: ID of the user to update
+        free_quota: Optional new daily quota value
+        refill_amount: Optional amount to refill hourly, not exceeding free_quota
+        upstream_tx_id: ID of the upstream transaction (for logging purposes)
+        note: Explanation for changing the daily quota
+
+    Returns:
+        Updated user credit account
+    """
+    # Log the upstream_tx_id for record keeping
+    logger.info(
+        f"Updating quota settings for user {user_id} with upstream_tx_id: {upstream_tx_id}"
+    )
+
+    # Check that at least one parameter is provided
+    if free_quota is None and refill_amount is None:
+        raise ValueError("At least one of free_quota or refill_amount must be provided")
+
+    # Get current account to check existing values and validate
+    user_account = await CreditAccount.get_or_create_in_session(
+        session, OwnerType.USER, user_id, for_update=True
+    )
+
+    # Use existing values if not provided
+    if free_quota is None:
+        free_quota = user_account.free_quota
+    elif free_quota <= 0:
+        raise ValueError("Daily quota must be positive")
+
+    if refill_amount is None:
+        refill_amount = user_account.refill_amount
+    elif refill_amount < 0:
+        raise ValueError("Refill amount cannot be negative")
+
+    # Ensure refill_amount doesn't exceed free_quota
+    if refill_amount > free_quota:
+        raise ValueError("Refill amount cannot exceed daily quota")
+
+    if not note:
+        raise ValueError("Quota update requires a note explaining the reason")
+
+    # Already got the user account above, no need to get it again
+
+    # Update the free_quota field
+    stmt = (
+        update(CreditAccountTable)
+        .where(
+            CreditAccountTable.owner_type == OwnerType.USER,
+            CreditAccountTable.owner_id == user_id,
+        )
+        .values(free_quota=free_quota, refill_amount=refill_amount)
+        .returning(CreditAccountTable)
+    )
+    result = await session.scalar(stmt)
+    if not result:
+        raise ValueError("Failed to update user account")
+
+    user_account = CreditAccount.model_validate(result)
+
+    # No credit event needed for updating account settings
 
     # Commit all changes
     await session.commit()
