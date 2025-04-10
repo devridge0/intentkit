@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.config import config
 from app.core.credit import (
     adjustment,
+    fetch_credit_event_by_upstream_tx_id,
     list_credit_events_by_owner,
     recharge,
     reward,
@@ -393,11 +394,13 @@ async def list_agent_income_events(
 )
 async def fetch_credit_event(
     upstream_tx_id: Annotated[str, Query(description="Upstream transaction ID")],
+    db: AsyncSession = Depends(get_db),
 ) -> CreditEvent:
     """Fetch a credit event by its upstream transaction ID.
 
     Args:
         upstream_tx_id: ID of the upstream transaction
+        db: Database session
 
     Returns:
         Credit event
@@ -405,5 +408,4 @@ async def fetch_credit_event(
     Raises:
         404: If the credit event is not found
     """
-    # Implementation will be added later
-    pass
+    return await fetch_credit_event_by_upstream_tx_id(db, upstream_tx_id)
