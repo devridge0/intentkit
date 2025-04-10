@@ -1229,10 +1229,18 @@ class AgentCreate(AgentUpdate):
                     detail="Upstream id already in use",
                 )
 
-    async def create(self) -> "Agent":
-        # Validation is now handled by field validators
-        await self.check_upstream_id()
+    async def get_by_upstream_id(self) -> Optional["Agent"]:
+        if not self.upstream_id:
+            return None
+        async with get_session() as db:
+            existing = await db.scalar(
+                select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
+            )
+            if existing:
+                return Agent.model_validate(existing)
+            return None
 
+    async def create(self) -> "Agent":
         # Validate autonomous schedule settings if present
         if self.autonomous:
             self.validate_autonomous_schedule()
