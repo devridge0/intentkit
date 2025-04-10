@@ -422,7 +422,6 @@ async def validate_agent(
 @admin_router.post(
     "/agents/v2",
     tags=["Agent"],
-    status_code=201,
     operation_id="create_agent",
     response_model=AgentResponse,
 )
@@ -452,19 +451,27 @@ async def create_agent(
     if subject:
         agent.owner = subject
 
+    # Check for existing agent by upstream_id
+    existing = await agent.get_by_upstream_id()
+    if existing:
+        agent_data = await AgentData.get(existing.id)
+        agent_response = AgentResponse.from_agent(existing, agent_data)
+        return Response(
+            status_code=200,
+            content=agent_response.model_dump_json(),
+            media_type="application/json",
+            headers={"ETag": agent_response.etag()},
+        )
     # Create new agent
-    await agent.check_upstream_id()
     latest_agent = await agent.create()
-
     # Process common post-creation actions
     agent_data = await _process_agent_post_actions(latest_agent, True, "Agent Created")
-
     agent_data = await _process_telegram_config(input, agent_data)
-
     agent_response = AgentResponse.from_agent(latest_agent, agent_data)
 
     # Return Response with ETag header
     return Response(
+        status_code=201,
         content=agent_response.model_dump_json(),
         media_type="application/json",
         headers={"ETag": agent_response.etag()},
