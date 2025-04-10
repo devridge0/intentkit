@@ -96,20 +96,13 @@ class UpdateDailyQuotaRequest(BaseModel):
         return self
 
 
-# ===== Output models =====
-class CreditEventResponse(BaseModel):
-    """Response model for credit events."""
-
-    events: List[CreditEvent]
-    total: int
-
-
 # ===== API Endpoints =====
 @credit_router.get(
     "/accounts/{owner_type}/{owner_id}",
     response_model=CreditAccount,
     operation_id="get_account",
     summary="Get Account",
+    dependencies=[Depends(verify_jwt)],
 )
 async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     """Get a credit account by owner type and ID.
@@ -130,6 +123,7 @@ async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     status_code=status.HTTP_201_CREATED,
     operation_id="recharge_account",
     summary="Recharge",
+    dependencies=[Depends(verify_jwt)],
 )
 async def recharge_user_account(
     request: RechargeRequest,
@@ -154,6 +148,7 @@ async def recharge_user_account(
     status_code=status.HTTP_201_CREATED,
     operation_id="reward_account",
     summary="Reward",
+    dependencies=[Depends(verify_jwt)],
 )
 async def reward_user_account(
     request: RewardRequest,
@@ -179,6 +174,7 @@ async def reward_user_account(
     status_code=status.HTTP_201_CREATED,
     operation_id="adjust_account",
     summary="Adjust",
+    dependencies=[Depends(verify_jwt)],
 )
 async def adjust_user_account(
     request: AdjustmentRequest,
@@ -209,6 +205,7 @@ async def adjust_user_account(
     status_code=status.HTTP_200_OK,
     operation_id="update_account_free_quota",
     summary="Update Daily Quota and Refill Amount",
+    dependencies=[Depends(verify_jwt)],
 )
 async def update_account_free_quota(
     user_id: str, request: UpdateDailyQuotaRequest, db: AsyncSession = Depends(get_db)
@@ -239,6 +236,7 @@ async def update_account_free_quota(
     response_model=List[CreditEvent],
     operation_id="list_user_expense_events",
     summary="List User Expense",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_user_expense_events(
     user_id: str,
@@ -262,6 +260,7 @@ async def list_user_expense_events(
     response_model=List[CreditEvent],
     operation_id="list_user_income_events",
     summary="List User Income",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_user_income_events(
     user_id: str,
@@ -287,6 +286,7 @@ async def list_user_income_events(
     response_model=List[CreditEvent],
     operation_id="list_agent_income_events",
     summary="List Agent Income",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_agent_income_events(
     agent_id: str,
@@ -310,6 +310,7 @@ async def list_agent_income_events(
     response_model=CreditEvent,
     operation_id="fetch_credit_event",
     summary="Fetch Credit Event",
+    dependencies=[Depends(verify_jwt)],
 )
 async def fetch_credit_event(
     upstream_tx_id: Annotated[str, Query(description="Upstream transaction ID")],
