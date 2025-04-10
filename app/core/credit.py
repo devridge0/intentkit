@@ -1,8 +1,8 @@
 import logging
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from epyxid import XID
-from sqlalchemy import update
+from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.credit import (
@@ -422,3 +422,64 @@ async def update_daily_quota(
     await session.commit()
 
     return user_account
+
+
+async def list_credit_events_by_owner(
+    session: AsyncSession,
+    owner_type: OwnerType,
+    owner_id: str,
+    direction: Direction,
+    cursor: Optional[str] = None,
+    limit: int = 20,
+) -> Tuple[List[CreditEvent], Optional[str], bool]:
+    """
+    List credit events for a specific owner (user or agent) with cursor pagination.
+
+    Args:
+        session: Async database session.
+        owner_type: The type of the owner (USER or AGENT).
+        owner_id: The ID of the owner.
+        direction: The direction of the events (INCOME or EXPENSE).
+        cursor: The ID of the last event from the previous page.
+        limit: Maximum number of events to return per page.
+
+    Returns:
+        A tuple containing:
+        - A list of CreditEvent models.
+        - The cursor for the next page (ID of the last event in the list).
+        - A boolean indicating if there are more events available.
+    """
+    # 1. Find the account for the owner
+    account = await CreditAccount.get_in_session(session, owner_type, owner_id)
+    if not account:
+        # Decide if returning empty or raising error is better. Empty list seems reasonable.
+        # Or raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{owner_type.value.capitalize()} account not found")
+        return [], None, False
+
+    # 2. Build the query
+    stmt = (
+        select(CreditEventTable)
+        .where(CreditEventTable.account_id == account.id)
+        .where(CreditEventTable.direction == direction.value)
+        .order_by(desc(CreditEventTable.id))
+        .limit(limit + 1) # Fetch one extra to check if there are more
+    )
+
+    # 3. Apply cursor filter if provided
+    if cursor:
+        stmt = stmt.where(CreditEventTable.id < cursor)
+
+    # 4. Execute query
+    result = await session.execute(stmt)
+    events_data = result.scalars().all()
+
+    # 5. Determine pagination details
+    has_more = len(events_data) > limit
+    events_to_return = events_data[:limit] # Slice to the requested limit
+
+    next_cursor = events_to_return[-1].id if events_to_return else None
+
+    # 6. Convert to Pydantic models
+    events_models = [CreditEvent.model_validate(event) for event in events_to_return]
+
+    return events_models, next_cursor, has_more
