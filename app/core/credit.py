@@ -431,6 +431,7 @@ async def list_credit_events_by_owner(
     direction: Direction,
     cursor: Optional[str] = None,
     limit: int = 20,
+    event_type: Optional[EventType] = None,
 ) -> Tuple[List[CreditEvent], Optional[str], bool]:
     """
     List credit events for a specific owner (user or agent) with cursor pagination.
@@ -442,6 +443,7 @@ async def list_credit_events_by_owner(
         direction: The direction of the events (INCOME or EXPENSE).
         cursor: The ID of the last event from the previous page.
         limit: Maximum number of events to return per page.
+        event_type: Optional filter for specific event type.
 
     Returns:
         A tuple containing:
@@ -465,21 +467,25 @@ async def list_credit_events_by_owner(
         .limit(limit + 1) # Fetch one extra to check if there are more
     )
 
-    # 3. Apply cursor filter if provided
+    # 3. Apply event type filter if provided
+    if event_type:
+        stmt = stmt.where(CreditEventTable.event_type == event_type.value)
+
+    # 4. Apply cursor filter if provided
     if cursor:
         stmt = stmt.where(CreditEventTable.id < cursor)
 
-    # 4. Execute query
+    # 5. Execute query
     result = await session.execute(stmt)
     events_data = result.scalars().all()
 
-    # 5. Determine pagination details
+    # 6. Determine pagination details
     has_more = len(events_data) > limit
     events_to_return = events_data[:limit] # Slice to the requested limit
 
     next_cursor = events_to_return[-1].id if events_to_return else None
 
-    # 6. Convert to Pydantic models
+    # 7. Convert to Pydantic models
     events_models = [CreditEvent.model_validate(event) for event in events_to_return]
 
     return events_models, next_cursor, has_more
