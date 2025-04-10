@@ -2,11 +2,11 @@ import logging
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
-from app.core.credit import recharge, reward, adjustment
+from app.core.credit import recharge, reward, adjustment, update_daily_quota
 from models.credit import (
     CreditAccount,
     CreditEvent,
@@ -66,15 +66,25 @@ class AdjustmentRequest(BaseModel):
 
 
 class UpdateDailyQuotaRequest(BaseModel):
-    """Request model for updating account daily quota."""
+    """Request model for updating account daily quota and refill amount."""
 
     upstream_tx_id: Annotated[
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
     free_quota: Annotated[
-        float, Field(gt=0, description="New daily quota value for the account")
+        Optional[float], Field(None, gt=0, description="New daily quota value for the account")
     ]
-    note: Annotated[str, Field(description="Explanation for changing the daily quota")]
+    refill_amount: Annotated[
+        Optional[float], Field(None, ge=0, description="Amount to refill hourly, not exceeding free_quota")
+    ]
+    note: Annotated[str, Field(description="Explanation for changing the daily quota and refill amount")]
+    
+    @model_validator(mode="after")
+    def validate_at_least_one_field(self) -> "UpdateDailyQuotaRequest":
+        """Validate that at least one of free_quota or refill_amount is provided."""
+        if self.free_quota is None and self.refill_amount is None:
+            raise ValueError("At least one of free_quota or refill_amount must be provided")
+        return self
 
 
 # ===== Output models =====
@@ -189,22 +199,32 @@ async def adjust_user_account(
     response_model=CreditAccount,
     status_code=status.HTTP_200_OK,
     operation_id="update_account_free_quota",
-    summary="Update Daily Quota",
+    summary="Update Daily Quota and Refill Amount",
 )
 async def update_account_free_quota(
-    user_id: str, request: UpdateDailyQuotaRequest
+    user_id: str, 
+    request: UpdateDailyQuotaRequest,
+    db: AsyncSession = Depends(get_db)
 ) -> CreditAccount:
-    """Update the daily quota of a credit account.
+    """Update the daily quota and refill amount of a credit account.
 
     Args:
         user_id: ID of the user
-        request: Update request details including new free_quota and explanation note
+        request: Update request details including optional free_quota, optional refill_amount, and explanation note
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    # At least one of free_quota or refill_amount must be provided (validated in the request model)
+    return await update_daily_quota(
+        session=db,
+        user_id=user_id,
+        free_quota=request.free_quota,
+        refill_amount=request.refill_amount,
+        upstream_tx_id=request.upstream_tx_id,
+        note=request.note,
+    )
 
 
 @credit_router_readonly.get(
