@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
-from app.core.credit import recharge
+from app.core.credit import recharge, reward, adjustment
 from models.credit import (
     CreditAccount,
     CreditEvent,
@@ -136,17 +136,22 @@ async def recharge_user_account(
     operation_id="reward_account",
     summary="Reward",
 )
-async def reward_user_account(request: RewardRequest):
+async def reward_user_account(
+    request: RewardRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Reward a user account with credits.
 
     Args:
         request: Reward request details
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await reward(
+        db, request.user_id, request.amount, request.upstream_tx_id, request.note
+    )
 
 
 @credit_router.post(
@@ -156,17 +161,27 @@ async def reward_user_account(request: RewardRequest):
     operation_id="adjust_account",
     summary="Adjust",
 )
-async def adjust_user_account(request: AdjustmentRequest):
+async def adjust_user_account(
+    request: AdjustmentRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Adjust a user account's credits.
 
     Args:
         request: Adjustment request details
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await adjustment(
+        db,
+        request.user_id,
+        request.credit_type,
+        request.amount,
+        request.upstream_tx_id,
+        request.note,
+    )
 
 
 @credit_router.put(

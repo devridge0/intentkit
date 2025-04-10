@@ -232,20 +232,21 @@ class CreditAccount(BaseModel):
     async def deduction_in_session(
         cls,
         session: AsyncSession,
+        owner_type: OwnerType,
         owner_id: str,
         credit_type: CreditType,
         amount: float,
     ) -> "CreditAccount":
-        """Deduct credits from a platform virtual account. Not checking balance"""
+        """Deduct credits from an account. Not checking balance"""
         # check first, create if not exists
         await cls.get_or_create_in_session(
-            session, OwnerType.PLATFORM, owner_id, for_update=True
+            session, owner_type, owner_id, for_update=True
         )
 
         stmt = (
             update(CreditAccountTable)
             .where(
-                CreditAccountTable.owner_type == OwnerType.PLATFORM,
+                CreditAccountTable.owner_type == owner_type,
                 CreditAccountTable.owner_id == owner_id,
             )
             .values(
@@ -396,7 +397,7 @@ class CreditAccount(BaseModel):
         if owner_type == OwnerType.USER:
             # First refill account
             await cls.deduction_in_session(
-                session, DEFAULT_PLATFORM_ACCOUNT_REFILL, CreditType.FREE, free_quota
+                session, OwnerType.PLATFORM, DEFAULT_PLATFORM_ACCOUNT_REFILL, CreditType.FREE, free_quota
             )
             # Create refill event record
             event_id = str(XID())
@@ -477,6 +478,9 @@ class CreditEventTable(Base):
     """
 
     __tablename__ = "credit_events"
+    __table_args__ = (
+        Index("ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True),
+    )
 
     id = Column(
         String,
@@ -591,6 +595,33 @@ class CreditEvent(BaseModel):
         from_attributes=True,
         json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
     )
+    
+    @classmethod
+    async def check_upstream_tx_id_exists(
+        cls, session: AsyncSession, upstream_type: UpstreamType, upstream_tx_id: str
+    ) -> None:
+        """
+        Check if an event with the given upstream_type and upstream_tx_id already exists.
+        Raises HTTP 400 error if it exists to prevent duplicate transactions.
+        
+        Args:
+            session: Database session
+            upstream_type: Type of the upstream transaction
+            upstream_tx_id: ID of the upstream transaction
+            
+        Raises:
+            HTTPException: If a transaction with the same upstream_tx_id already exists
+        """
+        stmt = select(CreditEventTable).where(
+            CreditEventTable.upstream_type == upstream_type,
+            CreditEventTable.upstream_tx_id == upstream_tx_id,
+        )
+        result = await session.scalar(stmt)
+        if result:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transaction with upstream_tx_id '{upstream_tx_id}' already exists. Do not resubmit.",
+            )
 
     id: Annotated[
         str,
