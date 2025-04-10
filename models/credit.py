@@ -134,7 +134,10 @@ class CreditAccount(BaseModel):
         float, Field(default=0.0, description="Daily credit quota that resets each day")
     ]
     refill_amount: Annotated[
-        float, Field(default=0.0, description="Amount to refill hourly, not exceeding free_quota")
+        float,
+        Field(
+            default=0.0, description="Amount to refill hourly, not exceeding free_quota"
+        ),
     ]
     free_credits: Annotated[
         float, Field(default=0.0, description="Current available daily credits")
@@ -405,7 +408,11 @@ class CreditAccount(BaseModel):
         if owner_type == OwnerType.USER:
             # First refill account
             await cls.deduction_in_session(
-                session, OwnerType.PLATFORM, DEFAULT_PLATFORM_ACCOUNT_REFILL, CreditType.FREE, free_quota
+                session,
+                OwnerType.PLATFORM,
+                DEFAULT_PLATFORM_ACCOUNT_REFILL,
+                CreditType.FREE,
+                free_quota,
             )
             # Create refill event record
             event_id = str(XID())
@@ -487,7 +494,9 @@ class CreditEventTable(Base):
 
     __tablename__ = "credit_events"
     __table_args__ = (
-        Index("ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True),
+        Index(
+            "ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True
+        ),
     )
 
     id = Column(
@@ -603,7 +612,7 @@ class CreditEvent(BaseModel):
         from_attributes=True,
         json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
     )
-    
+
     @classmethod
     async def check_upstream_tx_id_exists(
         cls, session: AsyncSession, upstream_type: UpstreamType, upstream_tx_id: str
@@ -611,12 +620,12 @@ class CreditEvent(BaseModel):
         """
         Check if an event with the given upstream_type and upstream_tx_id already exists.
         Raises HTTP 400 error if it exists to prevent duplicate transactions.
-        
+
         Args:
             session: Database session
             upstream_type: Type of the upstream transaction
             upstream_tx_id: ID of the upstream transaction
-            
+
         Raises:
             HTTPException: If a transaction with the same upstream_tx_id already exists
         """
