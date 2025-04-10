@@ -1,10 +1,12 @@
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
+from app.core.credit import recharge
 from models.credit import (
     CreditAccount,
     CreditEvent,
@@ -12,6 +14,7 @@ from models.credit import (
     EventType,
     OwnerType,
 )
+from models.db import get_db
 from utils.middleware import create_jwt_middleware
 
 logger = logging.getLogger(__name__)
@@ -68,7 +71,7 @@ class UpdateDailyQuotaRequest(BaseModel):
     upstream_tx_id: Annotated[
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
-    daily_quota: Annotated[
+    free_quota: Annotated[
         float, Field(gt=0, description="New daily quota value for the account")
     ]
     note: Annotated[str, Field(description="Explanation for changing the daily quota")]
@@ -89,7 +92,7 @@ class CreditEventResponse(BaseModel):
     operation_id="get_account",
     summary="Get Account",
 )
-async def get_account(owner_type: OwnerType, owner_id: str):
+async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     """Get a credit account by owner type and ID.
 
     Args:
@@ -99,8 +102,7 @@ async def get_account(owner_type: OwnerType, owner_id: str):
     Returns:
         The credit account
     """
-    # Implementation will be added later
-    pass
+    return await CreditAccount.get(owner_type, owner_id)
 
 
 @credit_router.post(
@@ -110,7 +112,10 @@ async def get_account(owner_type: OwnerType, owner_id: str):
     operation_id="recharge_account",
     summary="Recharge",
 )
-async def recharge_user_account(request: RechargeRequest):
+async def recharge_user_account(
+    request: RechargeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Recharge a user account with credits.
 
     Args:
@@ -119,8 +124,9 @@ async def recharge_user_account(request: RechargeRequest):
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await recharge(
+        db, request.user_id, request.amount, request.upstream_tx_id, request.note
+    )
 
 
 @credit_router.post(
@@ -167,17 +173,17 @@ async def adjust_user_account(request: AdjustmentRequest):
     "/accounts/users/{user_id}/daily-quota",
     response_model=CreditAccount,
     status_code=status.HTTP_200_OK,
-    operation_id="update_account_daily_quota",
+    operation_id="update_account_free_quota",
     summary="Update Daily Quota",
 )
-async def update_account_daily_quota(
+async def update_account_free_quota(
     user_id: str, request: UpdateDailyQuotaRequest
 ) -> CreditAccount:
     """Update the daily quota of a credit account.
 
     Args:
         user_id: ID of the user
-        request: Update request details including new daily_quota and explanation note
+        request: Update request details including new free_quota and explanation note
 
     Returns:
         The updated credit account
