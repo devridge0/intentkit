@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional, Tuple
 
 from epyxid import XID
+from fastapi import HTTPException
 from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -464,7 +465,7 @@ async def list_credit_events_by_owner(
         .where(CreditEventTable.account_id == account.id)
         .where(CreditEventTable.direction == direction.value)
         .order_by(desc(CreditEventTable.id))
-        .limit(limit + 1) # Fetch one extra to check if there are more
+        .limit(limit + 1)  # Fetch one extra to check if there are more
     )
 
     # 3. Apply event type filter if provided
@@ -481,7 +482,7 @@ async def list_credit_events_by_owner(
 
     # 6. Determine pagination details
     has_more = len(events_data) > limit
-    events_to_return = events_data[:limit] # Slice to the requested limit
+    events_to_return = events_data[:limit]  # Slice to the requested limit
 
     next_cursor = events_to_return[-1].id if events_to_return else None
 
@@ -489,3 +490,39 @@ async def list_credit_events_by_owner(
     events_models = [CreditEvent.model_validate(event) for event in events_to_return]
 
     return events_models, next_cursor, has_more
+
+
+async def fetch_credit_event_by_upstream_tx_id(
+    session: AsyncSession,
+    upstream_tx_id: str,
+) -> CreditEvent:
+    """
+    Fetch a credit event by its upstream transaction ID.
+
+    Args:
+        session: Async database session.
+        upstream_tx_id: ID of the upstream transaction.
+
+    Returns:
+        The credit event if found.
+
+    Raises:
+        HTTPException: If the credit event is not found.
+    """
+    # Build the query to find the event by upstream_tx_id
+    stmt = select(CreditEventTable).where(
+        CreditEventTable.upstream_tx_id == upstream_tx_id
+    )
+
+    # Execute query
+    result = await session.scalar(stmt)
+
+    # Raise 404 if not found
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Credit event with upstream_tx_id '{upstream_tx_id}' not found",
+        )
+
+    # Convert to Pydantic model and return
+    return CreditEvent.model_validate(result)
