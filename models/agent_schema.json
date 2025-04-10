@@ -231,10 +231,10 @@
     "temperature": {
       "title": "Temperature",
       "type": "number",
-      "description": "Controls creativity: higher values are more creative, lower values are more precise.",
+      "description": "Controls creativity: higher values are more creative, lower values are more precise. CHANGING THIS SETTING MAY INTRODUCE UNEXPECTED BEHAVIOR. USE WITH CAUTION.",
       "default": 0.7,
       "minimum": 0.0,
-      "maximum": 2.0,
+      "maximum": 1.5,
       "x-group": "llm",
       "x-step": 0.1
     },
