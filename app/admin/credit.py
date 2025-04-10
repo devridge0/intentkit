@@ -1,17 +1,30 @@
+import json
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Query, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, Query, Response, status
+from pydantic import BaseModel, Field, model_validator
+from pydantic.json import pydantic_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
+from app.core.credit import (
+    adjustment,
+    fetch_credit_event_by_upstream_tx_id,
+    list_credit_events_by_owner,
+    recharge,
+    reward,
+    update_daily_quota,
+)
 from models.credit import (
     CreditAccount,
     CreditEvent,
     CreditType,
+    Direction,
     EventType,
     OwnerType,
 )
+from models.db import get_db
 from utils.middleware import create_jwt_middleware
 
 logger = logging.getLogger(__name__)
@@ -63,23 +76,34 @@ class AdjustmentRequest(BaseModel):
 
 
 class UpdateDailyQuotaRequest(BaseModel):
-    """Request model for updating account daily quota."""
+    """Request model for updating account daily quota and refill amount."""
 
     upstream_tx_id: Annotated[
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
-    daily_quota: Annotated[
-        float, Field(gt=0, description="New daily quota value for the account")
+    free_quota: Annotated[
+        Optional[float],
+        Field(None, gt=0, description="New daily quota value for the account"),
     ]
-    note: Annotated[str, Field(description="Explanation for changing the daily quota")]
+    refill_amount: Annotated[
+        Optional[float],
+        Field(
+            None, ge=0, description="Amount to refill hourly, not exceeding free_quota"
+        ),
+    ]
+    note: Annotated[
+        str,
+        Field(description="Explanation for changing the daily quota and refill amount"),
+    ]
 
-
-# ===== Output models =====
-class CreditEventResponse(BaseModel):
-    """Response model for credit events."""
-
-    events: List[CreditEvent]
-    total: int
+    @model_validator(mode="after")
+    def validate_at_least_one_field(self) -> "UpdateDailyQuotaRequest":
+        """Validate that at least one of free_quota or refill_amount is provided."""
+        if self.free_quota is None and self.refill_amount is None:
+            raise ValueError(
+                "At least one of free_quota or refill_amount must be provided"
+            )
+        return self
 
 
 # ===== API Endpoints =====
@@ -88,8 +112,9 @@ class CreditEventResponse(BaseModel):
     response_model=CreditAccount,
     operation_id="get_account",
     summary="Get Account",
+    dependencies=[Depends(verify_jwt)],
 )
-async def get_account(owner_type: OwnerType, owner_id: str):
+async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     """Get a credit account by owner type and ID.
 
     Args:
@@ -99,8 +124,7 @@ async def get_account(owner_type: OwnerType, owner_id: str):
     Returns:
         The credit account
     """
-    # Implementation will be added later
-    pass
+    return await CreditAccount.get(owner_type, owner_id)
 
 
 @credit_router.post(
@@ -109,8 +133,12 @@ async def get_account(owner_type: OwnerType, owner_id: str):
     status_code=status.HTTP_201_CREATED,
     operation_id="recharge_account",
     summary="Recharge",
+    dependencies=[Depends(verify_jwt)],
 )
-async def recharge_user_account(request: RechargeRequest):
+async def recharge_user_account(
+    request: RechargeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Recharge a user account with credits.
 
     Args:
@@ -119,8 +147,9 @@ async def recharge_user_account(request: RechargeRequest):
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await recharge(
+        db, request.user_id, request.amount, request.upstream_tx_id, request.note
+    )
 
 
 @credit_router.post(
@@ -129,18 +158,24 @@ async def recharge_user_account(request: RechargeRequest):
     status_code=status.HTTP_201_CREATED,
     operation_id="reward_account",
     summary="Reward",
+    dependencies=[Depends(verify_jwt)],
 )
-async def reward_user_account(request: RewardRequest):
+async def reward_user_account(
+    request: RewardRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Reward a user account with credits.
 
     Args:
         request: Reward request details
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await reward(
+        db, request.user_id, request.amount, request.upstream_tx_id, request.note
+    )
 
 
 @credit_router.post(
@@ -149,41 +184,61 @@ async def reward_user_account(request: RewardRequest):
     status_code=status.HTTP_201_CREATED,
     operation_id="adjust_account",
     summary="Adjust",
+    dependencies=[Depends(verify_jwt)],
 )
-async def adjust_user_account(request: AdjustmentRequest):
+async def adjust_user_account(
+    request: AdjustmentRequest,
+    db: AsyncSession = Depends(get_db),
+) -> CreditAccount:
     """Adjust a user account's credits.
 
     Args:
         request: Adjustment request details
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    return await adjustment(
+        db,
+        request.user_id,
+        request.credit_type,
+        request.amount,
+        request.upstream_tx_id,
+        request.note,
+    )
 
 
 @credit_router.put(
     "/accounts/users/{user_id}/daily-quota",
     response_model=CreditAccount,
     status_code=status.HTTP_200_OK,
-    operation_id="update_account_daily_quota",
-    summary="Update Daily Quota",
+    operation_id="update_account_free_quota",
+    summary="Update Daily Quota and Refill Amount",
+    dependencies=[Depends(verify_jwt)],
 )
-async def update_account_daily_quota(
-    user_id: str, request: UpdateDailyQuotaRequest
+async def update_account_free_quota(
+    user_id: str, request: UpdateDailyQuotaRequest, db: AsyncSession = Depends(get_db)
 ) -> CreditAccount:
-    """Update the daily quota of a credit account.
+    """Update the daily quota and refill amount of a credit account.
 
     Args:
         user_id: ID of the user
-        request: Update request details including new daily_quota and explanation note
+        request: Update request details including optional free_quota, optional refill_amount, and explanation note
+        db: Database session
 
     Returns:
         The updated credit account
     """
-    # Implementation will be added later
-    pass
+    # At least one of free_quota or refill_amount must be provided (validated in the request model)
+    return await update_daily_quota(
+        session=db,
+        user_id=user_id,
+        free_quota=request.free_quota,
+        refill_amount=request.refill_amount,
+        upstream_tx_id=request.upstream_tx_id,
+        note=request.note,
+    )
 
 
 @credit_router_readonly.get(
@@ -191,22 +246,46 @@ async def update_account_daily_quota(
     response_model=List[CreditEvent],
     operation_id="list_user_expense_events",
     summary="List User Expense",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_user_expense_events(
     user_id: str,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all expense events for a user account.
 
     Args:
         user_id: ID of the user
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of expense events
+        Response with list of expense events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        direction=Direction.EXPENSE,
+        cursor=cursor,
+        limit=limit,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
@@ -214,24 +293,49 @@ async def list_user_expense_events(
     response_model=List[CreditEvent],
     operation_id="list_user_income_events",
     summary="List User Income",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_user_income_events(
     user_id: str,
     event_type: Annotated[Optional[EventType], Query(description="Event type")] = None,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all income events for a user account.
 
     Args:
         user_id: ID of the user
         event_type: Event type
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of income events
+        Response with list of income events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        direction=Direction.INCOME,
+        cursor=cursor,
+        limit=limit,
+        event_type=event_type,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
@@ -239,22 +343,46 @@ async def list_user_income_events(
     response_model=List[CreditEvent],
     operation_id="list_agent_income_events",
     summary="List Agent Income",
+    dependencies=[Depends(verify_jwt)],
 )
 async def list_agent_income_events(
     agent_id: str,
     cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
-) -> List[CreditEvent]:
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
     """List all income events for an agent account.
 
     Args:
         agent_id: ID of the agent
         cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
 
     Returns:
-        List of income events
+        Response with list of income events and pagination headers
     """
-    # Implementation will be added later
-    pass
+    events, next_cursor, has_more = await list_credit_events_by_owner(
+        session=db,
+        owner_type=OwnerType.AGENT,
+        owner_id=agent_id,
+        direction=Direction.INCOME,
+        cursor=cursor,
+        limit=limit,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @credit_router_readonly.get(
@@ -262,14 +390,17 @@ async def list_agent_income_events(
     response_model=CreditEvent,
     operation_id="fetch_credit_event",
     summary="Fetch Credit Event",
+    dependencies=[Depends(verify_jwt)],
 )
 async def fetch_credit_event(
     upstream_tx_id: Annotated[str, Query(description="Upstream transaction ID")],
+    db: AsyncSession = Depends(get_db),
 ) -> CreditEvent:
     """Fetch a credit event by its upstream transaction ID.
 
     Args:
         upstream_tx_id: ID of the upstream transaction
+        db: Database session
 
     Returns:
         Credit event
@@ -277,5 +408,4 @@ async def fetch_credit_event(
     Raises:
         404: If the credit event is not found
     """
-    # Implementation will be added later
-    pass
+    return await fetch_credit_event_by_upstream_tx_id(db, upstream_tx_id)

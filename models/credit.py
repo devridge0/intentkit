@@ -24,7 +24,7 @@ from models.db import get_session
 class CreditType(str, Enum):
     """Credit type is used in db column names, do not change it."""
 
-    DAILY = "daily_credits"
+    FREE = "free_credits"
     REWARD = "reward_credits"
     PERMANENT = "credits"
 
@@ -37,9 +37,10 @@ class OwnerType(str, Enum):
     PLATFORM = "platform"
 
 
-# Platform virtual account ids, they are used for transaction balance tracing
+# Platform virtual account ids/owner ids, they are used for transaction balance tracing
+# The owner id and account id are the same
 DEFAULT_PLATFORM_ACCOUNT_RECHARGE = "platform_recharge"
-DEFAULT_PLATFORM_ACCOUNT_DAILY_RESET = "platform_daily_reset"
+DEFAULT_PLATFORM_ACCOUNT_REFILL = "platform_refill"
 DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT = "platform_adjustment"
 DEFAULT_PLATFORM_ACCOUNT_REWARD = "platform_reward"
 DEFAULT_PLATFORM_ACCOUNT_REFUND = "platform_refund"
@@ -65,12 +66,17 @@ class CreditAccountTable(Base):
         String,
         nullable=False,
     )
-    daily_quota = Column(
+    free_quota = Column(
         Float,
         default=0.0,
         nullable=False,
     )
-    daily_credits = Column(
+    refill_amount = Column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    free_credits = Column(
         Float,
         default=0.0,
         nullable=False,
@@ -124,10 +130,16 @@ class CreditAccount(BaseModel):
     ]
     owner_type: Annotated[OwnerType, Field(description="Type of the account owner")]
     owner_id: Annotated[str, Field(description="ID of the account owner")]
-    daily_quota: Annotated[
+    free_quota: Annotated[
         float, Field(default=0.0, description="Daily credit quota that resets each day")
     ]
-    daily_credits: Annotated[
+    refill_amount: Annotated[
+        float,
+        Field(
+            default=0.0, description="Amount to refill hourly, not exceeding free_quota"
+        ),
+    ]
+    free_credits: Annotated[
         float, Field(default=0.0, description="Current available daily credits")
     ]
     reward_credits: Annotated[
@@ -153,7 +165,10 @@ class CreditAccount(BaseModel):
 
     @classmethod
     async def get_in_session(
-        cls, session: AsyncSession, owner_type: OwnerType, owner_id: str
+        cls,
+        session: AsyncSession,
+        owner_type: OwnerType,
+        owner_id: str,
     ) -> "CreditAccount":
         """Get a credit account by owner type and ID.
 
@@ -169,6 +184,35 @@ class CreditAccount(BaseModel):
             CreditAccountTable.owner_type == owner_type,
             CreditAccountTable.owner_id == owner_id,
         )
+        result = await session.scalar(stmt)
+        if not result:
+            raise HTTPException(status_code=404, detail="Credit account not found")
+        return cls.model_validate(result)
+
+    @classmethod
+    async def get_or_create_in_session(
+        cls,
+        session: AsyncSession,
+        owner_type: OwnerType,
+        owner_id: str,
+        for_update: bool = False,
+    ) -> "CreditAccount":
+        """Get a credit account by owner type and ID.
+
+        Args:
+            session: Async session to use for database queries
+            owner_type: Type of the owner
+            owner_id: ID of the owner
+
+        Returns:
+            CreditAccount if found, None otherwise
+        """
+        stmt = select(CreditAccountTable).where(
+            CreditAccountTable.owner_type == owner_type,
+            CreditAccountTable.owner_id == owner_id,
+        )
+        if for_update:
+            stmt = stmt.with_for_update()
         result = await session.scalar(stmt)
         if not result:
             account = await cls.create_in_session(session, owner_type, owner_id)
@@ -196,22 +240,54 @@ class CreditAccount(BaseModel):
         return await cls.get(OwnerType.USER, user_id)
 
     @classmethod
+    async def deduction_in_session(
+        cls,
+        session: AsyncSession,
+        owner_type: OwnerType,
+        owner_id: str,
+        credit_type: CreditType,
+        amount: float,
+    ) -> "CreditAccount":
+        """Deduct credits from an account. Not checking balance"""
+        # check first, create if not exists
+        await cls.get_or_create_in_session(
+            session, owner_type, owner_id, for_update=True
+        )
+
+        stmt = (
+            update(CreditAccountTable)
+            .where(
+                CreditAccountTable.owner_type == owner_type,
+                CreditAccountTable.owner_id == owner_id,
+            )
+            .values(
+                {
+                    credit_type.value: getattr(CreditAccountTable, credit_type.value)
+                    - amount
+                }
+            )
+            .returning(CreditAccountTable)
+        )
+        res = await session.scalar(stmt)
+        if not res:
+            raise HTTPException(status_code=500, detail="Failed to expense credits")
+        return cls.model_validate(res)
+
+    @classmethod
     async def expense_in_session(
         cls, session: AsyncSession, owner_type: OwnerType, owner_id: str, amount: float
-    ) -> None:
+    ) -> "CreditAccount":
         # check first
-        account = await cls.get_in_session(session, owner_type, owner_id)
-        if (
-            amount > account.daily_credits
-            and amount > account.reward_credits
-            and amount > account.credits
-        ):
+        account = await cls.get_or_create_in_session(
+            session, owner_type, owner_id, for_update=True
+        )
+        if not account.has_sufficient_credits(amount):
             raise HTTPException(status_code=400, detail="Not enough credits")
 
         # expense
         field = "credits"
-        if amount <= account.daily_credits:
-            field = "daily_credits"
+        if amount <= account.free_credits:
+            field = "free_credits"
         elif amount <= account.reward_credits:
             field = "reward_credits"
 
@@ -221,10 +297,13 @@ class CreditAccount(BaseModel):
                 CreditAccountTable.owner_type == owner_type,
                 CreditAccountTable.owner_id == owner_id,
             )
-            .values({field: CreditAccountTable.c[field] - amount})
+            .values({field: getattr(CreditAccountTable, field) - amount})
+            .returning(CreditAccountTable)
         )
-        await session.execute(stmt)
-        await session.commit()
+        res = await session.scalar(stmt)
+        if not res:
+            raise HTTPException(status_code=500, detail="Failed to expense credits")
+        return cls.model_validate(res)
 
     @classmethod
     async def expense(cls, owner_type: OwnerType, owner_id: str, amount: float) -> None:
@@ -235,6 +314,21 @@ class CreditAccount(BaseModel):
     async def expense_by_user(cls, user_id: str, amount: float) -> None:
         await cls.expense(OwnerType.USER, user_id, amount)
 
+    def has_sufficient_credits(self, amount: float) -> bool:
+        """Check if the account has enough credits to cover the specified amount.
+
+        Args:
+            amount: The amount of credits to check against
+
+        Returns:
+            bool: True if there are enough credits, False otherwise
+        """
+        return (
+            amount <= self.free_credits
+            or amount <= self.reward_credits
+            or amount <= self.credits
+        )
+
     @classmethod
     async def income_in_session(
         cls,
@@ -243,7 +337,11 @@ class CreditAccount(BaseModel):
         owner_id: str,
         amount: float,
         credit_type: CreditType,
-    ) -> None:
+    ) -> "CreditAccount":
+        # check first, create if not exists
+        await cls.get_or_create_in_session(
+            session, owner_type, owner_id, for_update=True
+        )
         # income
         stmt = (
             update(CreditAccountTable)
@@ -252,11 +350,18 @@ class CreditAccount(BaseModel):
                 CreditAccountTable.owner_id == owner_id,
             )
             .values(
-                {credit_type.value: CreditAccountTable.c[credit_type.value] + amount}
+                {
+                    credit_type.value: getattr(CreditAccountTable, credit_type.value)
+                    + amount,
+                    "income_at": datetime.now(timezone.utc),
+                }
             )
+            .returning(CreditAccountTable)
         )
-        await session.execute(stmt)
-        await session.commit()
+        res = await session.scalar(stmt)
+        if not res:
+            raise HTTPException(status_code=500, detail="Failed to income credits")
+        return cls.model_validate(res)
 
     @classmethod
     async def create_in_session(
@@ -264,7 +369,7 @@ class CreditAccount(BaseModel):
         session: AsyncSession,
         owner_type: OwnerType,
         owner_id: str,
-        daily_quota: float = 100.0,
+        free_quota: float = 100.0,
     ) -> "CreditAccount":
         """Get an existing credit account or create a new one if it doesn't exist.
 
@@ -274,29 +379,83 @@ class CreditAccount(BaseModel):
             session: Async session to use for database queries
             owner_type: Type of the owner
             owner_id: ID of the owner
-            daily_quota: Daily quota for a new account if created
+            free_quota: Daily quota for a new account if created
 
         Returns:
             CreditAccount: The existing or newly created credit account
         """
         if owner_type != OwnerType.USER:
             # only users have daily quota
-            daily_quota = 0.0
-        record = CreditAccountTable(
+            free_quota = 0.0
+        account = CreditAccountTable(
             id=str(XID()),
             owner_type=owner_type,
             owner_id=owner_id,
-            daily_quota=daily_quota,
-            daily_credits=daily_quota,
+            free_quota=free_quota,
+            free_credits=free_quota,
             reward_credits=0.0,
             credits=0.0,
-            income_at=None,
+            income_at=datetime.now(timezone.utc),
             expense_at=None,
         )
-        session.add(record)
-        await session.commit()
-        await session.refresh(record)
-        return cls.model_validate(record)
+        # Platform virtual accounts have fixed IDs, same as owner_id
+        if owner_type == OwnerType.PLATFORM:
+            account.id = owner_id
+        session.add(account)
+        await session.flush()
+        await session.refresh(account)
+        # Only user accounts have first refill
+        if owner_type == OwnerType.USER:
+            # First refill account
+            await cls.deduction_in_session(
+                session,
+                OwnerType.PLATFORM,
+                DEFAULT_PLATFORM_ACCOUNT_REFILL,
+                CreditType.FREE,
+                free_quota,
+            )
+            # Create refill event record
+            event_id = str(XID())
+            event = CreditEventTable(
+                id=event_id,
+                event_type=EventType.REFILL,
+                upstream_type=UpstreamType.INITIALIZER,
+                upstream_tx_id=account.id,
+                direction=Direction.INCOME,
+                account_id=account.id,
+                total_amount=free_quota,
+                balance_after=free_quota,
+                base_amount=free_quota,
+                base_original_amount=free_quota,
+                note="Initial refill",
+            )
+            session.add(event)
+            await session.flush()
+
+            # Create credit transaction records
+            # 1. User account transaction (credit)
+            user_tx = CreditTransactionTable(
+                id=str(XID()),
+                account_id=account.id,
+                event_id=event_id,
+                tx_type=TransactionType.RECHARGE,
+                credit_debit=CreditDebit.CREDIT,
+                change_amount=free_quota,
+            )
+            session.add(user_tx)
+
+            # 2. Platform recharge account transaction (debit)
+            platform_tx = CreditTransactionTable(
+                id=str(XID()),
+                account_id=DEFAULT_PLATFORM_ACCOUNT_REFILL,
+                event_id=event_id,
+                tx_type=TransactionType.REFILL,
+                credit_debit=CreditDebit.DEBIT,
+                change_amount=free_quota,
+            )
+            session.add(platform_tx)
+
+        return cls.model_validate(account)
 
 
 class EventType(str, Enum):
@@ -308,7 +467,7 @@ class EventType(str, Enum):
     REWARD = "reward"
     REFUND = "refund"
     ADJUSTMENT = "adjustment"
-    DAILY_RESET = "daily_reset"
+    REFILL = "refill"
 
 
 class UpstreamType(str, Enum):
@@ -317,6 +476,7 @@ class UpstreamType(str, Enum):
     API = "api"
     SCHEDULER = "scheduler"
     EXECUTOR = "executor"
+    INITIALIZER = "initializer"
 
 
 class Direction(str, Enum):
@@ -333,6 +493,11 @@ class CreditEventTable(Base):
     """
 
     __tablename__ = "credit_events"
+    __table_args__ = (
+        Index(
+            "ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True
+        ),
+    )
 
     id = Column(
         String,
@@ -366,7 +531,7 @@ class CreditEventTable(Base):
         String,
         nullable=False,
     )
-    from_account = Column(
+    account_id = Column(
         String,
         nullable=True,
     )
@@ -374,6 +539,11 @@ class CreditEventTable(Base):
         Float,
         default=0.0,
         nullable=False,
+    )
+    balance_after = Column(
+        Float,
+        nullable=True,
+        default=None,
     )
     base_amount = Column(
         Float,
@@ -443,6 +613,33 @@ class CreditEvent(BaseModel):
         json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
     )
 
+    @classmethod
+    async def check_upstream_tx_id_exists(
+        cls, session: AsyncSession, upstream_type: UpstreamType, upstream_tx_id: str
+    ) -> None:
+        """
+        Check if an event with the given upstream_type and upstream_tx_id already exists.
+        Raises HTTP 400 error if it exists to prevent duplicate transactions.
+
+        Args:
+            session: Database session
+            upstream_type: Type of the upstream transaction
+            upstream_tx_id: ID of the upstream transaction
+
+        Raises:
+            HTTPException: If a transaction with the same upstream_tx_id already exists
+        """
+        stmt = select(CreditEventTable).where(
+            CreditEventTable.upstream_type == upstream_type,
+            CreditEventTable.upstream_tx_id == upstream_tx_id,
+        )
+        result = await session.scalar(stmt)
+        if result:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transaction with upstream_tx_id '{upstream_tx_id}' already exists. Do not resubmit.",
+            )
+
     id: Annotated[
         str,
         Field(
@@ -466,7 +663,7 @@ class CreditEvent(BaseModel):
         Optional[str], Field(None, description="ID of the skill call if applicable")
     ]
     direction: Annotated[Direction, Field(description="Direction of the credit flow")]
-    from_account: Annotated[
+    account_id: Annotated[
         Optional[str], Field(None, description="Account ID from which credits flow")
     ]
     total_amount: Annotated[
@@ -474,6 +671,10 @@ class CreditEvent(BaseModel):
         Field(
             default=0.0, description="Total amount (after discount) of credits involved"
         ),
+    ]
+    balance_after: Annotated[
+        Optional[float],
+        Field(None, description="Account total balance after the transaction"),
     ]
     base_amount: Annotated[
         float,
@@ -525,7 +726,7 @@ class TransactionType(str, Enum):
     REWARD = "reward"
     REFUND = "refund"
     ADJUSTMENT = "adjustment"
-    DAILY_RESET = "daily_reset"
+    REFILL = "refill"
 
 
 class CreditDebit(str, Enum):
