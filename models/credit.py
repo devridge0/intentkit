@@ -222,7 +222,9 @@ class CreditAccount(BaseModel):
         return account
 
     @classmethod
-    async def get(cls, owner_type: OwnerType, owner_id: str) -> "CreditAccount":
+    async def get_or_create(
+        cls, owner_type: OwnerType, owner_id: str
+    ) -> "CreditAccount":
         """Get a credit account by owner type and ID.
 
         Args:
@@ -233,11 +235,7 @@ class CreditAccount(BaseModel):
             CreditAccount if found, None otherwise
         """
         async with get_session() as session:
-            return await cls.get_in_session(session, owner_type, owner_id)
-
-    @classmethod
-    async def get_by_user(cls, user_id: str) -> "CreditAccount":
-        return await cls.get(OwnerType.USER, user_id)
+            return await cls.get_or_create_in_session(session, owner_type, owner_id)
 
     @classmethod
     async def deduction_in_session(

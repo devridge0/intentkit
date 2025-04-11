@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 from pydantic.json import pydantic_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from abstracts.api import ResponseHeadersPagination
 from app.config.config import config
 from app.core.credit import (
     adjustment,
@@ -115,7 +116,7 @@ class UpdateDailyQuotaRequest(BaseModel):
     dependencies=[Depends(verify_jwt)],
 )
 async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
-    """Get a credit account by owner type and ID.
+    """Get a credit account by owner type and ID. It will create a new account if it does not exist.
 
     Args:
         owner_type: Type of the owner (user, agent, company)
@@ -124,7 +125,7 @@ async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     Returns:
         The credit account
     """
-    return await CreditAccount.get(owner_type, owner_id)
+    return await CreditAccount.get_or_create(owner_type, owner_id)
 
 
 @credit_router.post(
@@ -246,6 +247,12 @@ async def update_account_free_quota(
     response_model=List[CreditEvent],
     operation_id="list_user_expense_events",
     summary="List User Expense",
+    responses={
+        200: {
+            "description": "List of expense events",
+            "headers": ResponseHeadersPagination,
+        }
+    },
     dependencies=[Depends(verify_jwt)],
 )
 async def list_user_expense_events(
@@ -293,6 +300,12 @@ async def list_user_expense_events(
     response_model=List[CreditEvent],
     operation_id="list_user_income_events",
     summary="List User Income",
+    responses={
+        200: {
+            "description": "List of income events",
+            "headers": ResponseHeadersPagination,
+        }
+    },
     dependencies=[Depends(verify_jwt)],
 )
 async def list_user_income_events(
@@ -343,6 +356,12 @@ async def list_user_income_events(
     response_model=List[CreditEvent],
     operation_id="list_agent_income_events",
     summary="List Agent Income",
+    responses={
+        200: {
+            "description": "List of agent income events",
+            "headers": ResponseHeadersPagination,
+        }
+    },
     dependencies=[Depends(verify_jwt)],
 )
 async def list_agent_income_events(
