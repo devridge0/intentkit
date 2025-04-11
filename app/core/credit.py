@@ -6,8 +6,10 @@ from fastapi import HTTPException
 from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.config import config
 from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
+    DEFAULT_PLATFORM_ACCOUNT_FEE,
     DEFAULT_PLATFORM_ACCOUNT_RECHARGE,
     DEFAULT_PLATFORM_ACCOUNT_REWARD,
     CreditAccount,
@@ -83,6 +85,7 @@ async def recharge(
         direction=Direction.INCOME,
         account_id=user_account.id,
         total_amount=amount,
+        credit_type=CreditType.PERMANENT,
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
@@ -102,6 +105,7 @@ async def recharge(
         tx_type=TransactionType.RECHARGE,
         credit_debit=CreditDebit.CREDIT,
         change_amount=amount,
+        credit_type=CreditType.PERMANENT,
     )
     session.add(user_tx)
 
@@ -113,6 +117,7 @@ async def recharge(
         tx_type=TransactionType.RECHARGE,
         credit_debit=CreditDebit.DEBIT,
         change_amount=amount,
+        credit_type=CreditType.PERMANENT,
     )
     session.add(platform_tx)
 
@@ -164,7 +169,7 @@ async def reward(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_REWARD,
-        credit_type=CreditType.PERMANENT,
+        credit_type=CreditType.REWARD,
         amount=amount,
     )
 
@@ -178,6 +183,7 @@ async def reward(
         direction=Direction.INCOME,
         account_id=user_account.id,
         total_amount=amount,
+        credit_type=CreditType.REWARD,
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
@@ -197,6 +203,7 @@ async def reward(
         tx_type=TransactionType.REWARD,
         credit_debit=CreditDebit.CREDIT,
         change_amount=amount,
+        credit_type=CreditType.REWARD,
     )
     session.add(user_tx)
 
@@ -208,6 +215,7 @@ async def reward(
         tx_type=TransactionType.REWARD,
         credit_debit=CreditDebit.DEBIT,
         change_amount=amount,
+        credit_type=CreditType.REWARD,
     )
     session.add(platform_tx)
 
@@ -284,7 +292,7 @@ async def adjustment(
             session=session,
             owner_type=OwnerType.PLATFORM,
             owner_id=DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
-            credit_type=CreditType.PERMANENT,
+            credit_type=credit_type,
             amount=abs_amount,
         )
     else:
@@ -293,7 +301,7 @@ async def adjustment(
             owner_type=OwnerType.PLATFORM,
             owner_id=DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
             amount=abs_amount,
-            credit_type=CreditType.PERMANENT,
+            credit_type=credit_type,
         )
 
     # 3. Create credit event record
@@ -306,6 +314,7 @@ async def adjustment(
         direction=direction,
         account_id=user_account.id,
         total_amount=abs_amount,
+        credit_type=credit_type,
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
@@ -325,6 +334,7 @@ async def adjustment(
         tx_type=TransactionType.ADJUSTMENT,
         credit_debit=credit_debit_user,
         change_amount=abs_amount,
+        credit_type=credit_type,
     )
     session.add(user_tx)
 
@@ -336,6 +346,7 @@ async def adjustment(
         tx_type=TransactionType.ADJUSTMENT,
         credit_debit=credit_debit_platform,
         change_amount=abs_amount,
+        credit_type=credit_type,
     )
     session.add(platform_tx)
 
@@ -526,3 +537,142 @@ async def fetch_credit_event_by_upstream_tx_id(
 
     # Convert to Pydantic model and return
     return CreditEvent.model_validate(result)
+
+
+async def expense_message(
+    session: AsyncSession,
+    agent_id: str,
+    user_id: str,
+    message_id: str,
+    start_message_id: str,
+    base_llm_amount: float,
+    agent_fee_percentage: float,
+    agent_owner_id: str,
+) -> CreditAccount:
+    """
+    Deduct credits from a user account for message expenses.
+
+    Args:
+        session: Async session to use for database operations
+        agent_id: ID of the agent to deduct credits from
+        user_id: ID of the user to deduct credits from
+        amount: Amount of credits to deduct
+        upstream_tx_id: ID of the upstream transaction
+        message_id: ID of the message that incurred the expense
+        start_message_id: ID of the starting message in a conversation
+        base_llm_amount: Amount of LLM costs
+
+    Returns:
+        Updated user credit account
+    """
+    # Check for idempotency - prevent duplicate transactions
+    await CreditEvent.check_upstream_tx_id_exists(
+        session, UpstreamType.EXECUTOR, message_id
+    )
+
+    if base_llm_amount < 0:
+        raise ValueError("Base LLM amount must be non-negative")
+
+    # Calculate amount
+    base_original_amount = base_llm_amount
+    base_amount = base_original_amount
+    fee_platform_amount = base_amount * config.payment_fee_platform_percentage
+    fee_agent_amount = (
+        base_amount * agent_fee_percentage if user_id != agent_owner_id else 0
+    )
+    total_amount = base_amount + fee_platform_amount + fee_agent_amount
+
+    # 1. Update user account - deduct credits
+    user_account, credit_type = await CreditAccount.expense_in_session(
+        session=session,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        amount=total_amount,
+    )
+
+    # 2. Update fee account - add credits
+    platform_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
+        credit_type=credit_type,
+        amount=fee_platform_amount,
+    )
+    if fee_agent_amount > 0:
+        agent_account = await CreditAccount.income_in_session(
+            session=session,
+            owner_type=OwnerType.AGENT,
+            owner_id=agent_id,
+            credit_type=credit_type,
+            amount=fee_agent_amount,
+        )
+
+    # 3. Create credit event record
+    event_id = str(XID())
+    event = CreditEventTable(
+        id=event_id,
+        account_id=user_account.id,
+        event_type=EventType.MESSAGE,
+        upstream_type=UpstreamType.EXECUTOR,
+        upstream_tx_id=message_id,
+        direction=Direction.EXPENSE,
+        agent_id=agent_id,
+        message_id=message_id,
+        start_message_id=start_message_id,
+        total_amount=total_amount,
+        credit_type=credit_type,
+        balance_after=user_account.credits
+        + user_account.free_credits
+        + user_account.reward_credits,
+        base_amount=base_amount,
+        base_original_amount=base_original_amount,
+        base_llm_amount=base_llm_amount,
+        fee_platform_amount=fee_platform_amount,
+        fee_agent_amount=fee_agent_amount,
+        fee_agent_account=agent_account.id if fee_agent_amount > 0 else None,
+    )
+    session.add(event)
+    await session.flush()
+
+    # 4. Create credit transaction records
+    # 4.1 User account transaction (debit)
+    user_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=user_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.PAY,
+        credit_debit=CreditDebit.DEBIT,
+        change_amount=total_amount,
+        credit_type=credit_type,
+    )
+    session.add(user_tx)
+
+    # 4.2 Platform fee account transaction (credit)
+    platform_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=platform_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_FEE_PLATFORM,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=fee_platform_amount,
+        credit_type=credit_type,
+    )
+    session.add(platform_tx)
+
+    # 4.3 Agent fee account transaction (credit)
+    if fee_agent_amount > 0:
+        agent_tx = CreditTransactionTable(
+            id=str(XID()),
+            account_id=agent_account.id,
+            event_id=event_id,
+            tx_type=TransactionType.RECEIVE_FEE_AGENT,
+            credit_debit=CreditDebit.CREDIT,
+            change_amount=fee_agent_amount,
+            credit_type=credit_type,
+        )
+        session.add(agent_tx)
+
+    # Commit all changes
+    await session.commit()
+
+    return user_account
