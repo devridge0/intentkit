@@ -423,7 +423,15 @@ async def validate_agent(
     "/agents/v2",
     tags=["Agent"],
     operation_id="create_agent",
+    summary="Create Agent",
     response_model=AgentResponse,
+    responses={
+        200: {"model": AgentResponse, "description": "Agent already exists"},
+        201: {"model": AgentResponse, "description": "Agent created"},
+        400: {"description": "Other client errors except format error"},
+        422: {"description": "Invalid agent configuration"},
+        500: {"description": "Server error"},
+    },
 )
 async def create_agent(
     input: AgentUpdate = Body(AgentUpdate, description="Agent configuration"),
