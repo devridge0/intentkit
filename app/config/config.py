@@ -143,6 +143,14 @@ class Config:
         self.rpc_networks = self.load(
             "RPC_NETWORKS", "base-mainnet,base-sepolia,ethereum-sepolia,solana-mainnet"
         )
+        # Payment
+        self.payment_enabled = self.load("PAYMENT_ENABLED", "false") == "true"
+        self.payment_fee_platform_percentage = float(
+            self.load("PAYMENT_FEE_PLATFORM_PERCENTAGE", "0.2")
+        )
+        self.payment_fee_dev_percentage = float(
+            self.load("PAYMENT_FEE_DEV_PERCENTAGE", "0.1")
+        )
         # ===== config loaded
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)

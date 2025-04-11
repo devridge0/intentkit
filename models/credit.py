@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Tuple
 
 from epyxid import XID
 from fastapi import HTTPException
@@ -274,20 +274,22 @@ class CreditAccount(BaseModel):
     @classmethod
     async def expense_in_session(
         cls, session: AsyncSession, owner_type: OwnerType, owner_id: str, amount: float
-    ) -> "CreditAccount":
+    ) -> Tuple["CreditAccount", CreditType]:
+        """Expense credits and return account and credit type.
+        We are not checking balance here, since a conversation may have
+        multiple expenses, we can't interrupt the conversation.
+        """
         # check first
         account = await cls.get_or_create_in_session(
             session, owner_type, owner_id, for_update=True
         )
-        if not account.has_sufficient_credits(amount):
-            raise HTTPException(status_code=400, detail="Not enough credits")
 
         # expense
-        field = "credits"
+        credit_type = CreditType.PERMANENT
         if amount <= account.free_credits:
-            field = "free_credits"
+            credit_type = CreditType.FREE
         elif amount <= account.reward_credits:
-            field = "reward_credits"
+            credit_type = CreditType.REWARD
 
         stmt = (
             update(CreditAccountTable)
@@ -295,22 +297,18 @@ class CreditAccount(BaseModel):
                 CreditAccountTable.owner_type == owner_type,
                 CreditAccountTable.owner_id == owner_id,
             )
-            .values({field: getattr(CreditAccountTable, field) - amount})
+            .values(
+                {
+                    credit_type.value: getattr(CreditAccountTable, credit_type.value)
+                    - amount
+                }
+            )
             .returning(CreditAccountTable)
         )
         res = await session.scalar(stmt)
         if not res:
             raise HTTPException(status_code=500, detail="Failed to expense credits")
-        return cls.model_validate(res)
-
-    @classmethod
-    async def expense(cls, owner_type: OwnerType, owner_id: str, amount: float) -> None:
-        async with get_session() as session:
-            await cls.expense_in_session(session, owner_type, owner_id, amount)
-
-    @classmethod
-    async def expense_by_user(cls, user_id: str, amount: float) -> None:
-        await cls.expense(OwnerType.USER, user_id, amount)
+        return cls.model_validate(res), credit_type
 
     def has_sufficient_credits(self, amount: float) -> bool:
         """Check if the account has enough credits to cover the specified amount.
@@ -421,6 +419,7 @@ class CreditAccount(BaseModel):
                 upstream_tx_id=account.id,
                 direction=Direction.INCOME,
                 account_id=account.id,
+                credit_type=CreditType.FREE,
                 total_amount=free_quota,
                 balance_after=free_quota,
                 base_amount=free_quota,
@@ -439,6 +438,7 @@ class CreditAccount(BaseModel):
                 tx_type=TransactionType.RECHARGE,
                 credit_debit=CreditDebit.CREDIT,
                 change_amount=free_quota,
+                credit_type=CreditType.FREE,
             )
             session.add(user_tx)
 
@@ -450,6 +450,7 @@ class CreditAccount(BaseModel):
                 tx_type=TransactionType.REFILL,
                 credit_debit=CreditDebit.DEBIT,
                 change_amount=free_quota,
+                credit_type=CreditType.FREE,
             )
             session.add(platform_tx)
 
@@ -501,6 +502,10 @@ class CreditEventTable(Base):
         String,
         primary_key=True,
     )
+    account_id = Column(
+        String,
+        nullable=False,
+    )
     event_type = Column(
         String,
         nullable=False,
@@ -512,6 +517,10 @@ class CreditEventTable(Base):
     upstream_tx_id = Column(
         String,
         nullable=False,
+    )
+    agent_id = Column(
+        String,
+        nullable=True,
     )
     start_message_id = Column(
         String,
@@ -529,13 +538,13 @@ class CreditEventTable(Base):
         String,
         nullable=False,
     )
-    account_id = Column(
-        String,
-        nullable=True,
-    )
     total_amount = Column(
         Float,
         default=0.0,
+        nullable=False,
+    )
+    credit_type = Column(
+        String,
         nullable=False,
     )
     balance_after = Column(
@@ -645,11 +654,17 @@ class CreditEvent(BaseModel):
             description="Unique identifier for the credit event",
         ),
     ]
+    account_id: Annotated[
+        str, Field(None, description="Account ID from which credits flow")
+    ]
     event_type: Annotated[EventType, Field(description="Type of the event")]
     upstream_type: Annotated[
         UpstreamType, Field(description="Type of upstream transaction")
     ]
     upstream_tx_id: Annotated[str, Field(description="Upstream transaction ID if any")]
+    agent_id: Annotated[
+        Optional[str], Field(None, description="ID of the agent if applicable")
+    ]
     start_message_id: Annotated[
         Optional[str],
         Field(None, description="ID of the starting message if applicable"),
@@ -661,15 +676,13 @@ class CreditEvent(BaseModel):
         Optional[str], Field(None, description="ID of the skill call if applicable")
     ]
     direction: Annotated[Direction, Field(description="Direction of the credit flow")]
-    account_id: Annotated[
-        Optional[str], Field(None, description="Account ID from which credits flow")
-    ]
     total_amount: Annotated[
         float,
         Field(
             default=0.0, description="Total amount (after discount) of credits involved"
         ),
     ]
+    credit_type: Annotated[CreditType, Field(description="Type of credits involved")]
     balance_after: Annotated[
         Optional[float],
         Field(None, description="Account total balance after the transaction"),
@@ -768,6 +781,10 @@ class CreditTransactionTable(Base):
         default=0.0,
         nullable=False,
     )
+    credit_type = Column(
+        String,
+        nullable=False,
+    )
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -804,6 +821,7 @@ class CreditTransaction(BaseModel):
     change_amount: Annotated[
         float, Field(default=0.0, description="Amount of credits changed")
     ]
+    credit_type: Annotated[CreditType, Field(description="Type of credits involved")]
     created_at: Annotated[
         datetime, Field(description="Timestamp when this transaction was created")
     ]
