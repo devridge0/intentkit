@@ -347,11 +347,7 @@ class CreditAccount(BaseModel):
         Returns:
             bool: True if there are enough credits, False otherwise
         """
-        return (
-            amount <= self.free_credits
-            or amount <= self.reward_credits
-            or amount <= self.credits
-        )
+        return amount <= self.free_credits + self.reward_credits + self.credits
 
     @classmethod
     async def income_in_session(
