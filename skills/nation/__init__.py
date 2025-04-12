@@ -10,7 +10,7 @@ _cache: dict[str, NationBaseTool] = {}
 
 
 class SkillStates(TypedDict):
-    nation_check: SkillState
+    nft_check: SkillState
 
 
 class Config(SkillConfig):

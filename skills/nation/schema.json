@@ -30,7 +30,8 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Check User Nation NFT Usage"
+          "description": "Check User Nation NFT Usage",
+          "default": "Agent Owner + All Users"
         }
       },
       "description": "States for each Nation skill (disabled, public, or private)"

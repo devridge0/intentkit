@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
 
-base_url = "http://backend-api/v1"
+default_backend_api_url = "http://backend-api"
 
 class NationBaseTool(IntentKitSkill):
     """Base class for GitHub tools."""
@@ -16,6 +16,14 @@ class NationBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
+
+    def get_api_key(self) -> str:
+        return self.skill_store.get_system_config("backend_api_key")
+
+    def get_base_url(self) -> str:
+        if self.skill_store.get_system_config("backend_api_url"):
+            return self.skill_store.get_system_config("backend_api_url")
+        return default_backend_api_url
 
     @property
     def category(self) -> str:
