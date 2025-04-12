@@ -7,6 +7,7 @@ from skills.base import IntentKitSkill
 
 default_backend_api_url = "http://backend-api"
 
+
 class NationBaseTool(IntentKitSkill):
     """Base class for GitHub tools."""
 
