@@ -1,10 +1,9 @@
 import logging
-from typing import ClassVar, List, Type
+from typing import Type
 
 import httpx
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
-
 
 from .base import NationBaseTool
 
@@ -13,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class NftCheckInput(BaseModel):
     nation_wallet_address: str = Field(default="nation wallet address")
+
 
 class NftCheck(NationBaseTool):
     """Implementation of the NFT Check tool.
@@ -28,7 +28,9 @@ class NftCheck(NationBaseTool):
     description: str = "Check user nation pass NFTs stats in nation, including usage status and linked agents."
     args_schema: Type[BaseModel] = NftCheckInput
 
-    async def _arun(self, nation_wallet_address: str, config: RunnableConfig = None) -> str:
+    async def _arun(
+        self, nation_wallet_address: str, config: RunnableConfig = None
+    ) -> str:
         """Implementation of the NFT Check tool.
 
         Args:
@@ -48,10 +50,7 @@ class NftCheck(NationBaseTool):
         if not api_key:
             raise ValueError("Backend API key not found")
 
-        headers = {
-            "Accept": "application/json",
-            "x-api-key": api_key
-        }
+        headers = {"Accept": "application/json", "x-api-key": api_key}
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -70,7 +69,9 @@ class NftCheck(NationBaseTool):
                     return f"No NFTs found for wallet address: {nation_wallet_address}"
 
                 # Format the NFT data
-                formatted_results = f"NFTs for wallet address '{nation_wallet_address}':\n\n"
+                formatted_results = (
+                    f"NFTs for wallet address '{nation_wallet_address}':\n\n"
+                )
 
                 for i, nft in enumerate(nfts, 1):
                     token_id = nft.get("token_id", "Unknown")
@@ -79,7 +80,9 @@ class NftCheck(NationBaseTool):
 
                     formatted_results += f"{i}. Token ID: {token_id}\n"
                     if used_by:
-                        formatted_results += f"   Status: Used by Agent ID {linked_agent_id}\n"
+                        formatted_results += (
+                            f"   Status: Used by Agent ID {linked_agent_id}\n"
+                        )
                     else:
                         formatted_results += "   Status: Available\n"
                     formatted_results += "\n"
