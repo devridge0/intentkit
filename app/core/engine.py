@@ -15,6 +15,7 @@ import logging
 import textwrap
 import time
 from datetime import datetime
+from decimal import Decimal
 
 import sqlalchemy
 from coinbase_agentkit import (
@@ -647,12 +648,13 @@ async def execute_agent(
                     # payment
                     if config.payment_enabled:
                         amount = (
-                            200
+                            Decimal("200")
                             * (
-                                chat_message.input_tokens * 0.3
-                                + chat_message.output_tokens * 1.2
+                                Decimal(str(chat_message.input_tokens)) * Decimal("0.3")
+                                + Decimal(str(chat_message.output_tokens))
+                                * Decimal("1.2")
                             )
-                            / 1000000
+                            / Decimal("1000000")
                         )
                         async with get_session() as session:
                             await expense_message(
@@ -662,7 +664,9 @@ async def execute_agent(
                                 chat_message.id,
                                 input.id,
                                 amount,
-                                agent.fee_percentage if agent.fee_percentage else 0.0,
+                                agent.fee_percentage
+                                if agent.fee_percentage
+                                else Decimal("0"),
                                 agent.owner,
                             )
                 else:

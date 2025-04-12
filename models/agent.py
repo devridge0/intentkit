@@ -3,6 +3,7 @@ import logging
 import re
 import textwrap
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import yaml
@@ -19,6 +20,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     Identity,
+    Numeric,
     String,
     func,
     select,
@@ -213,7 +215,7 @@ class AgentTable(Base):
         comment="Mode of the agent, public or private",
     )
     fee_percentage = Column(
-        Float,
+        Numeric(22, 4),
         nullable=True,
         comment="Fee percentage of the agent",
     )
@@ -580,12 +582,12 @@ class AgentUpdate(BaseModel):
         ),
     ]
     fee_percentage: Annotated[
-        Optional[float],
+        Optional[Decimal],
         PydanticField(
             default=None,
             description="Fee percentage of the agent",
-            ge=0.0,
-            le=1.0,
+            ge=Decimal("0.0"),
+            le=Decimal("1.0"),
             json_schema_extra={
                 "x-group": "basic",
             },
