@@ -9,6 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import update
 
 from app.config.config import config
+from app.core.credit import refill_all_free_credits
 from app.services.twitter.oauth2_refresh import refresh_expiring_tokens
 from models.agent import AgentQuotaTable
 from models.db import get_session, init_db
@@ -79,6 +80,15 @@ def create_scheduler():
         trigger=CronTrigger(minute="*/5", timezone="UTC"),  # Run every 5 minutes
         id="refresh_twitter_tokens",
         name="Refresh expiring Twitter tokens",
+        replace_existing=True,
+    )
+
+    # Refill free credits every 10 minutes
+    scheduler.add_job(
+        refill_all_free_credits,
+        trigger=CronTrigger(minute="20", timezone="UTC"),  # Run every hour
+        id="refill_free_credits",
+        name="Refill free credits",
         replace_existing=True,
     )
 
