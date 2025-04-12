@@ -525,7 +525,9 @@ async def list_fee_events_by_agent(
         - A boolean indicating if there are more events available.
     """
     # 1. Find the account for the agent
-    agent_account = await CreditAccount.get_in_session(session, OwnerType.AGENT, agent_id)
+    agent_account = await CreditAccount.get_in_session(
+        session, OwnerType.AGENT, agent_id
+    )
     if not agent_account:
         return [], None, False
 

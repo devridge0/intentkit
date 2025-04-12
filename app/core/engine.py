@@ -61,6 +61,7 @@ from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
+from models.credit import CreditAccount, OwnerType
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skills.acolyt import get_acolyt_skill
@@ -507,9 +508,6 @@ async def execute_agent(
     message.reply_to = message.id
     input = await message.save()
 
-    # once the input saved, reduce message quota
-    await quota.add_message()
-
     agent = await Agent.get(input.agent_id)
 
     # hack for temporary disable models
@@ -535,6 +533,29 @@ async def execute_agent(
         error_message = await error_message_create.save()
         resp.append(error_message)
         return resp
+
+    # check user balance
+    if config.payment_enabled:
+        user_account = await CreditAccount.get_or_create(OwnerType.USER, input.user_id)
+        if not user_account.has_sufficient_credits(1):
+            error_message_create = ChatMessageCreate(
+                id=str(XID()),
+                agent_id=input.agent_id,
+                chat_id=input.chat_id,
+                user_id=input.user_id,
+                author_id=input.agent_id,
+                author_type=AuthorType.SYSTEM,
+                thread_type=input.author_type,
+                reply_to=input.id,
+                message="Insufficient CAPs.",
+                time_cost=time.perf_counter() - start,
+            )
+            error_message = await error_message_create.save()
+            resp.append(error_message)
+            return resp
+
+    # once the input saved, reduce message quota
+    await quota.add_message()
 
     is_private = False
     if input.user_id == agent.owner:
