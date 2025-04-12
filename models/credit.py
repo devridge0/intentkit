@@ -1,15 +1,16 @@
 from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional, Tuple
 
 from epyxid import XID
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import (
     Column,
     DateTime,
-    Float,
     Index,
+    Numeric,
     String,
     func,
     select,
@@ -67,28 +68,28 @@ class CreditAccountTable(Base):
         nullable=False,
     )
     free_quota = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     refill_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     free_credits = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     reward_credits = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     credits = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     income_at = Column(
@@ -131,22 +132,31 @@ class CreditAccount(BaseModel):
     owner_type: Annotated[OwnerType, Field(description="Type of the account owner")]
     owner_id: Annotated[str, Field(description="ID of the account owner")]
     free_quota: Annotated[
-        float, Field(default=0.0, description="Daily credit quota that resets each day")
+        Decimal,
+        Field(
+            default=Decimal("0"), description="Daily credit quota that resets each day"
+        ),
     ]
     refill_amount: Annotated[
-        float,
+        Decimal,
         Field(
-            default=0.0, description="Amount to refill hourly, not exceeding free_quota"
+            default=Decimal("0"),
+            description="Amount to refill hourly, not exceeding free_quota",
         ),
     ]
     free_credits: Annotated[
-        float, Field(default=0.0, description="Current available daily credits")
+        Decimal,
+        Field(default=Decimal("0"), description="Current available daily credits"),
     ]
     reward_credits: Annotated[
-        float, Field(default=0.0, description="Reward credits earned through rewards")
+        Decimal,
+        Field(
+            default=Decimal("0"), description="Reward credits earned through rewards"
+        ),
     ]
     credits: Annotated[
-        float, Field(default=0.0, description="Credits added through top-ups")
+        Decimal,
+        Field(default=Decimal("0"), description="Credits added through top-ups"),
     ]
     income_at: Annotated[
         Optional[datetime],
@@ -162,6 +172,18 @@ class CreditAccount(BaseModel):
     updated_at: Annotated[
         datetime, Field(description="Timestamp when this account was last updated")
     ]
+
+    @field_validator(
+        "free_quota", "refill_amount", "free_credits", "reward_credits", "credits"
+    )
+    @classmethod
+    def round_decimal(cls, v: Any) -> Decimal:
+        """Round decimal values to 4 decimal places."""
+        if isinstance(v, Decimal):
+            return v.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif isinstance(v, (int, float)):
+            return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return v
 
     @classmethod
     async def get_in_session(
@@ -244,7 +266,7 @@ class CreditAccount(BaseModel):
         owner_type: OwnerType,
         owner_id: str,
         credit_type: CreditType,
-        amount: float,
+        amount: Decimal,
     ) -> "CreditAccount":
         """Deduct credits from an account. Not checking balance"""
         # check first, create if not exists
@@ -261,7 +283,8 @@ class CreditAccount(BaseModel):
             .values(
                 {
                     credit_type.value: getattr(CreditAccountTable, credit_type.value)
-                    - amount
+                    - amount,
+                    "expense_at": datetime.now(timezone.utc),
                 }
             )
             .returning(CreditAccountTable)
@@ -273,21 +296,27 @@ class CreditAccount(BaseModel):
 
     @classmethod
     async def expense_in_session(
-        cls, session: AsyncSession, owner_type: OwnerType, owner_id: str, amount: float
-    ) -> "CreditAccount":
+        cls,
+        session: AsyncSession,
+        owner_type: OwnerType,
+        owner_id: str,
+        amount: Decimal,
+    ) -> Tuple["CreditAccount", CreditType]:
+        """Expense credits and return account and credit type.
+        We are not checking balance here, since a conversation may have
+        multiple expenses, we can't interrupt the conversation.
+        """
         # check first
         account = await cls.get_or_create_in_session(
             session, owner_type, owner_id, for_update=True
         )
-        if not account.has_sufficient_credits(amount):
-            raise HTTPException(status_code=400, detail="Not enough credits")
 
         # expense
-        field = "credits"
+        credit_type = CreditType.PERMANENT
         if amount <= account.free_credits:
-            field = "free_credits"
+            credit_type = CreditType.FREE
         elif amount <= account.reward_credits:
-            field = "reward_credits"
+            credit_type = CreditType.REWARD
 
         stmt = (
             update(CreditAccountTable)
@@ -295,24 +324,21 @@ class CreditAccount(BaseModel):
                 CreditAccountTable.owner_type == owner_type,
                 CreditAccountTable.owner_id == owner_id,
             )
-            .values({field: getattr(CreditAccountTable, field) - amount})
+            .values(
+                {
+                    credit_type.value: getattr(CreditAccountTable, credit_type.value)
+                    - amount,
+                    "expense_at": datetime.now(timezone.utc),
+                }
+            )
             .returning(CreditAccountTable)
         )
         res = await session.scalar(stmt)
         if not res:
             raise HTTPException(status_code=500, detail="Failed to expense credits")
-        return cls.model_validate(res)
+        return cls.model_validate(res), credit_type
 
-    @classmethod
-    async def expense(cls, owner_type: OwnerType, owner_id: str, amount: float) -> None:
-        async with get_session() as session:
-            await cls.expense_in_session(session, owner_type, owner_id, amount)
-
-    @classmethod
-    async def expense_by_user(cls, user_id: str, amount: float) -> None:
-        await cls.expense(OwnerType.USER, user_id, amount)
-
-    def has_sufficient_credits(self, amount: float) -> bool:
+    def has_sufficient_credits(self, amount: Decimal) -> bool:
         """Check if the account has enough credits to cover the specified amount.
 
         Args:
@@ -321,11 +347,7 @@ class CreditAccount(BaseModel):
         Returns:
             bool: True if there are enough credits, False otherwise
         """
-        return (
-            amount <= self.free_credits
-            or amount <= self.reward_credits
-            or amount <= self.credits
-        )
+        return amount <= self.free_credits + self.reward_credits + self.credits
 
     @classmethod
     async def income_in_session(
@@ -333,7 +355,7 @@ class CreditAccount(BaseModel):
         session: AsyncSession,
         owner_type: OwnerType,
         owner_id: str,
-        amount: float,
+        amount: Decimal,
         credit_type: CreditType,
     ) -> "CreditAccount":
         # check first, create if not exists
@@ -367,7 +389,8 @@ class CreditAccount(BaseModel):
         session: AsyncSession,
         owner_type: OwnerType,
         owner_id: str,
-        free_quota: float = 100.0,
+        free_quota: Decimal = Decimal("100.0"),
+        refill_amount: Decimal = Decimal("4.0"),
     ) -> "CreditAccount":
         """Get an existing credit account or create a new one if it doesn't exist.
 
@@ -385,11 +408,13 @@ class CreditAccount(BaseModel):
         if owner_type != OwnerType.USER:
             # only users have daily quota
             free_quota = 0.0
+            refill_amount = 0.0
         account = CreditAccountTable(
             id=str(XID()),
             owner_type=owner_type,
             owner_id=owner_id,
             free_quota=free_quota,
+            refill_amount=refill_amount,
             free_credits=free_quota,
             reward_credits=0.0,
             credits=0.0,
@@ -421,6 +446,7 @@ class CreditAccount(BaseModel):
                 upstream_tx_id=account.id,
                 direction=Direction.INCOME,
                 account_id=account.id,
+                credit_type=CreditType.FREE,
                 total_amount=free_quota,
                 balance_after=free_quota,
                 base_amount=free_quota,
@@ -439,6 +465,7 @@ class CreditAccount(BaseModel):
                 tx_type=TransactionType.RECHARGE,
                 credit_debit=CreditDebit.CREDIT,
                 change_amount=free_quota,
+                credit_type=CreditType.FREE,
             )
             session.add(user_tx)
 
@@ -450,6 +477,7 @@ class CreditAccount(BaseModel):
                 tx_type=TransactionType.REFILL,
                 credit_debit=CreditDebit.DEBIT,
                 change_amount=free_quota,
+                credit_type=CreditType.FREE,
             )
             session.add(platform_tx)
 
@@ -495,11 +523,18 @@ class CreditEventTable(Base):
         Index(
             "ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True
         ),
+        Index("ix_credit_events_account_id", "account_id"),
+        Index("ix_credit_events_fee_agent", "fee_agent_amount", "fee_agent_account"),
+        Index("ix_credit_events_fee_dev", "fee_dev_amount", "fee_dev_account"),
     )
 
     id = Column(
         String,
         primary_key=True,
+    )
+    account_id = Column(
+        String,
+        nullable=False,
     )
     event_type = Column(
         String,
@@ -512,6 +547,10 @@ class CreditEventTable(Base):
     upstream_tx_id = Column(
         String,
         nullable=False,
+    )
+    agent_id = Column(
+        String,
+        nullable=True,
     )
     start_message_id = Column(
         String,
@@ -529,48 +568,48 @@ class CreditEventTable(Base):
         String,
         nullable=False,
     )
-    account_id = Column(
-        String,
-        nullable=True,
-    )
     total_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
+        nullable=False,
+    )
+    credit_type = Column(
+        String,
         nullable=False,
     )
     balance_after = Column(
-        Float,
+        Numeric(22, 4),
         nullable=True,
         default=None,
     )
     base_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     base_discount_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     base_original_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     base_llm_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     base_skill_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     fee_platform_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     fee_dev_account = Column(
@@ -578,8 +617,8 @@ class CreditEventTable(Base):
         nullable=True,
     )
     fee_dev_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     fee_agent_account = Column(
@@ -587,8 +626,8 @@ class CreditEventTable(Base):
         nullable=True,
     )
     fee_agent_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=True,
     )
     note = Column(
@@ -645,11 +684,17 @@ class CreditEvent(BaseModel):
             description="Unique identifier for the credit event",
         ),
     ]
+    account_id: Annotated[
+        str, Field(None, description="Account ID from which credits flow")
+    ]
     event_type: Annotated[EventType, Field(description="Type of the event")]
     upstream_type: Annotated[
         UpstreamType, Field(description="Type of upstream transaction")
     ]
     upstream_tx_id: Annotated[str, Field(description="Upstream transaction ID if any")]
+    agent_id: Annotated[
+        Optional[str], Field(None, description="ID of the agent if applicable")
+    ]
     start_message_id: Annotated[
         Optional[str],
         Field(None, description="ID of the starting message if applicable"),
@@ -661,50 +706,79 @@ class CreditEvent(BaseModel):
         Optional[str], Field(None, description="ID of the skill call if applicable")
     ]
     direction: Annotated[Direction, Field(description="Direction of the credit flow")]
-    account_id: Annotated[
-        Optional[str], Field(None, description="Account ID from which credits flow")
-    ]
     total_amount: Annotated[
-        float,
+        Decimal,
         Field(
-            default=0.0, description="Total amount (after discount) of credits involved"
+            default=Decimal("0"),
+            description="Total amount (after discount) of credits involved",
         ),
     ]
+    credit_type: Annotated[CreditType, Field(description="Type of credits involved")]
     balance_after: Annotated[
-        Optional[float],
+        Optional[Decimal],
         Field(None, description="Account total balance after the transaction"),
     ]
     base_amount: Annotated[
-        float,
-        Field(default=0.0, description="Base amount of credits involved"),
+        Decimal,
+        Field(default=Decimal("0"), description="Base amount of credits involved"),
     ]
     base_discount_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Base discount amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Base discount amount"),
     ]
     base_original_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Base original amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Base original amount"),
     ]
     base_llm_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Base LLM cost amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Base LLM cost amount"),
     ]
     base_skill_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Base skill cost amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Base skill cost amount"),
     ]
     fee_platform_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Platform fee amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Platform fee amount"),
     ]
     fee_dev_account: Annotated[
         Optional[str], Field(None, description="Developer account ID receiving fee")
     ]
     fee_dev_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Developer fee amount")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Developer fee amount"),
     ]
     fee_agent_account: Annotated[
         Optional[str], Field(None, description="Agent account ID receiving fee")
     ]
     fee_agent_amount: Annotated[
-        Optional[float], Field(default=0.0, description="Agent fee amount")
+        Optional[Decimal], Field(default=Decimal("0"), description="Agent fee amount")
     ]
+
+    @field_validator(
+        "total_amount",
+        "balance_after",
+        "base_amount",
+        "base_discount_amount",
+        "base_original_amount",
+        "base_llm_amount",
+        "base_skill_amount",
+        "fee_platform_amount",
+        "fee_dev_amount",
+        "fee_agent_amount",
+    )
+    @classmethod
+    def round_decimal(cls, v: Any) -> Optional[Decimal]:
+        """Round decimal values to 4 decimal places."""
+        if v is None:
+            return None
+        if isinstance(v, Decimal):
+            return v.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif isinstance(v, (int, float)):
+            return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return v
+
     note: Annotated[Optional[str], Field(None, description="Additional notes")]
     created_at: Annotated[
         datetime, Field(description="Timestamp when this event was created")
@@ -764,8 +838,12 @@ class CreditTransactionTable(Base):
         nullable=False,
     )
     change_amount = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
+        nullable=False,
+    )
+    credit_type = Column(
+        String,
         nullable=False,
     )
     created_at = Column(
@@ -802,8 +880,20 @@ class CreditTransaction(BaseModel):
         CreditDebit, Field(description="Whether this is a credit or debit transaction")
     ]
     change_amount: Annotated[
-        float, Field(default=0.0, description="Amount of credits changed")
+        Decimal, Field(default=Decimal("0"), description="Amount of credits changed")
     ]
+
+    @field_validator("change_amount")
+    @classmethod
+    def round_decimal(cls, v: Any) -> Decimal:
+        """Round decimal values to 4 decimal places."""
+        if isinstance(v, Decimal):
+            return v.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif isinstance(v, (int, float)):
+            return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return v
+
+    credit_type: Annotated[CreditType, Field(description="Type of credits involved")]
     created_at: Annotated[
         datetime, Field(description="Timestamp when this transaction was created")
     ]
@@ -822,8 +912,8 @@ class DiscountType(str, Enum):
     SELF_KEY = "self_key"
 
 
-DEFAULT_SKILL_CALL_PRICE = 10.0
-DEFAULT_SKILL_CALL_SELF_KEY_PRICE = 5.0
+DEFAULT_SKILL_CALL_PRICE = Decimal("10.0000")
+DEFAULT_SKILL_CALL_SELF_KEY_PRICE = Decimal("5.0000")
 
 
 class CreditPriceTable(Base):
@@ -851,8 +941,8 @@ class CreditPriceTable(Base):
         nullable=False,
     )
     price = Column(
-        Float,
-        default=0.0,
+        Numeric(22, 4),
+        default=0,
         nullable=False,
     )
     created_at = Column(
@@ -894,7 +984,18 @@ class CreditPrice(BaseModel):
         DiscountType,
         Field(default=DiscountType.STANDARD, description="Type of discount"),
     ]
-    price: Annotated[float, Field(default=0.0, description="Standard price")]
+    price: Annotated[Decimal, Field(default=Decimal("0"), description="Standard price")]
+
+    @field_validator("price")
+    @classmethod
+    def round_decimal(cls, v: Any) -> Decimal:
+        """Round decimal values to 4 decimal places."""
+        if isinstance(v, Decimal):
+            return v.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif isinstance(v, (int, float)):
+            return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return v
+
     created_at: Annotated[
         datetime, Field(description="Timestamp when this price was created")
     ]
@@ -920,11 +1021,11 @@ class CreditPriceLogTable(Base):
         nullable=False,
     )
     old_price = Column(
-        Float,
+        Numeric(22, 4),
         nullable=False,
     )
     new_price = Column(
-        Float,
+        Numeric(22, 4),
         nullable=False,
     )
     note = Column(
@@ -959,8 +1060,19 @@ class CreditPriceLog(BaseModel):
         ),
     ]
     price_id: Annotated[str, Field(description="ID of the price that was modified")]
-    old_price: Annotated[float, Field(description="Previous standard price")]
-    new_price: Annotated[float, Field(description="New standard price")]
+    old_price: Annotated[Decimal, Field(description="Previous standard price")]
+    new_price: Annotated[Decimal, Field(description="New standard price")]
+
+    @field_validator("old_price", "new_price")
+    @classmethod
+    def round_decimal(cls, v: Any) -> Decimal:
+        """Round decimal values to 4 decimal places."""
+        if isinstance(v, Decimal):
+            return v.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        elif isinstance(v, (int, float)):
+            return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return v
+
     note: Annotated[
         Optional[str], Field(None, description="Note about the modification")
     ]
