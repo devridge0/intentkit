@@ -1,5 +1,6 @@
 import json
 import logging
+from decimal import Decimal
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -43,7 +44,7 @@ class RechargeRequest(BaseModel):
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
     user_id: Annotated[str, Field(description="ID of the user to recharge")]
-    amount: Annotated[float, Field(gt=0, description="Amount to recharge")]
+    amount: Annotated[Decimal, Field(gt=Decimal("0"), description="Amount to recharge")]
     note: Annotated[
         Optional[str], Field(None, description="Optional note for the recharge")
     ]
@@ -56,7 +57,7 @@ class RewardRequest(BaseModel):
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
     user_id: Annotated[str, Field(description="ID of the user to reward")]
-    amount: Annotated[float, Field(gt=0, description="Amount to reward")]
+    amount: Annotated[Decimal, Field(gt=Decimal("0"), description="Amount to reward")]
     note: Annotated[
         Optional[str], Field(None, description="Optional note for the reward")
     ]
@@ -71,7 +72,7 @@ class AdjustmentRequest(BaseModel):
     user_id: Annotated[str, Field(description="ID of the user to adjust")]
     credit_type: Annotated[CreditType, Field(description="Type of credit to adjust")]
     amount: Annotated[
-        float, Field(description="Amount to adjust (positive or negative)")
+        Decimal, Field(description="Amount to adjust (positive or negative)")
     ]
     note: Annotated[str, Field(description="Required explanation for the adjustment")]
 
@@ -83,13 +84,17 @@ class UpdateDailyQuotaRequest(BaseModel):
         str, Field(str, description="Upstream transaction ID, idempotence Check")
     ]
     free_quota: Annotated[
-        Optional[float],
-        Field(None, gt=0, description="New daily quota value for the account"),
+        Optional[Decimal],
+        Field(
+            None, gt=Decimal("0"), description="New daily quota value for the account"
+        ),
     ]
     refill_amount: Annotated[
-        Optional[float],
+        Optional[Decimal],
         Field(
-            None, ge=0, description="Amount to refill hourly, not exceeding free_quota"
+            None,
+            ge=Decimal("0"),
+            description="Amount to refill hourly, not exceeding free_quota",
         ),
     ]
     note: Annotated[

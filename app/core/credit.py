@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from typing import List, Optional, Tuple
 
 from epyxid import XID
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 async def recharge(
     session: AsyncSession,
     user_id: str,
-    amount: float,
+    amount: Decimal,
     upstream_tx_id: str,
     note: Optional[str] = None,
 ) -> CreditAccount:
@@ -54,7 +55,7 @@ async def recharge(
         session, UpstreamType.API, upstream_tx_id
     )
 
-    if amount <= 0:
+    if amount <= Decimal("0"):
         raise ValueError("Recharge amount must be positive")
 
     # 1. Update user account - add credits
@@ -130,7 +131,7 @@ async def recharge(
 async def reward(
     session: AsyncSession,
     user_id: str,
-    amount: float,
+    amount: Decimal,
     upstream_tx_id: str,
     note: Optional[str] = None,
 ) -> CreditAccount:
@@ -152,7 +153,7 @@ async def reward(
         session, UpstreamType.API, upstream_tx_id
     )
 
-    if amount <= 0:
+    if amount <= Decimal("0"):
         raise ValueError("Reward amount must be positive")
 
     # 1. Update user account - add reward credits
@@ -229,7 +230,7 @@ async def adjustment(
     session: AsyncSession,
     user_id: str,
     credit_type: CreditType,
-    amount: float,
+    amount: Decimal,
     upstream_tx_id: str,
     note: str,
 ) -> CreditAccount:
@@ -252,14 +253,14 @@ async def adjustment(
         session, UpstreamType.API, upstream_tx_id
     )
 
-    if amount == 0:
+    if amount == Decimal("0"):
         raise ValueError("Adjustment amount cannot be zero")
 
     if not note:
         raise ValueError("Adjustment requires a note explaining the reason")
 
     # Determine direction based on amount sign
-    is_income = amount > 0
+    is_income = amount > Decimal("0")
     abs_amount = abs(amount)
     direction = Direction.INCOME if is_income else Direction.EXPENSE
     credit_debit_user = CreditDebit.CREDIT if is_income else CreditDebit.DEBIT
@@ -359,8 +360,8 @@ async def adjustment(
 async def update_daily_quota(
     session: AsyncSession,
     user_id: str,
-    free_quota: Optional[float] = None,
-    refill_amount: Optional[float] = None,
+    free_quota: Optional[Decimal] = None,
+    refill_amount: Optional[Decimal] = None,
     upstream_tx_id: str = "",
     note: str = "",
 ) -> CreditAccount:
@@ -395,12 +396,12 @@ async def update_daily_quota(
     # Use existing values if not provided
     if free_quota is None:
         free_quota = user_account.free_quota
-    elif free_quota <= 0:
+    elif free_quota <= Decimal("0"):
         raise ValueError("Daily quota must be positive")
 
     if refill_amount is None:
         refill_amount = user_account.refill_amount
-    elif refill_amount < 0:
+    elif refill_amount < Decimal("0"):
         raise ValueError("Refill amount cannot be negative")
 
     # Ensure refill_amount doesn't exceed free_quota
@@ -545,8 +546,8 @@ async def expense_message(
     user_id: str,
     message_id: str,
     start_message_id: str,
-    base_llm_amount: float,
-    agent_fee_percentage: float,
+    base_llm_amount: Decimal,
+    agent_fee_percentage: Decimal,
     agent_owner_id: str,
 ) -> CreditAccount:
     """
@@ -570,15 +571,19 @@ async def expense_message(
         session, UpstreamType.EXECUTOR, message_id
     )
 
-    if base_llm_amount < 0:
+    if base_llm_amount < Decimal("0"):
         raise ValueError("Base LLM amount must be non-negative")
 
     # Calculate amount
     base_original_amount = base_llm_amount
     base_amount = base_original_amount
-    fee_platform_amount = base_amount * config.payment_fee_platform_percentage
+    fee_platform_amount = base_amount * Decimal(
+        str(config.payment_fee_platform_percentage)
+    )
     fee_agent_amount = (
-        base_amount * agent_fee_percentage if user_id != agent_owner_id else 0
+        base_amount * agent_fee_percentage
+        if user_id != agent_owner_id
+        else Decimal("0")
     )
     total_amount = base_amount + fee_platform_amount + fee_agent_amount
 
