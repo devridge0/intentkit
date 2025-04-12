@@ -393,8 +393,8 @@ class CreditAccount(BaseModel):
         session: AsyncSession,
         owner_type: OwnerType,
         owner_id: str,
-        free_quota: Decimal = "100.0",
-        refill_amount: Decimal = "4.0",
+        free_quota: Decimal = Decimal("100.0"),
+        refill_amount: Decimal = Decimal("4.0"),
     ) -> "CreditAccount":
         """Get an existing credit account or create a new one if it doesn't exist.
 
@@ -527,6 +527,9 @@ class CreditEventTable(Base):
         Index(
             "ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True
         ),
+        Index("ix_credit_events_account_id", "account_id"),
+        Index("ix_credit_events_fee_agent", "fee_agent_amount", "fee_agent_account"),
+        Index("ix_credit_events_fee_dev", "fee_dev_amount", "fee_dev_account"),
     )
 
     id = Column(

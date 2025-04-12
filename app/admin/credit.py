@@ -13,7 +13,8 @@ from app.config.config import config
 from app.core.credit import (
     adjustment,
     fetch_credit_event_by_upstream_tx_id,
-    list_credit_events_by_owner,
+    list_credit_events_by_user,
+    list_fee_events_by_agent,
     recharge,
     reward,
     update_daily_quota,
@@ -279,10 +280,9 @@ async def list_user_expense_events(
     Returns:
         Response with list of expense events and pagination headers
     """
-    events, next_cursor, has_more = await list_credit_events_by_owner(
+    events, next_cursor, has_more = await list_credit_events_by_user(
         session=db,
-        owner_type=OwnerType.USER,
-        owner_id=user_id,
+        user_id=user_id,
         direction=Direction.EXPENSE,
         cursor=cursor,
         limit=limit,
@@ -334,10 +334,9 @@ async def list_user_income_events(
     Returns:
         Response with list of income events and pagination headers
     """
-    events, next_cursor, has_more = await list_credit_events_by_owner(
+    events, next_cursor, has_more = await list_credit_events_by_user(
         session=db,
-        owner_type=OwnerType.USER,
-        owner_id=user_id,
+        user_id=user_id,
         direction=Direction.INCOME,
         cursor=cursor,
         limit=limit,
@@ -388,11 +387,9 @@ async def list_agent_income_events(
     Returns:
         Response with list of income events and pagination headers
     """
-    events, next_cursor, has_more = await list_credit_events_by_owner(
+    events, next_cursor, has_more = await list_fee_events_by_agent(
         session=db,
-        owner_type=OwnerType.AGENT,
-        owner_id=agent_id,
-        direction=Direction.INCOME,
+        agent_id=agent_id,
         cursor=cursor,
         limit=limit,
     )
