@@ -143,6 +143,13 @@ class Config:
         self.rpc_networks = self.load(
             "RPC_NETWORKS", "base-mainnet,base-sepolia,ethereum-sepolia,solana-mainnet"
         )
+
+        # backend api key
+        self.backend_api_key = self.load("BACKEND_API_KEY")
+
+        # backend api url
+        self.backend_api_url = self.load("BACKEND_API_URL", "")
+
         # ===== config loaded
         # Now we know the env, set up logging
         setup_logging(self.env, self.debug)

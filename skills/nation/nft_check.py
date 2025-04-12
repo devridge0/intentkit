@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
 
-from .base import NationBaseTool, base_url
+from .base import NationBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +41,16 @@ class NftCheck(NationBaseTool):
         context = self.context_from_config(config)
         logger.debug(f"nft_check.py: Running NFT check with context {context}")
 
-        url = f"https://api.service.crestal.dev/users/{nation_wallet_address}"
+        url = f"{self.get_base_url()}/v1/users/{nation_wallet_address}"
+
+        api_key = self.get_api_key()
+
+        if not api_key:
+            raise ValueError("Backend API key not found")
+
         headers = {
             "Accept": "application/json",
+            "x-api-key": api_key
         }
 
         try:
