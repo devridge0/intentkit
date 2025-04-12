@@ -535,8 +535,15 @@ async def execute_agent(
         return resp
 
     # check user balance
-    if config.payment_enabled:
-        user_account = await CreditAccount.get_or_create(OwnerType.USER, input.user_id)
+    # FIXME: payer is agent owner when Telegram/Twitter entrypoints
+    if config.payment_enabled and input.user_id and agent.owner:
+        payer = input.user_id
+        if (
+            input.author_type == AuthorType.TELEGRAM
+            or input.author_type == AuthorType.TWITTER
+        ):
+            payer = agent.owner
+        user_account = await CreditAccount.get_or_create(OwnerType.USER, payer)
         if not user_account.has_sufficient_credits(1):
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
@@ -667,7 +674,7 @@ async def execute_agent(
                     chat_message = await chat_message_create.save()
                     resp.append(chat_message)
                     # payment
-                    if config.payment_enabled:
+                    if config.payment_enabled and input.user_id and agent.owner:
                         amount = (
                             Decimal("200")
                             * (
@@ -681,7 +688,7 @@ async def execute_agent(
                             await expense_message(
                                 session,
                                 input.agent_id,
-                                input.user_id,
+                                payer,
                                 chat_message.id,
                                 input.id,
                                 amount,
