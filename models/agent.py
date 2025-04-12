@@ -212,6 +212,11 @@ class AgentTable(Base):
         nullable=True,
         comment="Mode of the agent, public or private",
     )
+    fee_percentage = Column(
+        Float,
+        nullable=True,
+        comment="Fee percentage of the agent",
+    )
     purpose = Column(
         String,
         nullable=True,
