@@ -535,6 +535,7 @@ async def execute_agent(
         return resp
 
     # check user balance
+    # FIXME: payer is agent owner when Telegram/Twitter entrypoints
     if config.payment_enabled:
         user_account = await CreditAccount.get_or_create(OwnerType.USER, input.user_id)
         if not user_account.has_sufficient_credits(1):
