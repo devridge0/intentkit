@@ -54,6 +54,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.agent import AgentStore
+from app.core.credit import expense_message
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
@@ -643,6 +644,27 @@ async def execute_agent(
                         cold_start_cost = 0
                     chat_message = await chat_message_create.save()
                     resp.append(chat_message)
+                    # payment
+                    if config.payment_enabled:
+                        amount = (
+                            200
+                            * (
+                                chat_message.input_tokens * 0.3
+                                + chat_message.output_tokens * 1.2
+                            )
+                            / 1000000
+                        )
+                        async with get_session() as session:
+                            await expense_message(
+                                session,
+                                input.agent_id,
+                                input.user_id,
+                                chat_message.id,
+                                input.id,
+                                amount,
+                                agent.fee_percentage if agent.fee_percentage else 0.0,
+                                agent.owner,
+                            )
                 else:
                     logger.error(
                         "unexpected agent message: " + str(msg),
