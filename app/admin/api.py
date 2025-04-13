@@ -216,10 +216,13 @@ async def _validate_telegram_config(token: str) -> None:
     ) as req_err:
         raise HTTPException(
             status_code=400,
-            detail=f"Unauthorized err getting telegram bot username with token {token}: {req_err}",
+            detail=f"Unauthorized err getting telegram bot username with your token: {req_err}",
         )
     except Exception as e:
-        raise Exception(f"Error getting telegram bot username with token {token}: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid telegram bot token: {e}",
+        )
 
 
 def _send_agent_notification(
