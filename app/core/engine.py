@@ -15,6 +15,7 @@ import logging
 import textwrap
 import time
 from datetime import datetime
+from decimal import Decimal
 
 import sqlalchemy
 from coinbase_agentkit import (
@@ -54,11 +55,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.agent import AgentStore
+from app.core.credit import expense_message
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
+from models.credit import CreditAccount, OwnerType
 from models.db import get_pool, get_session
 from models.skill import AgentSkillData, ThreadSkillData
 from skills.acolyt import get_acolyt_skill
@@ -505,9 +508,6 @@ async def execute_agent(
     message.reply_to = message.id
     input = await message.save()
 
-    # once the input saved, reduce message quota
-    await quota.add_message()
-
     agent = await Agent.get(input.agent_id)
 
     # hack for temporary disable models
@@ -533,6 +533,36 @@ async def execute_agent(
         error_message = await error_message_create.save()
         resp.append(error_message)
         return resp
+
+    # check user balance
+    # FIXME: payer is agent owner when Telegram/Twitter entrypoints
+    if config.payment_enabled and input.user_id and agent.owner:
+        payer = input.user_id
+        if (
+            input.author_type == AuthorType.TELEGRAM
+            or input.author_type == AuthorType.TWITTER
+        ):
+            payer = agent.owner
+        user_account = await CreditAccount.get_or_create(OwnerType.USER, payer)
+        if not user_account.has_sufficient_credits(1):
+            error_message_create = ChatMessageCreate(
+                id=str(XID()),
+                agent_id=input.agent_id,
+                chat_id=input.chat_id,
+                user_id=input.user_id,
+                author_id=input.agent_id,
+                author_type=AuthorType.SYSTEM,
+                thread_type=input.author_type,
+                reply_to=input.id,
+                message="Insufficient CAPs.",
+                time_cost=time.perf_counter() - start,
+            )
+            error_message = await error_message_create.save()
+            resp.append(error_message)
+            return resp
+
+    # once the input saved, reduce message quota
+    await quota.add_message()
 
     is_private = False
     if input.user_id == agent.owner:
@@ -643,6 +673,30 @@ async def execute_agent(
                         cold_start_cost = 0
                     chat_message = await chat_message_create.save()
                     resp.append(chat_message)
+                    # payment
+                    if config.payment_enabled and input.user_id and agent.owner:
+                        amount = (
+                            Decimal("200")
+                            * (
+                                Decimal(str(chat_message.input_tokens)) * Decimal("0.3")
+                                + Decimal(str(chat_message.output_tokens))
+                                * Decimal("1.2")
+                            )
+                            / Decimal("1000000")
+                        )
+                        async with get_session() as session:
+                            await expense_message(
+                                session,
+                                input.agent_id,
+                                payer,
+                                chat_message.id,
+                                input.id,
+                                amount,
+                                agent.fee_percentage
+                                if agent.fee_percentage
+                                else Decimal("0"),
+                                agent.owner,
+                            )
                 else:
                     logger.error(
                         "unexpected agent message: " + str(msg),

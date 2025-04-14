@@ -619,5 +619,26 @@
       "x-group": "internal"
     }
   },
+  "if": {
+    "properties": {
+      "mode": {
+        "const": "public"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "fee_percentage": {
+        "title": "Fee Percentage",
+        "type": "number",
+        "description": "The CAPs paid by users to Nation will increase this percentage fee and pay it to the agent account.",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.1,
+        "x-step": 0.01,
+        "x-group": "basic"
+      }
+    }
+  },
   "additionalProperties": false
 }
