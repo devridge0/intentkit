@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
 
-default_backend_api_url = "http://backend-api"
+default_nation_api_url = "http://backend-api"
 
 
 class NationBaseTool(IntentKitSkill):
@@ -19,12 +19,12 @@ class NationBaseTool(IntentKitSkill):
     )
 
     def get_api_key(self) -> str:
-        return self.skill_store.get_system_config("backend_api_key")
+        return self.skill_store.get_system_config("nation_api_key")
 
     def get_base_url(self) -> str:
-        if self.skill_store.get_system_config("backend_api_url"):
-            return self.skill_store.get_system_config("backend_api_url")
-        return default_backend_api_url
+        if self.skill_store.get_system_config("nation_api_url"):
+            return self.skill_store.get_system_config("nation_api_url")
+        return default_nation_api_url
 
     @property
     def category(self) -> str:

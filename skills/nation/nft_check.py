@@ -18,18 +18,9 @@ class NftCheckInput(BaseModel):
 
 
 class NftCheck(NationBaseTool):
-    """Implementation of the NFT Check tool.
-
-    Args:
-        nation_wallet_address: The wallet address of the nation (optional).
-        config: Configuration for the runnable.
-
-    Returns:
-        str: Formatted NFT check results based on the nation wallet address.
-    """
 
     name: str = "nft_check"
-    description: str = "Check user nation pass NFTs stats in nation, including usage status and linked agents."
+    description: str = "Check user nation pass NFTs stats in nation, including usage status and linked agents.By default, it will use the user_id as the wallet address. If you want to check other wallet address, please pass the nation_wallet_address parameter."
     args_schema: Type[BaseModel] = NftCheckInput
 
     async def _arun(
@@ -38,7 +29,8 @@ class NftCheck(NationBaseTool):
         """Implementation of the NFT Check tool.
 
         Args:
-            nation_wallet_address: The wallet address of the nation, only accept evm address.
+            nation_wallet_address: The wallet address of the nation (optional), if not passed, then get user_id from chat as wallet address.
+            config: Configuration for the runnable.
 
         Returns:
             str: Formatted NFT check results based on the nation wallet address.

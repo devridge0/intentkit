@@ -154,10 +154,10 @@ class Config:
         )
 
         # backend api key
-        self.backend_api_key = self.load("BACKEND_API_KEY")
+        self.nation_api_key = self.load("NATION_API_KEY")
 
         # backend api url
-        self.backend_api_url = self.load("BACKEND_API_URL", "")
+        self.nation_api_url = self.load("NATION_API_URL", "")
 
         # ===== config loaded
         # Now we know the env, set up logging
