@@ -304,7 +304,7 @@ def _send_agent_notification(
                         "value": str(agent.goat_enabled),
                     },
                     {
-                        "title": "Twitter Username",
+                        "title": "X Username",
                         "short": True,
                         "value": agent_data.twitter_username,
                     },
@@ -874,12 +874,12 @@ async def import_agent(
     response_class=Response,
 )
 async def unlink_twitter_endpoint(
-    agent_id: str = Path(..., description="ID of the agent to unlink from Twitter"),
+    agent_id: str = Path(..., description="ID of the agent to unlink from X"),
 ) -> Response:
-    """Unlink Twitter from an agent.
+    """Unlink X from an agent.
 
     **Path Parameters:**
-    * `agent_id` - ID of the agent to unlink from Twitter
+    * `agent_id` - ID of the agent to unlink from X
 
     **Raises:**
     * `HTTPException`:
