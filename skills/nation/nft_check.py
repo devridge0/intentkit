@@ -18,7 +18,6 @@ class NftCheckInput(BaseModel):
 
 
 class NftCheck(NationBaseTool):
-
     name: str = "nft_check"
     description: str = "Check user nation pass NFTs stats in nation, including usage status and linked agents.By default, it will use the user_id as the wallet address. If you want to check other wallet address, please pass the nation_wallet_address parameter."
     args_schema: Type[BaseModel] = NftCheckInput
