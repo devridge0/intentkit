@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema#",
   "type": "object",
-  "title": "Twitter Skills",
-  "description": "Integration with Twitter API enabling social media interactions including retrieving tweets, mentions, user information, and posting content with media support",
+  "title": "X Skills",
+  "description": "Integration with X API enabling social media interactions including retrieving posts, mentions, user information, and posting content with media support",
   "x-icon": "https://ai.service.crestal.dev/skills/twitter/twitter.png",
   "x-tags": [
     "Social"
@@ -95,7 +95,7 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Initiates following of Twitter accounts with rate limit handling and anti-spam safeguards",
+          "description": "Initiates following of X accounts with rate limit handling and anti-spam safeguards",
           "default": "disabled"
         },
         "like_tweet": {
@@ -143,38 +143,38 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Executes advanced Twitter searches with keyword filters, date ranges, and engagement thresholds",
+          "description": "Executes advanced X searches with keyword filters, date ranges, and engagement thresholds",
           "default": "disabled"
         }
       },
-      "description": "States for each Twitter skill (disabled, public, or private)"
+      "description": "States for each X skill"
     },
     "consumer_key": {
       "type": "string",
-      "title": "Twitter API consumer key",
-      "description": "Twitter API consumer key",
+      "title": "X API consumer key",
+      "description": "X API consumer key",
       "x-link": "[Get your API key](https://developer.x.com/)",
       "x-sensitive": true,
       "maxLength": 100
     },
     "consumer_secret": {
       "type": "string",
-      "title": "Twitter API consumer secret",
-      "description": "Twitter API consumer secret",
+      "title": "X API consumer secret",
+      "description": "X API consumer secret",
       "x-sensitive": true,
       "maxLength": 100
     },
     "access_token": {
       "type": "string",
-      "title": "Twitter API access token",
-      "description": "Twitter API access token",
+      "title": "X API access token",
+      "description": "X API access token",
       "x-sensitive": true,
       "maxLength": 100
     },
     "access_token_secret": {
       "type": "string",
-      "title": "Twitter API access token secret",
-      "description": "Twitter API access token secret",
+      "title": "X API access token secret",
+      "description": "X API access token secret",
       "x-sensitive": true,
       "maxLength": 100
     }
