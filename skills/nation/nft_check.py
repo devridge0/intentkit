@@ -1,7 +1,8 @@
 import logging
-from typing import Type
+from typing import Optional, Type
 
 import httpx
+from eth_utils import is_address, to_normalized_address
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
@@ -11,14 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 class NftCheckInput(BaseModel):
-    nation_wallet_address: str = Field(default="nation wallet address")
+    nation_wallet_address: Optional[str] = Field(
+        default=None, description="Nation wallet address"
+    )
 
 
 class NftCheck(NationBaseTool):
     """Implementation of the NFT Check tool.
 
     Args:
-        nation_wallet_address: The wallet address of the nation.
+        nation_wallet_address: The wallet address of the nation (optional).
+        config: Configuration for the runnable.
 
     Returns:
         str: Formatted NFT check results based on the nation wallet address.
@@ -29,12 +33,12 @@ class NftCheck(NationBaseTool):
     args_schema: Type[BaseModel] = NftCheckInput
 
     async def _arun(
-        self, nation_wallet_address: str, config: RunnableConfig = None
+        self, nation_wallet_address: Optional[str] = None, config: RunnableConfig = None
     ) -> str:
         """Implementation of the NFT Check tool.
 
         Args:
-            nation_wallet_address: The wallet address of the nation.
+            nation_wallet_address: The wallet address of the nation, only accept evm address.
 
         Returns:
             str: Formatted NFT check results based on the nation wallet address.
@@ -42,6 +46,28 @@ class NftCheck(NationBaseTool):
 
         context = self.context_from_config(config)
         logger.debug(f"nft_check.py: Running NFT check with context {context}")
+
+        # Use the provided nation_wallet_address or fetch it from the context
+        if not nation_wallet_address:
+            nation_wallet_address = context.user_id
+            if not nation_wallet_address:
+                raise ValueError(
+                    "Nation wallet address is not provided and not found in context"
+                )
+
+        # Convert to normalized lowercase address before validation
+        try:
+            nation_wallet_address = to_normalized_address(nation_wallet_address)
+        except ValueError:
+            raise ValueError(
+                f"Invalid Ethereum wallet address: {nation_wallet_address}"
+            )
+
+        # Validate the normalized address
+        if not is_address(nation_wallet_address):
+            raise ValueError(
+                f"Invalid Ethereum wallet address: {nation_wallet_address}"
+            )
 
         url = f"{self.get_base_url()}/v1/users/{nation_wallet_address}"
 
