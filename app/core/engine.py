@@ -536,7 +536,7 @@ async def execute_agent(
 
     # check user balance
     # FIXME: payer is agent owner when Telegram/Twitter entrypoints
-    if config.payment_enabled and input.user_id and agent.owner:
+    if is_payment_required(input, agent):
         payer = input.user_id
         if (
             input.author_type == AuthorType.TELEGRAM
@@ -674,7 +674,7 @@ async def execute_agent(
                     chat_message = await chat_message_create.save()
                     resp.append(chat_message)
                     # payment
-                    if config.payment_enabled and input.user_id and agent.owner:
+                    if is_payment_required(chat_message, agent):
                         amount = (
                             Decimal("200")
                             * (
@@ -911,3 +911,9 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
         return snap.values["messages"]
     else:
         return []
+
+
+def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+    if config.payment_enabled and input.user_id and agent.owner:
+        return True
+    return False

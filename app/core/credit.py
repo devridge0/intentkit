@@ -442,7 +442,7 @@ async def update_daily_quota(
 async def list_credit_events_by_user(
     session: AsyncSession,
     user_id: str,
-    direction: Direction,
+    direction: Optional[Direction] = None,
     cursor: Optional[str] = None,
     limit: int = 20,
     event_type: Optional[EventType] = None,
@@ -475,12 +475,13 @@ async def list_credit_events_by_user(
     stmt = (
         select(CreditEventTable)
         .where(CreditEventTable.account_id == account.id)
-        .where(CreditEventTable.direction == direction.value)
         .order_by(desc(CreditEventTable.id))
         .limit(limit + 1)  # Fetch one extra to check if there are more
     )
 
-    # 3. Apply event type filter if provided
+    # 3. Apply optional filter if provided
+    if direction:
+        stmt = stmt.where(CreditEventTable.direction == direction.value)
     if event_type:
         stmt = stmt.where(CreditEventTable.event_type == event_type.value)
 
