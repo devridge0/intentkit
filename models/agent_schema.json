@@ -161,16 +161,13 @@
       "default": "gpt-4o-mini",
       "enum": [
         "gpt-4o-mini",
-        "gpt-4.1-mini",
         "gpt-4.1-nano"
       ],
       "x-enum-title": [
         "GPT-4o mini",
-        "GPT-4.1 mini",
         "GPT-4.1 nano"
       ],
       "x-support-skill": [
-        true,
         true,
         true
       ],
