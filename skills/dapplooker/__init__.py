@@ -1,7 +1,6 @@
 """DappLooker skills for crypto market data and analytics."""
 
 import logging
-import os
 from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
