@@ -231,10 +231,10 @@
     "temperature": {
       "title": "Temperature",
       "type": "number",
-      "description": "Controls creativity: higher values are more creative, lower values are more precise.",
+      "description": "Controls creativity: higher values are more creative, lower values are more precise. CHANGING THIS SETTING MAY INTRODUCE UNEXPECTED BEHAVIOR. USE WITH CAUTION.",
       "default": 0.7,
       "minimum": 0.0,
-      "maximum": 2.0,
+      "maximum": 1.5,
       "x-group": "llm",
       "x-step": 0.1
     },
@@ -335,47 +335,47 @@
       }
     },
     "twitter_entrypoint_enabled": {
-      "title": "Enable Twitter Communication",
+      "title": "Enable X Communication",
       "type": "boolean",
-      "description": "Agent replies automatically to all Twitter mentions (use cautiously)",
+      "description": "Agent replies automatically to all X mentions (use cautiously)",
       "default": false,
       "x-group": "entrypoint"
     },
     "twitter_entrypoint_prompt": {
-      "title": "Twitter Entry Prompt",
+      "title": "X Entry Prompt",
       "type": "string",
-      "description": "Extra prompt for twitter entrypoint",
+      "description": "Extra prompt for X entrypoint",
       "maxLength": 10000,
       "x-group": "entrypoint"
     },
     "twitter_config": {
-      "title": "Enter your Twitter API key",
+      "title": "Enter your X API key",
       "type": "object",
-      "description": "You must use your own key for twitter entrypoint, it is separated from twitter skills",
+      "description": "You must use your own key for X entrypoint, it is separated from X skills",
       "x-group": "entrypoint",
       "properties": {
         "consumer_key": {
           "type": "string",
-          "title": "Twitter API consumer key",
-          "description": "Twitter API consumer key",
+          "title": "X API consumer key",
+          "description": "X API consumer key",
           "maxLength": 100
         },
         "consumer_secret": {
           "type": "string",
-          "title": "Twitter API consumer secret",
-          "description": "Twitter API consumer secret",
+          "title": "X API consumer secret",
+          "description": "X API consumer secret",
           "maxLength": 100
         },
         "access_token": {
           "type": "string",
-          "title": "Twitter API access token",
-          "description": "Twitter API access token",
+          "title": "X API access token",
+          "description": "X API access token",
           "maxLength": 100
         },
         "access_token_secret": {
           "type": "string",
-          "title": "Twitter API access token secret",
-          "description": "Twitter API access token secret",
+          "title": "X API access token secret",
+          "description": "X API access token secret",
           "maxLength": 100
         }
       }
@@ -387,12 +387,32 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "cryptopanic": {
+          "title": "CryptoPanic",
+          "$ref": "../skills/cryptopanic/schema.json"
+        },
+        "tavily": {
+          "title": "Tavily",
+          "$ref": "../skills/tavily/schema.json"
+        },
+        "heurist": {
+          "title": "Heurist",
+          "$ref": "../skills/heurist/schema.json"
+        },
+        "openai": {
+          "title": "OpenAI",
+          "$ref": "../skills/openai/schema.json"
+        },
+        "nation": {
+          "title": "Nation",
+          "$ref": "../skills/nation/schema.json"
+        },
         "cdp": {
           "title": "Coinbase Wallet",
           "$ref": "../skills/cdp/schema.json"
         },
         "twitter": {
-          "title": "Twitter",
+          "title": "X",
           "$ref": "../skills/twitter/schema.json"
         },
         "acolyt": {
@@ -426,22 +446,11 @@
         "common": {
           "title": "Common",
           "$ref": "../skills/common/schema.json"
-        },
-        "openai": {
-          "title": "OpenAI",
-          "$ref": "../skills/openai/schema.json"
-        },
-        "heurist": {
-          "title": "Heurist",
-          "$ref": "../skills/heurist/schema.json"
-        },
-        "moralis": {
-          "title": "Moralis",
-          "$ref": "../skills/moralis/schema.json"
-        },
-        "tavily": {
-          "title": "Tavily",
-          "$ref": "../skills/tavily/schema.json"
+        },    
+        "github": {
+          "title": "GitHub",
+          "$ref": "../skills/github/schema.json"
+
         },
         "dapplooker": {
           "title": "DappLooker",
@@ -617,6 +626,27 @@
         "solana"
       ],
       "x-group": "internal"
+    }
+  },
+  "if": {
+    "properties": {
+      "mode": {
+        "const": "public"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "fee_percentage": {
+        "title": "Fee Percentage",
+        "type": "number",
+        "description": "The CAPs paid by users to Nation will increase this percentage fee and pay it to the agent account.",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.1,
+        "x-step": 0.01,
+        "x-group": "basic"
+      }
     }
   },
   "additionalProperties": false

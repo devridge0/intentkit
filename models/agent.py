@@ -3,6 +3,7 @@ import logging
 import re
 import textwrap
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import yaml
@@ -19,6 +20,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     Identity,
+    Numeric,
     String,
     func,
     select,
@@ -211,6 +213,11 @@ class AgentTable(Base):
         String,
         nullable=True,
         comment="Mode of the agent, public or private",
+    )
+    fee_percentage = Column(
+        Numeric(22, 4),
+        nullable=True,
+        comment="Fee percentage of the agent",
     )
     purpose = Column(
         String,
@@ -569,6 +576,18 @@ class AgentUpdate(BaseModel):
         PydanticField(
             default=None,
             description="Mode of the agent, public or private",
+            json_schema_extra={
+                "x-group": "basic",
+            },
+        ),
+    ]
+    fee_percentage: Annotated[
+        Optional[Decimal],
+        PydanticField(
+            default=None,
+            description="Fee percentage of the agent",
+            ge=Decimal("0.0"),
+            le=Decimal("1.0"),
             json_schema_extra={
                 "x-group": "basic",
             },
@@ -1229,10 +1248,18 @@ class AgentCreate(AgentUpdate):
                     detail="Upstream id already in use",
                 )
 
-    async def create(self) -> "Agent":
-        # Validation is now handled by field validators
-        await self.check_upstream_id()
+    async def get_by_upstream_id(self) -> Optional["Agent"]:
+        if not self.upstream_id:
+            return None
+        async with get_session() as db:
+            existing = await db.scalar(
+                select(AgentTable).where(AgentTable.upstream_id == self.upstream_id)
+            )
+            if existing:
+                return Agent.model_validate(existing)
+            return None
 
+    async def create(self) -> "Agent":
         # Validate autonomous schedule settings if present
         if self.autonomous:
             self.validate_autonomous_schedule()
