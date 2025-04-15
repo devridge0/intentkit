@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.config import config
 from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
+    DEFAULT_PLATFORM_ACCOUNT_DEV,
     DEFAULT_PLATFORM_ACCOUNT_FEE,
     DEFAULT_PLATFORM_ACCOUNT_RECHARGE,
     DEFAULT_PLATFORM_ACCOUNT_REFILL,
@@ -724,6 +725,182 @@ async def expense_message(
     session.add(platform_tx)
 
     # 4.3 Agent fee account transaction (credit)
+    if fee_agent_amount > 0:
+        agent_tx = CreditTransactionTable(
+            id=str(XID()),
+            account_id=agent_account.id,
+            event_id=event_id,
+            tx_type=TransactionType.RECEIVE_FEE_AGENT,
+            credit_debit=CreditDebit.CREDIT,
+            change_amount=fee_agent_amount,
+            credit_type=credit_type,
+        )
+        session.add(agent_tx)
+
+    # Commit all changes
+    await session.commit()
+
+    return user_account
+
+
+async def expense_skill(
+    session: AsyncSession,
+    agent_id: str,
+    user_id: str,
+    message_id: str,
+    start_message_id: str,
+    skill_call_id: str,
+    skill_name: str,
+    agent_fee_percentage: Decimal,
+    agent_owner_id: str,
+) -> CreditAccount:
+    """
+    Deduct credits from a user account for message expenses.
+
+    Args:
+        session: Async session to use for database operations
+        agent_id: ID of the agent to deduct credits from
+        user_id: ID of the user to deduct credits from
+        amount: Amount of credits to deduct
+        upstream_tx_id: ID of the upstream transaction
+        message_id: ID of the message that incurred the expense
+        start_message_id: ID of the starting message in a conversation
+        base_llm_amount: Amount of LLM costs
+
+    Returns:
+        Updated user credit account
+    """
+    # Check for idempotency - prevent duplicate transactions
+    upstream_tx_id = f"{message_id}_{skill_call_id}"
+    await CreditEvent.check_upstream_tx_id_exists(
+        session, UpstreamType.EXECUTOR, upstream_tx_id
+    )
+
+    # Get amount, FIXME: hardcode now
+    logger.info(f"skill payment {skill_name}")
+    base_skill_amount = 1
+    fee_dev_user = DEFAULT_PLATFORM_ACCOUNT_DEV
+    fee_dev_user_type = OwnerType.PLATFORM
+    fee_dev_percentage = Decimal("0.1")
+
+    if base_skill_amount < Decimal("0"):
+        raise ValueError("Base skill amount must be non-negative")
+
+    # Calculate amount
+    base_original_amount = base_skill_amount
+    base_amount = base_original_amount
+    fee_platform_amount = base_amount * Decimal(
+        str(config.payment_fee_platform_percentage)
+    )
+    fee_agent_amount = (
+        base_amount * agent_fee_percentage
+        if user_id != agent_owner_id
+        else Decimal("0")
+    )
+    fee_dev_amount = base_amount * fee_dev_percentage
+    total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
+
+    # 1. Update user account - deduct credits
+    user_account, credit_type = await CreditAccount.expense_in_session(
+        session=session,
+        owner_type=OwnerType.USER,
+        owner_id=user_id,
+        amount=total_amount,
+    )
+
+    # 2. Update fee account - add credits
+    platform_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
+        credit_type=credit_type,
+        amount=fee_platform_amount,
+    )
+    if fee_dev_amount > 0:
+        dev_account = await CreditAccount.income_in_session(
+            session=session,
+            owner_type=fee_dev_user_type,
+            owner_id=fee_dev_user,
+            credit_type=credit_type,
+            amount=fee_dev_amount,
+        )
+    if fee_agent_amount > 0:
+        agent_account = await CreditAccount.income_in_session(
+            session=session,
+            owner_type=OwnerType.AGENT,
+            owner_id=agent_id,
+            credit_type=credit_type,
+            amount=fee_agent_amount,
+        )
+
+    # 3. Create credit event record
+    event_id = str(XID())
+    event = CreditEventTable(
+        id=event_id,
+        account_id=user_account.id,
+        event_type=EventType.SKILL_CALL,
+        upstream_type=UpstreamType.EXECUTOR,
+        upstream_tx_id=upstream_tx_id,
+        direction=Direction.EXPENSE,
+        agent_id=agent_id,
+        message_id=message_id,
+        start_message_id=start_message_id,
+        total_amount=total_amount,
+        credit_type=credit_type,
+        balance_after=user_account.credits
+        + user_account.free_credits
+        + user_account.reward_credits,
+        base_amount=base_amount,
+        base_original_amount=base_original_amount,
+        base_skill_amount=base_skill_amount,
+        fee_platform_amount=fee_platform_amount,
+        fee_agent_amount=fee_agent_amount,
+        fee_agent_account=agent_account.id if fee_agent_amount > 0 else None,
+        fee_dev_amount=fee_dev_amount,
+        fee_dev_account=dev_account.id if fee_dev_amount > 0 else None,
+    )
+    session.add(event)
+    await session.flush()
+
+    # 4. Create credit transaction records
+    # 4.1 User account transaction (debit)
+    user_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=user_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.PAY,
+        credit_debit=CreditDebit.DEBIT,
+        change_amount=total_amount,
+        credit_type=credit_type,
+    )
+    session.add(user_tx)
+
+    # 4.2 Platform fee account transaction (credit)
+    platform_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=platform_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_FEE_PLATFORM,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=fee_platform_amount,
+        credit_type=credit_type,
+    )
+    session.add(platform_tx)
+
+    # 4.3 Dev user transaction (credit)
+    if fee_dev_amount > 0:
+        dev_tx = CreditTransactionTable(
+            id=str(XID()),
+            account_id=dev_account.id,
+            event_id=event_id,
+            tx_type=TransactionType.RECEIVE_FEE_DEV,
+            credit_debit=CreditDebit.CREDIT,
+            change_amount=fee_dev_amount,
+            credit_type=credit_type,
+        )
+        session.add(dev_tx)
+
+    # 4.4 Agent fee account transaction (credit)
     if fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),
