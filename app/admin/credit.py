@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from abstracts.api import ResponseHeadersPagination
 from app.config.config import config
 from app.core.credit import (
-    adjustment,
     fetch_credit_event_by_upstream_tx_id,
     list_credit_events_by_user,
     list_fee_events_by_agent,
@@ -22,7 +21,6 @@ from app.core.credit import (
 from models.credit import (
     CreditAccount,
     CreditEvent,
-    CreditType,
     Direction,
     EventType,
     OwnerType,
@@ -64,18 +62,18 @@ class RewardRequest(BaseModel):
     ]
 
 
-class AdjustmentRequest(BaseModel):
-    """Request model for adjusting a user account."""
+# class AdjustmentRequest(BaseModel):
+#     """Request model for adjusting a user account."""
 
-    upstream_tx_id: Annotated[
-        str, Field(str, description="Upstream transaction ID, idempotence Check")
-    ]
-    user_id: Annotated[str, Field(description="ID of the user to adjust")]
-    credit_type: Annotated[CreditType, Field(description="Type of credit to adjust")]
-    amount: Annotated[
-        Decimal, Field(description="Amount to adjust (positive or negative)")
-    ]
-    note: Annotated[str, Field(description="Required explanation for the adjustment")]
+#     upstream_tx_id: Annotated[
+#         str, Field(str, description="Upstream transaction ID, idempotence Check")
+#     ]
+#     user_id: Annotated[str, Field(description="ID of the user to adjust")]
+#     credit_type: Annotated[CreditType, Field(description="Type of credit to adjust")]
+#     amount: Annotated[
+#         Decimal, Field(description="Amount to adjust (positive or negative)")
+#     ]
+#     note: Annotated[str, Field(description="Required explanation for the adjustment")]
 
 
 class UpdateDailyQuotaRequest(BaseModel):
@@ -185,35 +183,35 @@ async def reward_user_account(
     )
 
 
-@credit_router.post(
-    "/adjust",
-    response_model=CreditAccount,
-    status_code=status.HTTP_201_CREATED,
-    operation_id="adjust_account",
-    summary="Adjust",
-    dependencies=[Depends(verify_jwt)],
-)
-async def adjust_user_account(
-    request: AdjustmentRequest,
-    db: AsyncSession = Depends(get_db),
-) -> CreditAccount:
-    """Adjust a user account's credits.
+# @credit_router.post(
+#     "/adjust",
+#     response_model=CreditAccount,
+#     status_code=status.HTTP_201_CREATED,
+#     operation_id="adjust_account",
+#     summary="Adjust",
+#     dependencies=[Depends(verify_jwt)],
+# )
+# async def adjust_user_account(
+#     request: AdjustmentRequest,
+#     db: AsyncSession = Depends(get_db),
+# ) -> CreditAccount:
+#     """Adjust a user account's credits.
 
-    Args:
-        request: Adjustment request details
-        db: Database session
+#     Args:
+#         request: Adjustment request details
+#         db: Database session
 
-    Returns:
-        The updated credit account
-    """
-    return await adjustment(
-        db,
-        request.user_id,
-        request.credit_type,
-        request.amount,
-        request.upstream_tx_id,
-        request.note,
-    )
+#     Returns:
+#         The updated credit account
+#     """
+#     return await adjustment(
+#         db,
+#         request.user_id,
+#         request.credit_type,
+#         request.amount,
+#         request.upstream_tx_id,
+#         request.note,
+#     )
 
 
 @credit_router.put(
@@ -245,6 +243,57 @@ async def update_account_free_quota(
         refill_amount=request.refill_amount,
         upstream_tx_id=request.upstream_tx_id,
         note=request.note,
+    )
+
+
+@credit_router_readonly.get(
+    "/users/{user_id}/events",
+    response_model=List[CreditEvent],
+    operation_id="list_user_events",
+    summary="List User Events",
+    responses={
+        200: {
+            "description": "List of events",
+            "headers": ResponseHeadersPagination,
+        }
+    },
+    dependencies=[Depends(verify_jwt)],
+)
+async def list_user_events(
+    user_id: str,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """List all expense events for a user account.
+
+    Args:
+        user_id: ID of the user
+        cursor: Cursor for pagination
+        limit: Maximum number of events to return
+        db: Database session
+
+    Returns:
+        Response with list of expense events and pagination headers
+    """
+    events, next_cursor, has_more = await list_credit_events_by_user(
+        session=db,
+        user_id=user_id,
+        cursor=cursor,
+        limit=limit,
+    )
+
+    # Create response with headers
+    headers = {"X-Has-More": str(has_more).lower()}
+    if next_cursor:
+        headers["X-Next-Cursor"] = next_cursor
+
+    return Response(
+        content=json.dumps(events, default=pydantic_encoder),
+        media_type="application/json",
+        headers=headers,
     )
 
 
