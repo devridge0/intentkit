@@ -18,4 +18,4 @@ class DappLookerBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "dapplooker" 
+        return "dapplooker"
