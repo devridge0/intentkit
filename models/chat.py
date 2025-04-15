@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from typing import Annotated, List, NotRequired, Optional, TypedDict
 
@@ -7,8 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import (
     Column,
     DateTime,
+    Float,
     Index,
     Integer,
+    Numeric,
     String,
     desc,
     func,
@@ -68,6 +71,7 @@ class ChatMessageAttachment(TypedDict):
 class ChatMessageSkillCall(TypedDict):
     """TypedDict for skill call details."""
 
+    id: str
     name: str
     parameters: dict
     success: bool
@@ -199,11 +203,15 @@ class ChatMessageTable(Base):
         default=0,
     )
     time_cost = Column(
-        Integer,
+        Float,
+        default=0,
+    )
+    credit_cost = Column(
+        Numeric(22, 4),
         default=0,
     )
     cold_start_cost = Column(
-        Integer,
+        Float,
         default=0,
     )
     created_at = Column(
@@ -263,6 +271,10 @@ class ChatMessageCreate(BaseModel):
     ]
     time_cost: Annotated[
         float, Field(0.0, description="Time cost for the message in seconds")
+    ]
+    credit_cost: Annotated[
+        Decimal,
+        Field(Decimal("0"), description="Credit cost for the message in credits"),
     ]
     cold_start_cost: Annotated[
         float,
