@@ -442,6 +442,10 @@
         "tavily": {
           "title": "Tavily",
           "$ref": "../skills/tavily/schema.json"
+        },
+        "dapplooker": {
+          "title": "DappLooker",
+          "$ref": "../skills/dapplooker/schema.json"
         }
       }
     },
