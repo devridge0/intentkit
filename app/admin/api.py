@@ -137,8 +137,6 @@ async def _process_agent_post_actions(
             wallet_data["default_address_id"],
         )
 
-    await _process_telegram_config(agent, agent_data)
-
     # Send Slack notification
     slack_message = slack_message or ("Agent Created" if is_new else "Agent Updated")
     try:
@@ -149,42 +147,82 @@ async def _process_agent_post_actions(
     return agent_data
 
 
-async def _process_telegram_config(agent: Agent, agent_data: AgentData) -> None:
+async def _process_telegram_config(
+    agent: AgentUpdate, agent_data: AgentData
+) -> AgentData:
     """Process telegram configuration for an agent.
 
     Args:
         agent: The agent with telegram configuration
         agent_data: The agent data to update
-    """
-    if not hasattr(agent, "telegram_config") or not agent.telegram_config:
-        return
 
-    tg_bot_token = agent.telegram_config.get("token")
-    if tg_bot_token:
+    Returns:
+        AgentData: The updated agent data
+    """
+    changes = agent.model_dump(exclude_unset=True)
+    if not changes.get("telegram_entrypoint_enabled"):
+        return agent_data
+
+    if not changes.get("telegram_config") or not changes.get("telegram_config").get(
+        "token"
+    ):
+        return agent_data
+
+    tg_bot_token = changes.get("telegram_config").get("token")
+
+    try:
+        bot = Bot(token=tg_bot_token)
+        bot_info = await bot.get_me()
+        agent_data.telegram_id = str(bot_info.id)
+        agent_data.telegram_username = bot_info.username
+        agent_data.telegram_name = bot_info.first_name
+        if bot_info.last_name:
+            agent_data.telegram_name = f"{bot_info.first_name} {bot_info.last_name}"
+        await agent_data.save()
         try:
-            bot = Bot(token=tg_bot_token)
-            bot_info = await bot.get_me()
-            agent_data.telegram_id = str(bot_info.id)
-            agent_data.telegram_username = bot_info.username
-            agent_data.telegram_name = bot_info.first_name
-            await agent_data.save()
-            try:
-                await bot.close()
-            except Exception:
-                pass
-        except (
-            TelegramUnauthorizedError,
-            TelegramConflictError,
-            TokenValidationError,
-        ) as req_err:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unauthorized err getting telegram bot username with token {tg_bot_token}: {req_err}",
-            )
-        except Exception as e:
-            raise Exception(
-                f"Error getting telegram bot username with token {tg_bot_token}: {e}"
-            )
+            await bot.close()
+        except Exception:
+            pass
+        return agent_data
+    except (
+        TelegramUnauthorizedError,
+        TelegramConflictError,
+        TokenValidationError,
+    ) as req_err:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unauthorized err getting telegram bot username with token {tg_bot_token}: {req_err}",
+        )
+    except Exception as e:
+        raise Exception(
+            f"Error getting telegram bot username with token {tg_bot_token}: {e}"
+        )
+
+
+async def _validate_telegram_config(token: str) -> None:
+    """Validate telegram configuration for an agent.
+
+    Args:
+        token: The telegram bot token
+    """
+    try:
+        bot = Bot(token=token)
+        await bot.get_me()
+        await bot.close()
+    except (
+        TelegramUnauthorizedError,
+        TelegramConflictError,
+        TokenValidationError,
+    ) as req_err:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unauthorized err getting telegram bot username with your token: {req_err}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid telegram bot token: {e}",
+        )
 
 
 def _send_agent_notification(
@@ -266,7 +304,7 @@ def _send_agent_notification(
                         "value": str(agent.goat_enabled),
                     },
                     {
-                        "title": "Twitter Username",
+                        "title": "X Username",
                         "short": True,
                         "value": agent_data.twitter_username,
                     },
@@ -374,15 +412,29 @@ async def validate_agent(
         - 500: Server error
     """
     input.validate_autonomous_schedule()
+    changes = input.model_dump(exclude_unset=True)
+    if (
+        changes.get("telegram_entrypoint_enabled")
+        and changes.get("telegram_config")
+        and changes.get("telegram_config").get("token")
+    ):
+        await _validate_telegram_config(changes.get("telegram_config").get("token"))
     return Response(status_code=204)
 
 
 @admin_router.post(
     "/agents/v2",
     tags=["Agent"],
-    status_code=201,
     operation_id="create_agent",
+    summary="Create Agent",
     response_model=AgentResponse,
+    responses={
+        200: {"model": AgentResponse, "description": "Agent already exists"},
+        201: {"model": AgentResponse, "description": "Agent created"},
+        400: {"description": "Other client errors except format error"},
+        422: {"description": "Invalid agent configuration"},
+        500: {"description": "Server error"},
+    },
 )
 async def create_agent(
     input: AgentUpdate = Body(AgentUpdate, description="Agent configuration"),
@@ -410,17 +462,27 @@ async def create_agent(
     if subject:
         agent.owner = subject
 
+    # Check for existing agent by upstream_id
+    existing = await agent.get_by_upstream_id()
+    if existing:
+        agent_data = await AgentData.get(existing.id)
+        agent_response = AgentResponse.from_agent(existing, agent_data)
+        return Response(
+            status_code=200,
+            content=agent_response.model_dump_json(),
+            media_type="application/json",
+            headers={"ETag": agent_response.etag()},
+        )
     # Create new agent
-    await agent.check_upstream_id()
     latest_agent = await agent.create()
-
     # Process common post-creation actions
     agent_data = await _process_agent_post_actions(latest_agent, True, "Agent Created")
-
+    agent_data = await _process_telegram_config(input, agent_data)
     agent_response = AgentResponse.from_agent(latest_agent, agent_data)
 
     # Return Response with ETag header
     return Response(
+        status_code=201,
         content=agent_response.model_dump_json(),
         media_type="application/json",
         headers={"ETag": agent_response.etag()},
@@ -467,6 +529,8 @@ async def update_agent(
 
     # Process common post-update actions
     agent_data = await _process_agent_post_actions(latest_agent, False, "Agent Updated")
+
+    agent_data = await _process_telegram_config(agent, agent_data)
 
     agent_response = AgentResponse.from_agent(latest_agent, agent_data)
 
@@ -793,8 +857,46 @@ async def import_agent(
     latest_agent = await agent.update(agent_id)
 
     # Process common post-creation/update steps
-    await _process_agent_post_actions(
+    agent_data = await _process_agent_post_actions(
         latest_agent, False, "Agent Updated via YAML Import"
     )
 
+    await _process_telegram_config(agent, agent_data)
+
     return "Agent import successful"
+
+
+@admin_router.put(
+    "/agents/{agent_id}/twitter/unlink",
+    tags=["Agent"],
+    operation_id="unlink_twitter",
+    dependencies=[Depends(verify_jwt)],
+    response_class=Response,
+)
+async def unlink_twitter_endpoint(
+    agent_id: str = Path(..., description="ID of the agent to unlink from X"),
+) -> Response:
+    """Unlink X from an agent.
+
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to unlink from X
+
+    **Raises:**
+    * `HTTPException`:
+        - 404: Agent not found
+    """
+    # Check if agent exists
+    agent = await Agent.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Call the unlink_twitter function from clients.twitter
+    agent_data = await unlink_twitter(agent_id)
+
+    agent_response = AgentResponse.from_agent(agent, agent_data)
+
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )

@@ -13,7 +13,7 @@
       "type": "boolean",
       "title": "Enabled",
       "description": "Whether this skill is enabled",
-      "default": false
+      "default": true
     },
     "states": {
       "type": "object",
@@ -32,7 +32,7 @@
             "Agent Owner Only"
           ],
           "description": "Generates 6-hour price forecasts using ensemble ML models analyzing on-chain liquidity and market sentiment",
-          "default": "disabled"
+          "default": "public"
         }
       },
       "description": "States for each Allora skill (disabled, public, or private)"
@@ -40,6 +40,8 @@
     "api_key": {
       "type": "string",
       "title": "Allora API Key",
+      "x-link": "[Get your API key](https://docs.allora.network/devs/consumers/allora-api-endpoint#api-authentication)",
+      "x-sensitive": true,
       "description": "Allora API key for authentication"
     }
   },

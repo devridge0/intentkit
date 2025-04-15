@@ -104,6 +104,7 @@
     "api_key": {
       "type": "string",
       "title": "Elfa API Key",
+      "x-sensitive": true,
       "description": "Elfa API key for authentication"
     }
   },

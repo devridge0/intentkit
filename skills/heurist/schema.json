@@ -14,7 +14,7 @@
       "type": "boolean",
       "title": "Enabled",
       "description": "Whether this skill is enabled",
-      "default": false
+      "default": true
     },
     "states": {
       "type": "object",
@@ -33,7 +33,7 @@
             "Agent Owner Only"
           ],
           "description": "Generate Japanese anime-style images using Heurist's AnimagineXL model based on text prompts",
-          "default": "disabled"
+          "default": "private"
         },
         "image_generation_arthemy_comics": {
           "type": "string",
@@ -65,7 +65,7 @@
             "Agent Owner Only"
           ],
           "description": "Generate realistic images using Heurist's ArthemyReal model based on text prompts",
-          "default": "disabled"
+          "default": "private"
         },
         "image_generation_braindance": {
           "type": "string",
@@ -81,7 +81,7 @@
             "Agent Owner Only"
           ],
           "description": "Generate artistic images using Heurist's BrainDance model based on text prompts",
-          "default": "disabled"
+          "default": "private"
         },
         "image_generation_cyber_realistic_xl": {
           "type": "string",
@@ -97,7 +97,7 @@
             "Agent Owner Only"
           ],
           "description": "Generate hyperrealistic photographs with a cyberpunk aesthetic using Heurist's CyberRealisticXL model based on text prompts",
-          "default": "disabled"
+          "default": "private"
         },
         "image_generation_flux_1_dev": {
           "type": "string",
@@ -129,7 +129,7 @@
             "Agent Owner Only"
           ],
           "description": "Generate high-quality images in any style using Heurist's SDXL model based on text prompts",
-          "default": "disabled"
+          "default": "private"
         }
       },
       "description": "States for each Heurist AI skill (disabled, public, or private)"
@@ -137,6 +137,8 @@
     "api_key": {
       "type": "string",
       "title": "Heurist API Key",
+      "x-link": "[Get your API key](https://dev-api-form.heurist.ai/)",
+      "x-sensitive": true,
       "description": "API key for Heurist AI services, if you have one, you can set the rate limit for your user"
     },
     "rate_limit_number": {

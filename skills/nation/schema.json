@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Common Skills",
-  "description": "Utility skills",
-  "x-icon": "https://ai.service.crestal.dev/skills/common/common.jpg",
+  "title": "Nation Skills",
+  "description": "Check nation NFT stats",
+  "x-icon": "https://ai.service.crestal.dev/skills/nation/nation.png",
   "x-tags": [
-    "Utility"
+    "Nation",
+    "NFTChecker"
   ],
-  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -18,9 +18,9 @@
     "states": {
       "type": "object",
       "properties": {
-        "current_time": {
+        "check_nft": {
           "type": "string",
-          "title": "Current Time",
+          "title": "Nation NFT Usage Check",
           "enum": [
             "disabled",
             "public",
@@ -31,11 +31,11 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Provides localized timekeeping with automatic timezone detection using IP geolocation",
-          "default": "public"
+          "description": "Check User Nation NFT Usage",
+          "default": "Agent Owner + All Users"
         }
       },
-      "description": "States for each common utility skill (disabled, public, or private)"
+      "description": "States for each Nation skill (disabled, public, or private)"
     }
   },
   "required": [
@@ -43,4 +43,4 @@
     "enabled"
   ],
   "additionalProperties": true
-}
+} 
