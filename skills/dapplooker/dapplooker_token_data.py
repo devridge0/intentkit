@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Any, Dict, List, Optional, Type
 
 import httpx
@@ -74,7 +73,7 @@ class DappLookerTokenData(DappLookerBaseTool):
         logger.debug(f"dapplooker.py: Fetching token data with context {context}")
 
         # Get the API key from the agent's configuration or environment variable
-        api_key = context.config.get("api_key") or os.environ.get("DAPPLOOKER_API_KEY")
+        api_key = context.config.get("api_key")
         if not api_key:
             return "Error: No DappLooker API key provided in the configuration or environment."
 
