@@ -19,6 +19,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.base import Base
 from models.db import get_session
@@ -79,6 +80,8 @@ class ChatMessageSkillCall(TypedDict):
         str
     ]  # Optional response from the skill call, trimmed to 100 characters
     error_message: NotRequired[str]  # Optional error message from the skill call
+    credit_event_id: NotRequired[str]  # ID of the credit event for this skill call
+    credit_cost: NotRequired[Decimal]  # Credit cost for the skill call
 
 
 class ChatMessageRequest(BaseModel):
@@ -206,9 +209,13 @@ class ChatMessageTable(Base):
         Float,
         default=0,
     )
+    credit_event_id = Column(
+        String,
+        nullable=True,
+    )
     credit_cost = Column(
         Numeric(22, 4),
-        default=0,
+        nullable=True,
     )
     cold_start_cost = Column(
         Float,
@@ -272,14 +279,30 @@ class ChatMessageCreate(BaseModel):
     time_cost: Annotated[
         float, Field(0.0, description="Time cost for the message in seconds")
     ]
+    credit_event_id: Annotated[
+        Optional[str],
+        Field(None, description="ID of the credit event for this message"),
+    ]
     credit_cost: Annotated[
-        Decimal,
-        Field(Decimal("0"), description="Credit cost for the message in credits"),
+        Optional[Decimal],
+        Field(None, description="Credit cost for the message in credits"),
     ]
     cold_start_cost: Annotated[
         float,
         Field(0.0, description="Cost for the cold start of the message in seconds"),
     ]
+
+    async def save_in_session(self, db: AsyncSession) -> "ChatMessage":
+        """Save the chat message to the database.
+
+        Returns:
+            ChatMessage: The saved chat message with all fields populated
+        """
+        message_record = ChatMessageTable(**self.model_dump())
+        db.add(message_record)
+        await db.flush()
+        await db.refresh(message_record)
+        return ChatMessage.model_validate(message_record)
 
     async def save(self) -> "ChatMessage":
         """Save the chat message to the database.
@@ -287,15 +310,10 @@ class ChatMessageCreate(BaseModel):
         Returns:
             ChatMessage: The saved chat message with all fields populated
         """
-        message_record = ChatMessageTable(**self.model_dump())
-
         async with get_session() as db:
-            db.add(message_record)
+            resp = await self.save_in_session(db)
             await db.commit()
-            await db.refresh(message_record)
-
-            # Create and return a full ChatMessage instance
-            return ChatMessage.model_validate(message_record)
+            return resp
 
 
 class ChatMessage(ChatMessageCreate):
