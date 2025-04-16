@@ -511,12 +511,9 @@ async def execute_agent(
     agent = await Agent.get(input.agent_id)
 
     # hack for temporary disable models
-    if config.env == "testnet-prod" and agent.model in [
-        "gpt-4o",
-        "deepseek-chat",
-        "deepseek-reasoner",
-        "grok-2",
-        "eternalai",
+    if config.env == "testnet-prod" and agent.model not in [
+        "gpt-4o-mini",
+        "gpt-4.1-nano",
     ]:
         error_message_create = ChatMessageCreate(
             id=str(XID()),

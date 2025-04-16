@@ -158,14 +158,17 @@
       "title": "AI Model",
       "type": "string",
       "description": "Select the LLM for your agent. Note that each LLM has its specific advantages, behaviour and cost.",
-      "default": "gpt-4o-mini",
+      "default": "gpt-4.1-nano",
       "enum": [
+        "gpt-4.1-nano",
         "gpt-4o-mini"
       ],
       "x-enum-title": [
+        "GPT-4.1 nano",
         "GPT-4o mini"
       ],
       "x-support-skill": [
+        true,
         true
       ],
       "x-group": "llm"
