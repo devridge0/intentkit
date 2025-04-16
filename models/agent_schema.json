@@ -454,7 +454,9 @@
         },
         "dapplooker": {
           "title": "DappLooker",
-          "$ref": "../skills/dapplooker/schema.json"
+          "$ref": "../skills/dapplooker/schema.json",
+          "x-link": "[Get your API key](https://docs.dapplooker.com/api-guides/get-api-key)",
+          "x-sensitive": true
         }
       }
     },
