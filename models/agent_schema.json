@@ -449,10 +449,17 @@
         "common": {
           "title": "Common",
           "$ref": "../skills/common/schema.json"
-        },
+        },    
         "github": {
           "title": "GitHub",
           "$ref": "../skills/github/schema.json"
+
+        },
+        "dapplooker": {
+          "title": "DappLooker",
+          "$ref": "../skills/dapplooker/schema.json",
+          "x-link": "[Get your API key](https://docs.dapplooker.com/api-guides/get-api-key)",
+          "x-sensitive": true
         }
       }
     },
