@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "DappLooker",
+  "description": "Retrieve comprehensive crypto market data and analytics using DappLooker",
+  "x-icon": "https://ai.service.crestal.dev/skills/dapplooker/dapplooker.jpg",
+  "x-tags": [
+    "Crypto",
+    "Market Data",
+    "Token Metrics"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": false
+    },
+    "api_key": {
+      "type": "string",
+      "title": "DappLooker API Key",
+      "description": "API key for DappLooker service",
+      "x-sensitive": true
+    },
+    "states": {
+      "type": "object",
+      "properties": {
+        "dapplooker_token_data": {
+          "type": "string",
+          "title": "Token Data",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Retrieve detailed token market data and analytics by token ticker or address",
+          "default": "disabled"
+        }
+      },
+      "description": "States for each DappLooker skill (disabled, public, or private)"
+    }
+  },
+  "required": [
+    "states",
+    "enabled",
+    "api_key"
+  ],
+  "additionalProperties": true
+} 
