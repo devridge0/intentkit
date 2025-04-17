@@ -678,6 +678,9 @@ class AgentUpdate(BaseModel):
         Literal[
             "gpt-4o",
             "gpt-4o-mini",
+            "gpt-4.1",
+            "gpt-4.1-mini",
+            "gpt-4.1-nano",
             "deepseek-chat",
             "deepseek-reasoner",
             "grok-2",
