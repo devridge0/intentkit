@@ -55,7 +55,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.agent import AgentStore
-from app.core.credit import expense_message
+from app.core.credit import expense_message, expense_skill
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
@@ -536,7 +536,7 @@ async def execute_agent(
 
     # check user balance
     # FIXME: payer is agent owner when Telegram/Twitter entrypoints
-    if config.payment_enabled and input.user_id and agent.owner:
+    if is_payment_required(input, agent):
         payer = input.user_id
         if (
             input.author_type == AuthorType.TELEGRAM
@@ -674,7 +674,7 @@ async def execute_agent(
                     chat_message = await chat_message_create.save()
                     resp.append(chat_message)
                     # payment
-                    if config.payment_enabled and input.user_id and agent.owner:
+                    if is_payment_required(input, agent):
                         amount = (
                             Decimal("200")
                             * (
@@ -697,6 +697,7 @@ async def execute_agent(
                                 else Decimal("0"),
                                 agent.owner,
                             )
+                        logger.info(f"[{input.agent_id}] expense message: {amount}")
                 else:
                     logger.error(
                         "unexpected agent message: " + str(msg),
@@ -710,6 +711,7 @@ async def execute_agent(
                     )
                     continue
                 skill_calls = []
+                skill_message_id = str(XID())
                 for msg in chunk["tools"]["messages"]:
                     if not hasattr(msg, "tool_call_id"):
                         logger.error(
@@ -735,9 +737,28 @@ async def execute_agent(
                                         msg.content, width=100, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
+                            # skill payment
+                            if is_payment_required(input, agent):
+                                async with get_session() as session:
+                                    await expense_skill(
+                                        session,
+                                        input.agent_id,
+                                        payer,
+                                        skill_message_id,
+                                        input.id,
+                                        call["id"],
+                                        call["name"],
+                                        agent.fee_percentage
+                                        if agent.fee_percentage
+                                        else Decimal("0"),
+                                        agent.owner,
+                                    )
+                                logger.info(
+                                    f"[{input.agent_id}] skill payment: {skill_call}"
+                                )
                             break
                 skill_message_create = ChatMessageCreate(
-                    id=str(XID()),
+                    id=skill_message_id,
                     agent_id=input.agent_id,
                     chat_id=input.chat_id,
                     user_id=input.user_id,
@@ -911,3 +932,9 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
         return snap.values["messages"]
     else:
         return []
+
+
+def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+    if config.payment_enabled and input.user_id and agent.owner:
+        return True
+    return False
