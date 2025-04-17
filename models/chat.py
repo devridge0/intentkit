@@ -321,7 +321,10 @@ class ChatMessage(ChatMessageCreate):
 
     model_config = ConfigDict(
         use_enum_values=True,
-        json_encoders={datetime: lambda v: v.isoformat(timespec="milliseconds")},
+        json_encoders={
+            datetime: lambda v: v.isoformat(timespec="milliseconds"),
+            Decimal: lambda v: float(v),
+        },
         from_attributes=True,
     )
 
