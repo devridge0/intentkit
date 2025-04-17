@@ -815,13 +815,16 @@ async def execute_agent(
                                 agent.owner,
                             )
                             skill_call["credit_event_id"] = payment_event.id
-                            skill_call["credit_cost"] = payment_event.total_amount
+                            skill_call["credit_cost"] = float(
+                                payment_event.total_amount
+                            )
                             logger.info(
                                 f"[{input.agent_id}] skill payment: {skill_call}"
                             )
-                skill_message = await skill_message_create.save_in_session(session)
-                await session.commit()
-                resp.append(skill_message)
+                    skill_message_create.skill_calls = skill_calls
+                    skill_message = await skill_message_create.save_in_session(session)
+                    await session.commit()
+                    resp.append(skill_message)
             elif "memory_manager" in chunk:
                 pass
             else:
