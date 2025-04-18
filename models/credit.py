@@ -121,7 +121,6 @@ class CreditAccount(BaseModel):
         from_attributes=True,
         json_encoders={
             datetime: lambda v: v.isoformat(timespec="milliseconds"),
-            Decimal: lambda v: float(v),
         },
     )
 
@@ -654,7 +653,6 @@ class CreditEvent(BaseModel):
         from_attributes=True,
         json_encoders={
             datetime: lambda v: v.isoformat(timespec="milliseconds"),
-            Decimal: lambda v: float(v),
         },
     )
 
