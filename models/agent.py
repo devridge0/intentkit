@@ -1486,7 +1486,6 @@ class AgentResponse(Agent):
         from_attributes=True,
         json_encoders={
             datetime: lambda dt: dt.isoformat(),
-            Decimal: lambda v: float(v),
         },
     )
 
