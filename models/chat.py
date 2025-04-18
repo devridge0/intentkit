@@ -72,7 +72,7 @@ class ChatMessageAttachment(TypedDict):
 class ChatMessageSkillCall(TypedDict):
     """TypedDict for skill call details."""
 
-    id: str
+    id: NotRequired[str]
     name: str
     parameters: dict
     success: bool
