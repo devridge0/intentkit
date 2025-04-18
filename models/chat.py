@@ -298,7 +298,7 @@ class ChatMessageCreate(BaseModel):
         Returns:
             ChatMessage: The saved chat message with all fields populated
         """
-        message_record = ChatMessageTable(**self.model_dump())
+        message_record = ChatMessageTable(**self.model_dump(mode="json"))
         db.add(message_record)
         await db.flush()
         await db.refresh(message_record)
