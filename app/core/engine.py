@@ -792,7 +792,9 @@ async def execute_agent(
                             skill_message_create.id,
                             input.id,
                             message_amount,
-                            agent.fee_percentage,
+                            agent.fee_percentage
+                            if agent.fee_percentage
+                            else Decimal("0"),
                             agent.owner,
                         )
                         skill_message_create.credit_event_id = message_payment_event.id
@@ -815,9 +817,7 @@ async def execute_agent(
                                 agent.owner,
                             )
                             skill_call["credit_event_id"] = payment_event.id
-                            skill_call["credit_cost"] = float(
-                                payment_event.total_amount
-                            )
+                            skill_call["credit_cost"] = payment_event.total_amount
                             logger.info(
                                 f"[{input.agent_id}] skill payment: {skill_call}"
                             )
