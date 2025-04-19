@@ -600,6 +600,40 @@ async def fetch_credit_event_by_upstream_tx_id(
     return CreditEvent.model_validate(result)
 
 
+async def fetch_credit_event_by_id(
+    session: AsyncSession,
+    event_id: str,
+) -> CreditEvent:
+    """
+    Fetch a credit event by its ID.
+
+    Args:
+        session: Async database session.
+        event_id: ID of the credit event.
+
+    Returns:
+        The credit event if found.
+
+    Raises:
+        HTTPException: If the credit event is not found.
+    """
+    # Build the query to find the event by ID
+    stmt = select(CreditEventTable).where(CreditEventTable.id == event_id)
+
+    # Execute query
+    result = await session.scalar(stmt)
+
+    # Raise 404 if not found
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Credit event with ID '{event_id}' not found",
+        )
+
+    # Convert to Pydantic model and return
+    return CreditEvent.model_validate(result)
+
+
 async def expense_message(
     session: AsyncSession,
     agent_id: str,
