@@ -45,6 +45,9 @@
       "enum": [
         "agent_owner"
       ],
+      "x-enum-title": [
+        "Agent Owner"
+      ],
       "default": "agent_owner"
     },
     "api_key": {
