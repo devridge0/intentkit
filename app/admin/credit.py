@@ -3,7 +3,7 @@ import logging
 from decimal import Decimal
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 from pydantic import BaseModel, Field, model_validator
 from pydantic.json import pydantic_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from abstracts.api import ResponseHeadersPagination
 from app.config.config import config
 from app.core.credit import (
+    fetch_credit_event_by_id,
     fetch_credit_event_by_upstream_tx_id,
     list_credit_events_by_user,
     list_fee_events_by_agent,
@@ -479,3 +480,29 @@ async def fetch_credit_event(
         404: If the credit event is not found
     """
     return await fetch_credit_event_by_upstream_tx_id(db, upstream_tx_id)
+
+
+@credit_router_readonly.get(
+    "/events/{event_id}",
+    response_model=CreditEvent,
+    operation_id="fetch_credit_event_by_id",
+    summary="Fetch Credit Event By ID",
+    dependencies=[Depends(verify_jwt)],
+)
+async def fetch_credit_event_by_id_endpoint(
+    event_id: Annotated[str, Path(description="Credit event ID")],
+    db: AsyncSession = Depends(get_db),
+) -> CreditEvent:
+    """Fetch a credit event by its ID.
+
+    Args:
+        event_id: ID of the credit event
+        db: Database session
+
+    Returns:
+        Credit event
+
+    Raises:
+        404: If the credit event is not found
+    """
+    return await fetch_credit_event_by_id(db, event_id)
