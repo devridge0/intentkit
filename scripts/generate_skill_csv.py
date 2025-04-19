@@ -37,6 +37,7 @@ DEFAULTS = {
     "key_provider_agent_owner": False,
     "key_provider_platform": False,
     "key_provider_free": False,
+    "author": "",
 }
 
 
