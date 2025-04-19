@@ -282,6 +282,7 @@ class SkillTable(Base):
     key_provider_agent_owner = Column(Boolean, nullable=False, default=False)
     key_provider_platform = Column(Boolean, nullable=False, default=False)
     key_provider_free = Column(Boolean, nullable=False, default=False)
+    author = Column(String, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -321,6 +322,7 @@ class Skill(BaseModel):
     key_provider_free: Annotated[
         bool, Field(description="Free key provider", default=False)
     ]
+    author: Annotated[Optional[str], Field(description="Author of the skill")]
     created_at: Annotated[
         datetime, Field(description="Timestamp when this record was created")
     ]
@@ -330,7 +332,13 @@ class Skill(BaseModel):
 
     # helper to map price tier to Decimal price
     def _decimal_price_for_tier(self, tier: int) -> Decimal:
-        mapping = {1: Decimal("1"), 2: Decimal("2"), 3: Decimal("5"), 4: Decimal("10"), 5: Decimal("20")}
+        mapping = {
+            1: Decimal("1"),
+            2: Decimal("2"),
+            3: Decimal("5"),
+            4: Decimal("10"),
+            5: Decimal("20"),
+        }
         try:
             return mapping[tier]
         except KeyError:
