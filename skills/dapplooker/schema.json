@@ -38,6 +38,20 @@
       },
       "description": "States for each DappLooker skill (disabled, public, or private)"
     },
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Provider of the API key",
+      "enum": [
+        "platform",
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Platform Hosted",
+        "Agent Owner"
+      ],
+      "default": "platform"
+    },
     "api_key": {
       "type": "string",
       "title": "DappLooker API Key",
@@ -49,5 +63,15 @@
     "states",
     "enabled"
   ],
+  "if": {
+    "properties": {
+      "enabled": { "const": true },
+      "api_key_provider": { "const": "agent_owner" }
+    },
+    "required": ["enabled", "api_key_provider"]
+  },
+  "then": {
+    "required": ["api_key"]
+  },
   "additionalProperties": true
 }
