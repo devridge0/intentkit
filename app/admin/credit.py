@@ -2,8 +2,9 @@ import logging
 from decimal import Decimal
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field, model_validator
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
@@ -18,6 +19,7 @@ from app.core.credit import (
 )
 from models.credit import (
     CreditAccount,
+    CreditAccountTable,
     CreditEvent,
     Direction,
     EventType,
@@ -453,15 +455,22 @@ async def fetch_credit_event(
     operation_id="fetch_credit_event_by_id",
     summary="Credit Event by ID",
     dependencies=[Depends(verify_jwt)],
+    responses={
+        200: {"description": "Credit event found and returned successfully"},
+        403: {"description": "Forbidden: Credit event does not belong to the specified user"},
+        404: {"description": "Not Found: Credit event with the specified ID does not exist"},
+    },
 )
 async def fetch_credit_event_by_id_endpoint(
     event_id: Annotated[str, Path(description="Credit event ID")],
+    user_id: Annotated[Optional[str], Query(description="Optional user ID for authorization check")] = None,
     db: AsyncSession = Depends(get_db),
 ) -> CreditEvent:
     """Fetch a credit event by its ID.
 
     Args:
         event_id: ID of the credit event
+        user_id: Optional user ID for authorization check
         db: Database session
 
     Returns:
@@ -469,5 +478,27 @@ async def fetch_credit_event_by_id_endpoint(
 
     Raises:
         404: If the credit event is not found
+        403: If the event's account does not belong to the provided user_id
     """
-    return await fetch_credit_event_by_id(db, event_id)
+    event = await fetch_credit_event_by_id(db, event_id)
+    
+    # If user_id is provided, check if the event's account belongs to this user
+    if user_id:
+        # Query to find the account by ID
+        stmt = select(CreditAccountTable).where(
+            CreditAccountTable.id == event.account_id,
+            CreditAccountTable.owner_type == "user",
+            CreditAccountTable.owner_id == user_id
+        )
+        
+        # Execute query
+        account = await db.scalar(stmt)
+        
+        # If no matching account found, the event doesn't belong to this user
+        if not account:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Credit event with ID '{event_id}' does not belong to user '{user_id}'"
+            )
+    
+    return event
