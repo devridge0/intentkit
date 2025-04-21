@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated, Any, List
@@ -7,6 +8,8 @@ from sqlalchemy import Column, DateTime, String, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 from models.base import Base
+from models.db import get_session
+from models.redis import get_redis
 
 
 class AppSettingTable(Base):
@@ -104,23 +107,47 @@ class AppSetting(BaseModel):
     ]
 
     @staticmethod
-    async def payment(session) -> PaymentSettings:
-        """Get payment settings from the database.
+    async def payment() -> PaymentSettings:
+        """Get payment settings from the database with Redis caching.
 
-        Args:
-            session: Database session
+        The settings are cached in Redis for 3 minutes.
 
         Returns:
             PaymentSettings: Payment settings
         """
+        # Redis cache key for payment settings
+        cache_key = "intentkit:app:settings:payment"
+        cache_ttl = 180  # 3 minutes in seconds
 
-        # Query the database for the payment settings
-        stmt = select(AppSettingTable).where(AppSettingTable.key == "payment")
-        setting = await session.scalar(stmt)
+        # Try to get from Redis cache first
+        redis = get_redis()
+        cached_data = await redis.get(cache_key)
 
-        # If settings don't exist, return default settings
-        if not setting:
-            return PaymentSettings()
+        if cached_data:
+            # If found in cache, deserialize and return
+            try:
+                payment_data = json.loads(cached_data)
+                return PaymentSettings(**payment_data)
+            except (json.JSONDecodeError, TypeError):
+                # If cache is corrupted, invalidate it
+                await redis.delete(cache_key)
 
-        # Convert the JSON value to PaymentSettings
-        return PaymentSettings(**setting.value)
+        # If not in cache or cache is invalid, get from database
+        async with get_session() as session:
+            # Query the database for the payment settings
+            stmt = select(AppSettingTable).where(AppSettingTable.key == "payment")
+            setting = await session.scalar(stmt)
+
+            # If settings don't exist, use default settings
+            if not setting:
+                payment_settings = PaymentSettings()
+            else:
+                # Convert the JSON value to PaymentSettings
+                payment_settings = PaymentSettings(**setting.value)
+
+            # Cache the settings in Redis
+            await redis.set(
+                cache_key, json.dumps(payment_settings.model_dump()), ex=cache_ttl
+            )
+
+            return payment_settings
