@@ -72,7 +72,9 @@ class DappLookerTokenData(DappLookerBaseTool):
             str: Formatted token data with market metrics and analytics.
         """
         context = self.context_from_config(config)
-        logger.debug(f"dapplooker_token_data.py: Fetching token data with context {context}")
+        logger.debug(
+            f"dapplooker_token_data.py: Fetching token data with context {context}"
+        )
 
         # Get the API key from the agent's configuration or environment variable
         api_key = self.get_api_key(context)
@@ -84,7 +86,18 @@ class DappLookerTokenData(DappLookerBaseTool):
             return "Error: Either token_tickers or token_addresses must be provided."
 
         # Check for common non-AI agent tokens that won't be in the database
-        if token_tickers and token_tickers.lower() in ["btc", "eth", "sol", "bitcoin", "ethereum", "solana", "bnb", "xrp", "ada", "doge"]:
+        if token_tickers and token_tickers.lower() in [
+            "btc",
+            "eth",
+            "sol",
+            "bitcoin",
+            "ethereum",
+            "solana",
+            "bnb",
+            "xrp",
+            "ada",
+            "doge",
+        ]:
             return (
                 f"The token '{token_tickers}' is not an AI agent token and is not tracked by DappLooker. "
                 f"DappLooker specializes in AI agent tokens like 'aixbt', 'vader', and other AI-focused crypto projects. "
@@ -135,7 +148,8 @@ class DappLookerTokenData(DappLookerBaseTool):
 
         except Exception as e:
             logger.error(
-                f"dapplooker_token_data.py: Error retrieving token data: {e}", exc_info=True
+                f"dapplooker_token_data.py: Error retrieving token data: {e}",
+                exc_info=True,
             )
             return (
                 "An error occurred while retrieving token data. Please try again later."
@@ -258,40 +272,70 @@ class DappLookerTokenData(DappLookerBaseTool):
             # Token Holder Insights
             if token_holder_insights:
                 formatted_results += "### Token Holder Insights\n"
-                total_holders = token_holder_insights.get("total_holder_count", "Unknown")
+                total_holders = token_holder_insights.get(
+                    "total_holder_count", "Unknown"
+                )
                 holder_change_24h = token_holder_insights.get(
                     "holder_count_change_percentage_24h", "Unknown"
                 )
                 fifty_percent_wallets = token_holder_insights.get(
                     "fifty_percentage_holding_wallet_count", "Unknown"
                 )
-                
+
                 # First 100 buyers metrics
-                first_100_initial = token_holder_insights.get("first_100_buyers_initial_bought", "Unknown")
-                first_100_initial_pct = token_holder_insights.get("first_100_buyers_initial_bought_percentage", "Unknown")
-                first_100_current = token_holder_insights.get("first_100_buyers_current_holding", "Unknown")
-                first_100_current_pct = token_holder_insights.get("first_100_buyers_current_holding_percentage", "Unknown")
-                
+                first_100_initial = token_holder_insights.get(
+                    "first_100_buyers_initial_bought", "Unknown"
+                )
+                first_100_initial_pct = token_holder_insights.get(
+                    "first_100_buyers_initial_bought_percentage", "Unknown"
+                )
+                first_100_current = token_holder_insights.get(
+                    "first_100_buyers_current_holding", "Unknown"
+                )
+                first_100_current_pct = token_holder_insights.get(
+                    "first_100_buyers_current_holding_percentage", "Unknown"
+                )
+
                 # Top holders concentration
-                top_10_balance = token_holder_insights.get("top_10_holder_balance", "Unknown")
-                top_10_pct = token_holder_insights.get("top_10_holder_percentage", "Unknown")
-                top_50_balance = token_holder_insights.get("top_50_holder_balance", "Unknown")
-                top_50_pct = token_holder_insights.get("top_50_holder_percentage", "Unknown")
-                top_100_balance = token_holder_insights.get("top_100_holder_balance", "Unknown")
-                top_100_pct = token_holder_insights.get("top_100_holder_percentage", "Unknown")
+                top_10_balance = token_holder_insights.get(
+                    "top_10_holder_balance", "Unknown"
+                )
+                top_10_pct = token_holder_insights.get(
+                    "top_10_holder_percentage", "Unknown"
+                )
+                top_50_balance = token_holder_insights.get(
+                    "top_50_holder_balance", "Unknown"
+                )
+                top_50_pct = token_holder_insights.get(
+                    "top_50_holder_percentage", "Unknown"
+                )
+                top_100_balance = token_holder_insights.get(
+                    "top_100_holder_balance", "Unknown"
+                )
+                top_100_pct = token_holder_insights.get(
+                    "top_100_holder_percentage", "Unknown"
+                )
 
                 if total_holders != "Unknown":
                     formatted_results += f"**Total Holders:** {total_holders}\n"
                 formatted_results += f"**Holder Change 24h:** {holder_change_24h}%\n"
                 if fifty_percent_wallets != "Unknown":
-                    formatted_results += f"**Wallets Holding 50%:** {fifty_percent_wallets}\n"
-                
+                    formatted_results += (
+                        f"**Wallets Holding 50%:** {fifty_percent_wallets}\n"
+                    )
+
                 formatted_results += f"**First 100 Buyers Initial:** {first_100_initial} ({first_100_initial_pct}%)\n"
                 formatted_results += f"**First 100 Buyers Current:** {first_100_current} ({first_100_current_pct}%)\n"
-                
-                formatted_results += f"**Top 10 Holders:** {top_10_balance} ({top_10_pct}%)\n"
-                formatted_results += f"**Top 50 Holders:** {top_50_balance} ({top_50_pct}%)\n"
-                formatted_results += f"**Top 100 Holders:** {top_100_balance} ({top_100_pct}%)\n\n"
+
+                formatted_results += (
+                    f"**Top 10 Holders:** {top_10_balance} ({top_10_pct}%)\n"
+                )
+                formatted_results += (
+                    f"**Top 50 Holders:** {top_50_balance} ({top_50_pct}%)\n"
+                )
+                formatted_results += (
+                    f"**Top 100 Holders:** {top_100_balance} ({top_100_pct}%)\n\n"
+                )
 
             # Smart money insights
             if smart_money_insights:
@@ -309,14 +353,26 @@ class DappLookerTokenData(DappLookerBaseTool):
                 formatted_results += "### Developer Wallet Insights\n"
                 wallet_address = dev_wallet_insights.get("wallet_address", "Unknown")
                 wallet_balance = dev_wallet_insights.get("wallet_balance", "Unknown")
-                wallet_percentage = dev_wallet_insights.get("dev_wallet_total_holding_percentage", "Unknown")
-                outflow_txs = dev_wallet_insights.get("dev_wallet_outflow_txs_count_24h", "Unknown")
-                outflow_amount = dev_wallet_insights.get("dev_wallet_outflow_amount_24h", "Unknown")
+                wallet_percentage = dev_wallet_insights.get(
+                    "dev_wallet_total_holding_percentage", "Unknown"
+                )
+                outflow_txs = dev_wallet_insights.get(
+                    "dev_wallet_outflow_txs_count_24h", "Unknown"
+                )
+                outflow_amount = dev_wallet_insights.get(
+                    "dev_wallet_outflow_amount_24h", "Unknown"
+                )
                 fresh_wallet = dev_wallet_insights.get("fresh_wallet", False)
                 dev_sold = dev_wallet_insights.get("dev_sold", False)
-                dev_sold_percentage = dev_wallet_insights.get("dev_sold_percentage", "Unknown")
-                bundle_wallet_count = dev_wallet_insights.get("bundle_wallet_count", "Unknown")
-                bundle_wallet_supply = dev_wallet_insights.get("bundle_wallet_supply_percentage", "Unknown")
+                dev_sold_percentage = dev_wallet_insights.get(
+                    "dev_sold_percentage", "Unknown"
+                )
+                bundle_wallet_count = dev_wallet_insights.get(
+                    "bundle_wallet_count", "Unknown"
+                )
+                bundle_wallet_supply = dev_wallet_insights.get(
+                    "bundle_wallet_supply_percentage", "Unknown"
+                )
 
                 formatted_results += f"**Developer Wallet:** {wallet_address}\n"
                 if wallet_balance != "Unknown":
