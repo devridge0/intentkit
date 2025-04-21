@@ -681,9 +681,12 @@ class AgentUpdate(BaseModel):
             "gpt-4.1-nano",
             "gpt-4.1-mini",
             "gpt-4.1",
+            "o4-mini",
             "deepseek-chat",
             "deepseek-reasoner",
             "grok-2",
+            "grok-3",
+            "grok-3-mini",
             "eternalai",
         ],
         PydanticField(
