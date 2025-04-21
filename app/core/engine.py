@@ -58,6 +58,7 @@ from app.core.agent import AgentStore
 from app.core.credit import expense_message, expense_skill
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
+from app.core.reigent import ReigentChatModel
 from app.core.skill import skill_store
 from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
@@ -158,14 +159,9 @@ async def initialize_agent(aid, is_private=False):
         if input_token_limit > 60000:
             input_token_limit = 60000
     elif agent.model.startswith("reigent"):
-        llm = ChatOpenAI(
-            model_name=agent.model,
-            openai_api_key=config.reigent_api_key,
-            openai_api_base="https://api.reisearch.box",
-            frequency_penalty=agent.frequency_penalty,
-            presence_penalty=agent.presence_penalty,
-            temperature=agent.temperature,
-            timeout=300,
+        # Use custom Reigent implementation that handles the API's limitations
+        llm = ReigentChatModel(
+            api_key=config.reigent_api_key,
         )
         if input_token_limit > 80000:
             input_token_limit = 80000

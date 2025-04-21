@@ -6,7 +6,22 @@ We will support more models in the future.
 
 ## Reigent Integration
 
-The Reigent integration allows you to use Reigent's AI models within IntentKit. The integration uses the same ChatOpenAI implementation that powers our OpenAI integration, but with a different base URL.
+The Reigent API is OpenAI-compatible but has some limitations. It doesn't accept additional parameters like `model`, `temperature`, etc. 
+
+To work around this, we've created a custom implementation:
+
+```python
+from app.core.reigent import ReigentChatModel
+
+llm = ReigentChatModel(
+    api_key=config.reigent_api_key,
+)
+```
+
+To use Reigent with your agent:
+
+1. Add your Reigent API key to the `.env` file as `REIGENT_API_KEY`
+2. Set the agent model name to start with "reigent" (this is only used for identification in our system)
 
 ### Configuration
 
@@ -19,9 +34,9 @@ To use Reigent models:
 
 ### API Reference
 
-Reigent models use the standard OpenAI-compatible endpoint:
+Reigent models use the v1 OpenAI-compatible endpoint:
 ```
-https://api.reisearch.box/rei/agents/chat-completion
+https://api.reisearch.box/v1/chat/completions
 ```
 
 Authentication is handled using a REI Secret Token in the Authorization header, similar to how OpenAI API keys are used.
