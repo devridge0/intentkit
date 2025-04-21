@@ -157,6 +157,18 @@ async def initialize_agent(aid, is_private=False):
         )
         if input_token_limit > 60000:
             input_token_limit = 60000
+    elif agent.model.startswith("reigent"):
+        llm = ChatOpenAI(
+            model_name=agent.model,
+            openai_api_key=config.reigent_api_key,
+            openai_api_base="https://api.reisearch.box",
+            frequency_penalty=agent.frequency_penalty,
+            presence_penalty=agent.presence_penalty,
+            temperature=agent.temperature,
+            timeout=300,
+        )
+        if input_token_limit > 80000:
+            input_token_limit = 80000
     else:
         llm = ChatOpenAI(
             model_name=agent.model,
