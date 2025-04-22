@@ -8,6 +8,7 @@ from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
+from models.app_setting import AppSetting
 from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
     DEFAULT_PLATFORM_ACCOUNT_DEV,
@@ -811,12 +812,14 @@ async def expense_skill(
         session, UpstreamType.EXECUTOR, upstream_tx_id
     )
 
+    payment_settings = await AppSetting.payment()
+
     # Get amount, FIXME: hardcode now
     logger.info(f"skill payment {skill_name}")
     base_skill_amount = 1
     fee_dev_user = DEFAULT_PLATFORM_ACCOUNT_DEV
     fee_dev_user_type = OwnerType.PLATFORM
-    fee_dev_percentage = Decimal("0.1")
+    fee_dev_percentage = payment_settings.fee_dev_percentage
 
     if base_skill_amount < Decimal("0"):
         raise ValueError("Base skill amount must be non-negative")
@@ -824,15 +827,15 @@ async def expense_skill(
     # Calculate amount
     base_original_amount = base_skill_amount
     base_amount = base_original_amount
-    fee_platform_amount = base_amount * Decimal(
-        str(config.payment_fee_platform_percentage)
+    fee_platform_amount = (
+        base_amount * payment_settings.fee_platform_percentage / Decimal("100")
     )
     fee_agent_amount = (
-        base_amount * agent_fee_percentage
+        base_amount * agent_fee_percentage / Decimal("100")
         if user_id != agent_owner_id
         else Decimal("0")
     )
-    fee_dev_amount = base_amount * fee_dev_percentage
+    fee_dev_amount = base_amount * fee_dev_percentage / Decimal("100")
     total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
 
     # 1. Update user account - deduct credits

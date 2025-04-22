@@ -14,6 +14,7 @@ import importlib
 import logging
 import textwrap
 import time
+import traceback
 from datetime import datetime
 from decimal import Decimal
 
@@ -61,6 +62,7 @@ from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.credit import CreditAccount, OwnerType
 from models.db import get_pool, get_session
+from models.llm import get_model_cost
 from models.skill import AgentSkillData, ThreadSkillData
 from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
@@ -635,15 +637,10 @@ async def execute_agent(
                     async with get_session() as session:
                         # payment
                         if is_payment_required(input, agent):
-                            amount = (
-                                Decimal("200")
-                                * (
-                                    Decimal(str(chat_message_create.input_tokens))
-                                    * Decimal("0.3")
-                                    + Decimal(str(chat_message_create.output_tokens))
-                                    * Decimal("1.2")
-                                )
-                                / Decimal("1000000")
+                            amount = await get_model_cost(
+                                agent.model,
+                                chat_message_create.input_tokens,
+                                chat_message_create.output_tokens,
                             )
                             credit_event = await expense_message(
                                 session,
@@ -739,15 +736,10 @@ async def execute_agent(
                 async with get_session() as session:
                     if is_payment_required(input, agent):
                         # message payment
-                        message_amount = (
-                            Decimal("200")
-                            * (
-                                Decimal(str(skill_message_create.input_tokens))
-                                * Decimal("0.3")
-                                + Decimal(str(skill_message_create.output_tokens))
-                                * Decimal("1.2")
-                            )
-                            / Decimal("1000000")
+                        message_amount = await get_model_cost(
+                            agent.model,
+                            skill_message_create.input_tokens,
+                            skill_message_create.output_tokens,
                         )
                         message_payment_event = await expense_message(
                             session,
@@ -792,13 +784,16 @@ async def execute_agent(
             elif "memory_manager" in chunk:
                 pass
             else:
+                error_traceback = traceback.format_exc()
                 logger.error(
-                    "unexpected message type: " + str(chunk),
+                    f"unexpected message type: {str(chunk)}\n{error_traceback}",
                     extra={"thread_id": thread_id},
                 )
         except SQLAlchemyError as e:
+            error_traceback = traceback.format_exc()
             logger.error(
-                f"db error when execute agent: {str(e)}", extra={"thread_id": thread_id}
+                f"failed to execute agent: {str(e)}\n{error_traceback}",
+                extra={"thread_id": thread_id},
             )
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
@@ -816,8 +811,10 @@ async def execute_agent(
             resp.append(error_message)
             return resp
         except Exception as e:
+            error_traceback = traceback.format_exc()
             logger.error(
-                f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
+                f"failed to execute agent: {str(e)}\n{error_traceback}",
+                extra={"thread_id": thread_id},
             )
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
