@@ -14,6 +14,7 @@ import importlib
 import logging
 import textwrap
 import time
+import traceback
 from datetime import datetime
 from decimal import Decimal
 
@@ -783,13 +784,16 @@ async def execute_agent(
             elif "memory_manager" in chunk:
                 pass
             else:
+                error_traceback = traceback.format_exc()
                 logger.error(
-                    "unexpected message type: " + str(chunk),
+                    f"unexpected message type: {str(chunk)}\n{error_traceback}",
                     extra={"thread_id": thread_id},
                 )
         except SQLAlchemyError as e:
+            error_traceback = traceback.format_exc()
             logger.error(
-                f"db error when execute agent: {str(e)}", extra={"thread_id": thread_id}
+                f"failed to execute agent: {str(e)}\n{error_traceback}",
+                extra={"thread_id": thread_id},
             )
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
@@ -807,8 +811,10 @@ async def execute_agent(
             resp.append(error_message)
             return resp
         except Exception as e:
+            error_traceback = traceback.format_exc()
             logger.error(
-                f"failed to execute agent: {str(e)}", extra={"thread_id": thread_id}
+                f"failed to execute agent: {str(e)}\n{error_traceback}",
+                extra={"thread_id": thread_id},
             )
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
