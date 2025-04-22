@@ -254,7 +254,7 @@ AVAILABLE_MODELS = {
         supports_temperature=False,
         supports_frequency_penalty=False,
         supports_presence_penalty=False,
-        api_base="https://api.reigent.com/v1",
+        api_base="https://api.reisearch.box/v1",
         timeout=300,
     ),
 }
@@ -416,17 +416,22 @@ class ReigentLLM(LLMModel):
     """Reigent LLM configuration."""
 
     def create_instance(self, config: Any) -> LanguageModelLike:
-        """Create and return a ReigentChatModel instance."""
-        from models.llm_reigent import ReigentChatModel
+        """Create and return a ChatOpenAI instance configured for Reigent."""
+        from langchain_openai import ChatOpenAI
 
         info = self.model_info
 
-        # Reigent only needs the API key and timeout
-        # It doesn't support other parameters like temperature, frequency_penalty, etc.
-        return ReigentChatModel(
-            api_key=config.reigent_api_key,
-            timeout=info.timeout,
-        )
+        kwargs = {
+            "openai_api_key": config.reigent_api_key,
+            "openai_api_base": "https://api.reisearch.box/v1",
+            "timeout": info.timeout,
+            "model_kwargs": {
+                # Override any specific parameters required for Reigent API
+                # The Reigent API requires 'tools' instead of 'functions' and might have some specific formatting requirements
+            },
+        }
+
+        return ChatOpenAI(**kwargs)
 
 
 # Factory function to create the appropriate LLM model based on the model name
