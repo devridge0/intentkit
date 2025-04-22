@@ -5,6 +5,10 @@ from typing import Any, Dict, Optional
 from langchain_core.language_models import LanguageModelLike
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.app_setting import AppSetting
+
+_credit_per_usdc = None
+
 
 class LLMProvider(str, Enum):
     OPENAI = "openai"
@@ -47,6 +51,25 @@ class LLMModelInfo(BaseModel):
     timeout: int = 180  # Default timeout in seconds
 
     model_config = ConfigDict(frozen=True)  # Make instances immutable
+
+    async def calculate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
+        global _credit_per_usdc
+        if not _credit_per_usdc:
+            _credit_per_usdc = (await AppSetting.payment()).credit_per_usdc
+        """Calculate the cost for a given number of tokens."""
+        input_cost = (
+            _credit_per_usdc
+            * Decimal(input_tokens)
+            * self.input_price
+            / Decimal(1000000)
+        )
+        output_cost = (
+            _credit_per_usdc
+            * Decimal(output_tokens)
+            * self.output_price
+            / Decimal(1000000)
+        )
+        return input_cost + output_cost
 
 
 # Define all available models
@@ -284,12 +307,9 @@ class LLMModel(BaseModel):
         """Get the token limit for this model."""
         return self.model_info.context_length
 
-    def calculate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
+    async def calculate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
         """Calculate the cost for a given number of tokens."""
-        info = self.model_info
-        input_cost = (Decimal(input_tokens) / Decimal(1000000)) * info.input_price
-        output_cost = (Decimal(output_tokens) / Decimal(1000000)) * info.output_price
-        return input_cost + output_cost
+        return await self.model_info.calculate_cost(input_tokens, output_tokens)
 
 
 class OpenAILLM(LLMModel):
@@ -489,3 +509,11 @@ def get_model_info(model_name: str) -> LLMModelInfo:
     if model_name not in AVAILABLE_MODELS:
         raise ValueError(f"Unknown model: {model_name}")
     return AVAILABLE_MODELS[model_name]
+
+
+async def get_model_cost(
+    model_name: str, input_tokens: int, output_tokens: int
+) -> Decimal:
+    """Get the cost of a specific model."""
+    info = get_model_info(model_name)
+    return await info.calculate_cost(input_tokens, output_tokens)
