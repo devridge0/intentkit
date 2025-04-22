@@ -44,9 +44,9 @@ class PaymentSettings(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "credit_per_doller": 200,
-                "fee_platform_percentage": 0.2,
-                "fee_dev_percentage": 0.1,
+                "credit_per_doller": 1000,
+                "fee_platform_percentage": 100,
+                "fee_dev_percentage": 20,
                 "agent_whitelist_enabled": False,
                 "agent_whitelist": [],
             }
@@ -55,15 +55,19 @@ class PaymentSettings(BaseModel):
 
     credit_per_doller: Annotated[
         Decimal,
-        Field(default=Decimal("200"), description="Number of credits per dollar"),
+        Field(default=Decimal("1000"), description="Number of credits per dollar"),
     ]
     fee_platform_percentage: Annotated[
         Decimal,
-        Field(default=Decimal("0.2"), description="Platform fee percentage"),
+        Field(
+            default=Decimal("100"), description="Platform fee percentage", ge=0, le=100
+        ),
     ]
     fee_dev_percentage: Annotated[
         Decimal,
-        Field(default=Decimal("0.1"), description="Developer fee percentage"),
+        Field(
+            default=Decimal("20"), description="Developer fee percentage", ge=0, le=100
+        ),
     ]
     agent_whitelist_enabled: Annotated[
         bool,
