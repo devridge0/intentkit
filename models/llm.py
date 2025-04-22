@@ -2,6 +2,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, Optional
 
+from langchain_core.language_models import LanguageModelLike
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -10,6 +11,7 @@ class LLMProvider(str, Enum):
     DEEPSEEK = "deepseek"
     XAI = "xai"
     ETERNAL = "eternal"
+    REIGENT = "reigent"
 
 
 class LLMModelInfo(BaseModel):
@@ -235,6 +237,26 @@ AVAILABLE_MODELS = {
         api_base="https://api.eternalai.org/v1",
         timeout=300,
     ),
+    # Reigent models
+    "reigent": LLMModelInfo(
+        id="reigent",
+        name="REI Network",
+        provider=LLMProvider.REIGENT,
+        input_price=Decimal("0.50"),  # Placeholder price, update with actual pricing
+        output_price=Decimal("1.50"),  # Placeholder price, update with actual pricing
+        context_length=32000,
+        output_length=4096,
+        intelligence=4,
+        speed=3,
+        supports_image_input=False,
+        supports_skill_calls=True,
+        supports_structured_output=True,
+        supports_temperature=False,
+        supports_frequency_penalty=False,
+        supports_presence_penalty=False,
+        api_base="https://api.reigent.com/v1",
+        timeout=300,
+    ),
 }
 
 
@@ -254,7 +276,7 @@ class LLMModel(BaseModel):
         return AVAILABLE_MODELS[self.model_name]
 
     # This will be implemented by subclasses to return the appropriate LLM instance
-    def create_instance(self, config: Any) -> Any:
+    def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return the LLM instance based on the configuration."""
         raise NotImplementedError("Subclasses must implement create_instance")
 
@@ -273,7 +295,7 @@ class LLMModel(BaseModel):
 class OpenAILLM(LLMModel):
     """OpenAI LLM configuration."""
 
-    def create_instance(self, config: Any) -> Any:
+    def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatOpenAI instance."""
         from langchain_openai import ChatOpenAI
 
@@ -304,7 +326,7 @@ class OpenAILLM(LLMModel):
 class DeepseekLLM(LLMModel):
     """Deepseek LLM configuration."""
 
-    def create_instance(self, config: Any) -> Any:
+    def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatOpenAI instance configured for Deepseek."""
         from langchain_openai import ChatOpenAI
 
@@ -333,7 +355,7 @@ class DeepseekLLM(LLMModel):
 class XAILLM(LLMModel):
     """XAI (Grok) LLM configuration."""
 
-    def create_instance(self, config: Any) -> Any:
+    def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatXAI instance."""
         from langchain_xai import ChatXAI
 
@@ -361,7 +383,7 @@ class XAILLM(LLMModel):
 class EternalLLM(LLMModel):
     """Eternal AI LLM configuration."""
 
-    def create_instance(self, config: Any) -> Any:
+    def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatOpenAI instance configured for Eternal AI."""
         from langchain_openai import ChatOpenAI
 
@@ -388,6 +410,23 @@ class EternalLLM(LLMModel):
             kwargs["presence_penalty"] = self.presence_penalty
 
         return ChatOpenAI(**kwargs)
+
+
+class ReigentLLM(LLMModel):
+    """Reigent LLM configuration."""
+
+    def create_instance(self, config: Any) -> LanguageModelLike:
+        """Create and return a ReigentChatModel instance."""
+        from models.llm_reigent import ReigentChatModel
+
+        info = self.model_info
+
+        # Reigent only needs the API key and timeout
+        # It doesn't support other parameters like temperature, frequency_penalty, etc.
+        return ReigentChatModel(
+            api_key=config.reigent_api_key,
+            timeout=info.timeout,
+        )
 
 
 # Factory function to create the appropriate LLM model based on the model name
@@ -427,6 +466,8 @@ def create_llm_model(
         return XAILLM(**base_params)
     elif provider == LLMProvider.ETERNAL:
         return EternalLLM(**base_params)
+    elif provider == LLMProvider.REIGENT:
+        return ReigentLLM(**base_params)
     else:
         # Default to OpenAI
         return OpenAILLM(**base_params)
