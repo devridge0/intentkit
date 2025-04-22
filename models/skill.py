@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Annotated, Any, Dict, Optional
@@ -8,6 +9,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from models.base import Base
 from models.db import get_session
+from models.redis import get_redis
 
 
 class AgentSkillDataTable(Base):
@@ -345,9 +347,63 @@ class Skill(BaseModel):
             raise ValueError(f"Invalid price tier: {tier}")
 
     @property
+    def price_self_key(self) -> Decimal:
+        """Get the price for this skill with self key.
+
+        Returns:
+            Decimal: Price for this skill with self key
+        """
+        return self._decimal_price_for_tier(self.price_tier_self_key)
+
+    @property
     def price(self) -> Decimal:
         return self._decimal_price_for_tier(self.price_tier)
 
-    @property
-    def price_self_key(self) -> Decimal:
-        return self._decimal_price_for_tier(self.price_tier_self_key)
+    @staticmethod
+    async def get(name: str) -> Optional["Skill"]:
+        """Get a skill by name with Redis caching.
+
+        The skill is cached in Redis for 3 minutes.
+
+        Args:
+            name: Name of the skill to retrieve
+
+        Returns:
+            Skill: The skill if found, None otherwise
+        """
+        # Redis cache key for skill
+        cache_key = f"intentkit:skill:{name}"
+        cache_ttl = 180  # 3 minutes in seconds
+
+        # Try to get from Redis cache first
+        redis = get_redis()
+        cached_data = await redis.get(cache_key)
+
+        if cached_data:
+            # If found in cache, deserialize and return
+            try:
+                skill_data = json.loads(cached_data)
+                return Skill(**skill_data)
+            except (json.JSONDecodeError, TypeError):
+                # If cache is corrupted, invalidate it
+                await redis.delete(cache_key)
+
+        # If not in cache or cache is invalid, get from database
+        async with get_session() as session:
+            # Query the database for the skill
+            stmt = select(SkillTable).where(SkillTable.name == name)
+            skill = await session.scalar(stmt)
+
+            # If skill doesn't exist, return None
+            if not skill:
+                return None
+
+            # Convert to Skill model
+            skill_model = Skill.model_validate(skill)
+
+            # Cache the skill in Redis
+            await redis.set(
+                cache_key, json.dumps(skill_model.model_dump()), ex=cache_ttl
+            )
+
+            return skill_model

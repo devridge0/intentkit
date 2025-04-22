@@ -45,8 +45,6 @@ from langchain_core.messages import (
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
-from langchain_xai import ChatXAI
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.graph import CompiledGraph
 from sqlalchemy import func, update
@@ -58,7 +56,6 @@ from app.core.agent import AgentStore
 from app.core.credit import expense_message, expense_skill
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
-from app.core.reigent import ReigentChatModel
 from app.core.skill import skill_store
 from models.agent import Agent, AgentData, AgentQuota, AgentTable
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
@@ -119,63 +116,22 @@ async def initialize_agent(aid, is_private=False):
         raise HTTPException(status_code=404, detail="Agent not found")
     agent_data: AgentData = await AgentData.get(aid)
 
-    # ==== Initialize LLM.
-    input_token_limit = config.input_token_limit
-    # TODO: model name whitelist
-    if agent.model.startswith("deepseek"):
-        llm = ChatOpenAI(
-            model_name=agent.model,
-            openai_api_key=config.deepseek_api_key,
-            openai_api_base="https://api.deepseek.com",
-            frequency_penalty=agent.frequency_penalty,
-            presence_penalty=agent.presence_penalty,
-            temperature=agent.temperature,
-            timeout=300,
-        )
-        if input_token_limit > 60000:
-            input_token_limit = 60000
-    elif agent.model.startswith("grok"):
-        llm = ChatXAI(
-            model_name=agent.model,
-            api_key=config.xai_api_key,
-            frequency_penalty=agent.frequency_penalty,
-            presence_penalty=agent.presence_penalty,
-            temperature=agent.temperature,
-            timeout=180,
-        )
-        if input_token_limit > 120000:
-            input_token_limit = 120000
-    elif agent.model == "eternalai":
-        agent.model = "unsloth/Llama-3.3-70B-Instruct-bnb-4bit"
-        llm = ChatOpenAI(
-            model_name=agent.model,
-            openai_api_key=config.eternal_api_key,
-            openai_api_base="https://api.eternalai.org/v1",
-            frequency_penalty=agent.frequency_penalty,
-            presence_penalty=agent.presence_penalty,
-            temperature=agent.temperature,
-            timeout=300,
-        )
-        if input_token_limit > 60000:
-            input_token_limit = 60000
-    elif agent.model.startswith("reigent"):
-        # Use custom Reigent implementation that handles the API's limitations
-        llm = ReigentChatModel(
-            api_key=config.reigent_api_key,
-        )
-        if input_token_limit > 80000:
-            input_token_limit = 80000
-    else:
-        llm = ChatOpenAI(
-            model_name=agent.model,
-            openai_api_key=config.openai_api_key,
-            frequency_penalty=agent.frequency_penalty,
-            presence_penalty=agent.presence_penalty,
-            temperature=agent.temperature,
-            timeout=180,
-        )
-        if input_token_limit > 120000:
-            input_token_limit = 120000
+    # ==== Initialize LLM using the LLM abstraction.
+    from models.llm import create_llm_model
+
+    # Create the LLM model instance
+    llm_model = create_llm_model(
+        model_name=agent.model,
+        temperature=agent.temperature,
+        frequency_penalty=agent.frequency_penalty,
+        presence_penalty=agent.presence_penalty,
+    )
+
+    # Get the LLM instance
+    llm = llm_model.create_instance(config)
+
+    # Get the token limit from the model info
+    input_token_limit = min(config.input_token_limit, llm_model.get_token_limit())
 
     # ==== Store buffered conversation history in memory.
     memory = AsyncPostgresSaver(get_pool())
