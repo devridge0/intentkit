@@ -4,7 +4,17 @@ from decimal import Decimal
 from typing import Annotated, Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, delete, func, select
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    Numeric,
+    String,
+    delete,
+    func,
+    select,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 
 from models.base import Base
@@ -277,8 +287,8 @@ class SkillTable(Base):
 
     name = Column(String, primary_key=True)
     category = Column(String, nullable=False)
-    price_tier = Column(Integer, nullable=False, default=1)
-    price_tier_self_key = Column(Integer, nullable=False, default=1)
+    price = Column(Numeric(22, 4), nullable=False, default=1)
+    price_self_key = Column(Numeric(22, 4), nullable=False, default=1)
     rate_limit_count = Column(Integer, nullable=True)
     rate_limit_minutes = Column(Integer, nullable=True)
     key_provider_agent_owner = Column(Boolean, nullable=False, default=False)
@@ -305,11 +315,12 @@ class Skill(BaseModel):
 
     name: Annotated[str, Field(description="Name of the skill")]
     category: Annotated[str, Field(description="Category of the skill")]
-    price_tier: Annotated[
-        int, Field(description="Price tier (1-5)", default=1, le=5, ge=1)
+    price: Annotated[
+        Decimal, Field(description="Price for this skill", default=Decimal("1"))
     ]
-    price_tier_self_key: Annotated[
-        int, Field(description="Self key for price tier", default=1, le=5, ge=1)
+    price_self_key: Annotated[
+        Decimal,
+        Field(description="Price for this skill with self key", default=Decimal("1")),
     ]
     rate_limit_count: Annotated[Optional[int], Field(description="Rate limit count")]
     rate_limit_minutes: Annotated[
@@ -331,33 +342,6 @@ class Skill(BaseModel):
     updated_at: Annotated[
         datetime, Field(description="Timestamp when this record was last updated")
     ]
-
-    # helper to map price tier to Decimal price
-    def _decimal_price_for_tier(self, tier: int) -> Decimal:
-        mapping = {
-            1: Decimal("1"),
-            2: Decimal("2"),
-            3: Decimal("5"),
-            4: Decimal("10"),
-            5: Decimal("20"),
-        }
-        try:
-            return mapping[tier]
-        except KeyError:
-            raise ValueError(f"Invalid price tier: {tier}")
-
-    @property
-    def price_self_key(self) -> Decimal:
-        """Get the price for this skill with self key.
-
-        Returns:
-            Decimal: Price for this skill with self key
-        """
-        return self._decimal_price_for_tier(self.price_tier_self_key)
-
-    @property
-    def price(self) -> Decimal:
-        return self._decimal_price_for_tier(self.price_tier)
 
     @staticmethod
     async def get(name: str) -> Optional["Skill"]:
