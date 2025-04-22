@@ -11,10 +11,10 @@ The Reigent API is OpenAI-compatible but has some limitations. It doesn't accept
 To work around this, we've created a custom implementation:
 
 ```python
-from app.core.reigent import ReigentChatModel
+from models.llm_reigent import ReigentChatModel
 
 llm = ReigentChatModel(
-    api_key=config.reigent_api_key,
+   api_key=config.reigent_api_key,
 )
 ```
 
