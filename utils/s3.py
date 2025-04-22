@@ -85,7 +85,7 @@ async def store_image(url: str, key: str) -> str:
             if content_type == "binary/octet-stream" or not content_type:
                 # Try to detect the image type from the content
                 kind = filetype.guess(response.content)
-                if kind and kind.mime.startswith('image/'):
+                if kind and kind.mime.startswith("image/"):
                     content_type = kind.mime
                 else:
                     # Default to JPEG if detection fails
