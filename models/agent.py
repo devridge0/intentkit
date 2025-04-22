@@ -685,10 +685,11 @@ class AgentUpdate(BaseModel):
             "deepseek-reasoner",
             "grok-2",
             "eternalai",
+            "reigent",
         ],
         PydanticField(
             default="gpt-4.1-nano",
-            description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai",
+            description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai, reigent",
             json_schema_extra={
                 "x-group": "ai",
             },
