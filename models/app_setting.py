@@ -149,7 +149,9 @@ class AppSetting(BaseModel):
 
             # Cache the settings in Redis
             await redis.set(
-                cache_key, json.dumps(payment_settings.model_dump()), ex=cache_ttl
+                cache_key,
+                json.dumps(payment_settings.model_dump(mode="json")),
+                ex=cache_ttl,
             )
 
             return payment_settings
