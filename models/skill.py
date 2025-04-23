@@ -311,7 +311,12 @@ class SkillTable(Base):
 class Skill(BaseModel):
     """Pydantic model for Skill."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={
+            datetime: lambda v: v.isoformat(timespec="milliseconds"),
+        },
+    )
 
     name: Annotated[str, Field(description="Name of the skill")]
     category: Annotated[str, Field(description="Category of the skill")]
@@ -387,7 +392,7 @@ class Skill(BaseModel):
 
             # Cache the skill in Redis
             await redis.set(
-                cache_key, json.dumps(skill_model.model_dump()), ex=cache_ttl
+                cache_key, json.dumps(skill_model.model_dump(mode="json")), ex=cache_ttl
             )
 
             return skill_model

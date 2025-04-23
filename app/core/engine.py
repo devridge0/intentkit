@@ -761,16 +761,12 @@ async def execute_agent(
                         for skill_call in skill_calls:
                             payment_event = await expense_skill(
                                 session,
-                                input.agent_id,
                                 payer,
                                 skill_message_create.id,
                                 input.id,
                                 skill_call["id"],
                                 skill_call["name"],
-                                agent.fee_percentage
-                                if agent.fee_percentage
-                                else Decimal("0"),
-                                agent.owner,
+                                agent,
                             )
                             skill_call["credit_event_id"] = payment_event.id
                             skill_call["credit_cost"] = payment_event.total_amount

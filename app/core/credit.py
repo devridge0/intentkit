@@ -8,6 +8,7 @@ from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.config import config
+from models.agent import Agent
 from models.app_setting import AppSetting
 from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
@@ -30,6 +31,7 @@ from models.credit import (
     UpstreamType,
 )
 from models.db import get_session
+from models.skill import Skill
 
 logger = logging.getLogger(__name__)
 
@@ -780,14 +782,12 @@ async def expense_message(
 
 async def expense_skill(
     session: AsyncSession,
-    agent_id: str,
     user_id: str,
     message_id: str,
     start_message_id: str,
     skill_call_id: str,
     skill_name: str,
-    agent_fee_percentage: Decimal,
-    agent_owner_id: str,
+    agent: Agent,
 ) -> CreditEvent:
     """
     Deduct credits from a user account for message expenses.
@@ -812,11 +812,24 @@ async def expense_skill(
         session, UpstreamType.EXECUTOR, upstream_tx_id
     )
 
+    # Get skill
+    base_skill_amount = 1
+    skill = await Skill.get(skill_name)
+    if skill:
+        agent_skill_config = agent.skills.get(skill.category)
+        if (
+            agent_skill_config
+            and agent_skill_config.get("api_key_provider") == "agent_owner"
+        ):
+            base_skill_amount = skill.price_self_key
+        else:
+            base_skill_amount = skill.price
+
+    # Get payment settings
     payment_settings = await AppSetting.payment()
 
-    # Get amount, FIXME: hardcode now
+    # Calculate fee
     logger.info(f"skill payment {skill_name}")
-    base_skill_amount = 1
     fee_dev_user = DEFAULT_PLATFORM_ACCOUNT_DEV
     fee_dev_user_type = OwnerType.PLATFORM
     fee_dev_percentage = payment_settings.fee_dev_percentage
@@ -830,11 +843,9 @@ async def expense_skill(
     fee_platform_amount = (
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
     )
-    fee_agent_amount = (
-        base_amount * agent_fee_percentage / Decimal("100")
-        if user_id != agent_owner_id
-        else Decimal("0")
-    )
+    fee_agent_amount = Decimal("0")
+    if agent.fee_percentage and user_id != agent.owner:
+        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
     fee_dev_amount = base_amount * fee_dev_percentage / Decimal("100")
     total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
 
@@ -866,7 +877,7 @@ async def expense_skill(
         agent_account = await CreditAccount.income_in_session(
             session=session,
             owner_type=OwnerType.AGENT,
-            owner_id=agent_id,
+            owner_id=agent.id,
             credit_type=credit_type,
             amount=fee_agent_amount,
         )
@@ -880,7 +891,7 @@ async def expense_skill(
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.EXPENSE,
-        agent_id=agent_id,
+        agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
         total_amount=total_amount,
