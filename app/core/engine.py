@@ -59,6 +59,7 @@ from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
 from models.agent import Agent, AgentData, AgentQuota, AgentTable
+from models.app_setting import AppSetting
 from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageSkillCall
 from models.credit import CreditAccount, OwnerType
 from models.db import get_pool, get_session
@@ -497,8 +498,10 @@ async def execute_agent(
         resp.append(error_message)
         return resp
 
+    need_payment = await is_payment_required(input, agent)
+
     # check user balance
-    if is_payment_required(input, agent):
+    if need_payment:
         payer = input.user_id
         if (
             input.author_type == AuthorType.TELEGRAM
@@ -636,7 +639,7 @@ async def execute_agent(
                     # handle message and payment in one transaction
                     async with get_session() as session:
                         # payment
-                        if is_payment_required(input, agent):
+                        if need_payment:
                             amount = await get_model_cost(
                                 agent.model,
                                 chat_message_create.input_tokens,
@@ -734,7 +737,7 @@ async def execute_agent(
                 cached_tool_step = None
                 # save message and credit in one transaction
                 async with get_session() as session:
-                    if is_payment_required(input, agent):
+                    if need_payment:
                         # message payment
                         message_amount = await get_model_cost(
                             agent.model,
@@ -927,7 +930,11 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
         return []
 
 
-def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+async def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+    payment_settings = await AppSetting.payment()
+    if payment_settings.agent_whitelist_enabled:
+        if agent.id not in payment_settings.agent_whitelist:
+            return False
     if config.payment_enabled and input.user_id and agent.owner:
         return True
     return False
