@@ -509,6 +509,65 @@ async def list_credit_events_by_user(
     return events_models, next_cursor, has_more
 
 
+async def list_credit_events(
+    session: AsyncSession,
+    direction: Optional[Direction] = Direction.EXPENSE,
+    cursor: Optional[str] = None,
+    limit: int = 20,
+    event_type: Optional[EventType] = None,
+) -> Tuple[List[CreditEvent], Optional[str], bool]:
+    """
+    List all credit events with cursor pagination.
+
+    Args:
+        session: Async database session.
+        direction: The direction of the events (INCOME or EXPENSE). Default is EXPENSE.
+        cursor: The ID of the last event from the previous page.
+        limit: Maximum number of events to return per page.
+        event_type: Optional filter for specific event type.
+
+    Returns:
+        A tuple containing:
+        - A list of CreditEvent models.
+        - The cursor for the next page (ID of the last event in the list).
+        - A boolean indicating if there are more events available.
+    """
+    # Build the query
+    stmt = (
+        select(CreditEventTable)
+        .order_by(CreditEventTable.id)  # Ascending order as required
+        .limit(limit + 1)  # Fetch one extra to check if there are more
+    )
+
+    # Apply direction filter (default is EXPENSE)
+    if direction:
+        stmt = stmt.where(CreditEventTable.direction == direction.value)
+
+    # Apply optional event_type filter if provided
+    if event_type:
+        stmt = stmt.where(CreditEventTable.event_type == event_type.value)
+
+    # Apply cursor filter if provided
+    if cursor:
+        stmt = stmt.where(CreditEventTable.id > cursor)  # Using > for ascending order
+
+    # Execute query
+    result = await session.execute(stmt)
+    events_data = result.scalars().all()
+
+    # Determine pagination details
+    has_more = len(events_data) > limit
+    events_to_return = events_data[:limit]  # Slice to the requested limit
+
+    # always return a cursor even there is no next page
+    next_cursor = events_to_return[-1].id if events_to_return else None
+
+    # Convert to Pydantic models
+    events_models = [CreditEvent.model_validate(event) for event in events_to_return]
+
+    return events_models, next_cursor, has_more
+
+
 async def list_fee_events_by_agent(
     session: AsyncSession,
     agent_id: str,
