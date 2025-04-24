@@ -393,11 +393,12 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "venice_image": {
+          "$ref": "../skills/venice_image/schema.json"
+        },
         "dapplooker": {
           "title": "DappLooker",
-          "$ref": "../skills/dapplooker/schema.json",
-          "x-link": "[Get your API key](https://docs.dapplooker.com/api-guides/get-api-key)",
-          "x-sensitive": true
+          "$ref": "../skills/dapplooker/schema.json"
         },
         "cryptopanic": {
           "title": "CryptoPanic",
