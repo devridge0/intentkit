@@ -1,20 +1,27 @@
 # venice_image/__init__.py
 
 import logging
-from typing import List, NotRequired, TypedDict, Optional
+from typing import List, NotRequired, Optional, TypedDict
 
 from abstracts.skill import SkillStoreABC
-from skills.base import SkillConfig, SkillState  # Assuming SkillState is like Literal["disabled", "public", "private"]
+from skills.base import (
+    SkillConfig,
+    SkillState,
+)  # Assuming SkillState is like Literal["disabled", "public", "private"]
 
 # Import the base tool and all specific model skill classes
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.image_generation_flux_dev import ImageGenerationFluxDev
-from skills.venice_image.image_generation_flux_dev_uncensored import ImageGenerationFluxDevUncensored
-from skills.venice_image.image_generation_venice_sd35 import ImageGenerationVeniceSD35
 from skills.venice_image.image_generation_fluently_xl import ImageGenerationFluentlyXL
+from skills.venice_image.image_generation_flux_dev import ImageGenerationFluxDev
+from skills.venice_image.image_generation_flux_dev_uncensored import (
+    ImageGenerationFluxDevUncensored,
+)
 from skills.venice_image.image_generation_lustify_sdxl import ImageGenerationLustifySDXL
 from skills.venice_image.image_generation_pony_realism import ImageGenerationPonyRealism
-from skills.venice_image.image_generation_stable_diffusion_3_5 import ImageGenerationStableDiffusion35
+from skills.venice_image.image_generation_stable_diffusion_3_5 import (
+    ImageGenerationStableDiffusion35,
+)
+from skills.venice_image.image_generation_venice_sd35 import ImageGenerationVeniceSD35
 
 # Cache skills at the system level, because they are stateless and only depend on the store
 _cache: dict[str, VeniceImageBaseTool] = {}
@@ -38,14 +45,14 @@ class SkillStates(TypedDict):
 class Config(SkillConfig):
     """Configuration for Venice Image skills."""
 
-    enabled: bool # Keep standard enabled flag
+    enabled: bool  # Keep standard enabled flag
     states: SkillStates
-    api_key: NotRequired[Optional[str]] # Explicitly Optional
-    safe_mode: NotRequired[bool] # Defaults handled in base or usage
-    hide_watermark: NotRequired[bool] # Defaults handled in base or usage
-    negative_prompt: NotRequired[str] # Defaults handled in base or usage
-    rate_limit_number: NotRequired[Optional[int]] # Explicitly Optional
-    rate_limit_minutes: NotRequired[Optional[int]] # Explicitly Optional
+    api_key: NotRequired[Optional[str]]  # Explicitly Optional
+    safe_mode: NotRequired[bool]  # Defaults handled in base or usage
+    hide_watermark: NotRequired[bool]  # Defaults handled in base or usage
+    negative_prompt: NotRequired[str]  # Defaults handled in base or usage
+    rate_limit_number: NotRequired[Optional[int]]  # Explicitly Optional
+    rate_limit_minutes: NotRequired[Optional[int]]  # Explicitly Optional
 
 
 # Map skill names to their corresponding classes for the factory function
@@ -62,10 +69,10 @@ _SKILL_NAME_TO_CLASS_MAP = {
 
 
 async def get_skills(
-    config: Config, # Use the specific Config TypedDict for better type hinting
+    config: Config,  # Use the specific Config TypedDict for better type hinting
     is_private: bool,
     store: SkillStoreABC,
-    **_, # Allow for extra arguments if the loader passes them
+    **_,  # Allow for extra arguments if the loader passes them
 ) -> List[VeniceImageBaseTool]:
     """Get all enabled Venice Image skills based on configuration and privacy level.
 
@@ -86,7 +93,9 @@ async def get_skills(
 
     # Iterate through all known skills defined in the map
     for skill_name in _SKILL_NAME_TO_CLASS_MAP:
-        state = skill_states.get(skill_name, "disabled") # Default to disabled if not in config
+        state = skill_states.get(
+            skill_name, "disabled"
+        )  # Default to disabled if not in config
 
         if state == "disabled":
             continue
@@ -130,8 +139,10 @@ def get_venice_image_skill(
             _cache[name] = instance
             return instance
         except Exception as e:
-            logger.error(f"Failed to instantiate Venice Image skill '{name}': {e}", exc_info=True)
-            return None # Failed to instantiate
+            logger.error(
+                f"Failed to instantiate Venice Image skill '{name}': {e}", exc_info=True
+            )
+            return None  # Failed to instantiate
     else:
         # This handles cases where a name might be in config but not in our map
         logger.warning(f"Attempted to get unknown Venice Image skill: {name}")
