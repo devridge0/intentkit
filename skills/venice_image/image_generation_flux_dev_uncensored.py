@@ -1,6 +1,7 @@
 # venice_image/image_generation_flux_dev_uncensored.py
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.input import STYLE_PRESETS # Keep for description
+from skills.venice_image.input import STYLE_PRESETS  # Keep for description
+
 
 class ImageGenerationFluxDevUncensored(VeniceImageBaseTool):
     """
@@ -9,7 +10,7 @@ class ImageGenerationFluxDevUncensored(VeniceImageBaseTool):
     """
 
     # --- Model Specific Configuration ---
-    name: str = "image_generation_flux_dev_uncensored"
+    name: str = "venice_image_generation_flux_dev_uncensored"
     description: str = (
         "Generate images using Venice AI's Flux Dev Uncensored model.\n"
         "This is an uncensored version of flux-dev, suitable for unrestricted content including NSFW.\n"

@@ -1,6 +1,7 @@
 # venice_image/image_generation_venice_sd35.py
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.input import STYLE_PRESETS # Keep for description
+from skills.venice_image.input import STYLE_PRESETS  # Keep for description
+
 
 class ImageGenerationVeniceSD35(VeniceImageBaseTool):
     """
@@ -9,7 +10,7 @@ class ImageGenerationVeniceSD35(VeniceImageBaseTool):
     """
 
     # --- Model Specific Configuration ---
-    name: str = "image_generation_venice_sd35"
+    name: str = "venice_image_generation_venice_sd35"
     description: str = (
         "Generate images using Stability AI's Stable Diffusion 3.5 Large model (via Venice AI).\n"
         "Ideal for artworks, design processes, and educational use. Not for factual representations.\n"
