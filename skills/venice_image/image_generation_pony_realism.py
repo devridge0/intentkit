@@ -1,6 +1,7 @@
 # venice_image/image_generation_pony_realism.py
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.input import STYLE_PRESETS # Keep for description
+from skills.venice_image.input import STYLE_PRESETS  # Keep for description
+
 
 class ImageGenerationPonyRealism(VeniceImageBaseTool):
     """
@@ -9,7 +10,7 @@ class ImageGenerationPonyRealism(VeniceImageBaseTool):
     """
 
     # --- Model Specific Configuration ---
-    name: str = "image_generation_pony_realism"
+    name: str = "venice_image_generation_pony_realism"
     description: str = (
         "Generate images using the Pony Realism model (via Venice AI).\n"
         "Creates high-detail, realistic images, good for anime/character designs. Benefits from Danbooru tags (e.g., 'score_9', 'female'/'male').\n"

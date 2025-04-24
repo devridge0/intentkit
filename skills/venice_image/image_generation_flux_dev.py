@@ -1,6 +1,7 @@
 # venice_image/image_generation_flux_dev.py
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.input import STYLE_PRESETS # Keep for description
+from skills.venice_image.input import STYLE_PRESETS  # Keep for description
+
 
 class ImageGenerationFluxDev(VeniceImageBaseTool):
     """
@@ -9,7 +10,7 @@ class ImageGenerationFluxDev(VeniceImageBaseTool):
     """
 
     # --- Model Specific Configuration ---
-    name: str = "image_generation_flux_dev"
+    name: str = "venice_image_generation_flux_dev"
     description: str = (
         "Generate images using Venice AI's Flux Dev model (by Black Forest Labs).\n"
         "This 12B parameter model is good for research and innovative art workflows.\n"
