@@ -110,6 +110,21 @@ class GPTImageGeneration(OpenAIBaseTool):
             # GPT-Image-1 always returns base64-encoded images
             # Get the base64 image data from the response
             base64_image = response.data[0].b64_json
+            
+            # Log the usage information if available
+            if hasattr(response, 'usage') and response.usage:
+                usage = response.usage
+                logger.info(
+                    f"GPT-Image-1 generation usage: "
+                    f"input_tokens={usage.input_tokens}, "
+                    f"output_tokens={usage.output_tokens}, "
+                    f"total_tokens={usage.total_tokens}"
+                )
+                
+                # Log detailed input tokens information if available
+                if hasattr(usage, 'input_tokens_details') and usage.input_tokens_details:
+                    details = usage.input_tokens_details
+                    logger.info(f"Input tokens details: {details}")
 
             # Decode the base64 string to bytes
             image_bytes = base64.b64decode(base64_image)
