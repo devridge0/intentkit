@@ -1,6 +1,7 @@
 # venice_image/image_generation_fluently_xl.py
 from skills.venice_image.base import VeniceImageBaseTool
-from skills.venice_image.input import STYLE_PRESETS # Keep for description
+from skills.venice_image.input import STYLE_PRESETS  # Keep for description
+
 
 class ImageGenerationFluentlyXL(VeniceImageBaseTool):
     """
@@ -9,7 +10,7 @@ class ImageGenerationFluentlyXL(VeniceImageBaseTool):
     """
 
     # --- Model Specific Configuration ---
-    name: str = "image_generation_fluently_xl"
+    name: str = "venice_image_generation_fluently_xl"
     description: str = (
         "Generate images using the Fluently-XL model (via Venice AI).\n"
         "Aims for improved aesthetics, lighting, realism, and anatomy. Good for professional-quality images.\n"
