@@ -393,6 +393,10 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "openai": {
+          "title": "OpenAI",
+          "$ref": "../skills/openai/schema.json"
+        },
         "venice_image": {
           "$ref": "../skills/venice_image/schema.json"
         },
@@ -411,10 +415,6 @@
         "heurist": {
           "title": "Heurist",
           "$ref": "../skills/heurist/schema.json"
-        },
-        "openai": {
-          "title": "OpenAI",
-          "$ref": "../skills/openai/schema.json"
         },
         "nation": {
           "title": "Nation",
