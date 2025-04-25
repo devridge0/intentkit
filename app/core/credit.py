@@ -559,7 +559,7 @@ async def list_credit_events(
     if start_at:
         stmt = stmt.where(CreditEventTable.created_at >= start_at)
     if end_at:
-        stmt = stmt.where(CreditEventTable.created_at <= end_at)
+        stmt = stmt.where(CreditEventTable.created_at < end_at)
 
     # Apply cursor filter if provided
     if cursor:
