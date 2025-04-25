@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, Tuple
 
@@ -515,6 +516,8 @@ async def list_credit_events(
     cursor: Optional[str] = None,
     limit: int = 20,
     event_type: Optional[EventType] = None,
+    start_at: Optional[datetime] = None,
+    end_at: Optional[datetime] = None,
 ) -> Tuple[List[CreditEvent], Optional[str], bool]:
     """
     List all credit events with cursor pagination.
@@ -525,6 +528,8 @@ async def list_credit_events(
         cursor: The ID of the last event from the previous page.
         limit: Maximum number of events to return per page.
         event_type: Optional filter for specific event type.
+        start_at: Optional start datetime to filter events by created_at.
+        end_at: Optional end datetime to filter events by created_at.
 
     Returns:
         A tuple containing:
@@ -546,6 +551,12 @@ async def list_credit_events(
     # Apply optional event_type filter if provided
     if event_type:
         stmt = stmt.where(CreditEventTable.event_type == event_type.value)
+
+    # Apply datetime filters if provided
+    if start_at:
+        stmt = stmt.where(CreditEventTable.created_at >= start_at)
+    if end_at:
+        stmt = stmt.where(CreditEventTable.created_at <= end_at)
 
     # Apply cursor filter if provided
     if cursor:
