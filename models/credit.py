@@ -446,6 +446,7 @@ class CreditAccount(BaseModel):
             event = CreditEventTable(
                 id=event_id,
                 event_type=EventType.REFILL,
+                user_id=owner_id,
                 upstream_type=UpstreamType.INITIALIZER,
                 upstream_tx_id=account.id,
                 direction=Direction.INCOME,
@@ -519,7 +520,7 @@ class Direction(str, Enum):
 class CreditEventTable(Base):
     """Credit events database table model.
 
-    Records business events like message processing, skill calls, etc.
+    Records business events for user, like message processing, skill calls, etc.
     """
 
     __tablename__ = "credit_events"
@@ -528,6 +529,7 @@ class CreditEventTable(Base):
             "ix_credit_events_upstream", "upstream_type", "upstream_tx_id", unique=True
         ),
         Index("ix_credit_events_account_id", "account_id"),
+        Index("ix_credit_events_user_id", "user_id"),
         Index("ix_credit_events_fee_agent", "fee_agent_amount", "fee_agent_account"),
         Index("ix_credit_events_fee_dev", "fee_dev_amount", "fee_dev_account"),
     )
@@ -543,6 +545,10 @@ class CreditEventTable(Base):
     event_type = Column(
         String,
         nullable=False,
+    )
+    user_id = Column(
+        String,
+        nullable=True,
     )
     upstream_type = Column(
         String,
@@ -656,33 +662,6 @@ class CreditEvent(BaseModel):
         },
     )
 
-    @classmethod
-    async def check_upstream_tx_id_exists(
-        cls, session: AsyncSession, upstream_type: UpstreamType, upstream_tx_id: str
-    ) -> None:
-        """
-        Check if an event with the given upstream_type and upstream_tx_id already exists.
-        Raises HTTP 400 error if it exists to prevent duplicate transactions.
-
-        Args:
-            session: Database session
-            upstream_type: Type of the upstream transaction
-            upstream_tx_id: ID of the upstream transaction
-
-        Raises:
-            HTTPException: If a transaction with the same upstream_tx_id already exists
-        """
-        stmt = select(CreditEventTable).where(
-            CreditEventTable.upstream_type == upstream_type,
-            CreditEventTable.upstream_tx_id == upstream_tx_id,
-        )
-        result = await session.scalar(stmt)
-        if result:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Transaction with upstream_tx_id '{upstream_tx_id}' already exists. Do not resubmit.",
-            )
-
     id: Annotated[
         str,
         Field(
@@ -694,6 +673,9 @@ class CreditEvent(BaseModel):
         str, Field(None, description="Account ID from which credits flow")
     ]
     event_type: Annotated[EventType, Field(description="Type of the event")]
+    user_id: Annotated[
+        Optional[str], Field(None, description="ID of the user if applicable")
+    ]
     upstream_type: Annotated[
         UpstreamType, Field(description="Type of upstream transaction")
     ]
@@ -761,6 +743,10 @@ class CreditEvent(BaseModel):
     fee_agent_amount: Annotated[
         Optional[Decimal], Field(default=Decimal("0"), description="Agent fee amount")
     ]
+    note: Annotated[Optional[str], Field(None, description="Additional notes")]
+    created_at: Annotated[
+        datetime, Field(description="Timestamp when this event was created")
+    ]
 
     @field_validator(
         "total_amount",
@@ -785,10 +771,32 @@ class CreditEvent(BaseModel):
             return Decimal(str(v)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
         return v
 
-    note: Annotated[Optional[str], Field(None, description="Additional notes")]
-    created_at: Annotated[
-        datetime, Field(description="Timestamp when this event was created")
-    ]
+    @classmethod
+    async def check_upstream_tx_id_exists(
+        cls, session: AsyncSession, upstream_type: UpstreamType, upstream_tx_id: str
+    ) -> None:
+        """
+        Check if an event with the given upstream_type and upstream_tx_id already exists.
+        Raises HTTP 400 error if it exists to prevent duplicate transactions.
+
+        Args:
+            session: Database session
+            upstream_type: Type of the upstream transaction
+            upstream_tx_id: ID of the upstream transaction
+
+        Raises:
+            HTTPException: If a transaction with the same upstream_tx_id already exists
+        """
+        stmt = select(CreditEventTable).where(
+            CreditEventTable.upstream_type == upstream_type,
+            CreditEventTable.upstream_tx_id == upstream_tx_id,
+        )
+        result = await session.scalar(stmt)
+        if result:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transaction with upstream_tx_id '{upstream_tx_id}' already exists. Do not resubmit.",
+            )
 
 
 class TransactionType(str, Enum):
