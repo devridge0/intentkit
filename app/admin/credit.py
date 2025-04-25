@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, List, Optional
 
@@ -511,7 +512,12 @@ async def fetch_credit_event_by_id_endpoint(
     return event
 
 
-@credit_router_readonly.get("/events", response_model=CreditEventsResponse)
+@credit_router_readonly.get(
+    "/events",
+    operation_id="list_credit_events",
+    summary="List Credit Events",
+    response_model=CreditEventsResponse,
+)
 async def list_all_credit_events(
     direction: Annotated[
         Optional[Direction],
@@ -522,6 +528,12 @@ async def list_all_credit_events(
     limit: Annotated[
         int, Query(description="Maximum number of events to return", ge=1, le=100)
     ] = 20,
+    start_at: Annotated[
+        Optional[datetime], Query(description="Start datetime for filtering events")
+    ] = None,
+    end_at: Annotated[
+        Optional[datetime], Query(description="End datetime for filtering events")
+    ] = None,
     db: AsyncSession = Depends(get_db),
 ) -> CreditEventsResponse:
     """
@@ -537,6 +549,8 @@ async def list_all_credit_events(
         event_type: Optional filter for specific event type
         cursor: Cursor for pagination
         limit: Maximum number of events to return
+        start_at: Optional start datetime to filter events by created_at
+        end_at: Optional end datetime to filter events by created_at
         db: Database session
 
     Returns:
@@ -548,6 +562,8 @@ async def list_all_credit_events(
         cursor=cursor,
         limit=limit,
         event_type=event_type,
+        start_at=start_at,
+        end_at=end_at,
     )
 
     return CreditEventsResponse(
