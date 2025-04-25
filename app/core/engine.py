@@ -697,11 +697,11 @@ async def execute_agent(
                                 skill_call["success"] = False
                                 skill_call["error_message"] = msg.content
                             else:
-                                if debug:
+                                if config.debug:
                                     skill_call["response"] = msg.content
                                 else:
                                     skill_call["response"] = textwrap.shorten(
-                                        msg.content, width=100, placeholder="..."
+                                        msg.content, width=300, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
                             break
@@ -931,10 +931,12 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
 
 
 async def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+    if not config.payment_enabled:
+        return False
     payment_settings = await AppSetting.payment()
     if payment_settings.agent_whitelist_enabled:
         if agent.id not in payment_settings.agent_whitelist:
             return False
-    if config.payment_enabled and input.user_id and agent.owner:
+    if input.user_id and agent.owner:
         return True
     return False
