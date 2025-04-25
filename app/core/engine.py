@@ -697,11 +697,11 @@ async def execute_agent(
                                 skill_call["success"] = False
                                 skill_call["error_message"] = msg.content
                             else:
-                                if debug:
+                                if config.debug:
                                     skill_call["response"] = msg.content
                                 else:
                                     skill_call["response"] = textwrap.shorten(
-                                        msg.content, width=100, placeholder="..."
+                                        msg.content, width=300, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
                             break
