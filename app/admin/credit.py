@@ -529,10 +529,12 @@ async def list_all_credit_events(
         int, Query(description="Maximum number of events to return", ge=1, le=100)
     ] = 20,
     start_at: Annotated[
-        Optional[datetime], Query(description="Start datetime for filtering events")
+        Optional[datetime],
+        Query(description="Start datetime for filtering events, inclusive"),
     ] = None,
     end_at: Annotated[
-        Optional[datetime], Query(description="End datetime for filtering events")
+        Optional[datetime],
+        Query(description="End datetime for filtering events, exclusive"),
     ] = None,
     db: AsyncSession = Depends(get_db),
 ) -> CreditEventsResponse:
@@ -544,17 +546,6 @@ async def list_all_credit_events(
     Even when there are no records, it will still return a cursor that can be used for the next request.
     You can poll this endpoint using the cursor every second - when new records are created, you will get them.
 
-    Args:
-        direction: Direction of credit events (INCOME or EXPENSE), defaults to EXPENSE
-        event_type: Optional filter for specific event type
-        cursor: Cursor for pagination
-        limit: Maximum number of events to return
-        start_at: Optional start datetime to filter events by created_at
-        end_at: Optional end datetime to filter events by created_at
-        db: Database session
-
-    Returns:
-        Response with list of events and pagination information
     """
     events, next_cursor, has_more = await list_credit_events(
         session=db,
