@@ -391,20 +391,20 @@
       "type": "boolean",
       "description": "Agent replies automatically to all X mentions (use cautiously)",
       "default": false,
-      "x-group": "entrypoint"
+      "x-group": "deprecated"
     },
     "twitter_entrypoint_prompt": {
       "title": "X Entry Prompt",
       "type": "string",
       "description": "Extra prompt for X entrypoint",
       "maxLength": 10000,
-      "x-group": "entrypoint"
+      "x-group": "deprecated"
     },
     "twitter_config": {
       "title": "Enter your X API key",
       "type": "object",
       "description": "You must use your own key for X entrypoint, it is separated from X skills",
-      "x-group": "entrypoint",
+      "x-group": "deprecated",
       "properties": {
         "consumer_key": {
           "type": "string",

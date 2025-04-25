@@ -30,7 +30,7 @@ class TwitterPostTweet(TwitterBaseTool):
     """
 
     name: str = "twitter_post_tweet"
-    description: str = "Post a new tweet to Twitter"
+    description: str = "Post a new tweet to Twitter, if you want to post image, you must provide image url in parameters, do not add image link in text."
     args_schema: Type[BaseModel] = TwitterPostTweetInput
 
     async def _arun(
