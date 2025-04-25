@@ -1153,7 +1153,7 @@ class AgentUpdate(BaseModel):
                 )
 
             # Validate minimum interval of 1 hour
-            if config.minutes and config.minutes < 60:
+            if config.minutes and config.minutes < 5:
                 raise HTTPException(
                     status_code=400, detail="The shortest execution interval is 1 hour"
                 )
@@ -1189,7 +1189,7 @@ class AgentUpdate(BaseModel):
                 if "/" in minute:
                     # Check step value in minute field (e.g., */15)
                     step = int(minute.split("/")[1])
-                    if step < 60 and hour == "*":
+                    if step < 5 and hour == "*":
                         raise HTTPException(
                             status_code=400,
                             detail="The shortest execution interval is 1 hour",
