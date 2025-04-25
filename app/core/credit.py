@@ -88,6 +88,7 @@ async def recharge(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.RECHARGE,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.INCOME,
@@ -186,6 +187,7 @@ async def reward(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.REWARD,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.INCOME,
@@ -317,6 +319,7 @@ async def adjustment(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.ADJUSTMENT,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=direction,
@@ -786,6 +789,7 @@ async def expense_message(
         id=event_id,
         account_id=user_account.id,
         event_type=EventType.MESSAGE,
+        user_id=user_id,
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=message_id,
         direction=Direction.EXPENSE,
@@ -958,6 +962,7 @@ async def expense_skill(
         id=event_id,
         account_id=user_account.id,
         event_type=EventType.SKILL_CALL,
+        user_id=user_id,
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.EXPENSE,
@@ -1089,6 +1094,7 @@ async def refill_free_credits_for_account(
         id=event_id,
         account_id=updated_account.id,
         event_type=EventType.REFILL,
+        user_id=account.owner_id,
         upstream_type=UpstreamType.SCHEDULER,
         upstream_tx_id=str(XID()),
         direction=Direction.INCOME,
