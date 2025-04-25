@@ -57,7 +57,9 @@ class TwitterGetMentions(TwitterBaseTool):
             # Check rate limit only when not using OAuth
             if not twitter.use_key:
                 await self.check_rate_limit(
-                    context.agent.id, max_requests=1, interval=240
+                    context.agent.id,
+                    max_requests=1,
+                    interval=15,  # TODO: tmp to 15, back to 240 later
                 )
 
             # get since id from store
