@@ -103,8 +103,6 @@ class TwitterGetTimeline(TwitterBaseTool):
                 media_fields=["url", "type", "width", "height"],
             )
 
-            result = twitter.process_tweets_response(timeline)
-
             # Update the since_id in store for the next request
             if timeline.get("meta") and timeline["meta"].get("newest_id"):
                 last["since_id"] = timeline["meta"]["newest_id"]
@@ -112,7 +110,7 @@ class TwitterGetTimeline(TwitterBaseTool):
                     context.agent.id, self.name, "last", last
                 )
 
-            return result
+            return timeline
 
         except Exception as e:
             logger.error("Error getting timeline: %s", str(e))
