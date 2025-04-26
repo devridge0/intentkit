@@ -17,7 +17,7 @@ class Config(SkillConfig):
     """Configuration for UnrealSpeech skills."""
 
     states: SkillStates
-    api_key: str = ""  # Optional API key 
+    api_key: str = ""  # Optional API key
 
 
 async def get_skills(
@@ -52,4 +52,4 @@ def get_unrealspeech_skill(
             )
         return _cache[name]
     else:
-        raise ValueError(f"Unknown UnrealSpeech skill: {name}") 
+        raise ValueError(f"Unknown UnrealSpeech skill: {name}")
