@@ -111,8 +111,6 @@ class TwitterSearchTweets(TwitterBaseTool):
                 media_fields=["url", "type", "width", "height"],
             )
 
-            result = twitter.process_tweets_response(tweets)
-
             # Update the since_id in store for the next request
             if tweets.get("meta") and tweets.get("meta").get("newest_id"):
                 last["since_id"] = tweets["meta"]["newest_id"]
@@ -121,7 +119,7 @@ class TwitterSearchTweets(TwitterBaseTool):
                     context.agent.id, self.name, query, last
                 )
 
-            return result
+            return tweets
 
         except Exception as e:
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
