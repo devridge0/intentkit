@@ -1,5 +1,6 @@
 import httpx
 import logging
+import os
 from typing import Type, Literal, Optional, Dict, Any
 
 from langchain_core.callbacks.manager import CallbackManagerForToolRun
@@ -54,6 +55,10 @@ class TextToSpeech(UnrealSpeechBaseTool):
         "Provides various voice options and speech customization parameters."
     )
     args_schema: Type[BaseModel] = TextToSpeechInput
+
+    def get_env_var(self, env_var_name: str) -> Optional[str]:
+        """Helper method to get environment variables."""
+        return os.environ.get(env_var_name)
 
     async def _arun(
         self,
