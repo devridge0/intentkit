@@ -695,10 +695,10 @@ async def execute_agent(
                             }
                             if msg.status == "error":
                                 skill_call["success"] = False
-                                skill_call["error_message"] = msg.content
+                                skill_call["error_message"] = str(msg.content)
                             else:
                                 if config.debug:
-                                    skill_call["response"] = msg.content
+                                    skill_call["response"] = str(msg.content)
                                 else:
                                     skill_call["response"] = textwrap.shorten(
                                         str(msg.content), width=300, placeholder="..."
@@ -762,6 +762,8 @@ async def execute_agent(
                         )
                         # skill payment
                         for skill_call in skill_calls:
+                            if not skill_call["success"]:
+                                continue
                             payment_event = await expense_skill(
                                 session,
                                 payer,
