@@ -18,4 +18,4 @@ class UnrealSpeechBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "unrealspeech" 
+        return "unrealspeech"
