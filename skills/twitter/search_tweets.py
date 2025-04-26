@@ -11,7 +11,7 @@ from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "Search for recent tweets on Twitter using a query keyword"
+PROMPT = "Search for recent tweets on Twitter using a query keyword, the result is a list of json-formatted tweets. If the result is empty list, means no new tweets, don't retry."
 
 
 class TwitterSearchTweetsInput(BaseModel):

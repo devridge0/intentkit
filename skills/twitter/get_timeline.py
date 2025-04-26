@@ -28,7 +28,7 @@ class TwitterGetTimeline(TwitterBaseTool):
     """
 
     name: str = "twitter_get_timeline"
-    description: str = "Get tweets from the authenticated user's timeline"
+    description: str = "Get tweets from your timeline, the result is a list of json-formatted tweets. If the result is empty list, means no new tweets, don't retry."
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
