@@ -88,6 +88,8 @@ class TwitterGetMentions(TwitterBaseTool):
                 start_time=start_time,
                 expansions=[
                     "referenced_tweets.id",
+                    "referenced_tweets.id.attachments.media_keys",
+                    "referenced_tweets.id.author_id",
                     "attachments.media_keys",
                     "author_id",
                 ],
@@ -106,7 +108,7 @@ class TwitterGetMentions(TwitterBaseTool):
                     "location",
                     "connection_status",
                 ],
-                media_fields=["url"],
+                media_fields=["url", "type", "width", "height"],
             )
 
             result = twitter.process_tweets_response(mentions)
