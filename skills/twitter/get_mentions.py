@@ -111,6 +111,8 @@ class TwitterGetMentions(TwitterBaseTool):
                 media_fields=["url", "type", "width", "height"],
             )
 
+            logger.debug(f"Mentions: {mentions}")
+
             result = twitter.process_tweets_response(mentions)
 
             # Update since_id in store
