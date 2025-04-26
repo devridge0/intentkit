@@ -31,7 +31,7 @@ class TwitterGetMentions(TwitterBaseTool):
     """
 
     name: str = "twitter_get_mentions"
-    description: str = "Get tweets that mention the authenticated user"
+    description: str = "Get tweets that mention you, the result is a list of json-formatted tweets. If the result is empty list, means no new mentions, don't retry."
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
@@ -110,6 +110,8 @@ class TwitterGetMentions(TwitterBaseTool):
                 ],
                 media_fields=["url", "type", "width", "height"],
             )
+
+            logger.debug(f"Mentions: {mentions}")
 
             result = twitter.process_tweets_response(mentions)
 
