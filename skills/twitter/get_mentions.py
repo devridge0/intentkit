@@ -111,10 +111,6 @@ class TwitterGetMentions(TwitterBaseTool):
                 media_fields=["url", "type", "width", "height"],
             )
 
-            logger.debug(f"Mentions: {mentions}")
-
-            result = twitter.process_tweets_response(mentions)
-
             # Update since_id in store
             if mentions.get("meta") and mentions["meta"].get("newest_id"):
                 last["since_id"] = mentions["meta"].get("newest_id")
@@ -122,7 +118,7 @@ class TwitterGetMentions(TwitterBaseTool):
                     context.agent.id, self.name, "last", last
                 )
 
-            return result
+            return mentions
 
         except Exception as e:
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
