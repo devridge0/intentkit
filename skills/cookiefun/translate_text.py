@@ -12,16 +12,12 @@ logger = logging.getLogger(__name__)
 
 class TranslateTextInput(BaseModel):
     """Input for TranslateText tool."""
-    
-    text: str = Field(
-        description="The text that should be translated"
-    )
-    language: str = Field(
-        description="The language the text should be translated to"
-    )
+
+    text: str = Field(description="The text that should be translated")
+    language: str = Field(description="The language the text should be translated to")
     source_language: Optional[str] = Field(
         default=None,
-        description="Source language of the text (optional, for more accurate translations)"
+        description="Source language of the text (optional, for more accurate translations)",
     )
 
 
@@ -41,7 +37,7 @@ class TranslateText(CookieFunBaseTool):
         language: str,
         source_language: Optional[str] = None,
         config: RunnableConfig = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Translate text using Cookie.fun API."""
         context = self.context_from_config(config)
@@ -50,10 +46,7 @@ class TranslateText(CookieFunBaseTool):
             return "Error: Cookie.fun API key not configured"
 
         try:
-            params = {
-                "text": text,
-                "language": language
-            }
+            params = {"text": text, "language": language}
             if source_language:
                 params["source_language"] = source_language
 
@@ -62,7 +55,7 @@ class TranslateText(CookieFunBaseTool):
                     "https://api.cookie-api.com/api/translate",
                     params=params,
                     headers={"Authorization": api_key},
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -77,4 +70,4 @@ class TranslateText(CookieFunBaseTool):
             return f"Error translating text: {str(e)}"
         except Exception as e:
             logger.error(f"Error in translation: {str(e)}")
-            return f"Unexpected error: {str(e)}" 
+            return f"Unexpected error: {str(e)}"

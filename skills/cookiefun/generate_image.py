@@ -12,10 +12,8 @@ logger = logging.getLogger(__name__)
 
 class GenerateImageInput(BaseModel):
     """Input for GenerateImage tool."""
-    
-    prompt: str = Field(
-        description="Description of the image you want to generate"
-    )
+
+    prompt: str = Field(description="Description of the image you want to generate")
 
 
 class GenerateImage(CookieFunBaseTool):
@@ -28,12 +26,7 @@ class GenerateImage(CookieFunBaseTool):
     )
     args_schema: Type[BaseModel] = GenerateImageInput
 
-    async def _arun(
-        self,
-        prompt: str,
-        config: RunnableConfig = None,
-        **kwargs
-    ) -> str:
+    async def _arun(self, prompt: str, config: RunnableConfig = None, **kwargs) -> str:
         """Generate image using Cookie.fun API."""
         context = self.context_from_config(config)
         api_key = context.config.get("cookiefun_api_key")
@@ -46,7 +39,7 @@ class GenerateImage(CookieFunBaseTool):
                     "https://api.cookie-api.com/api/ai/generate-image",
                     json={"prompt": prompt},
                     headers={"Authorization": api_key},
-                    timeout=120.0
+                    timeout=120.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -61,4 +54,4 @@ class GenerateImage(CookieFunBaseTool):
             return f"Error generating image: {str(e)}"
         except Exception as e:
             logger.error(f"Error in image generation: {str(e)}")
-            return f"Unexpected error: {str(e)}" 
+            return f"Unexpected error: {str(e)}"

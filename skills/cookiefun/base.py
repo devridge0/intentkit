@@ -18,4 +18,4 @@ class CookieFunBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "cookiefun" 
+        return "cookiefun"

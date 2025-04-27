@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class GetCryptoInput(BaseModel):
     """Input for GetCrypto tool."""
-    
+
     crypto: str = Field(
         description="Name or symbol of the cryptocurrency (e.g. 'bitcoin' or 'btc')"
     )
@@ -29,12 +29,7 @@ class GetCrypto(CookieFunBaseTool):
     )
     args_schema: Type[BaseModel] = GetCryptoInput
 
-    async def _arun(
-        self,
-        crypto: str,
-        config: RunnableConfig = None,
-        **kwargs
-    ) -> str:
+    async def _arun(self, crypto: str, config: RunnableConfig = None, **kwargs) -> str:
         """Get cryptocurrency information from Cookie.fun API."""
         context = self.context_from_config(config)
         api_key = context.config.get("cookiefun_api_key")
@@ -44,10 +39,10 @@ class GetCrypto(CookieFunBaseTool):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"https://api.cookie-api.com/api/crypto",
+                    "https://api.cookie-api.com/api/crypto",
                     params={"crypto": crypto},
                     headers={"Authorization": api_key},
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -65,7 +60,7 @@ class GetCrypto(CookieFunBaseTool):
                     f"All Time Low: ${data['all_time_low']:,.2f}",
                     "",
                     "Description:",
-                    data['description']
+                    data["description"],
                 ]
 
                 return "\n".join(result)
