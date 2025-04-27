@@ -8,7 +8,6 @@ from fastapi import HTTPException
 from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.config import config
 from models.agent import Agent
 from models.app_setting import AppSetting
 from models.credit import (
@@ -712,13 +711,11 @@ async def fetch_credit_event_by_id(
 
 async def expense_message(
     session: AsyncSession,
-    agent_id: str,
     user_id: str,
     message_id: str,
     start_message_id: str,
     base_llm_amount: Decimal,
-    agent_fee_percentage: Decimal,
-    agent_owner_id: str,
+    agent: Agent,
 ) -> CreditEvent:
     """
     Deduct credits from a user account for message expenses.
@@ -745,17 +742,18 @@ async def expense_message(
     if base_llm_amount < Decimal("0"):
         raise ValueError("Base LLM amount must be non-negative")
 
+    # Get payment settings
+    payment_settings = await AppSetting.payment()
+
     # Calculate amount
     base_original_amount = base_llm_amount
     base_amount = base_original_amount
-    fee_platform_amount = base_amount * Decimal(
-        str(config.payment_fee_platform_percentage)
+    fee_platform_amount = (
+        base_amount * payment_settings.fee_platform_percentage / Decimal("100")
     )
-    fee_agent_amount = (
-        base_amount * agent_fee_percentage
-        if user_id != agent_owner_id
-        else Decimal("0")
-    )
+    fee_agent_amount = Decimal("0")
+    if agent.fee_percentage and user_id != agent.owner:
+        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
     total_amount = base_amount + fee_platform_amount + fee_agent_amount
 
     # 1. Update user account - deduct credits
@@ -778,7 +776,7 @@ async def expense_message(
         agent_account = await CreditAccount.income_in_session(
             session=session,
             owner_type=OwnerType.AGENT,
-            owner_id=agent_id,
+            owner_id=agent.id,
             credit_type=credit_type,
             amount=fee_agent_amount,
         )
@@ -793,7 +791,7 @@ async def expense_message(
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=message_id,
         direction=Direction.EXPENSE,
-        agent_id=agent_id,
+        agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
         total_amount=total_amount,

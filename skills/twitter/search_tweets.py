@@ -103,6 +103,7 @@ class TwitterSearchTweets(TwitterBaseTool):
                 user_fields=[
                     "username",
                     "name",
+                    "profile_image_url",
                     "description",
                     "public_metrics",
                     "location",
