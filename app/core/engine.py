@@ -16,7 +16,6 @@ import textwrap
 import time
 import traceback
 from datetime import datetime
-from decimal import Decimal
 
 import sqlalchemy
 from coinbase_agentkit import (
@@ -647,15 +646,11 @@ async def execute_agent(
                             )
                             credit_event = await expense_message(
                                 session,
-                                input.agent_id,
                                 payer,
                                 chat_message_create.id,
                                 input.id,
                                 amount,
-                                agent.fee_percentage
-                                if agent.fee_percentage
-                                else Decimal("0"),
-                                agent.owner,
+                                agent,
                             )
                             logger.info(f"[{input.agent_id}] expense message: {amount}")
                             chat_message_create.credit_event_id = credit_event.id
@@ -746,15 +741,11 @@ async def execute_agent(
                         )
                         message_payment_event = await expense_message(
                             session,
-                            input.agent_id,
                             payer,
                             skill_message_create.id,
                             input.id,
                             message_amount,
-                            agent.fee_percentage
-                            if agent.fee_percentage
-                            else Decimal("0"),
-                            agent.owner,
+                            agent,
                         )
                         skill_message_create.credit_event_id = message_payment_event.id
                         skill_message_create.credit_cost = (

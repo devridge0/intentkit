@@ -145,6 +145,22 @@
           ],
           "description": "Executes advanced X searches with keyword filters, date ranges, and engagement thresholds",
           "default": "disabled"
+        },
+        "get_user_by_username": {
+          "type": "string",
+          "title": "Get User by Username",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Retrieves user information by username.",
+          "default": "disabled"
         }
       },
       "description": "States for each X skill"
