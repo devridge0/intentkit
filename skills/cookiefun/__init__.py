@@ -8,8 +8,8 @@ from skills.cookiefun.base import CookieFunBaseTool
 from skills.cookiefun.generate_image import GenerateImage
 from skills.cookiefun.get_ai_response import GetAIResponse
 from skills.cookiefun.get_country_time import GetCountryTime
-from skills.cookiefun.translate_text import TranslateText
 from skills.cookiefun.get_crypto import GetCrypto
+from skills.cookiefun.translate_text import TranslateText
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CookieFunBaseTool] = {}
@@ -68,4 +68,4 @@ def get_cookiefun_skill(
             _cache[name] = GetCrypto(skill_store=store)
         else:
             raise ValueError(f"Unknown Cookie.fun skill: {name}")
-    return _cache[name] 
+    return _cache[name]

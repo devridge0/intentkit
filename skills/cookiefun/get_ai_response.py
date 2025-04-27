@@ -12,10 +12,8 @@ logger = logging.getLogger(__name__)
 
 class GetAIResponseInput(BaseModel):
     """Input for GetAIResponse tool."""
-    
-    prompt: str = Field(
-        description="The message/prompt to send to the Cookie.fun AI"
-    )
+
+    prompt: str = Field(description="The message/prompt to send to the Cookie.fun AI")
 
 
 class GetAIResponse(CookieFunBaseTool):
@@ -28,12 +26,7 @@ class GetAIResponse(CookieFunBaseTool):
     )
     args_schema: Type[BaseModel] = GetAIResponseInput
 
-    async def _arun(
-        self,
-        prompt: str,
-        config: RunnableConfig = None,
-        **kwargs
-    ) -> str:
+    async def _arun(self, prompt: str, config: RunnableConfig = None, **kwargs) -> str:
         """Get AI response from Cookie.fun API."""
         context = self.context_from_config(config)
         api_key = context.config.get("cookiefun_api_key")
@@ -46,7 +39,7 @@ class GetAIResponse(CookieFunBaseTool):
                     "https://api.cookie-api.com/api/ai/message",
                     params={"prompt": prompt},
                     headers={"Authorization": api_key},
-                    timeout=120.0
+                    timeout=120.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -61,4 +54,4 @@ class GetAIResponse(CookieFunBaseTool):
             return f"Error fetching AI response: {str(e)}"
         except Exception as e:
             logger.error(f"Error getting AI response: {str(e)}")
-            return f"Unexpected error: {str(e)}" 
+            return f"Unexpected error: {str(e)}"
