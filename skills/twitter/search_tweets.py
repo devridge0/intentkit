@@ -11,7 +11,7 @@ from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "Search for recent tweets on Twitter using a query keyword"
+PROMPT = "Search for recent tweets on Twitter using a query keyword, the result is a list of json-formatted tweets. If the result is empty list, means no new tweets, don't retry."
 
 
 class TwitterSearchTweetsInput(BaseModel):
@@ -88,6 +88,8 @@ class TwitterSearchTweets(TwitterBaseTool):
                 max_results=max_results,
                 expansions=[
                     "referenced_tweets.id",
+                    "referenced_tweets.id.attachments.media_keys",
+                    "referenced_tweets.id.author_id",
                     "attachments.media_keys",
                     "author_id",
                 ],
@@ -101,15 +103,14 @@ class TwitterSearchTweets(TwitterBaseTool):
                 user_fields=[
                     "username",
                     "name",
+                    "profile_image_url",
                     "description",
                     "public_metrics",
                     "location",
                     "connection_status",
                 ],
-                media_fields=["url"],
+                media_fields=["url", "type", "width", "height"],
             )
-
-            result = twitter.process_tweets_response(tweets)
 
             # Update the since_id in store for the next request
             if tweets.get("meta") and tweets.get("meta").get("newest_id"):
@@ -119,7 +120,7 @@ class TwitterSearchTweets(TwitterBaseTool):
                     context.agent.id, self.name, query, last
                 )
 
-            return result
+            return tweets
 
         except Exception as e:
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e

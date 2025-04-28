@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, List, Optional
 
@@ -11,6 +12,7 @@ from app.config.config import config
 from app.core.credit import (
     fetch_credit_event_by_id,
     fetch_credit_event_by_upstream_tx_id,
+    list_credit_events,
     list_credit_events_by_user,
     list_fee_events_by_agent,
     recharge,
@@ -508,3 +510,55 @@ async def fetch_credit_event_by_id_endpoint(
             )
 
     return event
+
+
+@credit_router_readonly.get(
+    "/events",
+    operation_id="list_credit_events",
+    summary="List Credit Events",
+    response_model=CreditEventsResponse,
+)
+async def list_all_credit_events(
+    direction: Annotated[
+        Optional[Direction],
+        Query(description="Direction of credit events (income or expense)"),
+    ] = Direction.EXPENSE,
+    event_type: Annotated[Optional[EventType], Query(description="Event type")] = None,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
+    limit: Annotated[
+        int, Query(description="Maximum number of events to return", ge=1, le=100)
+    ] = 20,
+    start_at: Annotated[
+        Optional[datetime],
+        Query(description="Start datetime for filtering events, inclusive"),
+    ] = None,
+    end_at: Annotated[
+        Optional[datetime],
+        Query(description="End datetime for filtering events, exclusive"),
+    ] = None,
+    db: AsyncSession = Depends(get_db),
+) -> CreditEventsResponse:
+    """
+    List all credit events for admin monitoring with cursor pagination.
+
+    This endpoint is designed for admin use to monitor all credit events in the system.
+    Only the first request does not need a cursor, then always use the last cursor for subsequent requests.
+    Even when there are no records, it will still return a cursor that can be used for the next request.
+    You can poll this endpoint using the cursor every second - when new records are created, you will get them.
+
+    """
+    events, next_cursor, has_more = await list_credit_events(
+        session=db,
+        direction=direction,
+        cursor=cursor,
+        limit=limit,
+        event_type=event_type,
+        start_at=start_at,
+        end_at=end_at,
+    )
+
+    return CreditEventsResponse(
+        data=events,
+        next_cursor=next_cursor if next_cursor else cursor,
+        has_more=has_more,
+    )
