@@ -696,7 +696,7 @@ async def execute_agent(
                                     skill_call["response"] = str(msg.content)
                                 else:
                                     skill_call["response"] = textwrap.shorten(
-                                        str(msg.content), width=300, placeholder="..."
+                                        str(msg.content), width=1000, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
                             break
