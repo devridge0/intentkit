@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, Tuple
 
@@ -7,7 +8,6 @@ from fastapi import HTTPException
 from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config.config import config
 from models.agent import Agent
 from models.app_setting import AppSetting
 from models.credit import (
@@ -87,6 +87,7 @@ async def recharge(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.RECHARGE,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.INCOME,
@@ -185,6 +186,7 @@ async def reward(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.REWARD,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.INCOME,
@@ -316,6 +318,7 @@ async def adjustment(
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.ADJUSTMENT,
+        user_id=user_id,
         upstream_type=UpstreamType.API,
         upstream_tx_id=upstream_tx_id,
         direction=direction,
@@ -509,6 +512,75 @@ async def list_credit_events_by_user(
     return events_models, next_cursor, has_more
 
 
+async def list_credit_events(
+    session: AsyncSession,
+    direction: Optional[Direction] = Direction.EXPENSE,
+    cursor: Optional[str] = None,
+    limit: int = 20,
+    event_type: Optional[EventType] = None,
+    start_at: Optional[datetime] = None,
+    end_at: Optional[datetime] = None,
+) -> Tuple[List[CreditEvent], Optional[str], bool]:
+    """
+    List all credit events with cursor pagination.
+
+    Args:
+        session: Async database session.
+        direction: The direction of the events (INCOME or EXPENSE). Default is EXPENSE.
+        cursor: The ID of the last event from the previous page.
+        limit: Maximum number of events to return per page.
+        event_type: Optional filter for specific event type.
+        start_at: Optional start datetime to filter events by created_at.
+        end_at: Optional end datetime to filter events by created_at.
+
+    Returns:
+        A tuple containing:
+        - A list of CreditEvent models.
+        - The cursor for the next page (ID of the last event in the list).
+        - A boolean indicating if there are more events available.
+    """
+    # Build the query
+    stmt = (
+        select(CreditEventTable)
+        .order_by(CreditEventTable.id)  # Ascending order as required
+        .limit(limit + 1)  # Fetch one extra to check if there are more
+    )
+
+    # Apply direction filter (default is EXPENSE)
+    if direction:
+        stmt = stmt.where(CreditEventTable.direction == direction.value)
+
+    # Apply optional event_type filter if provided
+    if event_type:
+        stmt = stmt.where(CreditEventTable.event_type == event_type.value)
+
+    # Apply datetime filters if provided
+    if start_at:
+        stmt = stmt.where(CreditEventTable.created_at >= start_at)
+    if end_at:
+        stmt = stmt.where(CreditEventTable.created_at < end_at)
+
+    # Apply cursor filter if provided
+    if cursor:
+        stmt = stmt.where(CreditEventTable.id > cursor)  # Using > for ascending order
+
+    # Execute query
+    result = await session.execute(stmt)
+    events_data = result.scalars().all()
+
+    # Determine pagination details
+    has_more = len(events_data) > limit
+    events_to_return = events_data[:limit]  # Slice to the requested limit
+
+    # always return a cursor even there is no next page
+    next_cursor = events_to_return[-1].id if events_to_return else None
+
+    # Convert to Pydantic models
+    events_models = [CreditEvent.model_validate(event) for event in events_to_return]
+
+    return events_models, next_cursor, has_more
+
+
 async def list_fee_events_by_agent(
     session: AsyncSession,
     agent_id: str,
@@ -639,13 +711,11 @@ async def fetch_credit_event_by_id(
 
 async def expense_message(
     session: AsyncSession,
-    agent_id: str,
     user_id: str,
     message_id: str,
     start_message_id: str,
     base_llm_amount: Decimal,
-    agent_fee_percentage: Decimal,
-    agent_owner_id: str,
+    agent: Agent,
 ) -> CreditEvent:
     """
     Deduct credits from a user account for message expenses.
@@ -672,17 +742,18 @@ async def expense_message(
     if base_llm_amount < Decimal("0"):
         raise ValueError("Base LLM amount must be non-negative")
 
+    # Get payment settings
+    payment_settings = await AppSetting.payment()
+
     # Calculate amount
     base_original_amount = base_llm_amount
     base_amount = base_original_amount
-    fee_platform_amount = base_amount * Decimal(
-        str(config.payment_fee_platform_percentage)
+    fee_platform_amount = (
+        base_amount * payment_settings.fee_platform_percentage / Decimal("100")
     )
-    fee_agent_amount = (
-        base_amount * agent_fee_percentage
-        if user_id != agent_owner_id
-        else Decimal("0")
-    )
+    fee_agent_amount = Decimal("0")
+    if agent.fee_percentage and user_id != agent.owner:
+        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
     total_amount = base_amount + fee_platform_amount + fee_agent_amount
 
     # 1. Update user account - deduct credits
@@ -705,7 +776,7 @@ async def expense_message(
         agent_account = await CreditAccount.income_in_session(
             session=session,
             owner_type=OwnerType.AGENT,
-            owner_id=agent_id,
+            owner_id=agent.id,
             credit_type=credit_type,
             amount=fee_agent_amount,
         )
@@ -716,10 +787,11 @@ async def expense_message(
         id=event_id,
         account_id=user_account.id,
         event_type=EventType.MESSAGE,
+        user_id=user_id,
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=message_id,
         direction=Direction.EXPENSE,
-        agent_id=agent_id,
+        agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
         total_amount=total_amount,
@@ -888,6 +960,7 @@ async def expense_skill(
         id=event_id,
         account_id=user_account.id,
         event_type=EventType.SKILL_CALL,
+        user_id=user_id,
         upstream_type=UpstreamType.EXECUTOR,
         upstream_tx_id=upstream_tx_id,
         direction=Direction.EXPENSE,
@@ -1019,6 +1092,7 @@ async def refill_free_credits_for_account(
         id=event_id,
         account_id=updated_account.id,
         event_type=EventType.REFILL,
+        user_id=account.owner_id,
         upstream_type=UpstreamType.SCHEDULER,
         upstream_tx_id=str(XID()),
         direction=Direction.INCOME,

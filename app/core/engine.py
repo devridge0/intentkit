@@ -16,7 +16,6 @@ import textwrap
 import time
 import traceback
 from datetime import datetime
-from decimal import Decimal
 
 import sqlalchemy
 from coinbase_agentkit import (
@@ -647,15 +646,11 @@ async def execute_agent(
                             )
                             credit_event = await expense_message(
                                 session,
-                                input.agent_id,
                                 payer,
                                 chat_message_create.id,
                                 input.id,
                                 amount,
-                                agent.fee_percentage
-                                if agent.fee_percentage
-                                else Decimal("0"),
-                                agent.owner,
+                                agent,
                             )
                             logger.info(f"[{input.agent_id}] expense message: {amount}")
                             chat_message_create.credit_event_id = credit_event.id
@@ -695,13 +690,13 @@ async def execute_agent(
                             }
                             if msg.status == "error":
                                 skill_call["success"] = False
-                                skill_call["error_message"] = msg.content
+                                skill_call["error_message"] = str(msg.content)
                             else:
-                                if debug:
-                                    skill_call["response"] = msg.content
+                                if config.debug:
+                                    skill_call["response"] = str(msg.content)
                                 else:
                                     skill_call["response"] = textwrap.shorten(
-                                        msg.content, width=100, placeholder="..."
+                                        str(msg.content), width=300, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
                             break
@@ -746,15 +741,11 @@ async def execute_agent(
                         )
                         message_payment_event = await expense_message(
                             session,
-                            input.agent_id,
                             payer,
                             skill_message_create.id,
                             input.id,
                             message_amount,
-                            agent.fee_percentage
-                            if agent.fee_percentage
-                            else Decimal("0"),
-                            agent.owner,
+                            agent,
                         )
                         skill_message_create.credit_event_id = message_payment_event.id
                         skill_message_create.credit_cost = (
@@ -762,6 +753,8 @@ async def execute_agent(
                         )
                         # skill payment
                         for skill_call in skill_calls:
+                            if not skill_call["success"]:
+                                continue
                             payment_event = await expense_skill(
                                 session,
                                 payer,
@@ -931,10 +924,12 @@ async def thread_stats(agent_id: str, chat_id: str) -> list[BaseMessage]:
 
 
 async def is_payment_required(input: ChatMessageCreate, agent: Agent) -> bool:
+    if not config.payment_enabled:
+        return False
     payment_settings = await AppSetting.payment()
     if payment_settings.agent_whitelist_enabled:
         if agent.id not in payment_settings.agent_whitelist:
             return False
-    if config.payment_enabled and input.user_id and agent.owner:
+    if input.user_id and agent.owner:
         return True
     return False
