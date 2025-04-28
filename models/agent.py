@@ -1153,7 +1153,7 @@ class AgentUpdate(BaseModel):
                 )
 
             # Validate minimum interval of 1 hour
-            if config.minutes and config.minutes < 60:
+            if config.minutes and config.minutes < 5:
                 raise HTTPException(
                     status_code=400, detail="The shortest execution interval is 1 hour"
                 )
@@ -1189,7 +1189,7 @@ class AgentUpdate(BaseModel):
                 if "/" in minute:
                     # Check step value in minute field (e.g., */15)
                     step = int(minute.split("/")[1])
-                    if step < 60 and hour == "*":
+                    if step < 5 and hour == "*":
                         raise HTTPException(
                             status_code=400,
                             detail="The shortest execution interval is 1 hour",
@@ -1340,6 +1340,8 @@ class Agent(AgentCreate):
                     states = skill_config.get("states", {})
                     if states.get("image_to_text") in ["public", "private"]:
                         return True
+                    if states.get("gpt_image_to_image") in ["public", "private"]:
+                        return True
         return False
 
     def is_model_support_image(self) -> bool:
@@ -1459,13 +1461,18 @@ class Agent(AgentCreate):
                 )
                 yaml_lines.append(yaml_value.rstrip())
             else:
-                # Handle non-string values
-                yaml_value = yaml.dump(
-                    {field_name: value},
-                    default_flow_style=False,
-                    allow_unicode=True,
-                )
-                yaml_lines.append(yaml_value.rstrip())
+                # Handle Decimal values specifically
+                if isinstance(value, Decimal):
+                    # Convert Decimal to string to avoid !!python/object/apply:decimal.Decimal serialization
+                    yaml_lines.append(f"{field_name}: {value}")
+                else:
+                    # Handle other non-string values
+                    yaml_value = yaml.dump(
+                        {field_name: value},
+                        default_flow_style=False,
+                        allow_unicode=True,
+                    )
+                    yaml_lines.append(yaml_value.rstrip())
 
         return "\n".join(yaml_lines) + "\n"
 

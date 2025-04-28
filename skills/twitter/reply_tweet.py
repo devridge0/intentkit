@@ -29,7 +29,7 @@ class TwitterReplyTweet(TwitterBaseTool):
     """
 
     name: str = "twitter_reply_tweet"
-    description: str = "Reply to an existing tweet on Twitter"
+    description: str = "Reply to an existing tweet on Twitter, if you want to post image, you must provide image url in parameters, do not add image link in text."
     args_schema: Type[BaseModel] = TwitterReplyTweetInput
 
     async def _arun(
