@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-from decimal import Decimal
 
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
@@ -148,12 +147,6 @@ class Config:
         )
         # Payment
         self.payment_enabled = self.load("PAYMENT_ENABLED", "false") == "true"
-        self.payment_fee_platform_percentage = Decimal(
-            self.load("PAYMENT_FEE_PLATFORM_PERCENTAGE", "0.2")
-        )
-        self.payment_fee_dev_percentage = Decimal(
-            self.load("PAYMENT_FEE_DEV_PERCENTAGE", "0.1")
-        )
 
         # backend api key
         self.nation_api_key = self.load("NATION_API_KEY")
