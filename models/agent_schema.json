@@ -474,10 +474,6 @@
           "title": "X",
           "$ref": "../skills/twitter/schema.json"
         },
-        "acolyt": {
-          "title": "Acolyt",
-          "$ref": "../skills/acolyt/schema.json"
-        },
         "allora": {
           "title": "Allora",
           "$ref": "../skills/allora/schema.json"
