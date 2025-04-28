@@ -530,8 +530,8 @@ class CreditEventTable(Base):
         ),
         Index("ix_credit_events_account_id", "account_id"),
         Index("ix_credit_events_user_id", "user_id"),
-        Index("ix_credit_events_fee_agent", "fee_agent_amount", "fee_agent_account"),
-        Index("ix_credit_events_fee_dev", "fee_dev_amount", "fee_dev_account"),
+        Index("ix_credit_events_fee_agent", "fee_agent_account"),
+        Index("ix_credit_events_fee_dev", "fee_dev_account"),
     )
 
     id = Column(
