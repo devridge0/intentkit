@@ -28,7 +28,7 @@ class TwitterGetTimeline(TwitterBaseTool):
     """
 
     name: str = "twitter_get_timeline"
-    description: str = "Get tweets from the authenticated user's timeline"
+    description: str = "Get tweets from your timeline, the result is a list of json-formatted tweets. If the result is empty list, means no new tweets, don't retry."
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
@@ -80,6 +80,8 @@ class TwitterGetTimeline(TwitterBaseTool):
                 since_id=since_id,
                 expansions=[
                     "referenced_tweets.id",
+                    "referenced_tweets.id.attachments.media_keys",
+                    "referenced_tweets.id.author_id",
                     "attachments.media_keys",
                     "author_id",
                 ],
@@ -93,15 +95,14 @@ class TwitterGetTimeline(TwitterBaseTool):
                 user_fields=[
                     "username",
                     "name",
+                    "profile_image_url",
                     "description",
                     "public_metrics",
                     "location",
                     "connection_status",
                 ],
-                media_fields=["url"],
+                media_fields=["url", "type", "width", "height"],
             )
-
-            result = twitter.process_tweets_response(timeline)
 
             # Update the since_id in store for the next request
             if timeline.get("meta") and timeline["meta"].get("newest_id"):
@@ -110,7 +111,7 @@ class TwitterGetTimeline(TwitterBaseTool):
                     context.agent.id, self.name, "last", last
                 )
 
-            return result
+            return timeline
 
         except Exception as e:
             logger.error("Error getting timeline: %s", str(e))
