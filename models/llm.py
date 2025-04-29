@@ -478,7 +478,8 @@ class DeepseekLLM(LLMModel):
 
     async def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatDeepseek instance."""
-        from langchain_deepseek import ChatDeepseek
+
+        from langchain_openai import ChatOpenAI
 
         info = await self.model_info()
 
@@ -501,7 +502,7 @@ class DeepseekLLM(LLMModel):
         if info.api_base:
             kwargs["deepseek_api_base"] = info.api_base
 
-        return ChatDeepseek(**kwargs)
+        return ChatOpenAI(**kwargs)
 
 
 class XAILLM(LLMModel):
@@ -509,6 +510,7 @@ class XAILLM(LLMModel):
 
     async def create_instance(self, config: Any) -> LanguageModelLike:
         """Create and return a ChatXAI instance."""
+
         from langchain_xai import ChatXAI
 
         info = await self.model_info()
