@@ -130,10 +130,10 @@ async def initialize_agent(aid, is_private=False):
     )
 
     # Get the LLM instance
-    llm = llm_model.create_instance(config)
+    llm = await llm_model.create_instance(config)
 
     # Get the token limit from the model info
-    input_token_limit = min(config.input_token_limit, llm_model.get_token_limit())
+    input_token_limit = min(config.input_token_limit, await llm_model.get_token_limit())
 
     # ==== Store buffered conversation history in memory.
     memory = AsyncPostgresSaver(get_pool())
@@ -696,7 +696,7 @@ async def execute_agent(
                                     skill_call["response"] = str(msg.content)
                                 else:
                                     skill_call["response"] = textwrap.shorten(
-                                        str(msg.content), width=300, placeholder="..."
+                                        str(msg.content), width=1000, placeholder="..."
                                     )
                             skill_calls.append(skill_call)
                             break
