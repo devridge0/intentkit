@@ -18,4 +18,4 @@ class AIXBTBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "aixbt" 
+        return "aixbt"

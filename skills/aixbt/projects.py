@@ -1,9 +1,10 @@
-from typing import Type, Dict, Any, List, Optional
-import os
 import logging
+import os
+from typing import Any, Dict, Optional, Type
+
 import httpx
-from pydantic import BaseModel, Field
 from langchain_core.runnables import RunnableConfig
+from pydantic import BaseModel, Field
 
 from skills.aixbt.base import AIXBTBaseTool
 
@@ -65,11 +66,11 @@ class AIXBTProjects(AIXBTBaseTool):
         xHandle: Optional[str] = None,
         minScore: Optional[float] = None,
         chain: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Search for cryptocurrency projects using AIXBT API.
-        
+
         Args:
             limit: Number of projects to return (max 50)
             name: Filter projects by name
@@ -77,14 +78,14 @@ class AIXBTProjects(AIXBTBaseTool):
             xHandle: Filter projects by X/Twitter handle
             minScore: Minimum score threshold
             chain: Filter projects by blockchain
-            
+
         Returns:
             JSON response with project data
         """
         # Get context from the config
         context = self.context_from_config(config)
         logger.debug(f"aixbt_projects.py: Running search with context {context}")
-        
+
         # Check for rate limiting if configured
         if context.config.get("rate_limit_number") and context.config.get(
             "rate_limit_minutes"
@@ -94,23 +95,25 @@ class AIXBTProjects(AIXBTBaseTool):
                 context.config["rate_limit_number"],
                 context.config["rate_limit_minutes"],
             )
-        
+
         # Get the API key from the agent's configuration
         api_key = context.config.get("api_key")
-        
+
         # If not available in config, try the instance attribute (for backward compatibility)
         if not api_key:
             api_key = self.api_key
-            
+
         # If still not available, try environment variable as last resort
         if not api_key:
             api_key = os.environ.get("AIXBT_API_KEY")
-            
+
         if not api_key:
-            return {"error": "AIXBT API key is not available. Please provide it in the agent configuration."}
+            return {
+                "error": "AIXBT API key is not available. Please provide it in the agent configuration."
+            }
 
         base_url = "https://api.aixbt.tech/v1/projects"
-        
+
         # Build query parameters
         params = {"limit": limit}
         if name:
@@ -123,26 +126,28 @@ class AIXBTProjects(AIXBTBaseTool):
             params["minScore"] = minScore
         if chain:
             params["chain"] = chain
-            
-        headers = {
-            "accept": "*/*",
-            "x-api-key": api_key
-        }
-        
+
+        headers = {"accept": "*/*", "x-api-key": api_key}
+
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(base_url, params=params, headers=headers)
                 response.raise_for_status()
                 return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(f"aixbt_projects.py: HTTP error occurred: {e.response.status_code} - {e.response.text}")
+            logger.error(
+                f"aixbt_projects.py: HTTP error occurred: {e.response.status_code} - {e.response.text}"
+            )
             return {
                 "error": f"HTTP error occurred: {e.response.status_code}",
-                "details": e.response.text
+                "details": e.response.text,
             }
         except httpx.RequestError as e:
             logger.error(f"aixbt_projects.py: Request error occurred: {str(e)}")
             return {"error": f"Request error occurred: {str(e)}"}
         except Exception as e:
-            logger.error(f"aixbt_projects.py: An unexpected error occurred: {str(e)}", exc_info=True)
-            return {"error": f"An unexpected error occurred: {str(e)}"} 
+            logger.error(
+                f"aixbt_projects.py: An unexpected error occurred: {str(e)}",
+                exc_info=True,
+            )
+            return {"error": f"An unexpected error occurred: {str(e)}"}
