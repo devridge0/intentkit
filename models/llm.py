@@ -485,7 +485,7 @@ class DeepseekLLM(LLMModel):
 
         kwargs = {
             "model_name": self.model_name,
-            "deepseek_api_key": config.deepseek_api_key,
+            "openai_api_key": config.deepseek_api_key,
             "timeout": info.timeout,
         }
 
@@ -500,7 +500,7 @@ class DeepseekLLM(LLMModel):
             kwargs["presence_penalty"] = self.presence_penalty
 
         if info.api_base:
-            kwargs["deepseek_api_base"] = info.api_base
+            kwargs["openai_api_base"] = info.api_base
 
         return ChatOpenAI(**kwargs)
 
