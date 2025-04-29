@@ -1777,7 +1777,9 @@ class AgentResponse(BaseModel):
                         # Only keep states with public or private values
                         if "states" in skill_config:
                             filtered_states = {}
-                            for state_key, state_value in skill_config["states"].items():
+                            for state_key, state_value in skill_config[
+                                "states"
+                            ].items():
                                 if state_value in ["public", "private"]:
                                     filtered_states[state_key] = state_value
                             if filtered_states:
