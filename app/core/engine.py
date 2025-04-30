@@ -53,7 +53,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from abstracts.graph import AgentState
 from app.config.config import config
 from app.core.agent import AgentStore
-from app.core.credit import expense_message, expense_skill
+from app.core.credit import expense_message, expense_skill, skill_cost
 from app.core.graph import create_agent
 from app.core.prompt import agent_prompt
 from app.core.skill import skill_store
@@ -63,7 +63,7 @@ from models.chat import AuthorType, ChatMessage, ChatMessageCreate, ChatMessageS
 from models.credit import CreditAccount, OwnerType
 from models.db import get_pool, get_session
 from models.llm import get_model_cost
-from models.skill import AgentSkillData, ThreadSkillData
+from models.skill import AgentSkillData, Skill, ThreadSkillData
 from skills.acolyt import get_acolyt_skill
 from skills.allora import get_allora_skill
 from skills.cdp.get_balance import GetBalance
@@ -524,6 +524,8 @@ async def execute_agent(
             error_message = await error_message_create.save()
             resp.append(error_message)
             return resp
+        # use this in loop
+        total_paid = 0
 
     # once the input saved, reduce message quota
     await quota.add_message()
@@ -607,6 +609,30 @@ async def execute_agent(
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
                     # tool calls, save for later use
                     cached_tool_step = msg
+                    if need_payment:
+                        for tool_call in msg.tool_calls:
+                            skill_meta = await Skill.get(tool_call.get("name"))
+                            if skill_meta:
+                                skill_cost_info = await skill_cost(
+                                    skill_meta.name, input.user_id, agent
+                                )
+                                total_paid += skill_cost_info.total_amount
+                        if not user_account.has_sufficient_credits(total_paid):
+                            error_message_create = ChatMessageCreate(
+                                id=str(XID()),
+                                agent_id=input.agent_id,
+                                chat_id=input.chat_id,
+                                user_id=input.user_id,
+                                author_id=input.agent_id,
+                                author_type=AuthorType.SYSTEM,
+                                thread_type=input.author_type,
+                                reply_to=input.id,
+                                message="Insufficient balance.",
+                                time_cost=this_time - last,
+                            )
+                            error_message = await error_message_create.save()
+                            resp.append(error_message)
+                            return resp
                 elif hasattr(msg, "content") and msg.content:
                     # agent message
                     chat_message_create = ChatMessageCreate(
