@@ -388,7 +388,7 @@ class CreditAccount(BaseModel):
         owner_type: OwnerType,
         owner_id: str,
         free_quota: Decimal = Decimal("480.0"),
-        refill_amount: Decimal = Decimal("10.0"),
+        refill_amount: Decimal = Decimal("20.0"),
     ) -> "CreditAccount":
         """Get an existing credit account or create a new one if it doesn't exist.
 
