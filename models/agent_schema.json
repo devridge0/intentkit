@@ -410,6 +410,10 @@
           "title": "CryptoPanic",
           "$ref": "../skills/cryptopanic/schema.json"
         },
+        "aixbt": {
+          "title": "AIXBT",
+          "$ref": "../skills/aixbt/schema.json"
+        },
         "tavily": {
           "title": "Tavily",
           "$ref": "../skills/tavily/schema.json"
