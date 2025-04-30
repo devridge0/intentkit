@@ -274,9 +274,7 @@ class CreditAccount(BaseModel):
     ) -> "CreditAccount":
         """Deduct credits from an account. Not checking balance"""
         # check first, create if not exists
-        await cls.get_or_create_in_session(
-            session, owner_type, owner_id, for_update=True
-        )
+        await cls.get_or_create_in_session(session, owner_type, owner_id)
 
         stmt = (
             update(CreditAccountTable)
@@ -311,9 +309,7 @@ class CreditAccount(BaseModel):
         multiple expenses, we can't interrupt the conversation.
         """
         # check first
-        account = await cls.get_or_create_in_session(
-            session, owner_type, owner_id, for_update=True
-        )
+        account = await cls.get_or_create_in_session(session, owner_type, owner_id)
 
         # expense
         credit_type = CreditType.PERMANENT
@@ -363,9 +359,7 @@ class CreditAccount(BaseModel):
         credit_type: CreditType,
     ) -> "CreditAccount":
         # check first, create if not exists
-        await cls.get_or_create_in_session(
-            session, owner_type, owner_id, for_update=True
-        )
+        await cls.get_or_create_in_session(session, owner_type, owner_id)
         # income
         stmt = (
             update(CreditAccountTable)
@@ -530,8 +524,8 @@ class CreditEventTable(Base):
         ),
         Index("ix_credit_events_account_id", "account_id"),
         Index("ix_credit_events_user_id", "user_id"),
-        Index("ix_credit_events_fee_agent", "fee_agent_amount", "fee_agent_account"),
-        Index("ix_credit_events_fee_dev", "fee_dev_amount", "fee_dev_account"),
+        Index("ix_credit_events_fee_agent", "fee_agent_account"),
+        Index("ix_credit_events_fee_dev", "fee_dev_account"),
     )
 
     id = Column(
