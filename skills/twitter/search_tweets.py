@@ -11,7 +11,8 @@ from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "Search for recent tweets on Twitter using a query keyword, the result is a list of json-formatted tweets. If the result is empty list, means no new tweets, don't retry."
+NAME = "twitter_search_tweets"
+PROMPT = "Search for recent tweets on Twitter using a query keyword."
 
 
 class TwitterSearchTweetsInput(BaseModel):
@@ -31,7 +32,7 @@ class TwitterSearchTweets(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "twitter_search_tweets"
+    name: str = NAME
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterSearchTweetsInput
 
@@ -57,13 +58,13 @@ class TwitterSearchTweets(TwitterBaseTool):
                 skill_store=self.skill_store,
                 config=context.config,
             )
+            client = await twitter.get_client()
+
             # Check rate limit only when not using OAuth
             if not twitter.use_key:
                 await self.check_rate_limit(
                     context.agent.id, max_requests=3, interval=60 * 24
                 )
-
-            client = await twitter.get_client()
 
             # Get since_id from store to avoid duplicate results
             last = await self.skill_store.get_agent_skill_data(
@@ -123,4 +124,5 @@ class TwitterSearchTweets(TwitterBaseTool):
             return tweets
 
         except Exception as e:
+            logger.error(f"Error searching tweets: {str(e)}")
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
