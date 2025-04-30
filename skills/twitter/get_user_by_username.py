@@ -10,7 +10,11 @@ from .base import TwitterBaseTool
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "Get a Twitter user's information by their username. Returns detailed user information including profile data, metrics, and verification status."
+NAME = "twitter_get_user_by_username"
+PROMPT = (
+    "Get a Twitter user's information by their username."
+    "Returns detailed user information as a json object."
+)
 
 
 class TwitterGetUserByUsernameInput(BaseModel):
@@ -30,7 +34,7 @@ class TwitterGetUserByUsername(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "twitter_get_user_by_username"
+    name: str = NAME
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterGetUserByUsernameInput
 
@@ -56,14 +60,13 @@ class TwitterGetUserByUsername(TwitterBaseTool):
                 skill_store=self.skill_store,
                 config=context.config,
             )
+            client = await twitter.get_client()
 
             # Check rate limit only when not using OAuth
             if not twitter.use_key:
                 await self.check_rate_limit(
                     context.agent.id, max_requests=3, interval=60 * 24
                 )
-
-            client = await twitter.get_client()
 
             user_data = await client.get_user(
                 username=username,
