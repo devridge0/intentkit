@@ -884,7 +884,7 @@ async def skill_cost(
     """
     skill = await Skill.get(skill_name)
     if not skill:
-        raise ValueError(f"Skill {skill_name} not found")
+        raise ValueError(f"The price of {skill_name} not set yet")
     agent_skill_config = agent.skills.get(skill.category)
     if (
         agent_skill_config
