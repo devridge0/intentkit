@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 
 from epyxid import XID
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -852,58 +853,57 @@ async def expense_message(
     return CreditEvent.model_validate(event)
 
 
-async def expense_skill(
-    session: AsyncSession,
-    user_id: str,
-    message_id: str,
-    start_message_id: str,
-    skill_call_id: str,
+class SkillCost(BaseModel):
+    total_amount: Decimal
+    base_amount: Decimal
+    base_discount_amount: Decimal
+    base_original_amount: Decimal
+    base_skill_amount: Decimal
+    fee_platform_amount: Decimal
+    fee_dev_user: str
+    fee_dev_user_type: OwnerType
+    fee_dev_amount: Decimal
+    fee_agent_amount: Decimal
+
+
+async def skill_cost(
     skill_name: str,
+    user_id: str,
     agent: Agent,
-) -> CreditEvent:
+) -> SkillCost:
     """
-    Deduct credits from a user account for message expenses.
-    Don't forget to commit the session after calling this function.
+    Calculate the cost for a skill call including all fees.
 
     Args:
-        session: Async session to use for database operations
-        agent_id: ID of the agent to deduct credits from
-        user_id: ID of the user to deduct credits from
-        amount: Amount of credits to deduct
-        upstream_tx_id: ID of the upstream transaction
-        message_id: ID of the message that incurred the expense
-        start_message_id: ID of the starting message in a conversation
-        base_llm_amount: Amount of LLM costs
+        skill_name: Name of the skill
+        user_id: ID of the user making the skill call
+        agent: Agent using the skill
 
     Returns:
-        Updated user credit account
+        SkillCost: Object containing all cost components
     """
-    # Check for idempotency - prevent duplicate transactions
-    upstream_tx_id = f"{message_id}_{skill_call_id}"
-    await CreditEvent.check_upstream_tx_id_exists(
-        session, UpstreamType.EXECUTOR, upstream_tx_id
-    )
-
-    # Get skill
-    base_skill_amount = 1
     skill = await Skill.get(skill_name)
-    if skill:
-        agent_skill_config = agent.skills.get(skill.category)
-        if (
-            agent_skill_config
-            and agent_skill_config.get("api_key_provider") == "agent_owner"
-        ):
-            base_skill_amount = skill.price_self_key
-        else:
-            base_skill_amount = skill.price
-
+    if not skill:
+        raise ValueError(f"Skill {skill_name} not found")
+    agent_skill_config = agent.skills.get(skill.category)
+    if (
+        agent_skill_config
+        and agent_skill_config.get("api_key_provider") == "agent_owner"
+    ):
+        base_skill_amount = skill.price_self_key
+    else:
+        base_skill_amount = skill.price
     # Get payment settings
     payment_settings = await AppSetting.payment()
 
     # Calculate fee
-    logger.info(f"skill payment {skill_name}")
-    fee_dev_user = DEFAULT_PLATFORM_ACCOUNT_DEV
-    fee_dev_user_type = OwnerType.PLATFORM
+    logger.info(f"[{agent.id}] skill payment {skill_name}")
+    if skill.author:
+        fee_dev_user = skill.author
+        fee_dev_user_type = OwnerType.USER
+    else:
+        fee_dev_user = DEFAULT_PLATFORM_ACCOUNT_DEV
+        fee_dev_user_type = OwnerType.PLATFORM
     fee_dev_percentage = payment_settings.fee_dev_percentage
 
     if base_skill_amount < Decimal("0"):
@@ -921,12 +921,61 @@ async def expense_skill(
     fee_dev_amount = base_amount * fee_dev_percentage / Decimal("100")
     total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
 
+    # Return the SkillCost object with all calculated values
+    return SkillCost(
+        total_amount=total_amount,
+        base_amount=base_amount,
+        base_discount_amount=Decimal("0"),  # No discount in this implementation
+        base_original_amount=base_original_amount,
+        base_skill_amount=base_skill_amount,
+        fee_platform_amount=fee_platform_amount,
+        fee_dev_user=fee_dev_user,
+        fee_dev_user_type=fee_dev_user_type,
+        fee_dev_amount=fee_dev_amount,
+        fee_agent_amount=fee_agent_amount,
+    )
+
+
+async def expense_skill(
+    session: AsyncSession,
+    user_id: str,
+    message_id: str,
+    start_message_id: str,
+    skill_call_id: str,
+    skill_name: str,
+    agent: Agent,
+) -> CreditEvent:
+    """
+    Deduct credits from a user account for message expenses.
+    Don't forget to commit the session after calling this function.
+
+    Args:
+        session: Async session to use for database operations
+        user_id: ID of the user to deduct credits from
+        message_id: ID of the message that incurred the expense
+        start_message_id: ID of the starting message in a conversation
+        skill_call_id: ID of the skill call
+        skill_name: Name of the skill being used
+        agent: Agent using the skill
+
+    Returns:
+        CreditEvent: The created credit event
+    """
+    # Check for idempotency - prevent duplicate transactions
+    upstream_tx_id = f"{message_id}_{skill_call_id}"
+    await CreditEvent.check_upstream_tx_id_exists(
+        session, UpstreamType.EXECUTOR, upstream_tx_id
+    )
+
+    # Calculate skill cost using the skill_cost function
+    skill_cost_info = await skill_cost(skill_name, user_id, agent)
+
     # 1. Update user account - deduct credits
     user_account, credit_type = await CreditAccount.expense_in_session(
         session=session,
         owner_type=OwnerType.USER,
         owner_id=user_id,
-        amount=total_amount,
+        amount=skill_cost_info.total_amount,
     )
 
     # 2. Update fee account - add credits
@@ -935,23 +984,23 @@ async def expense_skill(
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
         credit_type=credit_type,
-        amount=fee_platform_amount,
+        amount=skill_cost_info.fee_platform_amount,
     )
-    if fee_dev_amount > 0:
+    if skill_cost_info.fee_dev_amount > 0:
         dev_account = await CreditAccount.income_in_session(
             session=session,
-            owner_type=fee_dev_user_type,
-            owner_id=fee_dev_user,
+            owner_type=skill_cost_info.fee_dev_user_type,
+            owner_id=skill_cost_info.fee_dev_user,
             credit_type=credit_type,
-            amount=fee_dev_amount,
+            amount=skill_cost_info.fee_dev_amount,
         )
-    if fee_agent_amount > 0:
+    if skill_cost_info.fee_agent_amount > 0:
         agent_account = await CreditAccount.income_in_session(
             session=session,
             owner_type=OwnerType.AGENT,
             owner_id=agent.id,
             credit_type=credit_type,
-            amount=fee_agent_amount,
+            amount=skill_cost_info.fee_agent_amount,
         )
 
     # 3. Create credit event record
@@ -967,19 +1016,21 @@ async def expense_skill(
         agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
-        total_amount=total_amount,
+        total_amount=skill_cost_info.total_amount,
         credit_type=credit_type,
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
-        base_amount=base_amount,
-        base_original_amount=base_original_amount,
-        base_skill_amount=base_skill_amount,
-        fee_platform_amount=fee_platform_amount,
-        fee_agent_amount=fee_agent_amount,
-        fee_agent_account=agent_account.id if fee_agent_amount > 0 else None,
-        fee_dev_amount=fee_dev_amount,
-        fee_dev_account=dev_account.id if fee_dev_amount > 0 else None,
+        base_amount=skill_cost_info.base_amount,
+        base_original_amount=skill_cost_info.base_original_amount,
+        base_skill_amount=skill_cost_info.base_skill_amount,
+        fee_platform_amount=skill_cost_info.fee_platform_amount,
+        fee_agent_amount=skill_cost_info.fee_agent_amount,
+        fee_agent_account=agent_account.id
+        if skill_cost_info.fee_agent_amount > 0
+        else None,
+        fee_dev_amount=skill_cost_info.fee_dev_amount,
+        fee_dev_account=dev_account.id if skill_cost_info.fee_dev_amount > 0 else None,
     )
     session.add(event)
     await session.flush()
@@ -992,7 +1043,7 @@ async def expense_skill(
         event_id=event_id,
         tx_type=TransactionType.PAY,
         credit_debit=CreditDebit.DEBIT,
-        change_amount=total_amount,
+        change_amount=skill_cost_info.total_amount,
         credit_type=credit_type,
     )
     session.add(user_tx)
@@ -1004,33 +1055,33 @@ async def expense_skill(
         event_id=event_id,
         tx_type=TransactionType.RECEIVE_FEE_PLATFORM,
         credit_debit=CreditDebit.CREDIT,
-        change_amount=fee_platform_amount,
+        change_amount=skill_cost_info.fee_platform_amount,
         credit_type=credit_type,
     )
     session.add(platform_tx)
 
     # 4.3 Dev user transaction (credit)
-    if fee_dev_amount > 0:
+    if skill_cost_info.fee_dev_amount > 0:
         dev_tx = CreditTransactionTable(
             id=str(XID()),
             account_id=dev_account.id,
             event_id=event_id,
             tx_type=TransactionType.RECEIVE_FEE_DEV,
             credit_debit=CreditDebit.CREDIT,
-            change_amount=fee_dev_amount,
+            change_amount=skill_cost_info.fee_dev_amount,
             credit_type=credit_type,
         )
         session.add(dev_tx)
 
     # 4.4 Agent fee account transaction (credit)
-    if fee_agent_amount > 0:
+    if skill_cost_info.fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),
             account_id=agent_account.id,
             event_id=event_id,
             tx_type=TransactionType.RECEIVE_FEE_AGENT,
             credit_debit=CreditDebit.CREDIT,
-            change_amount=fee_agent_amount,
+            change_amount=skill_cost_info.fee_agent_amount,
             credit_type=credit_type,
         )
         session.add(agent_tx)
