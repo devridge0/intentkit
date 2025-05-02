@@ -480,6 +480,7 @@ async def execute_agent(
     if config.env == "testnet-prod" and agent.model not in [
         "gpt-4o-mini",
         "gpt-4.1-nano",
+        "deepseek-chat",
     ]:
         error_message_create = ChatMessageCreate(
             id=str(XID()),
