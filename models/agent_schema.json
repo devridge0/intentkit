@@ -160,19 +160,59 @@
       "description": "Select the LLM for your agent. Note that each LLM has its specific advantages, behaviour and cost.",
       "default": "gpt-4.1-nano",
       "enum": [
+        "gpt-4o",
         "gpt-4o-mini",
-        "gpt-4.1-nano"
+        "gpt-4.1-nano",
+        "gpt-4.1-mini",
+        "gpt-4.1",
+        "o4-mini",
+        "deepseek-chat",
+        "grok-2",
+        "grok-3",
+        "grok-3-mini",
+        "eternalai",
+        "reigent"
       ],
       "x-component": "category-select",
       "x-enum-title": [
+        "GPT-4o",
         "GPT-4o mini",
-        "GPT-4.1 nano"
+        "GPT-4.1 nano",
+        "GPT-4.1 mini",
+        "GPT-4.1",
+        "OpenAI o4-mini",
+        "Deepseek V3 (0324)",
+        "Grok 2",
+        "Grok 3",
+        "Grok 3 Mini",
+        "Eternal AI (Llama-3.3-70B)",
+        "REI Network (Rei Core)"
       ],
       "x-enum-category": [
         "OpenAI",
-        "OpenAI"
+        "OpenAI",
+        "OpenAI",
+        "OpenAI",
+        "OpenAI",
+        "OpenAI",
+        "Deepseek",
+        "Grok",
+        "Grok",
+        "Grok",
+        "Others",
+        "Others"
       ],
       "x-support-skill": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true,
         true
       ],
@@ -656,10 +696,8 @@
         "type": "number",
         "description": "Set a tip percentage that users will pay on top of the base CAPs fee when interacting with this Agent. This tip goes directly to the Agent's wallet. Interactions by the creator are excluded.",
         "minimum": 0,
-        "maximum": 100,
-        "default": 1,
-        "x-step": 1,
-        "x-group": "experimental"
+        "default": 0,
+        "x-group": "basic"
       }
     }
   },

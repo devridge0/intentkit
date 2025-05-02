@@ -587,7 +587,6 @@ class AgentUpdate(BaseModel):
             default=None,
             description="Fee percentage of the agent",
             ge=Decimal("0.0"),
-            le=Decimal("100.0"),
             json_schema_extra={
                 "x-group": "basic",
             },
