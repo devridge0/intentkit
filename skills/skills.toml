@@ -4,7 +4,7 @@ author_wallet = ""
 
 [aixbt]
 author_github = "bluntbrain"
-author_wallet = ""
+author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
 [allora]
 author_github = "TxCorpi0x"
@@ -28,7 +28,7 @@ author_wallet = "0x178741Fc5BA9B77147398853c28736eEFe5fCff1"
 
 [dapplooker]
 author_github = "bluntbrain"
-author_wallet = ""
+author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
 [defillama]
 author_github = "0xkieranwilliams"
@@ -44,7 +44,7 @@ author_wallet = ""
 
 [github]
 author_github = "bluntbrain"
-author_wallet = ""
+author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
 [goat]
 author_github = "TxCorpi0x"
@@ -72,7 +72,7 @@ author_wallet = "0x445750026A4a1906b61302442E085f9cbAfe206a"
 
 [tavily]
 author_github = "bluntbrain"
-author_wallet = ""
+author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
 [twitter]
 author_github = "hyacinthus"
@@ -80,7 +80,7 @@ author_wallet = "0x445750026A4a1906b61302442E085f9cbAfe206a"
 
 [unrealspeech]
 author_github = "bluntbrain"
-author_wallet = ""
+author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
 [unrealspeech]
 author_github = "yornfifty"
