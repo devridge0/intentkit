@@ -60,7 +60,7 @@ author_wallet = ""
 
 [nation]
 author_github = "spidemen"
-author_wallet = ""
+author_wallet = "0x275960ad41DbE218bBf72cDF612F88b5C6f40648"
 
 [openai]
 author_github = "hyacinthus"
@@ -82,6 +82,6 @@ author_wallet = "0x445750026A4a1906b61302442E085f9cbAfe206a"
 author_github = "bluntbrain"
 author_wallet = "0x3cdd051eeC909f94965F9c1c657f5b70a172B2C0"
 
-[unrealspeech]
+[venice_image]
 author_github = "yornfifty"
 author_wallet = "0xF60D4B6780D5D51827602D7aC319458bc9e921F4"
