@@ -21,8 +21,9 @@ class KOLBuysInput(BaseModel):
     """Input schema for fetching KOL memecoin buys."""
 
     limit: int = Field(
-        default=100,
-        description="Maximum number of buy transactions to fetch (default 100).",
+        default=10,
+        description="Maximum number of buy transactions to fetch (default 10).",
+        ge=1,
     )
 
 
@@ -55,14 +56,14 @@ class FetchKOLBuys(DuneBaseTool):
         stop=stop_after_attempt(3), wait=wait_exponential(multiplier=5, min=5, max=60)
     )
     async def fetch_data(
-        self, query_id: int, api_key: str, limit: int = 100
+        self, query_id: int, api_key: str, limit: int = 10
     ) -> Dict[str, Any]:
         """Fetch data for a specific Dune query.
 
         Args:
             query_id: Dune query ID.
             api_key: Dune API key.
-            limit: Maximum number of results (default 100).
+            limit: Maximum number of results (default 10).
 
         Returns:
             Dictionary of query results.
@@ -85,19 +86,19 @@ class FetchKOLBuys(DuneBaseTool):
 
     async def _arun(
         self,
-        limit: int = 100,
+        limit: int = 10,
         config: RunnableConfig = None,
         **kwargs,
-    ) -> KOLBuysOutput:
-        """Fetch KOL memecoin buys asynchronously.
+    ) -> str:
+        """Fetch KOL memecoin buys asynchronously and return formatted output.
 
         Args:
-            limit: Maximum number of buy transactions to fetch (default 100).
+            limit: Maximum number of buy transactions to fetch (default 10).
             config: Runnable configuration.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            KOLBuysOutput with buy data and summary.
+            Formatted string with KOL buy transactions or error message.
         """
         import logging
 
@@ -107,16 +108,21 @@ class FetchKOLBuys(DuneBaseTool):
 
         try:
             data = await self.fetch_data(KOL_BUYS_QUERY_ID, api_key, limit)
-            result = KOLBuyData(data=data)
-            summary = (
-                f"Fetched {len(data.get('rows', []))} KOL memecoin buy transactions."
-            )
-        except Exception as e:
-            result = KOLBuyData(data={}, error=str(e))
-            summary = f"Error fetching KOL memecoin buys: {str(e)}"
-            logger.warning("Failed to fetch KOL buys: %s", str(e))
+            rows = data.get("rows", [])
+            if not rows:
+                return "No KOL buy transactions found."
 
-        return KOLBuysOutput(buys=result, summary=summary)
+            output = f"Fetched {len(rows)} KOL memecoin buy transactions:\n"
+            for row in rows:
+                output += (
+                    f"- {row['kol_with_link']} bought {row['token_with_chart']} "
+                    f"(${row['amount_usd']:.2f}) at {row['buy_time']}\n"
+                )
+            return output.strip()
+        except Exception as e:
+            error_msg = f"Error fetching KOL memecoin buys: {str(e)}"
+            logger.warning(error_msg)
+            return error_msg
 
     def _run(self, question: str):
         raise NotImplementedError("Use _arun for async execution")
