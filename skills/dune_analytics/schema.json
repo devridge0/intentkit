@@ -22,7 +22,7 @@
           "title": "Fetch KOL Memecoin Buys",
           "enum": ["disabled", "public", "private"],
           "x-enum-title": ["Disabled", "Agent Owner + All Users", "Agent Owner Only"],
-          "description": "Fetches a list of KOL memecoin buy transactions on Solana from Dune Analytics API using query ID 4832844.",
+          "description": "Fetches a list of KOL memecoin buy transactions on Solana from Dune Analytics API.",
           "default": "public"
         }
       }
