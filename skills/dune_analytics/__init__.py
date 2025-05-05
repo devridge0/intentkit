@@ -13,6 +13,7 @@ from .base import DuneBaseTool
 
 logger = logging.getLogger(__name__)
 
+# Cache for skill instances
 _skill_cache: Dict[str, DuneBaseTool] = {}
 
 
@@ -105,4 +106,5 @@ def get_dune_skill(
     except ImportError as e:
         logger.error("Failed to import Dune Analytics skill %s: %s", name, e)
         return None
+
 
