@@ -476,27 +476,6 @@ async def execute_agent(
 
     agent = await Agent.get(input.agent_id)
 
-    # hack for temporary disable models
-    if config.env == "testnet-prod" and agent.model not in [
-        "gpt-4o-mini",
-        "gpt-4.1-nano",
-    ]:
-        error_message_create = ChatMessageCreate(
-            id=str(XID()),
-            agent_id=input.agent_id,
-            chat_id=input.chat_id,
-            user_id=input.user_id,
-            author_id=input.agent_id,
-            author_type=AuthorType.SYSTEM,
-            thread_type=input.author_type,
-            reply_to=input.id,
-            message="This model is currently unavailable. Please switch to a different supported model or wait for further updates from Nation App.",
-            time_cost=time.perf_counter() - start,
-        )
-        error_message = await error_message_create.save()
-        resp.append(error_message)
-        return resp
-
     need_payment = await is_payment_required(input, agent)
 
     # check user balance
