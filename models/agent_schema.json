@@ -435,6 +435,10 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "venice_audio": {
+          "title": "Venice Audio",
+          "$ref": "../skills/venice_audio/schema.json"
+        },
         "openai": {
           "title": "OpenAI",
           "$ref": "../skills/openai/schema.json"
