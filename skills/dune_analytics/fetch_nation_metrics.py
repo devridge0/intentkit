@@ -56,7 +56,7 @@ class NationMetricsInput(BaseModel):
         description="Metric name (e.g., total_users, agents) or query ID (e.g., 4858003). Empty for all configured metrics.",
     )
     limit: int = Field(
-        default=100, description="Maximum number of results to fetch."
+        default=1000, description="Maximum number of results to fetch (default 1000)."
     )
 
 
@@ -171,7 +171,6 @@ class FetchNationMetrics(DuneBaseTool):
             NationMetricsOutput with metric data and summary.
         """
         import logging
-
 
         logger = logging.getLogger(__name__)
         context = self.context_from_config(config)
