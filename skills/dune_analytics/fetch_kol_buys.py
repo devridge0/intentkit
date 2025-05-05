@@ -101,7 +101,6 @@ class FetchKOLBuys(DuneBaseTool):
         """
         import logging
 
-
         logger = logging.getLogger(__name__)
         context = self.context_from_config(config)
         api_key = self.get_api_key(context)
