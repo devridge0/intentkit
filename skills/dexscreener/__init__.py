@@ -45,10 +45,7 @@ async def get_skills(
         A list of DexScreener skills.
     """
 
-    logger.error("DEX get_skills 1")
     available_skills = []
-
-    logger.error("DEX get_skills 2")
 
     # Include skills based on their state
     for skill_name, state in config["states"].items():
@@ -57,15 +54,15 @@ async def get_skills(
         elif state == "public" or (state == "private" and is_private):
             available_skills.append(skill_name)
 
-    logger.error("DEX get_skills 3")
-    # Get each skill using the cached getter
+    logger.debug(f"Available Skills {available_skills}")
+    logger.debug(f"Hardcoded Skills {_SKILL_NAME_TO_CLASS_MAP}")
 
+    # Get each skill using the cached getter
     result = []
     for name in available_skills:
         skill = get_dexscreener_skills(name, store)
         if skill:
             result.append(skill)
-    logger.error("DEX get_skills 4")
     return result
 
 
@@ -82,22 +79,15 @@ def get_dexscreener_skills(
     Returns:
         The requested DexScreener skill
     """
-    logger.error("DEX get_dexscreener_skills 1")
 
     # Return from cache immediately if already exists
     if name in _cache:
         return _cache[name]
 
-    logger.error("DEX get_dexscreener_skills 2")
     skill_class = _SKILL_NAME_TO_CLASS_MAP.get(name)
-    logger.error("DEX get_dexscreener_skills 3")
     if not skill_class:
-        logger.error("DEX get_dexscreener_skills 4")
-        logger.warning(f"Unknown Venice skill: {name}")
+        logger.warning(f"Unknown Dexscreener skill: {name}")
         return None
 
-    logger.error("DEX get_dexscreener_skills 5")
-    logger.error("DEX get_dexscreener_skills 6")
     _cache[name] = skill_class(skill_store=store)
-    logger.error("DEX get_dexscreener_skills 7")
     return _cache[name]
