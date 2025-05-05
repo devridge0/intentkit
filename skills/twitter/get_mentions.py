@@ -3,11 +3,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Type
 
 from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import ToolException
 from pydantic import BaseModel
 
 from clients.twitter import Tweet, get_twitter_client
 
 from .base import TwitterBaseTool
+
+NAME = "twitter_get_mentions"
+PROMPT = (
+    "Get tweets that mention you, the result is a json object containing a list of tweets."
+    "If the result has no tweets in it, means no new mentions, don't retry this tool."
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +37,8 @@ class TwitterGetMentions(TwitterBaseTool):
         args_schema: The schema for the tool's input arguments.
     """
 
-    name: str = "twitter_get_mentions"
-    description: str = "Get tweets that mention you, the result is a list of json-formatted tweets. If the result is empty list, means no new mentions, don't retry."
+    name: str = NAME
+    description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
@@ -53,13 +60,14 @@ class TwitterGetMentions(TwitterBaseTool):
                 skill_store=self.skill_store,
                 config=context.config,
             )
+            client = await twitter.get_client()
 
             # Check rate limit only when not using OAuth
             if not twitter.use_key:
                 await self.check_rate_limit(
                     context.agent.id,
                     max_requests=1,
-                    interval=15,  # TODO: tmp to 15, back to 240 later
+                    interval=59,  # TODO: tmp to 59, back to 240 later
                 )
 
             # get since id from store
@@ -75,10 +83,9 @@ class TwitterGetMentions(TwitterBaseTool):
             # Always get mentions for the last day
             start_time = datetime.now(tz=timezone.utc) - timedelta(days=1)
 
-            client = await twitter.get_client()
             user_id = twitter.self_id
             if not user_id:
-                raise ValueError("Failed to get Twitter user ID.")
+                raise ToolException("Failed to get Twitter user ID.")
 
             mentions = await client.get_users_mentions(
                 user_auth=twitter.use_key,
@@ -122,4 +129,5 @@ class TwitterGetMentions(TwitterBaseTool):
             return mentions
 
         except Exception as e:
+            logger.error(f"[agent:{context.agent.id}]: {e}")
             raise type(e)(f"[agent:{context.agent.id}]: {e}") from e
