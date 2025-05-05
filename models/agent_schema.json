@@ -435,6 +435,10 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "dexscreener": {
+          "title" : "DEX Screener",
+          "$ref": "../skills/dexscreener/schema.json"
+        },
         "openai": {
           "title": "OpenAI",
           "$ref": "../skills/openai/schema.json"
