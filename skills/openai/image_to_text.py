@@ -64,7 +64,7 @@ class ImageToText(OpenAIBaseTool):
         logger.debug(f"context: {context}")
 
         # Get the OpenAI client from the skill store
-        api_key = context.config.get("api_key")
+        api_key = self.get_api_key(context)
         client = openai.AsyncOpenAI(api_key=api_key)
 
         try:

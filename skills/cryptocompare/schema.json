@@ -8,7 +8,6 @@
     "Blockchain",
     "Finance"
   ],
-  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -118,12 +117,17 @@
       },
       "description": "States for each CryptoCompare skill (disabled, public, or private)"
     },
-    "api_key": {
+    "api_key_provider": {
       "type": "string",
-      "title": "CryptoCompare API Key",
-      "x-link": "[Get your API key](https://www.cryptocompare.com/cryptopian/api-keys)",
-      "x-sensitive": true,
-      "description": "CryptoCompare API key for authentication"
+      "title": "API Key Provider",
+      "description": "Provider of the API key for AIXBT API service",
+      "enum": [
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Owner Provided"
+      ],
+      "default": "agent_owner"
     }
   },
   "required": [
@@ -138,6 +142,15 @@
     }
   },
   "then": {
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "CryptoCompare API Key",
+        "x-link": "[Get your API key](https://www.cryptocompare.com/cryptopian/api-keys)",
+        "x-sensitive": true,
+        "description": "CryptoCompare API key for authentication"
+      }
+    },
     "required": [
       "api_key"
     ]
