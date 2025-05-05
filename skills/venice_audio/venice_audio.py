@@ -153,7 +153,7 @@ class VeniceAudioTool(VeniceAudioBaseTool):
                         # Key: category / voice / hash . extension
                         key = f"{self.category}/{self.voice_model}/{audio_hash}.{file_extension}"
 
-                        size_limit = 1024 * 20  # 20Mb Size limit
+                        size_limit = 1024 * 1024 * 20  # 20Mb Size limit
                         stored_url = await store_file_bytes(
                             file_bytes=audio_bytes,
                             key=key,
