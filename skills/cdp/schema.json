@@ -7,7 +7,6 @@
   "x-tags": [
     "Blockchain"
   ],
-  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -452,6 +451,18 @@
         }
       },
       "description": "States for each CDP skill (disabled, public, or private)"
+    },
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Who provides the API key",
+      "enum": [
+        "platform"
+      ],
+      "x-enum-title": [
+        "Nation Hosted"
+      ],
+      "default": "platform"
     }
   },
   "required": [
