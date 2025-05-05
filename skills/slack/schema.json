@@ -7,7 +7,6 @@
   "x-tags": [
     "Social"
   ],
-  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -85,12 +84,17 @@
       },
       "description": "States for each Slack skill (disabled, public, or private)"
     },
-    "slack_bot_token": {
+    "api_key_provider": {
       "type": "string",
-      "title": "Slack Bot Token",
-      "x-link": "[Get your API key](https://api.slack.com/)",
-      "x-sensitive": true,
-      "description": "Slack bot token for API access"
+      "title": "API Key Provider",
+      "description": "Provider of the API key for AIXBT API service",
+      "enum": [
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Owner Provided"
+      ],
+      "default": "agent_owner"
     }
   },
   "required": [
@@ -99,11 +103,27 @@
   ],
   "if": {
     "properties": {
-      "enabled": { "const": true }
+      "enabled": {
+        "const": true
+      },
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
     }
   },
   "then": {
-    "required": ["slack_bot_token"]
+    "properties": {
+      "slack_bot_token": {
+        "type": "string",
+        "title": "Slack Bot Token",
+        "x-link": "[Get your API key](https://api.slack.com/)",
+        "x-sensitive": true,
+        "description": "Slack bot token for API access"
+      }
+    },
+    "required": [
+      "slack_bot_token"
+    ]
   },
   "additionalProperties": true
 }
