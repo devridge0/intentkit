@@ -83,7 +83,7 @@ class DALLEImageGeneration(OpenAIBaseTool):
         context = self.context_from_config(config)
 
         # Get the OpenAI API key from the skill store
-        api_key = context.config.get("api_key")
+        api_key = self.get_api_key(context)
 
         # Generate a unique job ID
         job_id = str(XID())

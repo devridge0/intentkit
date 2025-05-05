@@ -7,7 +7,6 @@
   "x-tags": [
     "Utility"
   ],
-  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -36,6 +35,18 @@
         }
       },
       "description": "States for each common utility skill (disabled, public, or private)"
+    },
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Who provides the API key",
+      "enum": [
+        "platform"
+      ],
+      "x-enum-title": [
+        "Nation Hosted"
+      ],
+      "default": "platform"
     }
   },
   "required": [

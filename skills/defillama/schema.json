@@ -4,7 +4,6 @@
   "title": "DeFiLlama Skills",
   "x-icon": "https://ai.service.crestal.dev/skills/defillama/defillama.jpeg",
   "description": "Integration with DeFi Llama API providing comprehensive decentralized finance data including token prices, protocol TVL, DEX volumes, and stablecoin metrics",
-  "x-api-key": "hosted",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -363,6 +362,18 @@
         }
       },
       "description": "States for each Defillama skill (disabled, public, or private)"
+    },
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Who provides the API key",
+      "enum": [
+        "platform"
+      ],
+      "x-enum-title": [
+        "Nation Hosted"
+      ],
+      "default": "platform"
     }
   },
   "required": [
