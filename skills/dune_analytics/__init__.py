@@ -8,8 +8,7 @@ from typing import Dict, List, Optional, TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
-
-from .base import DuneBaseTool
+from skills.dune_analytics.base import DuneBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +69,7 @@ async def get_skills(
     return loaded_skills
 
 
-def get_dune_skill(
-    name: str,
-    store: SkillStoreABC,
-) -> Optional[DuneBaseTool]:
+def get_dune_skill(name: str, store: SkillStoreABC) -> Optional[DuneBaseTool]:
     """Retrieve a Dune Analytics skill instance by name.
 
     Args:
@@ -102,9 +98,6 @@ def get_dune_skill(
 
         logger.debug("Cached new skill instance: %s", name)
         return _skill_cache[name]
-
     except ImportError as e:
-        logger.error("Failed to import Dune Analytics skill %s: %s", name, e)
+        logger.error("Failed to import skill %s: %s", name, e)
         return None
-
-
