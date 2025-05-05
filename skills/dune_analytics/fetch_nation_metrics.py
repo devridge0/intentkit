@@ -56,7 +56,7 @@ class NationMetricsInput(BaseModel):
         description="Metric name (e.g., total_users, agents) or query ID (e.g., 4858003). Empty for all configured metrics.",
     )
     limit: int = Field(
-        default=1000, description="Maximum number of results to fetch (default 1000)."
+        default=100, description="Maximum number of results to fetch."
     )
 
 
