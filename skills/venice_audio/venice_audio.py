@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 # Import necessary base classes and utilities
 from abstracts.skill import SkillStoreABC
-from skills.base import IntentKitSkill, SkillContext
+from skills.venice_audio.base import VeniceAudioBaseTool
 from skills.venice_audio.input import AllowedAudioFormat, VeniceAudioInput
 from utils.s3 import FileType, store_file_bytes
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 base_url = "https://api.venice.ai"
 
 
-class VeniceAudioTool(IntentKitSkill):
+class VeniceAudioTool(VeniceAudioBaseTool):
     """
     Tool for generating audio using the Venice AI Text-to-Speech API (/audio/speech).
     It requires a specific 'voice_model' to be configured for the instance.
@@ -35,86 +35,19 @@ class VeniceAudioTool(IntentKitSkill):
     Network errors or internal processing errors will still raise exceptions.
     """
 
-    # --- Input Schema ---
-    args_schema: Type[BaseModel] = VeniceAudioInput
-
-    # --- START Required Instance Fields ---
-    skill_store: SkillStoreABC = Field(
-        description="The skill store instance for accessing system/agent configurations and persisting data."
-    )
-    voice_model: str = Field(
-        description="REQUIRED identifier for the specific Venice AI voice model to use for TTS generation (e.g., 'af_sky', 'am_echo'). This must be set per tool instance."
-    )
-    # --- END Required Instance Fields ---
-
-    # --- Static Class Fields ---
     name: str = "venice_audio_text_to_speech"
     description: str = (
         "Converts text to speech using a configured Venice AI voice model. "
         "Requires input text. Optional parameters include speed (0.25-4.0, default 1.0) "
         "and audio format (mp3, opus, aac, flac, wav, pcm, default mp3)."
     )
-
-    @property
-    def category(self) -> str:
-        # Category for grouping related skills
-        return "venice_audio"
-
-    # --- Helper Methods ---
-    def get_api_key(self, context: SkillContext) -> Optional[str]:
-        """Gets Venice AI API Key, checking agent and system configs."""
-        category_config = context.config  # Config specific to 'venice_audio' category
-        agent_api_key = category_config.get("api_key")
-        if agent_api_key:
-            # Use self.name which is 'venice_audio_text_to_speech' here. Could use category for logging too.
-            logger.debug(
-                f"Using agent-specific Venice API key for audio skill {self.name} (Voice: {self.voice_model})"
-            )
-            return agent_api_key
-
-        # Check system config for category-specific key, then generic key
-        system_api_key = self.skill_store.get_system_config(
-            f"{self.category}_api_key"
-        ) or self.skill_store.get_system_config("venice_api_key")
-        if system_api_key:
-            logger.debug(
-                f"Using system Venice API key for audio skill {self.name} (Voice: {self.voice_model})"
-            )
-            return system_api_key
-
-        logger.warning(
-            f"No Venice API key found in agent ({self.category}) or system config for skill {self.name}"
-        )
-        # Let _arun handle the missing key error if it's critical
-        return None
-
-    async def apply_rate_limit(self, context: SkillContext) -> None:
-        """
-        Applies rate limiting ONLY if specified in the agent's config ('skill_config').
-        Checks for 'rate_limit_number' and 'rate_limit_minutes'.
-        If not configured, NO rate limiting is applied.
-        Raises ConnectionAbortedError if the configured limit is exceeded.
-        """
-        skill_config = context.config
-        user_id = context.user_id
-
-        # Get agent-specific limits safely
-        limit_num = skill_config.get("rate_limit_number")
-        limit_min = skill_config.get("rate_limit_minutes")
-
-        # Apply limit ONLY if both values are present and valid (truthy check handles None and 0)
-        if limit_num and limit_min:
-            limit_source = "Agent"
-            logger.debug(
-                f"Applying {limit_source} rate limit ({limit_num}/{limit_min} min) for user {user_id} on {self.name} (Voice: {self.voice_model})"
-            )
-            # This call might raise ConnectionAbortedError if the limit is hit
-            await self.user_rate_limit_by_category(user_id, limit_num, limit_min)
-        else:
-            # No valid agent configuration found, so do nothing.
-            logger.debug(
-                f"No agent rate limits configured for category '{self.category}'. Skipping rate limit for user {user_id}."
-            )
+    args_schema: Type[BaseModel] = VeniceAudioInput
+    skill_store: SkillStoreABC = Field(
+        description="The skill store instance for accessing system/agent configurations and persisting data."
+    )
+    voice_model: str = Field(
+        description="REQUIRED identifier for the specific Venice AI voice model to use for TTS generation (e.g., 'af_sky', 'am_echo'). This must be set per tool instance."
+    )
 
     # --- Core Execution Method ---
     async def _arun(
@@ -131,7 +64,6 @@ class VeniceAudioTool(IntentKitSkill):
         Returns a dictionary containing audio details on success, or API error details on failure.
         """
         context = self.context_from_config(config)
-        skill_config = context.config  # Agent/System config for 'venice_audio' category
 
         try:
             # --- Setup ---
@@ -171,6 +103,7 @@ class VeniceAudioTool(IntentKitSkill):
             "speed": speed if speed is not None else 1.0,
             "streaming": False,
         }
+
         payload = {k: v for k, v in payload.items() if v is not None}
 
         logger.debug(
@@ -220,9 +153,7 @@ class VeniceAudioTool(IntentKitSkill):
                         # Key: category / voice / hash . extension
                         key = f"{self.category}/{self.voice_model}/{audio_hash}.{file_extension}"
 
-                        size_limit = skill_config.get(
-                            "audio_size_limit_bytes"
-                        )  # Size limit from config
+                        size_limit = 1024 * 20  # 20Mb Size limit
                         stored_url = await store_file_bytes(
                             file_bytes=audio_bytes,
                             key=key,
