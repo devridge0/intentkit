@@ -42,17 +42,6 @@ class TwitterGetMentions(TwitterBaseTool):
     args_schema: Type[BaseModel] = TwitterGetMentionsInput
 
     async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
-        """Async implementation of the tool to get mentions.
-
-        Args:
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            list[Tweet]: A list of tweets that mention the authenticated user.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(
@@ -61,6 +50,8 @@ class TwitterGetMentions(TwitterBaseTool):
                 config=context.config,
             )
             client = await twitter.get_client()
+
+            logger.debug(f"Use Key: {twitter.use_key}")
 
             # Check rate limit only when not using OAuth
             if not twitter.use_key:

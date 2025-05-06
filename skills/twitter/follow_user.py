@@ -38,18 +38,6 @@ class TwitterFollowUser(TwitterBaseTool):
     args_schema: Type[BaseModel] = TwitterFollowUserInput
 
     async def _arun(self, user_id: str, config: RunnableConfig, **kwargs) -> bool:
-        """Async implementation of the tool to follow a user.
-
-        Args:
-            user_id (str): The ID of the user to follow.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            bool: True if the user was successfully followed, otherwise raises an exception.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API or following the user.
-        """
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(
