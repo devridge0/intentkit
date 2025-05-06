@@ -435,11 +435,16 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "cookiefun": {
+          "title": "cookie.fun",
+          "$ref": "../skills/cookiefun/schema.json"
+        },
         "openai": {
           "title": "OpenAI",
           "$ref": "../skills/openai/schema.json"
         },
         "venice_image": {
+          "title": "Venice Image",
           "$ref": "../skills/venice_image/schema.json"
         },
         "dapplooker": {
