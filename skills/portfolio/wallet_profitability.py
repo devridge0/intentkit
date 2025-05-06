@@ -85,7 +85,7 @@ class WalletProfitability(PortfolioBaseTool):
         if token_addresses:
             params["token_addresses"] = token_addresses
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/profitability"
             return await self._make_request(

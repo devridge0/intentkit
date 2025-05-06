@@ -30,6 +30,26 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
     def category(self) -> str:
         return "portfolio"
 
+    def _prepare_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert boolean values to lowercase strings for API compatibility.
+
+        Args:
+            params: Dictionary with query parameters that may contain boolean values
+
+        Returns:
+            Dictionary with boolean values converted to lowercase strings
+        """
+        if not params:
+            return params
+
+        result = {}
+        for key, value in params.items():
+            if isinstance(value, bool):
+                result[key] = str(value).lower()
+            else:
+                result[key] = value
+        return result
+
     async def _make_request(
         self,
         method: str,
@@ -53,6 +73,9 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
         url = f"{self.base_url}{endpoint}"
         headers = {"accept": "application/json", "X-API-Key": api_key}
 
+        # Convert boolean params to strings
+        processed_params = self._prepare_params(params) if params else None
+
         logger.debug(f"Portfolio skill {self.name} making {method} request to {url}")
 
         async with aiohttp.ClientSession() as session:
@@ -61,7 +84,7 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
                     method=method,
                     url=url,
                     headers=headers,
-                    params=params,
+                    params=processed_params,
                     json=json_data,
                 ) as response:
                     if response.status == 200:

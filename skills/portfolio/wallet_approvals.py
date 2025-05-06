@@ -86,7 +86,7 @@ class WalletApprovals(PortfolioBaseTool):
         if cursor:
             params["cursor"] = cursor
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/approvals"
             return await self._make_request(

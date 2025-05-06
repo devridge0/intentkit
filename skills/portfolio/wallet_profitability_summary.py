@@ -75,7 +75,7 @@ class WalletProfitabilitySummary(PortfolioBaseTool):
             "days": days,
         }
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/profitability/summary"
             return await self._make_request(
