@@ -7,7 +7,6 @@
   "x-tags": [
     "Social"
   ],
-  "x-api-key": "optional",
   "properties": {
     "enabled": {
       "type": "boolean",
