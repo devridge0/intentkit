@@ -27,7 +27,7 @@ class Config(SkillConfig):
     """Configuration for Cookie.fun skills."""
 
     states: SkillStates
-    cookiefun_api_key: str  # Cookie.fun API key
+    api_key: str  # Cookie.fun API key
 
 
 async def get_skills(
