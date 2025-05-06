@@ -5,7 +5,7 @@ from typing import Type
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from clients.twitter import Tweet, get_twitter_client
+from clients.twitter import get_twitter_client
 
 from .base import TwitterBaseTool
 
@@ -36,20 +36,7 @@ class TwitterSearchTweets(TwitterBaseTool):
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterSearchTweetsInput
 
-    async def _arun(self, query: str, config: RunnableConfig, **kwargs) -> list[Tweet]:
-        """Async implementation of the tool to search tweets.
-
-        Args:
-            query (str): The search query to use.
-            max_results (int, optional): Maximum number of results to return. Defaults to 10.
-            recent_only (bool, optional): Whether to only search recent tweets. Defaults to True.
-
-        Returns:
-            TwitterSearchTweetsOutput: A structured output containing the search results.
-
-        Raises:
-            Exception: If there's an error searching via the Twitter API.
-        """
+    async def _arun(self, query: str, config: RunnableConfig, **kwargs):
         max_results = 10
         try:
             context = self.context_from_config(config)

@@ -1,10 +1,10 @@
 import logging
-from typing import Optional, Type
+from typing import Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
-from clients.twitter import TwitterUser, get_twitter_client
+from clients.twitter import get_twitter_client
 
 from .base import TwitterBaseTool
 
@@ -38,21 +38,7 @@ class TwitterGetUserByUsername(TwitterBaseTool):
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterGetUserByUsernameInput
 
-    async def _arun(
-        self, username: str, config: RunnableConfig, **kwargs
-    ) -> Optional[TwitterUser]:
-        """Async implementation of the tool to get a user by username.
-
-        Args:
-            username (str): The Twitter username to lookup.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            Optional[TwitterUser]: The Twitter user information if found, None otherwise.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
+    async def _arun(self, username: str, config: RunnableConfig, **kwargs):
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(
