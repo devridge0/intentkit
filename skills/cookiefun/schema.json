@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Cookie.fun Analytics",
+  "description": "Configuration schema for Cookie.fun analytics skills",
+  "x-icon": "https://cookie.fun/icon.png",
+  "x-tags": [
+    "Analytics",
+    "Agents",
+    "Tokens"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether Cookie.fun skills are enabled",
+      "default": false
+    },
+    "cookiefun_api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "Cookie.fun API key for authentication"
+    },
+    "states": {
+      "type": "object",
+      "properties": {
+        "get_country_time": {
+          "type": "string",
+          "title": "Get Country Time",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Get current time in different timezones of a country"
+        },
+        "get_ai_response": {
+          "type": "string",
+          "title": "Get AI Response",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Get responses from Cookie.fun's AI chat system"
+        },
+        "generate_image": {
+          "type": "string",
+          "title": "Generate Image",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Generate images using Cookie.fun's AI"
+        },
+        "translate_text": {
+          "type": "string",
+          "title": "Translate Text",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Translate text to different languages"
+        },
+        "get_crypto": {
+          "type": "string",
+          "title": "Get Cryptocurrency Info",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "description": "Get detailed information about cryptocurrencies"
+        }
+      },
+      "description": "States for each Cookie.fun skill (disabled, public, or private)"
+    }
+  },
+  "required": ["states", "enabled"],
+  "if": {
+    "properties": {
+      "enabled": { "const": true }
+    }
+  },
+  "then": {
+    "required": ["cookiefun_api_key"]
+  },
+  "additionalProperties": true
+} 
