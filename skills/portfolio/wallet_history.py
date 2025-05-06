@@ -140,7 +140,7 @@ class WalletHistory(PortfolioBaseTool):
         if nft_metadata is not None:
             params["nft_metadata"] = nft_metadata
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/history"
             return await self._make_request(

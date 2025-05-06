@@ -140,7 +140,7 @@ class TokenBalances(PortfolioBaseTool):
         if min_pair_side_liquidity_usd:
             params["min_pair_side_liquidity_usd"] = min_pair_side_liquidity_usd
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/tokens"
             return await self._make_request(

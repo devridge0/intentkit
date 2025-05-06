@@ -132,7 +132,7 @@ class WalletSwaps(PortfolioBaseTool):
         if transaction_types:
             params["transactionTypes"] = transaction_types
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/swaps"
             return await self._make_request(

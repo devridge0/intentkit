@@ -96,7 +96,7 @@ class WalletNetWorth(PortfolioBaseTool):
         if chains:
             params["chains"] = chains
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/net-worth"
             return await self._make_request(

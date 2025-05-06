@@ -64,7 +64,7 @@ class WalletStats(PortfolioBaseTool):
             "chain": chain,
         }
 
-        # Call Moralis API 
+        # Call Moralis API
         try:
             endpoint = f"/wallets/{address}/stats"
             return await self._make_request(
