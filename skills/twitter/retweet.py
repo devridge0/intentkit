@@ -35,19 +35,7 @@ class TwitterRetweet(TwitterBaseTool):
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterRetweetInput
 
-    async def _arun(self, tweet_id: str, config: RunnableConfig, **kwargs) -> bool:
-        """Async implementation of the tool to retweet a tweet.
-
-        Args:
-            tweet_id (str): The ID of the tweet to retweet.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            bool: True if the tweet was successfully retweeted.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
+    async def _arun(self, tweet_id: str, config: RunnableConfig, **kwargs):
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(

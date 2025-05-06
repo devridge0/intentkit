@@ -49,21 +49,7 @@ class TwitterReplyTweet(TwitterBaseTool):
         image: Optional[str] = None,
         config: RunnableConfig = None,
         **kwargs,
-    ) -> str:
-        """Async implementation of the tool to reply to a tweet.
-
-        Args:
-            tweet_id (str): The ID of the tweet to reply to.
-            text (str): The text content of the reply.
-            image (Optional[str]): Optional URL of an image to attach to the reply.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            str: The ID of the posted reply tweet.
-
-        Raises:
-            Exception: If there's an error replying via the Twitter API.
-        """
+    ):
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(
