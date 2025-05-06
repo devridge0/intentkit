@@ -31,7 +31,7 @@ class GetCountryTime(CookieFunBaseTool):
     async def _arun(self, country: str, config: RunnableConfig = None, **kwargs) -> str:
         """Get country time from Cookie.fun API."""
         context = self.context_from_config(config)
-        api_key = context.config.get("cookiefun_api_key")
+        api_key = context.config.get("api_key")
         if not api_key:
             return "Error: Cookie.fun API key not configured"
 
