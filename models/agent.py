@@ -1134,7 +1134,7 @@ class AgentUpdate(BaseModel):
 
         This validation ensures:
         1. Only one scheduling method (minutes or cron) is set per autonomous config
-        2. The minimum interval is 1 hour for both types of schedules
+        2. The minimum interval is 5 minutes for both types of schedules
         """
         if not self.autonomous:
             return
@@ -1151,13 +1151,14 @@ class AgentUpdate(BaseModel):
                     status_code=400, detail="only one of minutes or cron can be set"
                 )
 
-            # Validate minimum interval of 1 hour
+            # Validate minimum interval of 5 minutes
             if config.minutes and config.minutes < 5:
                 raise HTTPException(
-                    status_code=400, detail="The shortest execution interval is 1 hour"
+                    status_code=400,
+                    detail="The shortest execution interval is 5 minutes",
                 )
 
-            # Validate cron expression to ensure interval is at least 1 hour
+            # Validate cron expression to ensure interval is at least 5 minutes
             if config.cron:
                 # First validate the cron expression format using cron-validator
 
@@ -1182,7 +1183,7 @@ class AgentUpdate(BaseModel):
                     # If both minute and hour are wildcards, it would run every minute
                     raise HTTPException(
                         status_code=400,
-                        detail="The shortest execution interval is 1 hour",
+                        detail="The shortest execution interval is 5 minutes",
                     )
 
                 if "/" in minute:
@@ -1191,14 +1192,14 @@ class AgentUpdate(BaseModel):
                     if step < 5 and hour == "*":
                         raise HTTPException(
                             status_code=400,
-                            detail="The shortest execution interval is 1 hour",
+                            detail="The shortest execution interval is 5 minutes",
                         )
 
                 # Check for comma-separated values or ranges that might result in multiple executions per hour
                 if ("," in minute or "-" in minute) and hour == "*":
                     raise HTTPException(
                         status_code=400,
-                        detail="The shortest execution interval is 1 hour",
+                        detail="The shortest execution interval is 5 minutes",
                     )
 
     async def update(self, id: str) -> "Agent":
@@ -1810,20 +1811,8 @@ class AgentResponse(BaseModel):
             else:
                 has_twitter_linked = True
 
-        # Process Twitter self-key status and remove sensitive fields
-        has_twitter_self_key = False
-        twitter_config = data.get("twitter_config", {})
-        if twitter_config:
-            required_keys = {
-                "access_token",
-                "bearer_token",
-                "consumer_key",
-                "consumer_secret",
-                "access_token_secret",
-            }
-            has_twitter_self_key = all(
-                key in twitter_config and twitter_config[key] for key in required_keys
-            )
+        # Process Twitter self-key status
+        has_twitter_self_key = agent_data and agent_data.twitter_self_key_refreshed_at
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None
@@ -1880,6 +1869,11 @@ class AgentDataTable(Base):
     )
     twitter_refresh_token = Column(
         String, nullable=True, comment="Twitter refresh token"
+    )
+    twitter_self_key_refreshed_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Twitter self-key userinfo last refresh time",
     )
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
@@ -1965,6 +1959,13 @@ class AgentData(BaseModel):
         PydanticField(
             default=None,
             description="Twitter refresh token",
+        ),
+    ]
+    twitter_self_key_refreshed_at: Annotated[
+        Optional[datetime],
+        PydanticField(
+            default=None,
+            description="Twitter self-key userinfo last refresh time",
         ),
     ]
     telegram_id: Annotated[
