@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import json
 import logging
@@ -114,7 +113,7 @@ async def _process_agent_post_actions(
             if agent_data and agent_data.twitter_username:
                 agent_data = await unlink_twitter(agent.id)
         # Run clean_agent_memory in background
-        asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
+        # asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
 
     if (
         not has_wallet
