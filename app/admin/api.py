@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import json
 import logging
@@ -101,20 +100,8 @@ async def _process_agent_post_actions(
         if agent_data and agent_data.cdp_wallet_data:
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
-        # Check if twitter need unlink, it will change agent data, so must update agent data
-        if agent.twitter_entrypoint_enabled:
-            pass
-        elif (
-            agent.skills
-            and agent.skills.get("twitter")
-            and agent.skills["twitter"].get("enabled")
-        ):
-            pass
-        else:
-            if agent_data and agent_data.twitter_username:
-                agent_data = await unlink_twitter(agent.id)
         # Run clean_agent_memory in background
-        asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
+        # asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
 
     if (
         not has_wallet
