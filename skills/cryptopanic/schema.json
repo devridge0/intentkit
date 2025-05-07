@@ -71,8 +71,8 @@
   ],
   "if": {
     "properties": {
-      "enabled": {
-        "const": true
+      "api_key_provider": {
+        "const": "agent_owner"
       }
     }
   },

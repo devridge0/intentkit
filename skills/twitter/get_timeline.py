@@ -4,7 +4,7 @@ from typing import Type
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
-from clients.twitter import Tweet, get_twitter_client
+from clients.twitter import get_twitter_client
 
 from .base import TwitterBaseTool
 
@@ -37,19 +37,7 @@ class TwitterGetTimeline(TwitterBaseTool):
     description: str = PROMPT
     args_schema: Type[BaseModel] = TwitterGetTimelineInput
 
-    async def _arun(self, config: RunnableConfig, **kwargs) -> list[Tweet]:
-        """Async implementation of the tool to get the user's timeline.
-
-        Args:
-            input (TwitterGetTimelineInput): The input for the tool.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            list[Tweet]: A list of tweets from the user's timeline.
-
-        Raises:
-            Exception: If there's an error accessing the Twitter API.
-        """
+    async def _arun(self, config: RunnableConfig, **kwargs):
         try:
             # Ensure max_results is an integer
             max_results = 10

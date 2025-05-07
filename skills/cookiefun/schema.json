@@ -3,7 +3,7 @@
   "type": "object",
   "title": "Cookie.fun Analytics",
   "description": "Configuration schema for Cookie.fun analytics skills",
-  "x-icon": "https://cookie.fun/icon.png",
+  "x-icon": "https://ai.service.crestal.dev/skills/cookiefun/cookiefun.png",
   "x-tags": [
     "Analytics",
     "Agents",
@@ -15,11 +15,6 @@
       "title": "Enabled",
       "description": "Whether Cookie.fun skills are enabled",
       "default": false
-    },
-    "cookiefun_api_key": {
-      "type": "string",
-      "title": "API Key",
-      "description": "Cookie.fun API key for authentication"
     },
     "states": {
       "type": "object",
@@ -76,16 +71,43 @@
         }
       },
       "description": "States for each Cookie.fun skill (disabled, public, or private)"
+    },
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Provider of the API key for AIXBT API service",
+      "enum": [
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Owner Provided"
+      ],
+      "default": "agent_owner"
     }
   },
-  "required": ["states", "enabled"],
+  "required": [
+    "states",
+    "enabled"
+  ],
   "if": {
     "properties": {
-      "enabled": { "const": true }
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
     }
   },
   "then": {
-    "required": ["cookiefun_api_key"]
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "Cookie.fun API Key",
+        "x-sensitive": true,
+        "description": "Cookie.fun API key for authentication"
+      }
+    },
+    "required": [
+      "api_key"
+    ]
   },
   "additionalProperties": true
-} 
+}

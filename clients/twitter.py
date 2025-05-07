@@ -1,7 +1,7 @@
 import logging
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, NotRequired, Optional, TypedDict
 
 import httpx
@@ -14,7 +14,8 @@ from models.agent import AgentData
 
 logger = logging.getLogger(__name__)
 
-_clients: Dict[str, "TwitterClient"] = {}
+_clients_linked: Dict[str, "TwitterClient"] = {}
+_clients_self_key: Dict[str, "TwitterClient"] = {}
 
 
 class TwitterMedia(BaseModel):
@@ -88,7 +89,7 @@ class TwitterClient(TwitterABC):
         self._client: Optional[AsyncClient] = None
         self._skill_store = skill_store
         self._agent_data: Optional[AgentData] = None
-        self.use_key = False
+        self.use_key = _is_self_key(config)
         self._config = config
 
     async def get_client(self) -> AsyncClient:
@@ -103,15 +104,7 @@ class TwitterClient(TwitterABC):
                 raise Exception(f"[{self.agent_id}] Agent data not found")
         if not self._client:
             # Check if we have API keys in config
-            if self._config and all(
-                key in self._config and self._config[key]
-                for key in [
-                    "consumer_key",
-                    "consumer_secret",
-                    "access_token",
-                    "access_token_secret",
-                ]
-            ):
+            if self.use_key:
                 self._client = AsyncClient(
                     consumer_key=self._config["consumer_key"],
                     consumer_secret=self._config["consumer_secret"],
@@ -119,20 +112,29 @@ class TwitterClient(TwitterABC):
                     access_token_secret=self._config["access_token_secret"],
                     return_type=dict,
                 )
-                self.use_key = True
-                me = await self._client.get_me(user_auth=self.use_key)
-                if me and "data" in me and "id" in me["data"]:
-                    await self._skill_store.set_agent_data(
-                        self.agent_id,
-                        {
-                            "twitter_id": me["data"]["id"],
-                            "twitter_username": me["data"]["username"],
-                            "twitter_name": me["data"]["name"],
-                        },
+                # refresh userinfo if needed
+                if not self._agent_data.twitter_self_key_refreshed_at or (
+                    self._agent_data.twitter_self_key_refreshed_at
+                    < datetime.now(tz=timezone.utc) - timedelta(days=1)
+                ):
+                    me = await self._client.get_me(user_auth=self.use_key)
+                    if me and "data" in me and "id" in me["data"]:
+                        await self._skill_store.set_agent_data(
+                            self.agent_id,
+                            {
+                                "twitter_id": me["data"]["id"],
+                                "twitter_username": me["data"]["username"],
+                                "twitter_name": me["data"]["name"],
+                                "twitter_self_key_refreshed_at": datetime.now(
+                                    tz=timezone.utc
+                                ),
+                            },
+                        )
+                    self._agent_data = await self._skill_store.get_agent_data(
+                        self.agent_id
                     )
-                self._agent_data = await self._skill_store.get_agent_data(self.agent_id)
                 logger.info(
-                    f"Twitter client initialized. "
+                    f"Twitter self key client initialized. "
                     f"Use API key: {self.use_key}, "
                     f"User ID: {self.self_id}, "
                     f"Username: {self.self_username}, "
@@ -329,7 +331,7 @@ class TwitterClient(TwitterABC):
         # Get agent data to access the token
         agent_data = await self._skill_store.get_agent_data(agent_id)
         if not agent_data or not agent_data.twitter_access_token:
-            raise ValueError("Twitter access token not found in agent data")
+            raise ValueError("Only linked X account can post media")
 
         media_ids = []
         # Download the image
@@ -391,17 +393,23 @@ class TwitterClient(TwitterABC):
         return media_ids
 
 
+def _is_self_key(config: Dict) -> bool:
+    return config.get("api_key_provider") == "agent_owner"
+
+
 def get_twitter_client(
     agent_id: str, skill_store: SkillStoreABC, config: Dict
 ) -> "TwitterClient":
-    if agent_id not in _clients:
-        _clients[agent_id] = TwitterClient(agent_id, skill_store, config)
-    return _clients[agent_id]
+    if _is_self_key(config):
+        if agent_id not in _clients_self_key:
+            _clients_self_key[agent_id] = TwitterClient(agent_id, skill_store, config)
+        return _clients_self_key[agent_id]
+    if agent_id not in _clients_linked:
+        _clients_linked[agent_id] = TwitterClient(agent_id, skill_store, config)
+    return _clients_linked[agent_id]
 
 
 async def unlink_twitter(agent_id: str) -> AgentData:
-    if agent_id in _clients:
-        del _clients[agent_id]
     logger.info(f"Unlinking Twitter for agent {agent_id}")
     return await AgentData.patch(
         agent_id,
