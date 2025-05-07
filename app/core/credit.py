@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Optional, Tuple
 
 from epyxid import XID
@@ -742,22 +742,32 @@ async def expense_message(
         session, UpstreamType.EXECUTOR, message_id
     )
 
+    # Define the precision for all decimal calculations (4 decimal places)
+    FOURPLACES = Decimal("0.0001")
+
+    # Ensure base_llm_amount has 4 decimal places
+    base_llm_amount = base_llm_amount.quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+
     if base_llm_amount < Decimal("0"):
         raise ValueError("Base LLM amount must be non-negative")
 
     # Get payment settings
     payment_settings = await AppSetting.payment()
 
-    # Calculate amount
+    # Calculate amount with exact 4 decimal places
     base_original_amount = base_llm_amount
     base_amount = base_original_amount
     fee_platform_amount = (
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
-    )
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     fee_agent_amount = Decimal("0")
     if agent.fee_percentage and user_id != agent.owner:
-        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
-    total_amount = base_amount + fee_platform_amount + fee_agent_amount
+        fee_agent_amount = (
+            base_amount * agent.fee_percentage / Decimal("100")
+        ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+    total_amount = (base_amount + fee_platform_amount + fee_agent_amount).quantize(
+        FOURPLACES, rounding=ROUND_HALF_UP
+    )
 
     # 1. Update user account - deduct credits
     user_account, credit_type = await CreditAccount.expense_in_session(
@@ -903,6 +913,9 @@ async def skill_cost(
     Returns:
         SkillCost: Object containing all cost components
     """
+    # Define the precision for all decimal calculations (4 decimal places)
+    FOURPLACES = Decimal("0.0001")
+
     skill = await Skill.get(skill_name)
     if not skill:
         raise ValueError(f"The price of {skill_name} not set yet")
@@ -911,9 +924,11 @@ async def skill_cost(
         agent_skill_config
         and agent_skill_config.get("api_key_provider") == "agent_owner"
     ):
-        base_skill_amount = skill.price_self_key
+        base_skill_amount = skill.price_self_key.quantize(
+            FOURPLACES, rounding=ROUND_HALF_UP
+        )
     else:
-        base_skill_amount = skill.price
+        base_skill_amount = skill.price.quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     # Get payment settings
     payment_settings = await AppSetting.payment()
 
@@ -930,17 +945,23 @@ async def skill_cost(
     if base_skill_amount < Decimal("0"):
         raise ValueError("Base skill amount must be non-negative")
 
-    # Calculate amount
+    # Calculate amount with exact 4 decimal places
     base_original_amount = base_skill_amount
     base_amount = base_original_amount
     fee_platform_amount = (
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
-    )
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     fee_agent_amount = Decimal("0")
     if agent.fee_percentage and user_id != agent.owner:
-        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
-    fee_dev_amount = base_amount * fee_dev_percentage / Decimal("100")
-    total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
+        fee_agent_amount = (
+            base_amount * agent.fee_percentage / Decimal("100")
+        ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+    fee_dev_amount = (base_amount * fee_dev_percentage / Decimal("100")).quantize(
+        FOURPLACES, rounding=ROUND_HALF_UP
+    )
+    total_amount = (
+        base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
 
     # Return the SkillCost object with all calculated values
     return SkillCost(
