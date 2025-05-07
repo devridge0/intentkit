@@ -29,7 +29,7 @@ class GetAIResponse(CookieFunBaseTool):
     async def _arun(self, prompt: str, config: RunnableConfig = None, **kwargs) -> str:
         """Get AI response from Cookie.fun API."""
         context = self.context_from_config(config)
-        api_key = context.config.get("cookiefun_api_key")
+        api_key = context.config.get("api_key")
         if not api_key:
             return "Error: Cookie.fun API key not configured"
 

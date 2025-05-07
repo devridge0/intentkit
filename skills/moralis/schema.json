@@ -192,8 +192,8 @@
         "agent_owner"
       ],
       "x-enum-title": [
-        "Platform Hosted",
-        "Agent Owner"
+        "Nation Hosted",
+        "Owner Provided"
       ],
       "default": "platform"
     }
@@ -204,9 +204,6 @@
   ],
   "if": {
     "properties": {
-      "enabled": {
-        "const": true
-      },
       "api_key_provider": {
         "const": "agent_owner"
       }

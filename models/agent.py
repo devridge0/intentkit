@@ -1811,20 +1811,8 @@ class AgentResponse(BaseModel):
             else:
                 has_twitter_linked = True
 
-        # Process Twitter self-key status and remove sensitive fields
-        has_twitter_self_key = False
-        twitter_config = data.get("twitter_config", {})
-        if twitter_config:
-            required_keys = {
-                "access_token",
-                "bearer_token",
-                "consumer_key",
-                "consumer_secret",
-                "access_token_secret",
-            }
-            has_twitter_self_key = all(
-                key in twitter_config and twitter_config[key] for key in required_keys
-            )
+        # Process Twitter self-key status
+        has_twitter_self_key = agent_data and agent_data.twitter_self_key_refreshed_at
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None
@@ -1881,6 +1869,11 @@ class AgentDataTable(Base):
     )
     twitter_refresh_token = Column(
         String, nullable=True, comment="Twitter refresh token"
+    )
+    twitter_self_key_refreshed_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Twitter self-key userinfo last refresh time",
     )
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
@@ -1966,6 +1959,13 @@ class AgentData(BaseModel):
         PydanticField(
             default=None,
             description="Twitter refresh token",
+        ),
+    ]
+    twitter_self_key_refreshed_at: Annotated[
+        Optional[datetime],
+        PydanticField(
+            default=None,
+            description="Twitter self-key userinfo last refresh time",
         ),
     ]
     telegram_id: Annotated[
