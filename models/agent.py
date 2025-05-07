@@ -1599,7 +1599,9 @@ class AgentResponse(Agent):
                 has_twitter_linked = True
 
         # Process Twitter self-key status
-        has_twitter_self_key = agent_data and agent_data.twitter_self_key_refreshed_at
+        has_twitter_self_key = bool(
+            agent_data and agent_data.twitter_self_key_refreshed_at
+        )
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None
