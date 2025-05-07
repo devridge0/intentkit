@@ -428,7 +428,9 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
         results["orphaned_transactions"] = await check_orphaned_transactions(session)
         results["orphaned_events"] = await check_orphaned_events(session)
         results["total_credit_balance"] = await check_total_credit_balance(session)
-        results["transaction_total_balance"] = await check_transaction_total_balance(session)
+        results["transaction_total_balance"] = await check_transaction_total_balance(
+            session
+        )
 
     # Log summary
     all_passed = True
@@ -436,9 +438,11 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
     for check_name, check_results in results.items():
         check_failed_count = sum(1 for result in check_results if not result.status)
         failed_count += check_failed_count
-        
+
         if check_failed_count > 0:
-            logger.warning(f"{check_name}: {check_failed_count} of {len(check_results)} checks failed")
+            logger.warning(
+                f"{check_name}: {check_failed_count} of {len(check_results)} checks failed"
+            )
             all_passed = False
         else:
             logger.info(f"{check_name}: All {len(check_results)} checks passed")
@@ -446,7 +450,9 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
     if all_passed:
         logger.info("All account checks passed successfully")
     else:
-        logger.warning(f"Account checking summary: {failed_count} checks failed - see logs for details")
+        logger.warning(
+            f"Account checking summary: {failed_count} checks failed - see logs for details"
+        )
 
     return results
 
