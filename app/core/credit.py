@@ -15,9 +15,11 @@ from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
     DEFAULT_PLATFORM_ACCOUNT_DEV,
     DEFAULT_PLATFORM_ACCOUNT_FEE,
+    DEFAULT_PLATFORM_ACCOUNT_MESSAGE,
     DEFAULT_PLATFORM_ACCOUNT_RECHARGE,
     DEFAULT_PLATFORM_ACCOUNT_REFILL,
     DEFAULT_PLATFORM_ACCOUNT_REWARD,
+    DEFAULT_PLATFORM_ACCOUNT_SKILL,
     CreditAccount,
     CreditAccountTable,
     CreditDebit,
@@ -766,7 +768,14 @@ async def expense_message(
     )
 
     # 2. Update fee account - add credits
-    platform_account = await CreditAccount.income_in_session(
+    message_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_MESSAGE,
+        credit_type=credit_type,
+        amount=base_amount,
+    )
+    platform_fee_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
@@ -823,10 +832,22 @@ async def expense_message(
     )
     session.add(user_tx)
 
-    # 4.2 Platform fee account transaction (credit)
+    # 4.2 Message account transaction (credit)
+    message_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=message_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_BASE_LLM,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=base_amount,
+        credit_type=credit_type,
+    )
+    session.add(message_tx)
+
+    # 4.3 Platform fee account transaction (credit)
     platform_tx = CreditTransactionTable(
         id=str(XID()),
-        account_id=platform_account.id,
+        account_id=platform_fee_account.id,
         event_id=event_id,
         tx_type=TransactionType.RECEIVE_FEE_PLATFORM,
         credit_debit=CreditDebit.CREDIT,
@@ -835,7 +856,7 @@ async def expense_message(
     )
     session.add(platform_tx)
 
-    # 4.3 Agent fee account transaction (credit)
+    # 4.4 Agent fee account transaction (credit)
     if fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),
@@ -979,6 +1000,13 @@ async def expense_skill(
     )
 
     # 2. Update fee account - add credits
+    skill_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_SKILL,
+        credit_type=credit_type,
+        amount=skill_cost_info.base_amount,
+    )
     platform_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
@@ -1048,7 +1076,19 @@ async def expense_skill(
     )
     session.add(user_tx)
 
-    # 4.2 Platform fee account transaction (credit)
+    # 4.2 Skill account transaction (credit)
+    skill_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=skill_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_BASE_SKILL,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=skill_cost_info.base_amount,
+        credit_type=credit_type,
+    )
+    session.add(skill_tx)
+
+    # 4.3 Platform fee account transaction (credit)
     platform_tx = CreditTransactionTable(
         id=str(XID()),
         account_id=platform_account.id,
@@ -1060,7 +1100,7 @@ async def expense_skill(
     )
     session.add(platform_tx)
 
-    # 4.3 Dev user transaction (credit)
+    # 4.4 Dev user transaction (credit)
     if skill_cost_info.fee_dev_amount > 0:
         dev_tx = CreditTransactionTable(
             id=str(XID()),
@@ -1073,7 +1113,7 @@ async def expense_skill(
         )
         session.add(dev_tx)
 
-    # 4.4 Agent fee account transaction (credit)
+    # 4.5 Agent fee account transaction (credit)
     if skill_cost_info.fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),
