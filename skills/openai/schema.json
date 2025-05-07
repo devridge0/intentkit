@@ -9,7 +9,6 @@
     "Image Generation",
     "Image Analysis"
   ],
-  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -87,12 +86,19 @@
       },
       "description": "States for each OpenAI skill (disabled, public, or private)"
     },
-    "api_key": {
+    "api_key_provider": {
       "type": "string",
-      "title": "API Key",
-      "x-link": "[Get your API key](https://platform.openai.com/)",
-      "x-sensitive": true,
-      "description": "OpenAI API key for authentication"
+      "title": "API Key Provider",
+      "description": "Provider of the API key",
+      "enum": [
+        "platform",
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Nation Hosted",
+        "Owner Provided"
+      ],
+      "default": "platform"
     }
   },
   "required": [
@@ -101,11 +107,24 @@
   ],
   "if": {
     "properties": {
-      "enabled": { "const": true }
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
     }
   },
   "then": {
-    "required": ["api_key"]
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "API Key",
+        "x-link": "[Get your API key](https://platform.openai.com/)",
+        "x-sensitive": true,
+        "description": "OpenAI API key for authentication"
+      }
+    },
+    "required": [
+      "api_key"
+    ]
   },
   "additionalProperties": true
 }

@@ -46,16 +46,9 @@
         "agent_owner"
       ],
       "x-enum-title": [
-        "Agent Owner"
+        "Owner Provided"
       ],
       "default": "agent_owner"
-    },
-    "api_key": {
-      "type": "string",
-      "title": "AIXBT API Key",
-      "description": "API key for AIXBT API service",
-      "x-link": "[Get your API key](https://aixbt.tech/)",
-      "x-sensitive": true
     }
   },
   "required": [
@@ -64,13 +57,20 @@
   ],
   "if": {
     "properties": {
-      "enabled": {
-        "const": true
+      "api_key_provider": {
+        "const": "agent_owner"
       }
     }
   },
   "then": {
     "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "AIXBT API Key",
+        "description": "API key for AIXBT API service",
+        "x-link": "[Get your API key](https://aixbt.tech/)",
+        "x-sensitive": true
+      },
       "rate_limit_number": {
         "type": "integer",
         "title": "Rate Limit Number",
@@ -83,9 +83,8 @@
       }
     },
     "required": [
-      "api_key_provider",
       "api_key"
     ]
   },
   "additionalProperties": true
-} 
+}

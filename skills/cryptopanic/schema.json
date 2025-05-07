@@ -7,7 +7,6 @@
   "x-tags": [
     "Data"
   ],
-  "x-api-key": "required",
   "properties": {
     "enabled": {
       "type": "boolean",
@@ -53,12 +52,17 @@
       },
       "description": "States for each CryptoPanic skill (disabled, public, or private)"
     },
-    "api_key": {
+    "api_key_provider": {
       "type": "string",
-      "title": "CryptoPanic API Key",
-      "x-link": "[Get your API key](https://cryptopanic.com/developers/api/keys)",
-      "x-sensitive": true,
-      "description": "API key for accessing CryptoPanic API"
+      "title": "API Key Provider",
+      "description": "Provider of the API key for AIXBT API service",
+      "enum": [
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Owner Provided"
+      ],
+      "default": "agent_owner"
     }
   },
   "required": [
@@ -67,12 +71,21 @@
   ],
   "if": {
     "properties": {
-      "enabled": {
-        "const": true
+      "api_key_provider": {
+        "const": "agent_owner"
       }
     }
   },
   "then": {
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "CryptoPanic API Key",
+        "x-link": "[Get your API key](https://cryptopanic.com/developers/api/keys)",
+        "x-sensitive": true,
+        "description": "API key for accessing CryptoPanic API"
+      }
+    },
     "required": [
       "api_key"
     ]

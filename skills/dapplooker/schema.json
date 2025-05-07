@@ -48,16 +48,10 @@
         "agent_owner"
       ],
       "x-enum-title": [
-        "Platform Hosted",
-        "Agent Owner"
+        "Nation Hosted",
+        "Owner Provided"
       ],
       "default": "platform"
-    },
-    "api_key": {
-      "type": "string",
-      "title": "DappLooker API Key",
-      "description": "API key for DappLooker service",
-      "x-sensitive": true
     }
   },
   "required": [
@@ -66,13 +60,26 @@
   ],
   "if": {
     "properties": {
-      "enabled": { "const": true },
-      "api_key_provider": { "const": "agent_owner" }
-    },
-    "required": ["enabled", "api_key_provider"]
+      "enabled": {
+        "const": true
+      },
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
+    }
   },
   "then": {
-    "required": ["api_key"]
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "DappLooker API Key",
+        "description": "API key for DappLooker service",
+        "x-sensitive": true
+      }
+    },
+    "required": [
+      "api_key"
+    ]
   },
   "additionalProperties": true
 }

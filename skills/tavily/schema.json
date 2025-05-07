@@ -41,21 +41,14 @@
     "api_key_provider": {
       "type": "string",
       "title": "API Key Provider",
-      "description": "Provider of the API key for Tavily search service",
+      "description": "Provider of the API key for AIXBT API service",
       "enum": [
         "agent_owner"
       ],
       "x-enum-title": [
-        "Agent Owner"
+        "Owner Provided"
       ],
       "default": "agent_owner"
-    },
-    "api_key": {
-      "type": "string",
-      "title": "Tavily API Key",
-      "description": "API key for Tavily search service",
-      "x-link": "[Get your API key](https://tavily.com/)",
-      "x-sensitive": true
     }
   },
   "required": [
@@ -64,13 +57,20 @@
   ],
   "if": {
     "properties": {
-      "enabled": {
-        "const": true
+      "api_key_provider": {
+        "const": "agent_owner"
       }
     }
   },
   "then": {
     "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "Tavily API Key",
+        "description": "API key for Tavily search service",
+        "x-link": "[Get your API key](https://tavily.com/)",
+        "x-sensitive": true
+      },
       "rate_limit_number": {
         "type": "integer",
         "title": "Rate Limit Number",
@@ -83,7 +83,6 @@
       }
     },
     "required": [
-      "api_key_provider",
       "api_key"
     ]
   },
