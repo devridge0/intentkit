@@ -32,6 +32,7 @@ class LLMModelInfoTable(Base):
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     provider = Column(String, nullable=False)  # Stored as string enum value
+    enabled = Column(Boolean, nullable=False, default=True)
     input_price = Column(
         Numeric(22, 4), nullable=False
     )  # Price per 1M input tokens in USD
@@ -76,6 +77,7 @@ class LLMModelInfo(BaseModel):
     id: str
     name: str
     provider: LLMProvider
+    enabled: bool = Field(default=True)
     input_price: Decimal  # Price per 1M input tokens in USD
     output_price: Decimal  # Price per 1M output tokens in USD
     context_length: int  # Maximum context length in tokens
@@ -633,21 +635,23 @@ def create_llm_model(
 
 
 # Utility functions
+# FXIME: from db
 def get_available_models() -> Dict[str, LLMModelInfo]:
     """Get all available models."""
     return AVAILABLE_MODELS
 
 
-def get_model_info(model_name: str) -> LLMModelInfo:
+async def get_model_info(model_name: str) -> LLMModelInfo:
     """Get information about a specific model."""
-    if model_name not in AVAILABLE_MODELS:
+    model = await LLMModelInfo.get(model_name)
+    if not model:
         raise ValueError(f"Unknown model: {model_name}")
-    return AVAILABLE_MODELS[model_name]
+    return model
 
 
 async def get_model_cost(
     model_name: str, input_tokens: int, output_tokens: int
 ) -> Decimal:
     """Get the cost of a specific model."""
-    info = get_model_info(model_name)
+    info = await get_model_info(model_name)
     return await info.calculate_cost(input_tokens, output_tokens)
