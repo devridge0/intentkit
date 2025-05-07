@@ -27,7 +27,7 @@ class WalletStats(PortfolioBaseTool):
     a wallet, including NFT counts, collection counts, and transaction counts.
     """
 
-    name: str = "wallet_stats"
+    name: str = "portfolio_wallet_stats"
     description: str = (
         "Get statistical information about a wallet, including the number of NFTs, "
         "collections, and transaction counts."

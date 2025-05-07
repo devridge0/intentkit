@@ -69,7 +69,7 @@ class WalletHistory(PortfolioBaseTool):
     including sends, receives, token and NFT transfers, and contract interactions.
     """
 
-    name: str = "wallet_history"
+    name: str = "portfolio_wallet_history"
     description: str = (
         "Retrieve the full transaction history of a specified wallet address, including sends, "
         "receives, token and NFT transfers, and contract interactions."

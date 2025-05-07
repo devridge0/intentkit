@@ -66,7 +66,7 @@ class TokenBalances(PortfolioBaseTool):
     and their token prices in USD.
     """
 
-    name: str = "token_balances"
+    name: str = "portfolio_token_balances"
     description: str = (
         "Get token balances for a specific wallet address and their token prices in USD. "
         "Includes options to exclude spam and unverified contracts."

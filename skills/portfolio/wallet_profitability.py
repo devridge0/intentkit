@@ -37,7 +37,7 @@ class WalletProfitability(PortfolioBaseTool):
     specific wallet address, with the option to filter by one or more tokens.
     """
 
-    name: str = "wallet_profitability"
+    name: str = "portfolio_wallet_profitability"
     description: str = (
         "Retrieve detailed profitability breakdown for a wallet, including profit/loss per token, "
         "average buy/sell prices, and realized profits. Can be filtered by specific tokens."

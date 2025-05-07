@@ -63,7 +63,7 @@ class WalletSwaps(PortfolioBaseTool):
     for a specific wallet address.
     """
 
-    name: str = "wallet_swaps"
+    name: str = "portfolio_wallet_swaps"
     description: str = (
         "Get all swap-related transactions (buy, sell) for a wallet address. "
         "Note that swaps data is only available from September 2024 onwards."

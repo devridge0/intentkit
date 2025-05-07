@@ -33,7 +33,7 @@ class WalletProfitabilitySummary(PortfolioBaseTool):
     based on specified parameters.
     """
 
-    name: str = "wallet_profitability_summary"
+    name: str = "portfolio_wallet_profitability_summary"
     description: str = (
         "Retrieve a summary of wallet profitability including total profit/loss, "
         "trade volume, and other metrics. Filter by time period."
