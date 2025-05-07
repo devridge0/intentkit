@@ -454,6 +454,48 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
             f"Account checking summary: {failed_count} checks failed - see logs for details"
         )
 
+    # Send summary to Slack
+    from utils.slack_alert import send_slack_message
+
+    # Create a summary message with color based on status
+    total_checks = sum(len(check_results) for check_results in results.values())
+
+    if all_passed:
+        color = "good"  # Green color
+        title = "✅ Account Checking Completed Successfully"
+        text = f"All {total_checks} account checks passed successfully."
+        notify = ""  # No notification needed for success
+    else:
+        color = "danger"  # Red color
+        title = "❌ Account Checking Found Issues"
+        text = f"Account checking found {failed_count} issues out of {total_checks} checks."
+        notify = "<!channel> "  # Notify channel for failures
+
+    # Create attachments with check details
+    attachments = [{"color": color, "title": title, "text": text, "fields": []}]
+
+    # Add fields for each check type
+    for check_name, check_results in results.items():
+        check_failed_count = sum(1 for result in check_results if not result.status)
+        check_status = (
+            "✅ Passed"
+            if check_failed_count == 0
+            else f"❌ Failed ({check_failed_count} issues)"
+        )
+
+        attachments[0]["fields"].append(
+            {
+                "title": check_name.replace("_", " ").title(),
+                "value": check_status,
+                "short": True,
+            }
+        )
+
+    # Send the message
+    send_slack_message(
+        message=f"{notify}Account Checking Results", attachments=attachments
+    )
+
     return results
 
 
