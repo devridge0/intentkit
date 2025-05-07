@@ -38,7 +38,7 @@ class WalletApprovals(PortfolioBaseTool):
     specified wallet address.
     """
 
-    name: str = "wallet_approvals"
+    name: str = "portfolio_wallet_approvals"
     description: str = (
         "Retrieve active ERC20 token approvals for the specified wallet address. "
         "This helps identify which contracts have permission to spend tokens."

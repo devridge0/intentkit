@@ -42,7 +42,7 @@ class WalletNetWorth(PortfolioBaseTool):
     multiple chains, with options to filter out spam and low-liquidity tokens.
     """
 
-    name: str = "wallet_net_worth"
+    name: str = "portfolio_wallet_net_worth"
     description: str = (
         "Get the net worth of a wallet in USD across multiple chains. "
         "Filters out spam tokens and low-liquidity assets for more accurate results."
