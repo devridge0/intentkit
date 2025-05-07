@@ -222,12 +222,21 @@
         "maxLength": 100
       }
     },
-    "required": [
-      "consumer_key",
-      "consumer_secret",
-      "access_token",
-      "access_token_secret"
-    ]
+    "if": {
+      "properties": {
+        "enabled": {
+          "const": true
+        }
+      }
+    },
+    "then": {
+      "required": [
+        "consumer_key",
+        "consumer_secret",
+        "access_token",
+        "access_token_secret"
+      ]
+    }
   },
   "additionalProperties": true
 }
