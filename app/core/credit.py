@@ -1040,7 +1040,7 @@ async def expense_skill(
             session=session,
             owner_type=skill_cost_info.fee_dev_user_type,
             owner_id=skill_cost_info.fee_dev_user,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,  # put dev fee in reward
             amount=skill_cost_info.fee_dev_amount,
         )
     if skill_cost_info.fee_agent_amount > 0:
