@@ -1130,7 +1130,7 @@ async def expense_skill(
             tx_type=TransactionType.RECEIVE_FEE_DEV,
             credit_debit=CreditDebit.CREDIT,
             change_amount=skill_cost_info.fee_dev_amount,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,
         )
         session.add(dev_tx)
 
