@@ -515,6 +515,10 @@
           "title": "GitHub",
           "$ref": "../skills/github/schema.json"
         },
+        "moralis": {
+          "title": "Moralis",
+          "$ref": "../skills/moralis/schema.json"
+        },
         "unrealspeech": {
           "title": "UnrealSpeech",
           "$ref": "../skills/unrealspeech/schema.json"
