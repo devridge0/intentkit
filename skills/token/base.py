@@ -1,33 +1,38 @@
-"""Base classes for portfolio skills."""
+"""Base class for token-related skills."""
 
-import asyncio
 import logging
-from abc import ABC
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional
 
 import aiohttp
-from pydantic import BaseModel, Field
+from langchain_core.runnables import RunnableConfig
 
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
-from skills.portfolio.constants import MORALIS_API_BASE_URL
+from skills.token.constants import MORALIS_API_BASE_URL
 
 logger = logging.getLogger(__name__)
 
 
-class PortfolioBaseTool(IntentKitSkill, ABC):
-    """Base class for portfolio analysis skills."""
+class TokenBaseTool(IntentKitSkill):
+    """Base class for all token-related skills.
 
-    name: str = Field(description="The name of the tool")
-    description: str = Field(description="A description of what the tool does")
-    args_schema: Type[BaseModel]
-    skill_store: SkillStoreABC = Field(
-        description="The skill store for persisting data"
-    )
+    This base class provides common functionality for token API interactions,
+    including making HTTP requests to the Moralis API.
+    """
+
+    def __init__(self, skill_store: SkillStoreABC = None):
+        """Initialize the token tool with a skill store."""
+        super().__init__(skill_store=skill_store)
 
     @property
     def category(self) -> str:
-        return "portfolio"
+        return "token"
+
+    def context_from_config(self, config: Optional[RunnableConfig] = None) -> Any:
+        """Extract context from the runnable config."""
+        if not config:
+            return None
+        return config.get("context")
 
     def _prepare_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Convert boolean values to lowercase strings for API compatibility.
@@ -76,7 +81,7 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
         # Convert boolean params to strings
         processed_params = self._prepare_params(params) if params else None
 
-        logger.debug(f"portfolio/base.py: Making request to {url}")
+        logger.debug(f"token/base.py: Making request to {url}")
 
         async with aiohttp.ClientSession() as session:
             async with session.request(
@@ -88,14 +93,10 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
             ) as response:
                 if response.status >= 400:
                     error_text = await response.text()
-                    logger.error(f"portfolio/base.py: API error: {error_text}")
+                    logger.error(f"token/base.py: API error: {error_text}")
                     return {
                         "error": f"API error: {response.status}",
                         "details": error_text,
                     }
 
                 return await response.json()
-
-    def _run(self, *args: Any, **kwargs: Any) -> Any:
-        """Execute the tool synchronously by running the async version in a loop."""
-        return asyncio.run(self._arun(*args, **kwargs))
