@@ -49,6 +49,10 @@ async def get_skills(
     Returns:
         A list of Token blockchain analysis skills.
     """
+    if "states" not in config:
+        logger.error("No 'states' field in config")
+        return []
+
     available_skills = []
 
     # Include skills based on their state
@@ -64,6 +68,7 @@ async def get_skills(
         skill = get_token_skill(name, store)
         if skill:
             result.append(skill)
+
     return result
 
 
@@ -98,4 +103,5 @@ def get_token_skill(
 
     if skill:
         _cache[name] = skill
+
     return skill

@@ -7,7 +7,7 @@ from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.portfolio.base import PortfolioBaseTool
 from skills.portfolio.token_balances import TokenBalances
-from skills.portfolio.wallet_approvals import PortfolioWalletApprovals
+from skills.portfolio.wallet_approvals import WalletApprovals
 from skills.portfolio.wallet_defi_positions import WalletDefiPositions
 from skills.portfolio.wallet_history import PortfolioWalletHistory
 from skills.portfolio.wallet_net_worth import WalletNetWorth
@@ -98,7 +98,7 @@ def get_portfolio_skill(
         return _cache[name]
     elif name == "wallet_approvals":
         if name not in _cache:
-            _cache[name] = PortfolioWalletApprovals(
+            _cache[name] = WalletApprovals(
                 skill_store=store,
             )
         return _cache[name]
