@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -71,6 +72,9 @@ async def check_account_balance_consistency(
         return results
 
     for account in accounts:
+        # Sleep for 10ms to reduce database load
+        await asyncio.sleep(0.01)
+
         # Calculate the total balance across all credit types
         total_balance = account.free_credits + account.reward_credits + account.credits
 
@@ -154,6 +158,9 @@ async def check_transaction_balance(
     ]
 
     for event in events:
+        # Sleep for 10ms to reduce database load
+        await asyncio.sleep(0.01)
+
         # Get all transactions for this event
         tx_query = select(CreditTransactionTable).where(
             CreditTransactionTable.event_id == event.id
@@ -221,24 +228,32 @@ async def check_orphaned_transactions(
     result = await session.execute(query)
     orphaned_txs = result.fetchall()
 
+    # Process orphaned transactions with a sleep to reduce database load
+    orphaned_tx_details = []
+    for tx in orphaned_txs[:100]:  # Limit to first 100 for report size
+        # Sleep for 10ms to reduce database load
+        await asyncio.sleep(0.01)
+
+        # Add transaction details to the list
+        orphaned_tx_details.append(
+            {
+                "id": tx.id,
+                "account_id": tx.account_id,
+                "event_id": tx.event_id,
+                "tx_type": tx.tx_type,
+                "credit_debit": tx.credit_debit,
+                "change_amount": float(tx.change_amount),
+                "credit_type": tx.credit_type,
+                "created_at": tx.created_at.isoformat() if tx.created_at else None,
+            }
+        )
+
     check_result = AccountCheckingResult(
         check_type="orphaned_transactions",
         status=(len(orphaned_txs) == 0),
         details={
             "orphaned_count": len(orphaned_txs),
-            "orphaned_transactions": [
-                {
-                    "id": tx.id,
-                    "account_id": tx.account_id,
-                    "event_id": tx.event_id,
-                    "tx_type": tx.tx_type,
-                    "credit_debit": tx.credit_debit,
-                    "change_amount": float(tx.change_amount),
-                    "credit_type": tx.credit_type,
-                    "created_at": tx.created_at.isoformat() if tx.created_at else None,
-                }
-                for tx in orphaned_txs[:100]  # Limit to first 100 for report size
-            ],
+            "orphaned_transactions": orphaned_tx_details,
         },
     )
 
@@ -281,17 +296,24 @@ async def check_orphaned_events(session: AsyncSession) -> List[AccountCheckingRe
 
     # If we found orphaned events, report them
     orphaned_event_ids = [event.id for event in orphaned_events]
-    orphaned_event_details = [
-        {
-            "event_id": event.id,
-            "event_type": event.event_type,
-            "account_id": event.account_id,
-            "total_amount": float(event.total_amount),
-            "credit_type": event.credit_type,
-            "created_at": event.created_at.isoformat() if event.created_at else None,
-        }
-        for event in orphaned_events
-    ]
+    orphaned_event_details = []
+    for event in orphaned_events:
+        # Sleep for 10ms to reduce database load
+        await asyncio.sleep(0.01)
+
+        # Add event details to the list
+        orphaned_event_details.append(
+            {
+                "event_id": event.id,
+                "event_type": event.event_type,
+                "account_id": event.account_id,
+                "total_amount": float(event.total_amount),
+                "credit_type": event.credit_type,
+                "created_at": event.created_at.isoformat()
+                if event.created_at
+                else None,
+            }
+        )
 
     logger.warning(
         f"Found {len(orphaned_events)} orphaned events with no transactions: {orphaned_event_ids}"
