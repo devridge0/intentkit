@@ -14,7 +14,6 @@ from models.credit import (
     CreditEventTable,
     CreditTransaction,
     CreditTransactionTable,
-    CreditType,
 )
 from models.db import get_session, init_db
 
@@ -40,8 +39,12 @@ async def check_account_balance_consistency(
 ) -> List[AccountCheckingResult]:
     """Check if all account balances are consistent with their transactions.
 
-    This verifies that the current balance in each account matches the sum of all transactions
+    This verifies that the total balance in each account matches the sum of all transactions
     for that account, properly accounting for credits and debits.
+
+    To ensure consistency during system operation, this function uses the maximum updated_at
+    timestamp from all accounts to limit transaction queries, ensuring that only transactions
+    created before or at the same time as the account snapshot are considered.
 
     Args:
         session: Database session
@@ -58,54 +61,69 @@ async def check_account_balance_consistency(
         CreditAccount.model_validate(acc) for acc in accounts_result.scalars().all()
     ]
 
+    # Find the maximum updated_at timestamp from all accounts
+    # This represents the point in time when we took the snapshot of account balances
+    max_updated_at = (
+        max([account.updated_at for account in accounts]) if accounts else None
+    )
+
+    if not max_updated_at:
+        return results
+
     for account in accounts:
-        # Check each credit type separately
-        for credit_type in [CreditType.FREE, CreditType.REWARD, CreditType.PERMANENT]:
-            # Get the current balance for this credit type
-            current_balance = getattr(account, credit_type.value)
+        # Calculate the total balance across all credit types
+        total_balance = account.free_credits + account.reward_credits + account.credits
 
-            # Calculate the expected balance from transactions, considering credit/debit
-            query = text("""
-                SELECT 
-                    SUM(CASE WHEN credit_debit = 'credit' THEN change_amount ELSE 0 END) as credits,
-                    SUM(CASE WHEN credit_debit = 'debit' THEN change_amount ELSE 0 END) as debits
-                FROM credit_transactions
-                WHERE account_id = :account_id AND credit_type = :credit_type
-            """)
+        # Calculate the expected balance from all transactions, regardless of credit type
+        # Only include transactions created before or at the same time as the account snapshot
+        query = text("""
+            SELECT 
+                SUM(CASE WHEN credit_debit = 'credit' THEN change_amount ELSE 0 END) as credits,
+                SUM(CASE WHEN credit_debit = 'debit' THEN change_amount ELSE 0 END) as debits
+            FROM credit_transactions
+            WHERE account_id = :account_id 
+              AND created_at <= :max_updated_at
+        """)
 
-            tx_result = await session.execute(
-                query, {"account_id": account.id, "credit_type": credit_type.value}
+        tx_result = await session.execute(
+            query, {"account_id": account.id, "max_updated_at": max_updated_at}
+        )
+        tx_data = tx_result.fetchone()
+
+        credits = tx_data.credits or Decimal("0")
+        debits = tx_data.debits or Decimal("0")
+        expected_balance = credits - debits
+
+        # Compare total balances
+        is_consistent = total_balance == expected_balance
+
+        result = AccountCheckingResult(
+            check_type="account_total_balance",
+            status=is_consistent,
+            details={
+                "account_id": account.id,
+                "owner_type": account.owner_type,
+                "owner_id": account.owner_id,
+                "current_total_balance": float(total_balance),
+                "free_credits": float(account.free_credits),
+                "reward_credits": float(account.reward_credits),
+                "credits": float(account.credits),
+                "expected_balance": float(expected_balance),
+                "total_credits": float(credits),
+                "total_debits": float(debits),
+                "difference": float(total_balance - expected_balance),
+                "max_updated_at": max_updated_at.isoformat()
+                if max_updated_at
+                else None,
+            },
+        )
+        results.append(result)
+
+        if not is_consistent:
+            logger.warning(
+                f"Account total balance inconsistency detected: {account.id} ({account.owner_type}:{account.owner_id}) "
+                f"Current total: {total_balance}, Expected: {expected_balance}"
             )
-            tx_data = tx_result.fetchone()
-
-            credits = tx_data.credits or Decimal("0")
-            debits = tx_data.debits or Decimal("0")
-            expected_balance = credits - debits
-
-            # Compare balances
-            is_consistent = current_balance == expected_balance
-
-            result = AccountCheckingResult(
-                check_type=f"account_balance_{credit_type.value}",
-                status=is_consistent,
-                details={
-                    "account_id": account.id,
-                    "owner_type": account.owner_type,
-                    "owner_id": account.owner_id,
-                    "current_balance": float(current_balance),
-                    "expected_balance": float(expected_balance),
-                    "total_credits": float(credits),
-                    "total_debits": float(debits),
-                    "difference": float(current_balance - expected_balance),
-                },
-            )
-            results.append(result)
-
-            if not is_consistent:
-                logger.warning(
-                    f"Account balance inconsistency detected: {account.id} ({account.owner_type}:{account.owner_id}) "
-                    f"for {credit_type.value}. Current: {current_balance}, Expected: {expected_balance}"
-                )
 
     return results
 
