@@ -125,10 +125,10 @@ async def check_transaction_balance(
     """
     results = []
 
-    # Get all events from the last 30 days (limit to recent events for performance)
-    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+    # Get all events from the last 3 days (limit to recent events for performance)
+    three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
     query = select(CreditEventTable).where(
-        CreditEventTable.created_at >= thirty_days_ago
+        CreditEventTable.created_at >= three_days_ago
     )
     events_result = await session.execute(query)
     events = [
