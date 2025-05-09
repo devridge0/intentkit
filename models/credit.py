@@ -45,6 +45,8 @@ DEFAULT_PLATFORM_ACCOUNT_REFILL = "platform_refill"
 DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT = "platform_adjustment"
 DEFAULT_PLATFORM_ACCOUNT_REWARD = "platform_reward"
 DEFAULT_PLATFORM_ACCOUNT_REFUND = "platform_refund"
+DEFAULT_PLATFORM_ACCOUNT_MESSAGE = "platform_message"
+DEFAULT_PLATFORM_ACCOUNT_SKILL = "platform_skill"
 DEFAULT_PLATFORM_ACCOUNT_FEE = "platform_fee"
 DEFAULT_PLATFORM_ACCOUNT_DEV = "platform_dev"
 
@@ -524,7 +526,7 @@ class CreditEventTable(Base):
         ),
         Index("ix_credit_events_account_id", "account_id"),
         Index("ix_credit_events_user_id", "user_id"),
-        Index("ix_credit_events_fee_agent", "fee_agent_account"),
+        Index("ix_credit_events_agent_id", "agent_id"),
         Index("ix_credit_events_fee_dev", "fee_dev_account"),
     )
 

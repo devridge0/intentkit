@@ -145,6 +145,8 @@ class AgentStatisticsResponse(BaseModel):
 async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     """Get a credit account by owner type and ID. It will create a new account if it does not exist.
 
+    This endpoint is not in readonly router, because it may create a new account.
+
     Args:
         owner_type: Type of the owner (user, agent, company)
         owner_id: ID of the owner
@@ -282,6 +284,8 @@ async def get_agent_statistics(
 ) -> AgentStatisticsResponse:
     """Get statistics for an agent account.
 
+    This endpoint is not in readonly router, because it may create a new account.
+
     Args:
         agent_id: ID of the agent
         db: Database session
@@ -306,14 +310,10 @@ async def get_agent_statistics(
 
     # Calculate total income (sum of total_amount) and net income (sum of fee_agent_amount) at SQL level
     # Query to get the sum of total_amount and fee_agent_amount
-    stmt = (
-        select(
-            func.sum(CreditEventTable.total_amount).label("total_income"),
-            func.sum(CreditEventTable.fee_agent_amount).label("net_income"),
-        )
-        .where(CreditEventTable.fee_agent_account == agent_account.id)
-        .where(CreditEventTable.fee_agent_amount > 0)
-    )
+    stmt = select(
+        func.sum(CreditEventTable.total_amount).label("total_income"),
+        func.sum(CreditEventTable.fee_agent_amount).label("net_income"),
+    ).where(CreditEventTable.agent_id == agent_id)
     result = await db.execute(stmt)
     row = result.first()
 

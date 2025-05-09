@@ -158,7 +158,7 @@
       "title": "AI Model",
       "type": "string",
       "description": "Select the LLM for your agent. Note that each LLM has its specific advantages, behaviour and cost.",
-      "default": "gpt-4.1-nano",
+      "default": "gpt-4.1-mini",
       "enum": [
         "gpt-4o",
         "gpt-4o-mini",
@@ -439,6 +439,10 @@
           "title" : "DEX Screener",
           "$ref": "../skills/dexscreener/schema.json"
         },
+        "portfolio": {
+          "title": "Blockchain Portfolio",
+          "$ref": "../skills/portfolio/schema.json"
+        },
         "cookiefun": {
           "title": "cookie.fun",
           "$ref": "../skills/cookiefun/schema.json"
@@ -515,6 +519,10 @@
           "title": "GitHub",
           "$ref": "../skills/github/schema.json"
         },
+        "moralis": {
+          "title": "Moralis",
+          "$ref": "../skills/moralis/schema.json"
+        },
         "unrealspeech": {
           "title": "UnrealSpeech",
           "$ref": "../skills/unrealspeech/schema.json"
@@ -580,6 +588,7 @@
           }
         },
         "required": [
+          "name",
           "prompt"
         ]
       },
@@ -705,8 +714,11 @@
         "type": "number",
         "description": "Set a tip percentage that users will pay on top of the base CAPs fee when interacting with this Agent. This tip goes directly to the Agent's wallet. Interactions by the creator are excluded.",
         "minimum": 0,
+        "maximum": 1000,
         "default": 0,
-        "x-group": "basic"
+        "x-step": 20,
+        "x-group": "basic",
+        "x-component": "slider-with-box"
       }
     }
   },
