@@ -142,8 +142,8 @@ class AgentAutonomous(BaseModel):
     @field_validator("prompt")
     @classmethod
     def validate_prompt(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and len(v.encode()) > 2000:
-            raise ValueError("prompt must be at most 2000 bytes")
+        if v is not None and len(v.encode()) > 20000:
+            raise ValueError("prompt must be at most 20000 bytes")
         return v
 
     @model_validator(mode="after")
@@ -690,7 +690,7 @@ class AgentUpdate(BaseModel):
             "reigent",
         ],
         PydanticField(
-            default="gpt-4.1-nano",
+            default="gpt-4.1-mini",
             description="AI model identifier to be used by this agent for processing requests. Available models: gpt-4o, gpt-4o-mini, deepseek-chat, deepseek-reasoner, grok-2, eternalai, reigent",
             json_schema_extra={
                 "x-group": "ai",
@@ -1203,9 +1203,6 @@ class AgentUpdate(BaseModel):
                     )
 
     async def update(self, id: str) -> "Agent":
-        # The validation is now handled by field validators
-        # No need to call check_prompt() anymore
-
         # Validate autonomous schedule settings if present
         if "autonomous" in self.model_dump(exclude_unset=True):
             self.validate_autonomous_schedule()
@@ -1222,6 +1219,28 @@ class AgentUpdate(BaseModel):
                 )
             # update
             for key, value in self.model_dump(exclude_unset=True).items():
+                setattr(db_agent, key, value)
+            await db.commit()
+            await db.refresh(db_agent)
+            return Agent.model_validate(db_agent)
+
+    async def override(self, id: str) -> "Agent":
+        # Validate autonomous schedule settings if present
+        if "autonomous" in self.model_dump(exclude_unset=True):
+            self.validate_autonomous_schedule()
+
+        async with get_session() as db:
+            db_agent = await db.get(AgentTable, id)
+            if not db_agent:
+                raise HTTPException(status_code=404, detail="Agent not found")
+            # check owner
+            if self.owner and db_agent.owner != self.owner:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You do not have permission to update this agent",
+                )
+            # update
+            for key, value in self.model_dump().items():
                 setattr(db_agent, key, value)
             await db.commit()
             await db.refresh(db_agent)
@@ -1812,7 +1831,9 @@ class AgentResponse(BaseModel):
                 has_twitter_linked = True
 
         # Process Twitter self-key status
-        has_twitter_self_key = agent_data and agent_data.twitter_self_key_refreshed_at
+        has_twitter_self_key = bool(
+            agent_data and agent_data.twitter_self_key_refreshed_at
+        )
 
         # Process Telegram self-key status and remove token
         linked_telegram_username = None

@@ -1,25 +1,29 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "title": "Enso Finance",
-  "description": "Integration with Enso Finance API providing DeFi trading and portfolio management capabilities across multiple blockchain networks",
-  "x-icon": "https://ai.service.crestal.dev/skills/enso/enso.jpg",
+  "title": "Portfolio Analysis",
+  "description": "Access blockchain wallet data and analytics through Moralis APIs for portfolio tracking, token balances, and investment performance",
+  "x-icon": "https://ai.service.crestal.dev/skills/portfolio/moralis.png",
   "x-tags": [
-    "Blockchain"
+    "Blockchain",
+    "Web3",
+    "Crypto",
+    "Portfolio",
+    "Wallet"
   ],
   "properties": {
     "enabled": {
       "type": "boolean",
       "title": "Enabled",
       "description": "Whether this skill is enabled",
-      "default": false
+      "default": true
     },
     "states": {
       "type": "object",
       "properties": {
-        "get_networks": {
+        "wallet_history": {
           "type": "string",
-          "title": "Get Networks",
+          "title": "Wallet Transaction History",
           "enum": [
             "disabled",
             "public",
@@ -30,12 +34,44 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Retrieve networks supported by the Enso API",
+          "description": "Retrieve the full transaction history of a specified wallet address",
+          "default": "private"
+        },
+        "token_balances": {
+          "type": "string",
+          "title": "Token Balances",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get token balances for a specific wallet address and their token prices in USD",
+          "default": "private"
+        },
+        "wallet_approvals": {
+          "type": "string",
+          "title": "Wallet Approvals",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Retrieve active ERC20 token approvals for a specified wallet address",
           "default": "disabled"
         },
-        "get_tokens": {
+        "wallet_swaps": {
           "type": "string",
-          "title": "Get Tokens",
+          "title": "Wallet Swaps",
           "enum": [
             "disabled",
             "public",
@@ -46,12 +82,12 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Enso Finance Token Information Tool: Retrieves detailed token information from the Enso Finance API, including APY, symbol, address, protocol slug, token type, and underlying tokens.",
+          "description": "Get all swap-related transactions (buy, sell) for a wallet address",
           "default": "disabled"
         },
-        "get_prices": {
+        "wallet_net_worth": {
           "type": "string",
-          "title": "Get Prices",
+          "title": "Wallet Net Worth",
           "enum": [
             "disabled",
             "public",
@@ -62,12 +98,12 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Retrieve the price of a token by chain ID and contract address",
-          "default": "disabled"
+          "description": "Get the net worth of a wallet in USD across multiple chains",
+          "default": "private"
         },
-        "get_wallet_approvals": {
+        "wallet_profitability_summary": {
           "type": "string",
-          "title": "Get Wallet Approvals",
+          "title": "Wallet Profitability Summary",
           "enum": [
             "disabled",
             "public",
@@ -78,12 +114,12 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Retrieve token spend approvals for a wallet on a specified blockchain network.",
-          "default": "disabled"
+          "description": "Retrieve a summary of wallet profitability",
+          "default": "private"
         },
-        "get_wallet_balances": {
+        "wallet_profitability": {
           "type": "string",
-          "title": "Get Wallet Balances",
+          "title": "Wallet Profitability Breakdown",
           "enum": [
             "disabled",
             "public",
@@ -94,12 +130,12 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "Retrieve token balances of a wallet on a specified blockchain network.",
-          "default": "disabled"
+          "description": "Retrieve detailed profitability breakdown for a wallet",
+          "default": "private"
         },
-        "wallet_approve": {
+        "wallet_stats": {
           "type": "string",
-          "title": "Wallet Approve",
+          "title": "Wallet Stats",
           "enum": [
             "disabled",
             "public",
@@ -110,55 +146,11 @@
             "Agent Owner + All Users",
             "Agent Owner Only"
           ],
-          "description": "This tool is used specifically for broadcasting a ERC20 token spending approval transaction to the network. It should only be used when the user explicitly requests to broadcast an approval transaction with a specific amount for a certain token.",
-          "default": "disabled"
-        },
-        "route_shortcut": {
-          "type": "string",
-          "title": "Route Shortcut",
-          "enum": [
-            "disabled",
-            "public",
-            "private"
-          ],
-          "x-enum-title": [
-            "Disabled",
-            "Agent Owner + All Users",
-            "Agent Owner Only"
-          ],
-          "description": "This tool is used specifically for broadcasting a route transaction calldata to the network. It should only be used when the user explicitly requests to broadcast a route transaction with routeId.",
-          "default": "disabled"
-        },
-        "get_best_yield": {
-          "type": "string",
-          "title": "Get Best Yield",
-          "enum": [
-            "disabled",
-            "public",
-            "private"
-          ],
-          "x-enum-title": [
-            "Disabled",
-            "Agent Owner + All Users",
-            "Agent Owner Only"
-          ],
-          "description": "Find the best yield options for a specific token (default: USDC) across all protocols on a blockchain network (default: Base). Results are sorted by APY in descending order.",
+          "description": "Get statistical information about a wallet",
           "default": "disabled"
         }
       },
-      "description": "States for each Enso skill (disabled, public, or private)"
-    },
-    "main_tokens": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "List of main tokens to use",
-      "default": [
-        "ETH",
-        "UDSC",
-        "USDT"
-      ]
+      "description": "States for each portfolio blockchain analysis skill (disabled, public, or private)"
     },
     "api_key_provider": {
       "type": "string",
@@ -177,7 +169,6 @@
   },
   "required": [
     "states",
-    "main_tokens",
     "enabled"
   ],
   "if": {
@@ -189,10 +180,12 @@
   },
   "then": {
     "properties": {
-      "api_token": {
+      "api_key": {
         "type": "string",
-        "title": "API Token",
-        "description": "Enso API token for authentication"
+        "title": "Moralis API Key",
+        "description": "API key for Moralis API service",
+        "x-link": "[Get your API key](https://moralis.io/)",
+        "x-sensitive": true
       }
     },
     "if": {
@@ -204,7 +197,7 @@
     },
     "then": {
       "required": [
-        "api_token"
+        "api_key"
       ]
     }
   },
