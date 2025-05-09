@@ -52,13 +52,17 @@ class TokenAnalytics(TokenBaseTool):
             Dict containing token analytics data
         """
         context = self.context_from_config(config)
-        logger.debug(
-            f"token_analytics.py: Fetching token analytics with context {context}"
-        )
+        if context is None:
+            logger.error("Context is None, cannot retrieve API key")
+            return {
+                "error": "Cannot retrieve API key. Please check agent configuration."
+            }
 
-        # Get the API key from the agent's configuration
-        api_key = context.config.get("api_key")
+        # Get the API key
+        api_key = self.get_api_key(context)
+
         if not api_key:
+            logger.error("No Moralis API key available")
             return {"error": "No Moralis API key provided in the configuration."}
 
         # Build query parameters
@@ -71,10 +75,7 @@ class TokenAnalytics(TokenBaseTool):
                 method="GET", endpoint=endpoint, api_key=api_key, params=params
             )
         except Exception as e:
-            logger.error(
-                f"token_analytics.py: Error fetching token analytics: {e}",
-                exc_info=True,
-            )
+            logger.error(f"Error fetching token analytics: {e}")
             return {
-                "error": "An error occurred while fetching token analytics. Please try again later."
+                "error": f"An error occurred while fetching token analytics: {str(e)}. Please try again later."
             }

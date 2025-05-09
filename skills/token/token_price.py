@@ -83,12 +83,20 @@ class TokenPrice(TokenBaseTool):
         Returns:
             Dict containing token price data
         """
+        # Extract context from config
         context = self.context_from_config(config)
-        logger.debug(f"token_price.py: Fetching token price with context {context}")
 
-        # Get the API key from the agent's configuration
-        api_key = context.config.get("api_key")
+        if context is None:
+            logger.error("Context is None, cannot retrieve API key")
+            return {
+                "error": "Cannot retrieve API key. Please check agent configuration."
+            }
+
+        # Get the API key
+        api_key = self.get_api_key(context)
+
         if not api_key:
+            logger.error("No Moralis API key available")
             return {"error": "No Moralis API key provided in the configuration."}
 
         # Build query parameters
@@ -109,13 +117,16 @@ class TokenPrice(TokenBaseTool):
         # Call Moralis API
         try:
             endpoint = f"/erc20/{address}/price"
-            return await self._make_request(
+            response = await self._make_request(
                 method="GET", endpoint=endpoint, api_key=api_key, params=params
             )
+
+            if "error" in response:
+                logger.error(f"API returned error: {response.get('error')}")
+
+            return response
         except Exception as e:
-            logger.error(
-                f"token_price.py: Error fetching token price: {e}", exc_info=True
-            )
+            logger.error(f"Error fetching token price: {e}")
             return {
-                "error": "An error occurred while fetching token price. Please try again later."
+                "error": f"An error occurred while fetching token price: {str(e)}. Please try again later."
             }

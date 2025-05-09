@@ -12,154 +12,130 @@
     "DeFi"
   ],
   "properties": {
-    "token_price": {
-      "title": "ERC20 Token Price",
-      "description": "Get the token price denominated in the blockchain's native token and USD",
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string",
-          "description": "The address of the token contract to get price for"
-        },
-        "chain": {
-          "type": "string",
-          "description": "The chain to query (e.g., 'eth', 'bsc', 'polygon')",
-          "default": "eth"
-        },
-        "include": {
-          "type": "string",
-          "description": "If the result should contain the 24hr percent change (use 'percent_change')",
-          "default": null
-        },
-        "exchange": {
-          "type": "string",
-          "description": "The factory name or address of the token exchange",
-          "default": null
-        },
-        "to_block": {
-          "type": "integer",
-          "description": "The block number from which the token price should be checked",
-          "default": null
-        },
-        "max_token_inactivity": {
-          "type": "integer",
-          "description": "Exclude tokens inactive for more than the given amount of days",
-          "default": null
-        },
-        "min_pair_side_liquidity_usd": {
-          "type": "integer",
-          "description": "Exclude tokens with liquidity less than the specified amount in USD",
-          "default": null
-        }
-      },
-      "required": ["address"]
+    "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "description": "Whether this skill is enabled",
+      "default": true
     },
-    "token_erc20_transfers": {
-      "title": "ERC20 Token Transfers",
-      "description": "Get ERC20 token transactions ordered by block number",
+    "states": {
       "type": "object",
       "properties": {
-        "address": {
+        "token_price": {
           "type": "string",
-          "description": "The address of the wallet to get ERC20 token transfers for"
+          "title": "ERC20 Token Price",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get the token price denominated in the blockchain's native token and USD",
+          "default": "public"
         },
-        "chain": {
+        "token_erc20_transfers": {
           "type": "string",
-          "description": "The chain to query (e.g., 'eth', 'bsc', 'polygon')",
-          "default": "eth"
+          "title": "ERC20 Token Transfers",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get ERC20 token transactions ordered by block number",
+          "default": "public"
         },
-        "contract_addresses": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "List of contract addresses of transfers to filter by",
-          "default": null
-        },
-        "from_block": {
-          "type": "integer",
-          "description": "The minimum block number from which to get the transactions",
-          "default": null
-        },
-        "to_block": {
-          "type": "integer",
-          "description": "The maximum block number from which to get the transactions",
-          "default": null
-        },
-        "from_date": {
+        "token_search": {
           "type": "string",
-          "description": "The start date from which to get the transactions (any format accepted by momentjs)",
-          "default": null
+          "title": "Token Search (Premium)",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Search for tokens based on contract address, token name or token symbol. Premium endpoint available as an add-on. Requires a Moralis Business plan or Enterprise plan.",
+          "default": "public"
         },
-        "to_date": {
+        "token_analytics": {
           "type": "string",
-          "description": "Get the transactions up to this date (any format accepted by momentjs)",
-          "default": null
-        },
-        "limit": {
-          "type": "integer",
-          "description": "The desired page size of the result",
-          "default": 100
-        },
-        "order": {
-          "type": "string",
-          "description": "The order of the result, in ascending (ASC) or descending (DESC)",
-          "default": "DESC"
-        },
-        "cursor": {
-          "type": "string",
-          "description": "The cursor returned in the previous response (for pagination)",
-          "default": null
+          "title": "Token Analytics",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get analytics for a token by token address",
+          "default": "public"
         }
       },
-      "required": ["address"]
+      "description": "States for each token analysis skill (disabled, public, or private)"
     },
-    "token_search": {
-      "title": "Token Search (Premium)",
-      "description": "Search for tokens based on contract address, token name or token symbol. Premium endpoint available as an add-on. Requires a Moralis Business plan or Enterprise plan.",
-      "type": "object",
-      "properties": {
-        "query": {
-          "type": "string",
-          "description": "Search query - can be token address, token name or token symbol"
-        },
-        "chains": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "The chain(s) to query (e.g., 'eth', 'bsc', 'polygon')",
-          "default": null
-        },
-        "limit": {
-          "type": "integer",
-          "description": "The desired page size of the result",
-          "default": null
-        },
-        "is_verified_contract": {
-          "type": "boolean",
-          "description": "Whether the contract is verified",
-          "default": null
-        }
-      },
-      "required": ["query"]
-    },
-    "token_analytics": {
-      "title": "Token Analytics",
-      "description": "Get analytics for a token by token address",
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string",
-          "description": "The token address to get analytics for"
-        },
-        "chain": {
-          "type": "string",
-          "description": "The chain to query (e.g., 'eth', 'bsc', 'polygon')",
-          "default": "eth"
-        }
-      },
-      "required": ["address"]
+    "api_key_provider": {
+      "type": "string",
+      "title": "API Key Provider",
+      "description": "Provider of the API key",
+      "enum": [
+        "platform",
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Nation Hosted",
+        "Owner Provided"
+      ],
+      "default": "agent_owner"
     }
-  }
+  },
+  "required": [
+    "states",
+    "enabled"
+  ],
+  "if": {
+    "properties": {
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "Moralis API Key",
+        "description": "API key for Moralis API service",
+        "x-link": "[Get your API key](https://moralis.io/)",
+        "x-sensitive": true
+      }
+    },
+    "if": {
+      "properties": {
+        "enabled": {
+          "const": true
+        }
+      }
+    },
+    "then": {
+      "required": [
+        "api_key"
+      ]
+    }
+  },
+  "additionalProperties": true
 } 

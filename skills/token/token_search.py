@@ -68,12 +68,19 @@ class TokenSearch(TokenBaseTool):
         Returns:
             Dict containing token search results
         """
+        # Extract context from config
         context = self.context_from_config(config)
-        logger.debug(f"token_search.py: Searching for tokens with context {context}")
+        if context is None:
+            logger.error("Context is None, cannot retrieve API key")
+            return {
+                "error": "Cannot retrieve API key. Please check agent configuration."
+            }
 
-        # Get the API key from the agent's configuration
-        api_key = context.config.get("api_key")
+        # Get the API key
+        api_key = self.get_api_key(context)
+
         if not api_key:
+            logger.error("No Moralis API key available")
             return {"error": "No Moralis API key provided in the configuration."}
 
         # Build query parameters
@@ -96,6 +103,7 @@ class TokenSearch(TokenBaseTool):
 
             # Add premium notice if there's an error that might be related to plan limits
             if "error" in result and "403" in str(result.get("error", "")):
+                logger.error("Received 403 error - likely a plan limitation")
                 result["notice"] = (
                     "This API requires a Moralis Business plan or Enterprise plan. "
                     "Please ensure your API key is associated with the appropriate plan."
@@ -103,11 +111,9 @@ class TokenSearch(TokenBaseTool):
 
             return result
         except Exception as e:
-            logger.error(
-                f"token_search.py: Error searching for tokens: {e}", exc_info=True
-            )
+            logger.error(f"Error searching for tokens: {e}")
             return {
-                "error": "An error occurred while searching for tokens. Please try again later.",
+                "error": f"An error occurred while searching for tokens: {str(e)}. Please try again later.",
                 "notice": (
                     "This API requires a Moralis Business plan or Enterprise plan. "
                     "Please ensure your API key is associated with the appropriate plan."

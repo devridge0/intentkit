@@ -148,6 +148,38 @@
           ],
           "description": "Get statistical information about a wallet",
           "default": "disabled"
+        },
+        "wallet_defi_positions": {
+          "type": "string",
+          "title": "Wallet DeFi Positions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get the positions summary of a wallet address",
+          "default": "disabled"
+        },
+        "wallet_nfts": {
+          "type": "string",
+          "title": "Wallet NFTs",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get NFTs owned by a given wallet address",
+          "default": "disabled"
         }
       },
       "description": "States for each portfolio blockchain analysis skill (disabled, public, or private)"
@@ -165,83 +197,6 @@
         "Owner Provided"
       ],
       "default": "agent_owner"
-    },
-    "wallet_defi_positions": {
-      "title": "Wallet DeFi Positions",
-      "description": "Get the positions summary of a wallet address",
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string",
-          "description": "The wallet address to get DeFi positions for"
-        },
-        "chain": {
-          "type": "string",
-          "description": "The chain to query (e.g., 'eth', 'bsc', 'polygon')",
-          "default": "eth"
-        }
-      },
-      "required": ["address"]
-    },
-    "wallet_nfts": {
-      "title": "Wallet NFTs",
-      "description": "Get NFTs owned by a given wallet address",
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string",
-          "description": "The address of the wallet to get NFTs for"
-        },
-        "chain": {
-          "type": "string",
-          "description": "The chain to query (e.g., 'eth', 'base', 'polygon')",
-          "default": "base"
-        },
-        "format": {
-          "type": "string",
-          "description": "The format of the token ID ('decimal' or 'hex')",
-          "default": "decimal"
-        },
-        "limit": {
-          "type": "integer",
-          "description": "The desired page size of the result",
-          "default": 100
-        },
-        "exclude_spam": {
-          "type": "boolean",
-          "description": "Should spam NFTs be excluded from the result?",
-          "default": true
-        },
-        "token_addresses": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "The non-fungible token (NFT) addresses to get balances for",
-          "default": null
-        },
-        "cursor": {
-          "type": "string",
-          "description": "The cursor returned in the previous response (for pagination)",
-          "default": null
-        },
-        "normalize_metadata": {
-          "type": "boolean",
-          "description": "The option to enable metadata normalization",
-          "default": true
-        },
-        "media_items": {
-          "type": "boolean",
-          "description": "Should preview media data be returned?",
-          "default": false
-        },
-        "include_prices": {
-          "type": "boolean",
-          "description": "Should NFT last sale prices be included in the result?",
-          "default": false
-        }
-      },
-      "required": ["address"]
     }
   },
   "required": [
