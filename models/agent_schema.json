@@ -711,7 +711,9 @@
         "minimum": 0,
         "maximum": 1000,
         "default": 0,
-        "x-group": "basic"
+        "x-step": 20,
+        "x-group": "basic",
+        "x-component": "slider-with-box"
       }
     }
   },
