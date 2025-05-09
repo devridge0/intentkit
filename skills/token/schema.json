@@ -100,7 +100,7 @@
         "Nation Hosted",
         "Owner Provided"
       ],
-      "default": "agent_owner"
+      "default": "platform"
     }
   },
   "required": [
@@ -110,7 +110,7 @@
   "if": {
     "properties": {
       "api_key_provider": {
-        "const": "agent_owner"
+        "const": "platform"
       }
     }
   },
