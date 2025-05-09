@@ -155,14 +155,16 @@
     "api_key_provider": {
       "type": "string",
       "title": "API Key Provider",
-      "description": "Provider of the API key for Moralis API service",
+      "description": "Provider of the API key",
       "enum": [
+        "platform",
         "agent_owner"
       ],
       "x-enum-title": [
+        "Nation Hosted",
         "Owner Provided"
       ],
-      "default": "agent_owner"
+      "default": "platform"
     }
   },
   "required": [
