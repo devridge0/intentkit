@@ -584,6 +584,7 @@
           }
         },
         "required": [
+          "name",
           "prompt"
         ]
       },
