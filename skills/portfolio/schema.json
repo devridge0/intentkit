@@ -148,6 +148,38 @@
           ],
           "description": "Get statistical information about a wallet",
           "default": "disabled"
+        },
+        "wallet_defi_positions": {
+          "type": "string",
+          "title": "Wallet DeFi Positions",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get the positions summary of a wallet address",
+          "default": "disabled"
+        },
+        "wallet_nfts": {
+          "type": "string",
+          "title": "Wallet NFTs",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Get NFTs owned by a given wallet address",
+          "default": "disabled"
         }
       },
       "description": "States for each portfolio blockchain analysis skill (disabled, public, or private)"

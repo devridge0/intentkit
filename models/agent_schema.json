@@ -439,6 +439,10 @@
           "title": "Blockchain Portfolio",
           "$ref": "../skills/portfolio/schema.json"
         },
+        "token": {
+          "title": "Token Operations",
+          "$ref": "../skills/token/schema.json"
+        },
         "cookiefun": {
           "title": "cookie.fun",
           "$ref": "../skills/cookiefun/schema.json"
