@@ -196,7 +196,7 @@
         "Nation Hosted",
         "Owner Provided"
       ],
-      "default": "agent_owner"
+      "default": "platform"
     }
   },
   "required": [
