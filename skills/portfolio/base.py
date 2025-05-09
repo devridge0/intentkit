@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from abc import ABC
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Type
 
 import aiohttp
 from pydantic import BaseModel, Field
@@ -24,7 +24,6 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data"
     )
-    base_url: str = MORALIS_API_BASE_URL
 
     def get_api_key(self, context: SkillContext) -> str:
         skill_config = context.config
@@ -61,51 +60,47 @@ class PortfolioBaseTool(IntentKitSkill, ABC):
         method: str,
         endpoint: str,
         api_key: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
+        params: Dict[str, Any] = None,
+        data: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Make a request to the Moralis API.
 
         Args:
             method: HTTP method (GET, POST, etc.)
-            endpoint: API endpoint path
-            api_key: The Moralis API key
+            endpoint: API endpoint (without base URL)
+            api_key: Moralis API key
             params: Query parameters
-            json_data: JSON data for request body
+            data: Request body data for POST requests
 
         Returns:
-            API response as dictionary
+            Response data as dictionary
         """
-        url = f"{self.base_url}{endpoint}"
+        url = f"{MORALIS_API_BASE_URL}{endpoint}"
+
         headers = {"accept": "application/json", "X-API-Key": api_key}
 
         # Convert boolean params to strings
         processed_params = self._prepare_params(params) if params else None
 
-        logger.debug(f"Portfolio skill {self.name} making {method} request to {url}")
+        logger.debug(f"portfolio/base.py: Making request to {url}")
 
         async with aiohttp.ClientSession() as session:
-            try:
-                async with session.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    params=processed_params,
-                    json=json_data,
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    else:
-                        error_text = await response.text()
-                        logger.error(
-                            f"Moralis API error: {response.status} - {error_text}"
-                        )
-                        raise ValueError(
-                            f"Moralis API error: {response.status} - {error_text}"
-                        )
-            except aiohttp.ClientError as e:
-                logger.error(f"Request error in {self.name}: {str(e)}")
-                raise ValueError(f"Request error: {str(e)}")
+            async with session.request(
+                method=method,
+                url=url,
+                headers=headers,
+                params=processed_params,
+                json=data,
+            ) as response:
+                if response.status >= 400:
+                    error_text = await response.text()
+                    logger.error(f"portfolio/base.py: API error: {error_text}")
+                    return {
+                        "error": f"API error: {response.status}",
+                        "details": error_text,
+                    }
+
+                return await response.json()
 
     def _run(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the tool synchronously by running the async version in a loop."""
