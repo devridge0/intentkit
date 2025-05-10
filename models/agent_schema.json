@@ -714,9 +714,9 @@
         "type": "number",
         "description": "Set a tip percentage that users will pay on top of the base CAPs fee when interacting with this Agent. This tip goes directly to the Agent's wallet. Interactions by the creator are excluded.",
         "minimum": 0,
-        "maximum": 1000,
+        "maximum": 100,
         "default": 0,
-        "x-step": 20,
+        "x-step": 1,
         "x-group": "basic",
         "x-component": "slider-with-box"
       }
