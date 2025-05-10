@@ -710,9 +710,9 @@
   "then": {
     "properties": {
       "fee_percentage": {
-        "title": "Agent Fee %",
+        "title": "Service Fee",
         "type": "number",
-        "description": "Set a tip percentage that users will pay on top of the base CAPs fee when interacting with this Agent. This tip goes directly to the Agent's wallet. Interactions by the creator are excluded.",
+        "description": "A CAPs % added to the base cost, paid to the agent for delivering its unique logic and execution.",
         "minimum": 0,
         "maximum": 100,
         "default": 0,
