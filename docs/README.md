@@ -14,7 +14,7 @@
 
 ## User Interface
 
-- [Chat UI](chat-ui.md) - Guide to using the IntentKit Sandbox UI for interacting with agents
+- [IntentKit Sandbox UI](https://github.com/bluntbrain/intentkit-sandbox-ui) - Next.js application for testing and interacting with agents
 
 ## Contributing
 
