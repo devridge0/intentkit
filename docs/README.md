@@ -12,6 +12,10 @@
 - [LLM](llm.md)
 - [Create an Agent](agent.md)
 
+## User Interface
+
+- [Chat UI](chat-ui.md) - Guide to using the IntentKit Sandbox UI for interacting with agents
+
 ## Contributing
 
 - [Building Skills](contributing/skills.md)
