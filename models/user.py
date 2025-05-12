@@ -1,4 +1,6 @@
+import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -7,7 +9,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.base import Base
+from models.credit import CreditAccount
 from models.db import get_session
+
+logger = logging.getLogger(__name__)
 
 
 class UserTable(Base):
@@ -88,9 +93,42 @@ class UserUpdate(BaseModel):
         Optional[dict], Field(None, description="Additional user information")
     ]
 
+    async def _update_quota_for_nft_count(
+        self, db: AsyncSession, id: str, new_nft_count: int
+    ) -> None:
+        """Update user's daily quota based on NFT count.
+
+        Args:
+            db: Database session
+            id: User ID
+            new_nft_count: Current NFT count
+        """
+        # Generate upstream_tx_id
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        upstream_tx_id = f"nft_{id}_{timestamp}"
+
+        # Calculate new quota values based on nft_count
+        free_quota = Decimal(480 + 48 * new_nft_count)
+        refill_amount = Decimal(20 + 2 * new_nft_count)
+        note = f"NFT count changed to {new_nft_count}"
+
+        # Update daily quota
+        logger.info(
+            f"Updating daily quota for user {id} due to NFT count change to {new_nft_count}"
+        )
+        await CreditAccount.update_daily_quota(
+            db,
+            id,
+            free_quota=free_quota,
+            refill_amount=refill_amount,
+            upstream_tx_id=upstream_tx_id,
+            note=note,
+        )
+
     async def patch(self, id: str) -> "User":
         """Update only the provided fields of a user in the database.
         If the user doesn't exist, create a new one with the provided ID and fields.
+        If nft_count changes, update the daily quota accordingly.
 
         Args:
             id: ID of the user to update or create
@@ -100,22 +138,33 @@ class UserUpdate(BaseModel):
         """
         async with get_session() as db:
             db_user = await db.get(UserTable, id)
+            old_nft_count = 0  # Default for new users
+
             if not db_user:
                 # Create new user if it doesn't exist
                 db_user = UserTable(id=id)
                 db.add(db_user)
+            else:
+                old_nft_count = db_user.nft_count
 
             # Update only the fields that were provided
-            for key, value in self.model_dump(exclude_unset=True).items():
+            update_data = self.model_dump(exclude_unset=True)
+            for key, value in update_data.items():
                 setattr(db_user, key, value)
+
+            # Check if nft_count has changed and is in the update data
+            if "nft_count" in update_data and old_nft_count != update_data["nft_count"]:
+                await self._update_quota_for_nft_count(db, id, update_data["nft_count"])
 
             await db.commit()
             await db.refresh(db_user)
+
             return User.model_validate(db_user)
 
     async def put(self, id: str) -> "User":
         """Replace all fields of a user in the database with the provided values.
         If the user doesn't exist, create a new one with the provided ID and fields.
+        If nft_count changes, update the daily quota accordingly.
 
         Args:
             id: ID of the user to update or create
@@ -125,17 +174,26 @@ class UserUpdate(BaseModel):
         """
         async with get_session() as db:
             db_user = await db.get(UserTable, id)
+            old_nft_count = 0  # Default for new users
+
             if not db_user:
                 # Create new user if it doesn't exist
                 db_user = UserTable(id=id)
                 db.add(db_user)
+            else:
+                old_nft_count = db_user.nft_count
 
             # Replace all fields with the provided values
             for key, value in self.model_dump().items():
                 setattr(db_user, key, value)
 
+            # Check if nft_count has changed
+            if old_nft_count != self.nft_count:
+                await self._update_quota_for_nft_count(db, id, self.nft_count)
+
             await db.commit()
             await db.refresh(db_user)
+
             return User.model_validate(db_user)
 
 
