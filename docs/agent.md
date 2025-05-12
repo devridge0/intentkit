@@ -33,7 +33,7 @@ sh import.sh example
 
 **Test Your Agent:**
 
-You can test your agent using API calls or the IntentKit Sandbox UI. The UI provides a visual chat interface for interacting with your agents. See the [Chat UI documentation](chat-ui.md) for setup and usage.
+You can test your agent using API calls or the IntentKit Sandbox UI. The UI provides a visual chat interface for interacting with your agents. See the [IntentKit Sandbox UI repository](https://github.com/bluntbrain/intentkit-sandbox-ui) for setup and usage.
 
 ## Advanced Agent API
 
