@@ -1,7 +1,7 @@
 """Portfolio skills for blockchain wallet analysis."""
 
 import logging
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
@@ -9,7 +9,7 @@ from skills.portfolio.base import PortfolioBaseTool
 from skills.portfolio.token_balances import TokenBalances
 from skills.portfolio.wallet_approvals import WalletApprovals
 from skills.portfolio.wallet_defi_positions import WalletDefiPositions
-from skills.portfolio.wallet_history import PortfolioWalletHistory
+from skills.portfolio.wallet_history import WalletHistory
 from skills.portfolio.wallet_net_worth import WalletNetWorth
 from skills.portfolio.wallet_nfts import WalletNFTs
 from skills.portfolio.wallet_profitability import WalletProfitability
@@ -42,7 +42,8 @@ class Config(SkillConfig):
     """Configuration for Portfolio blockchain analysis skills."""
 
     states: SkillStates
-    api_key: str
+    api_key: Optional[str] = None
+    api_key_provider: str = "platform"
 
 
 async def get_skills(
@@ -86,7 +87,7 @@ def get_portfolio_skill(
     """Get a portfolio skill by name."""
     if name == "wallet_history":
         if name not in _cache:
-            _cache[name] = PortfolioWalletHistory(
+            _cache[name] = WalletHistory(
                 skill_store=store,
             )
         return _cache[name]
