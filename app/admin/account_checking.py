@@ -55,7 +55,7 @@ async def check_account_balance_consistency(
         List of checking results
     """
     results = []
-    batch_size = 100  # Process 100 accounts at a time
+    batch_size = 1000  # Process 100 accounts at a time
     offset = 0
     total_processed = 0
 
@@ -174,6 +174,7 @@ async def check_transaction_balance(
     """Check if all credit events have balanced transactions.
 
     For each credit event, the sum of all credit transactions should equal the sum of all debit transactions.
+    Events are processed in batches to prevent memory overflow issues.
 
     Args:
         session: Database session
@@ -182,62 +183,92 @@ async def check_transaction_balance(
         List of checking results
     """
     results = []
+    batch_size = 1000  # Process 1000 events at a time
+    offset = 0
+    total_processed = 0
 
-    # Get all events from the last 3 days (limit to recent events for performance)
+    # Time window for events (last 3 days for performance)
     three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
-    query = select(CreditEventTable).where(
-        CreditEventTable.created_at >= three_days_ago
-    )
-    events_result = await session.execute(query)
-    events = [
-        CreditEvent.model_validate(event) for event in events_result.scalars().all()
-    ]
 
-    for event in events:
-        # Sleep for 10ms to reduce database load
-        await asyncio.sleep(0.01)
-
-        # Get all transactions for this event
-        tx_query = select(CreditTransactionTable).where(
-            CreditTransactionTable.event_id == event.id
+    while True:
+        # Get events in batches using SQL pagination
+        query = (
+            select(CreditEventTable)
+            .where(CreditEventTable.created_at >= three_days_ago)
+            .order_by(CreditEventTable.id)
+            .offset(offset)
+            .limit(batch_size)
         )
-        tx_result = await session.execute(tx_query)
-        transactions = [
-            CreditTransaction.model_validate(tx) for tx in tx_result.scalars().all()
+        events_result = await session.execute(query)
+        batch_events = [
+            CreditEvent.model_validate(event) for event in events_result.scalars().all()
         ]
 
-        # Calculate credit and debit sums
-        credit_sum = sum(
-            tx.change_amount for tx in transactions if tx.credit_debit == "credit"
-        )
-        debit_sum = sum(
-            tx.change_amount for tx in transactions if tx.credit_debit == "debit"
+        # If no more events to process, break the loop
+        if not batch_events:
+            break
+
+        # Update counters
+        batch_count = len(batch_events)
+        total_processed += batch_count
+        logger.info(
+            f"Processing transaction balance batch: {offset // batch_size + 1}, events: {batch_count}"
         )
 
-        # Check if they balance
-        is_balanced = credit_sum == debit_sum
+        # Process each event in the batch
+        for event in batch_events:
+            # Sleep for 10ms to reduce database load
+            await asyncio.sleep(0.01)
 
-        result = AccountCheckingResult(
-            check_type="transaction_balance",
-            status=is_balanced,
-            details={
-                "event_id": event.id,
-                "event_type": event.event_type,
-                "credit_sum": float(credit_sum),
-                "debit_sum": float(debit_sum),
-                "difference": float(credit_sum - debit_sum),
-                "created_at": event.created_at.isoformat()
-                if event.created_at
-                else None,
-            },
-        )
-        results.append(result)
-
-        if not is_balanced:
-            logger.warning(
-                f"Transaction imbalance detected for event {event.id} ({event.event_type}). "
-                f"Credit: {credit_sum}, Debit: {debit_sum}"
+            # Get all transactions for this event
+            tx_query = select(CreditTransactionTable).where(
+                CreditTransactionTable.event_id == event.id
             )
+            tx_result = await session.execute(tx_query)
+            transactions = [
+                CreditTransaction.model_validate(tx) for tx in tx_result.scalars().all()
+            ]
+
+            # Calculate credit and debit sums
+            credit_sum = sum(
+                tx.change_amount for tx in transactions if tx.credit_debit == "credit"
+            )
+            debit_sum = sum(
+                tx.change_amount for tx in transactions if tx.credit_debit == "debit"
+            )
+
+            # Check if they balance
+            is_balanced = credit_sum == debit_sum
+
+            result = AccountCheckingResult(
+                check_type="transaction_balance",
+                status=is_balanced,
+                details={
+                    "event_id": event.id,
+                    "event_type": event.event_type,
+                    "credit_sum": float(credit_sum),
+                    "debit_sum": float(debit_sum),
+                    "difference": float(credit_sum - debit_sum),
+                    "created_at": event.created_at.isoformat()
+                    if event.created_at
+                    else None,
+                    "batch": offset // batch_size + 1,
+                },
+            )
+            results.append(result)
+
+            if not is_balanced:
+                logger.warning(
+                    f"Transaction imbalance detected for event {event.id} ({event.event_type}). "
+                    f"Credit: {credit_sum}, Debit: {debit_sum}"
+                )
+
+        # Move to the next batch
+        offset += batch_size
+
+    logger.info(
+        f"Completed transaction balance check: processed {total_processed} events in {offset // batch_size} batches"
+    )
 
     return results
 
@@ -662,7 +693,7 @@ async def main():
     """Main entry point for running account checks."""
     await init_db(**config.db)
     logger.info("Starting account checking procedures")
-    results = await run_slow_checks()
+    results = await run_quick_checks()
     logger.info("Completed account checking procedures")
     return results
 
