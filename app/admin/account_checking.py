@@ -43,9 +43,10 @@ async def check_account_balance_consistency(
     This verifies that the total balance in each account matches the sum of all transactions
     for that account, properly accounting for credits and debits.
 
-    To ensure consistency during system operation, this function uses the maximum updated_at
-    timestamp from all accounts to limit transaction queries, ensuring that only transactions
-    created before or at the same time as the account snapshot are considered.
+    To ensure consistency during system operation, this function processes accounts in batches
+    and uses the maximum updated_at timestamp from each batch to limit transaction queries,
+    ensuring that only transactions created before or at the same time as the account snapshot
+    are considered.
 
     Args:
         session: Database session
@@ -54,80 +55,115 @@ async def check_account_balance_consistency(
         List of checking results
     """
     results = []
+    batch_size = 100  # Process 100 accounts at a time
+    offset = 0
+    total_processed = 0
 
-    # Get all accounts
-    query = select(CreditAccountTable)
-    accounts_result = await session.execute(query)
-    accounts = [
-        CreditAccount.model_validate(acc) for acc in accounts_result.scalars().all()
-    ]
-
-    # Find the maximum updated_at timestamp from all accounts
-    # This represents the point in time when we took the snapshot of account balances
-    max_updated_at = (
-        max([account.updated_at for account in accounts]) if accounts else None
-    )
-
-    if not max_updated_at:
-        return results
-
-    for account in accounts:
-        # Sleep for 10ms to reduce database load
-        await asyncio.sleep(0.01)
-
-        # Calculate the total balance across all credit types
-        total_balance = account.free_credits + account.reward_credits + account.credits
-
-        # Calculate the expected balance from all transactions, regardless of credit type
-        # Only include transactions created before or at the same time as the account snapshot
-        query = text("""
-            SELECT 
-                SUM(CASE WHEN credit_debit = 'credit' THEN change_amount ELSE 0 END) as credits,
-                SUM(CASE WHEN credit_debit = 'debit' THEN change_amount ELSE 0 END) as debits
-            FROM credit_transactions
-            WHERE account_id = :account_id 
-              AND created_at <= :max_updated_at
-        """)
-
-        tx_result = await session.execute(
-            query, {"account_id": account.id, "max_updated_at": max_updated_at}
+    while True:
+        # Get accounts in batches using SQL pagination
+        query = (
+            select(CreditAccountTable)
+            .order_by(CreditAccountTable.id)
+            .offset(offset)
+            .limit(batch_size)
         )
-        tx_data = tx_result.fetchone()
+        accounts_result = await session.execute(query)
+        batch_accounts = [
+            CreditAccount.model_validate(acc) for acc in accounts_result.scalars().all()
+        ]
 
-        credits = tx_data.credits or Decimal("0")
-        debits = tx_data.debits or Decimal("0")
-        expected_balance = credits - debits
+        # If no more accounts to process, break the loop
+        if not batch_accounts:
+            break
 
-        # Compare total balances
-        is_consistent = total_balance == expected_balance
-
-        result = AccountCheckingResult(
-            check_type="account_total_balance",
-            status=is_consistent,
-            details={
-                "account_id": account.id,
-                "owner_type": account.owner_type,
-                "owner_id": account.owner_id,
-                "current_total_balance": float(total_balance),
-                "free_credits": float(account.free_credits),
-                "reward_credits": float(account.reward_credits),
-                "credits": float(account.credits),
-                "expected_balance": float(expected_balance),
-                "total_credits": float(credits),
-                "total_debits": float(debits),
-                "difference": float(total_balance - expected_balance),
-                "max_updated_at": max_updated_at.isoformat()
-                if max_updated_at
-                else None,
-            },
+        # Update counters
+        batch_count = len(batch_accounts)
+        total_processed += batch_count
+        logger.info(
+            f"Processing account balance batch: {offset // batch_size + 1}, accounts: {batch_count}"
         )
-        results.append(result)
 
-        if not is_consistent:
-            logger.warning(
-                f"Account total balance inconsistency detected: {account.id} ({account.owner_type}:{account.owner_id}) "
-                f"Current total: {total_balance}, Expected: {expected_balance}"
+        # Find the maximum updated_at timestamp for this batch of accounts
+        # This represents the point in time when we took the snapshot of this batch of account balances
+        batch_max_updated_at = (
+            max([account.updated_at for account in batch_accounts])
+            if batch_accounts
+            else None
+        )
+
+        if not batch_max_updated_at:
+            offset += batch_size
+            continue
+
+        # Process each account in the batch
+        for account in batch_accounts:
+            # Sleep for 10ms to reduce database load
+            await asyncio.sleep(0.01)
+
+            # Calculate the total balance across all credit types
+            total_balance = (
+                account.free_credits + account.reward_credits + account.credits
             )
+
+            # Calculate the expected balance from all transactions, regardless of credit type
+            # Only include transactions created before or at the same time as the account snapshot
+            query = text("""
+                SELECT 
+                    SUM(CASE WHEN credit_debit = 'credit' THEN change_amount ELSE 0 END) as credits,
+                    SUM(CASE WHEN credit_debit = 'debit' THEN change_amount ELSE 0 END) as debits
+                FROM credit_transactions
+                WHERE account_id = :account_id 
+                  AND created_at <= :max_updated_at
+            """)
+
+            tx_result = await session.execute(
+                query,
+                {"account_id": account.id, "max_updated_at": batch_max_updated_at},
+            )
+            tx_data = tx_result.fetchone()
+
+            credits = tx_data.credits or Decimal("0")
+            debits = tx_data.debits or Decimal("0")
+            expected_balance = credits - debits
+
+            # Compare total balances
+            is_consistent = total_balance == expected_balance
+
+            result = AccountCheckingResult(
+                check_type="account_total_balance",
+                status=is_consistent,
+                details={
+                    "account_id": account.id,
+                    "owner_type": account.owner_type,
+                    "owner_id": account.owner_id,
+                    "current_total_balance": float(total_balance),
+                    "free_credits": float(account.free_credits),
+                    "reward_credits": float(account.reward_credits),
+                    "credits": float(account.credits),
+                    "expected_balance": float(expected_balance),
+                    "total_credits": float(credits),
+                    "total_debits": float(debits),
+                    "difference": float(total_balance - expected_balance),
+                    "max_updated_at": batch_max_updated_at.isoformat()
+                    if batch_max_updated_at
+                    else None,
+                    "batch": offset // batch_size + 1,
+                },
+            )
+            results.append(result)
+
+            if not is_consistent:
+                logger.warning(
+                    f"Account total balance inconsistency detected: {account.id} ({account.owner_type}:{account.owner_id}) "
+                    f"Current total: {total_balance}, Expected: {expected_balance}"
+                )
+
+        # Move to the next batch
+        offset += batch_size
+
+    logger.info(
+        f"Completed account balance consistency check: processed {total_processed} accounts in {offset // batch_size} batches"
+    )
 
     return results
 
@@ -452,18 +488,19 @@ async def check_transaction_total_balance(
     return [result]
 
 
-async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
-    """Run all account checking procedures and return results.
+async def run_quick_checks() -> Dict[str, List[AccountCheckingResult]]:
+    """Run quick account checking procedures and return results.
+
+    These checks are designed to be fast and can be run frequently.
 
     Returns:
         Dictionary mapping check names to their results
     """
-    logger.info("Starting account checking procedures")
+    logger.info("Starting quick account checking procedures")
 
     results = {}
     async with get_session() as session:
-        # Run all checks
-        results["account_balance"] = await check_account_balance_consistency(session)
+        # Run quick checks
         results["transaction_balance"] = await check_transaction_balance(session)
         results["orphaned_transactions"] = await check_orphaned_transactions(session)
         results["orphaned_events"] = await check_orphaned_events(session)
@@ -488,10 +525,10 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
             logger.info(f"{check_name}: All {len(check_results)} checks passed")
 
     if all_passed:
-        logger.info("All account checks passed successfully")
+        logger.info("All quick account checks passed successfully")
     else:
         logger.warning(
-            f"Account checking summary: {failed_count} checks failed - see logs for details"
+            f"Quick account checking summary: {failed_count} checks failed - see logs for details"
         )
 
     # Send summary to Slack
@@ -502,13 +539,13 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
 
     if all_passed:
         color = "good"  # Green color
-        title = "✅ Account Checking Completed Successfully"
-        text = f"All {total_checks} account checks passed successfully."
+        title = "✅ Quick Account Checking Completed Successfully"
+        text = f"All {total_checks} quick account checks passed successfully."
         notify = ""  # No notification needed for success
     else:
         color = "danger"  # Red color
-        title = "❌ Account Checking Found Issues"
-        text = f"Account checking found {failed_count} issues out of {total_checks} checks."
+        title = "❌ Quick Account Checking Found Issues"
+        text = f"Quick account checking found {failed_count} issues out of {total_checks} checks."
         notify = "<!channel> "  # Notify channel for failures
 
     # Create attachments with check details
@@ -533,17 +570,99 @@ async def run_all_checks() -> Dict[str, List[AccountCheckingResult]]:
 
     # Send the message
     send_slack_message(
-        message=f"{notify}Account Checking Results", attachments=attachments
+        message=f"{notify}Quick Account Checking Results", attachments=attachments
+    )
+
+    return results
+
+
+async def run_slow_checks() -> Dict[str, List[AccountCheckingResult]]:
+    """Run slow account checking procedures and return results.
+
+    These checks are more resource-intensive and should be run less frequently.
+
+    Returns:
+        Dictionary mapping check names to their results
+    """
+    logger.info("Starting slow account checking procedures")
+
+    results = {}
+    async with get_session() as session:
+        # Run slow checks
+        results["account_balance"] = await check_account_balance_consistency(session)
+
+    # Log summary
+    all_passed = True
+    failed_count = 0
+    for check_name, check_results in results.items():
+        check_failed_count = sum(1 for result in check_results if not result.status)
+        failed_count += check_failed_count
+
+        if check_failed_count > 0:
+            logger.warning(
+                f"{check_name}: {check_failed_count} of {len(check_results)} checks failed"
+            )
+            all_passed = False
+        else:
+            logger.info(f"{check_name}: All {len(check_results)} checks passed")
+
+    if all_passed:
+        logger.info("All slow account checks passed successfully")
+    else:
+        logger.warning(
+            f"Slow account checking summary: {failed_count} checks failed - see logs for details"
+        )
+
+    # Send summary to Slack
+    from utils.slack_alert import send_slack_message
+
+    # Create a summary message with color based on status
+    total_checks = sum(len(check_results) for check_results in results.values())
+
+    if all_passed:
+        color = "good"  # Green color
+        title = "✅ Slow Account Checking Completed Successfully"
+        text = f"All {total_checks} slow account checks passed successfully."
+        notify = ""  # No notification needed for success
+    else:
+        color = "danger"  # Red color
+        title = "❌ Slow Account Checking Found Issues"
+        text = f"Slow account checking found {failed_count} issues out of {total_checks} checks."
+        notify = "<!channel> "  # Notify channel for failures
+
+    # Create attachments with check details
+    attachments = [{"color": color, "title": title, "text": text, "fields": []}]
+
+    # Add fields for each check type
+    for check_name, check_results in results.items():
+        check_failed_count = sum(1 for result in check_results if not result.status)
+        check_status = (
+            "✅ Passed"
+            if check_failed_count == 0
+            else f"❌ Failed ({check_failed_count} issues)"
+        )
+
+        attachments[0]["fields"].append(
+            {
+                "title": check_name.replace("_", " ").title(),
+                "value": check_status,
+                "short": True,
+            }
+        )
+
+    # Send the message
+    send_slack_message(
+        message=f"{notify}Slow Account Checking Results", attachments=attachments
     )
 
     return results
 
 
 async def main():
-    await init_db(**config.db)
     """Main entry point for running account checks."""
+    await init_db(**config.db)
     logger.info("Starting account checking procedures")
-    results = await run_all_checks()
+    results = await run_slow_checks()
     logger.info("Completed account checking procedures")
     return results
 
