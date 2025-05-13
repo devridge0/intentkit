@@ -1234,7 +1234,7 @@ class AgentUpdate(BaseModel):
             if not db_agent:
                 raise HTTPException(status_code=404, detail="Agent not found")
             # check owner
-            if self.owner and db_agent.owner != self.owner:
+            if db_agent.owner and db_agent.owner != self.owner:
                 raise HTTPException(
                     status_code=403,
                     detail="You do not have permission to update this agent",
