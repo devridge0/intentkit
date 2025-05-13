@@ -6,8 +6,8 @@ from typing import TypedDict
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.tavily.base import TavilyBaseTool
-from skills.tavily.tavily_search import TavilySearch
 from skills.tavily.tavily_extract import TavilyExtract
+from skills.tavily.tavily_search import TavilySearch
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, TavilyBaseTool] = {}

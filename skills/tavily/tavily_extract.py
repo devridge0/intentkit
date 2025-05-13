@@ -1,5 +1,5 @@
 import logging
-from typing import Type, List
+from typing import Type
 
 import httpx
 from langchain_core.runnables import RunnableConfig
@@ -65,7 +65,9 @@ class TavilyExtract(TavilyBaseTool):
             str: Formatted extraction results with content from the URL.
         """
         context = self.context_from_config(config)
-        logger.debug(f"tavily_extract.py: Running web extraction with context {context}")
+        logger.debug(
+            f"tavily_extract.py: Running web extraction with context {context}"
+        )
 
         if context.config.get("api_key_provider") == "agent_owner":
             if context.config.get("rate_limit_number") and context.config.get(
@@ -85,7 +87,9 @@ class TavilyExtract(TavilyBaseTool):
         # Validate extract_depth
         if extract_depth not in ["basic", "advanced"]:
             extract_depth = "basic"
-            logger.warning(f"tavily_extract.py: Invalid extract_depth provided. Using default 'basic'.")
+            logger.warning(
+                "tavily_extract.py: Invalid extract_depth provided. Using default 'basic'."
+            )
 
         # Call Tavily extract API
         try:
@@ -118,14 +122,14 @@ class TavilyExtract(TavilyBaseTool):
                 for i, result in enumerate(results, 1):
                     url = result.get("url", "No URL")
                     raw_content = result.get("raw_content", "No content available")
-                    
+
                     # Truncate the content if it's too long (over 2000 characters)
                     if len(raw_content) > 2000:
                         raw_content = raw_content[:2000] + "...[content truncated]"
-                    
+
                     formatted_results += f"{i}. Content from {url}:\n\n"
                     formatted_results += f"{raw_content}\n\n"
-                    
+
                     # Add images if available and requested
                     if include_images and "images" in result and result["images"]:
                         formatted_results += "Images:\n"
@@ -136,5 +140,8 @@ class TavilyExtract(TavilyBaseTool):
                 return formatted_results.strip()
 
         except Exception as e:
-            logger.error(f"tavily_extract.py: Error extracting web page content: {e}", exc_info=True)
-            return "An error occurred while extracting web page content. Please try again later." 
+            logger.error(
+                f"tavily_extract.py: Error extracting web page content: {e}",
+                exc_info=True,
+            )
+            return "An error occurred while extracting web page content. Please try again later."
