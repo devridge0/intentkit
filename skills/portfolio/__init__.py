@@ -1,7 +1,7 @@
 """Portfolio skills for blockchain wallet analysis."""
 
 import logging
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
@@ -42,8 +42,8 @@ class Config(SkillConfig):
     """Configuration for Portfolio blockchain analysis skills."""
 
     states: SkillStates
-    api_key: Optional[str] = None
-    api_key_provider: str = "platform"
+    api_key: str
+    api_key_provider: str
 
 
 async def get_skills(
