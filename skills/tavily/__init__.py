@@ -7,6 +7,7 @@ from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.tavily.base import TavilyBaseTool
 from skills.tavily.tavily_search import TavilySearch
+from skills.tavily.tavily_extract import TavilyExtract
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, TavilyBaseTool] = {}
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class SkillStates(TypedDict):
     tavily_search: SkillState
+    tavily_extract: SkillState
 
 
 class Config(SkillConfig):
@@ -78,6 +80,12 @@ def get_tavily_skill(
                 skill_store=store,
             )
         return _cache[name]
+    elif name == "tavily_extract":
+        if name not in _cache:
+            _cache[name] = TavilyExtract(
+                skill_store=store,
+            )
+        return _cache[name]
     else:
-        logger.warning(f"Unknown Tavily search skill: {name}")
+        logger.warning(f"Unknown Tavily skill: {name}")
         return None
