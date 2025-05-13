@@ -80,8 +80,8 @@ def create_checker():
     scheduler.add_job(
         run_quick_account_checks,
         trigger=CronTrigger(
-            hour="*/2", minute="10", timezone="UTC"
-        ),  # Run every 2 hours at :10
+            hour="*/2", minute="30", timezone="UTC"
+        ),  # Run every 2 hours
         id="quick_account_checks",
         name="Quick Account Consistency Checks",
         replace_existing=True,
@@ -91,8 +91,8 @@ def create_checker():
     scheduler.add_job(
         run_slow_account_checks,
         trigger=CronTrigger(
-            hour="0,12", minute="0", timezone="UTC"
-        ),  # Run at midnight UTC
+            hour="1,13", minute="0", timezone="UTC"
+        ),  # Run 2 times a day
         id="slow_account_checks",
         name="Slow Account Consistency Checks",
         replace_existing=True,
