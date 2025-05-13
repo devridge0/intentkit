@@ -556,6 +556,9 @@ async def override_agent(
     if subject:
         agent.owner = subject
 
+    if not agent.owner:
+        raise HTTPException(status_code=500, detail="Owner is required")
+
     # Update agent
     latest_agent = await agent.override(agent_id)
 
