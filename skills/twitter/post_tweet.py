@@ -49,20 +49,7 @@ class TwitterPostTweet(TwitterBaseTool):
         image: Optional[str] = None,
         config: RunnableConfig = None,
         **kwargs,
-    ) -> str:
-        """Async implementation of the tool to post a tweet.
-
-        Args:
-            text (str): The text content of the tweet to post.
-            image (Optional[str]): Optional URL of an image to attach to the tweet.
-            config (RunnableConfig): The configuration for the runnable, containing agent context.
-
-        Returns:
-            str: The ID of the posted tweet.
-
-        Raises:
-            Exception: If there's an error posting to the Twitter API.
-        """
+    ):
         try:
             context = self.context_from_config(config)
             twitter = get_twitter_client(
@@ -82,10 +69,6 @@ class TwitterPostTweet(TwitterBaseTool):
 
             # Handle image upload if provided
             if image:
-                if twitter.use_key:
-                    raise ToolException(
-                        "Image upload is not supported when using API key authentication"
-                    )
                 # Use the TwitterClient method to upload the image
                 media_ids = await twitter.upload_media(context.agent.id, image)
 

@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Optional, Tuple
 
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
-from sqlalchemy import desc, select, update
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.agent import Agent
@@ -15,9 +15,11 @@ from models.credit import (
     DEFAULT_PLATFORM_ACCOUNT_ADJUSTMENT,
     DEFAULT_PLATFORM_ACCOUNT_DEV,
     DEFAULT_PLATFORM_ACCOUNT_FEE,
+    DEFAULT_PLATFORM_ACCOUNT_MESSAGE,
     DEFAULT_PLATFORM_ACCOUNT_RECHARGE,
     DEFAULT_PLATFORM_ACCOUNT_REFILL,
     DEFAULT_PLATFORM_ACCOUNT_REWARD,
+    DEFAULT_PLATFORM_ACCOUNT_SKILL,
     CreditAccount,
     CreditAccountTable,
     CreditDebit,
@@ -389,62 +391,9 @@ async def update_daily_quota(
     Returns:
         Updated user credit account
     """
-    # Log the upstream_tx_id for record keeping
-    logger.info(
-        f"Updating quota settings for user {user_id} with upstream_tx_id: {upstream_tx_id}"
+    return await CreditAccount.update_daily_quota(
+        session, user_id, free_quota, refill_amount, upstream_tx_id, note
     )
-
-    # Check that at least one parameter is provided
-    if free_quota is None and refill_amount is None:
-        raise ValueError("At least one of free_quota or refill_amount must be provided")
-
-    # Get current account to check existing values and validate
-    user_account = await CreditAccount.get_or_create_in_session(
-        session, OwnerType.USER, user_id, for_update=True
-    )
-
-    # Use existing values if not provided
-    if free_quota is None:
-        free_quota = user_account.free_quota
-    elif free_quota <= Decimal("0"):
-        raise ValueError("Daily quota must be positive")
-
-    if refill_amount is None:
-        refill_amount = user_account.refill_amount
-    elif refill_amount < Decimal("0"):
-        raise ValueError("Refill amount cannot be negative")
-
-    # Ensure refill_amount doesn't exceed free_quota
-    if refill_amount > free_quota:
-        raise ValueError("Refill amount cannot exceed daily quota")
-
-    if not note:
-        raise ValueError("Quota update requires a note explaining the reason")
-
-    # Already got the user account above, no need to get it again
-
-    # Update the free_quota field
-    stmt = (
-        update(CreditAccountTable)
-        .where(
-            CreditAccountTable.owner_type == OwnerType.USER,
-            CreditAccountTable.owner_id == user_id,
-        )
-        .values(free_quota=free_quota, refill_amount=refill_amount)
-        .returning(CreditAccountTable)
-    )
-    result = await session.scalar(stmt)
-    if not result:
-        raise ValueError("Failed to update user account")
-
-    user_account = CreditAccount.model_validate(result)
-
-    # No credit event needed for updating account settings
-
-    # Commit all changes
-    await session.commit()
-
-    return user_account
 
 
 async def list_credit_events_by_user(
@@ -740,22 +689,32 @@ async def expense_message(
         session, UpstreamType.EXECUTOR, message_id
     )
 
+    # Define the precision for all decimal calculations (4 decimal places)
+    FOURPLACES = Decimal("0.0001")
+
+    # Ensure base_llm_amount has 4 decimal places
+    base_llm_amount = base_llm_amount.quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+
     if base_llm_amount < Decimal("0"):
         raise ValueError("Base LLM amount must be non-negative")
 
     # Get payment settings
     payment_settings = await AppSetting.payment()
 
-    # Calculate amount
+    # Calculate amount with exact 4 decimal places
     base_original_amount = base_llm_amount
     base_amount = base_original_amount
     fee_platform_amount = (
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
-    )
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     fee_agent_amount = Decimal("0")
     if agent.fee_percentage and user_id != agent.owner:
-        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
-    total_amount = base_amount + fee_platform_amount + fee_agent_amount
+        fee_agent_amount = (
+            (base_amount + fee_platform_amount) * agent.fee_percentage / Decimal("100")
+        ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+    total_amount = (base_amount + fee_platform_amount + fee_agent_amount).quantize(
+        FOURPLACES, rounding=ROUND_HALF_UP
+    )
 
     # 1. Update user account - deduct credits
     user_account, credit_type = await CreditAccount.expense_in_session(
@@ -765,8 +724,23 @@ async def expense_message(
         amount=total_amount,
     )
 
+    # If using free credits, add to agent's free_income_daily
+    if credit_type == CreditType.FREE:
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=total_amount
+        )
+
     # 2. Update fee account - add credits
-    platform_account = await CreditAccount.income_in_session(
+    message_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_MESSAGE,
+        credit_type=credit_type,
+        amount=base_amount,
+    )
+    platform_fee_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
@@ -823,10 +797,22 @@ async def expense_message(
     )
     session.add(user_tx)
 
-    # 4.2 Platform fee account transaction (credit)
+    # 4.2 Message account transaction (credit)
+    message_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=message_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_BASE_LLM,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=base_amount,
+        credit_type=credit_type,
+    )
+    session.add(message_tx)
+
+    # 4.3 Platform fee account transaction (credit)
     platform_tx = CreditTransactionTable(
         id=str(XID()),
-        account_id=platform_account.id,
+        account_id=platform_fee_account.id,
         event_id=event_id,
         tx_type=TransactionType.RECEIVE_FEE_PLATFORM,
         credit_debit=CreditDebit.CREDIT,
@@ -835,7 +821,7 @@ async def expense_message(
     )
     session.add(platform_tx)
 
-    # 4.3 Agent fee account transaction (credit)
+    # 4.4 Agent fee account transaction (credit)
     if fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),
@@ -882,6 +868,9 @@ async def skill_cost(
     Returns:
         SkillCost: Object containing all cost components
     """
+    # Define the precision for all decimal calculations (4 decimal places)
+    FOURPLACES = Decimal("0.0001")
+
     skill = await Skill.get(skill_name)
     if not skill:
         raise ValueError(f"The price of {skill_name} not set yet")
@@ -890,9 +879,11 @@ async def skill_cost(
         agent_skill_config
         and agent_skill_config.get("api_key_provider") == "agent_owner"
     ):
-        base_skill_amount = skill.price_self_key
+        base_skill_amount = skill.price_self_key.quantize(
+            FOURPLACES, rounding=ROUND_HALF_UP
+        )
     else:
-        base_skill_amount = skill.price
+        base_skill_amount = skill.price.quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     # Get payment settings
     payment_settings = await AppSetting.payment()
 
@@ -909,17 +900,25 @@ async def skill_cost(
     if base_skill_amount < Decimal("0"):
         raise ValueError("Base skill amount must be non-negative")
 
-    # Calculate amount
+    # Calculate amount with exact 4 decimal places
     base_original_amount = base_skill_amount
     base_amount = base_original_amount
     fee_platform_amount = (
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+    fee_dev_amount = (base_amount * fee_dev_percentage / Decimal("100")).quantize(
+        FOURPLACES, rounding=ROUND_HALF_UP
     )
     fee_agent_amount = Decimal("0")
     if agent.fee_percentage and user_id != agent.owner:
-        fee_agent_amount = base_amount * agent.fee_percentage / Decimal("100")
-    fee_dev_amount = base_amount * fee_dev_percentage / Decimal("100")
-    total_amount = base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
+        fee_agent_amount = (
+            (base_amount + fee_platform_amount + fee_dev_amount)
+            * agent.fee_percentage
+            / Decimal("100")
+        ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
+    total_amount = (
+        base_amount + fee_platform_amount + fee_dev_amount + fee_agent_amount
+    ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
 
     # Return the SkillCost object with all calculated values
     return SkillCost(
@@ -978,7 +977,22 @@ async def expense_skill(
         amount=skill_cost_info.total_amount,
     )
 
+    # If using free credits, add to agent's free_income_daily
+    if credit_type == CreditType.FREE:
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=skill_cost_info.total_amount
+        )
+
     # 2. Update fee account - add credits
+    skill_account = await CreditAccount.income_in_session(
+        session=session,
+        owner_type=OwnerType.PLATFORM,
+        owner_id=DEFAULT_PLATFORM_ACCOUNT_SKILL,
+        credit_type=credit_type,
+        amount=skill_cost_info.base_amount,
+    )
     platform_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
@@ -991,7 +1005,7 @@ async def expense_skill(
             session=session,
             owner_type=skill_cost_info.fee_dev_user_type,
             owner_id=skill_cost_info.fee_dev_user,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,  # put dev fee in reward
             amount=skill_cost_info.fee_dev_amount,
         )
     if skill_cost_info.fee_agent_amount > 0:
@@ -1048,7 +1062,19 @@ async def expense_skill(
     )
     session.add(user_tx)
 
-    # 4.2 Platform fee account transaction (credit)
+    # 4.2 Skill account transaction (credit)
+    skill_tx = CreditTransactionTable(
+        id=str(XID()),
+        account_id=skill_account.id,
+        event_id=event_id,
+        tx_type=TransactionType.RECEIVE_BASE_SKILL,
+        credit_debit=CreditDebit.CREDIT,
+        change_amount=skill_cost_info.base_amount,
+        credit_type=credit_type,
+    )
+    session.add(skill_tx)
+
+    # 4.3 Platform fee account transaction (credit)
     platform_tx = CreditTransactionTable(
         id=str(XID()),
         account_id=platform_account.id,
@@ -1060,7 +1086,7 @@ async def expense_skill(
     )
     session.add(platform_tx)
 
-    # 4.3 Dev user transaction (credit)
+    # 4.4 Dev user transaction (credit)
     if skill_cost_info.fee_dev_amount > 0:
         dev_tx = CreditTransactionTable(
             id=str(XID()),
@@ -1069,11 +1095,11 @@ async def expense_skill(
             tx_type=TransactionType.RECEIVE_FEE_DEV,
             credit_debit=CreditDebit.CREDIT,
             change_amount=skill_cost_info.fee_dev_amount,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,
         )
         session.add(dev_tx)
 
-    # 4.4 Agent fee account transaction (credit)
+    # 4.5 Agent fee account transaction (credit)
     if skill_cost_info.fee_agent_amount > 0:
         agent_tx = CreditTransactionTable(
             id=str(XID()),

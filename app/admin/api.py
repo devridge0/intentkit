@@ -1,8 +1,7 @@
-import asyncio
 import importlib
 import json
 import logging
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramConflictError, TelegramUnauthorizedError
@@ -101,20 +100,8 @@ async def _process_agent_post_actions(
         if agent_data and agent_data.cdp_wallet_data:
             has_wallet = True
             wallet_data = json.loads(agent_data.cdp_wallet_data)
-        # Check if twitter need unlink, it will change agent data, so must update agent data
-        if agent.twitter_entrypoint_enabled:
-            pass
-        elif (
-            agent.skills
-            and agent.skills.get("twitter")
-            and agent.skills["twitter"].get("enabled")
-        ):
-            pass
-        else:
-            if agent_data and agent_data.twitter_username:
-                agent_data = await unlink_twitter(agent.id)
         # Run clean_agent_memory in background
-        asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
+        # asyncio.create_task(clean_agent_memory(agent.id, clean_agent=True))
 
     if (
         not has_wallet
@@ -153,7 +140,7 @@ async def _process_agent_post_actions(
 
 
 async def _process_telegram_config(
-    agent: AgentUpdate, agent_data: AgentData
+    agent: AgentUpdate, existing_agent: Optional[Agent], agent_data: AgentData
 ) -> AgentData:
     """Process telegram configuration for an agent.
 
@@ -174,6 +161,9 @@ async def _process_telegram_config(
         return agent_data
 
     tg_bot_token = changes.get("telegram_config").get("token")
+
+    if existing_agent and existing_agent.telegram_config.get("token") == tg_bot_token:
+        return agent_data
 
     try:
         bot = Bot(token=tg_bot_token)
@@ -447,11 +437,6 @@ async def create_agent(
 ) -> Response:
     """Create a new agent.
 
-    This endpoint:
-    1. Validates agent ID format
-    2. Creates a new agent configuration (returns 400 error if agent ID already exists)
-    3. Masks sensitive data in response
-
     **Request Body:**
     * `agent` - Agent configuration
 
@@ -482,7 +467,7 @@ async def create_agent(
     latest_agent = await agent.create()
     # Process common post-creation actions
     agent_data = await _process_agent_post_actions(latest_agent, True, "Agent Created")
-    agent_data = await _process_telegram_config(input, agent_data)
+    agent_data = await _process_telegram_config(input, None, agent_data)
     agent_response = AgentResponse.from_agent(latest_agent, agent_data)
 
     # Return Response with ETag header
@@ -504,11 +489,7 @@ async def update_agent(
 ) -> Response:
     """Update an existing agent.
 
-    This endpoint:
-    1. Validates agent ID format
-    2. Updates the agent configuration if it exists
-    3. Reinitializes agent if already in cache
-    4. Masks sensitive data in response
+    Use input to update agent configuration. If some fields are not provided, they will not be changed.
 
     **Path Parameters:**
     * `agent_id` - ID of the agent to update
@@ -529,13 +510,75 @@ async def update_agent(
     if subject:
         agent.owner = subject
 
+    existing_agent = await Agent.get(agent_id)
+    if not existing_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
     # Update agent
     latest_agent = await agent.update(agent_id)
 
     # Process common post-update actions
     agent_data = await _process_agent_post_actions(latest_agent, False, "Agent Updated")
 
-    agent_data = await _process_telegram_config(agent, agent_data)
+    agent_data = await _process_telegram_config(agent, existing_agent, agent_data)
+
+    agent_response = AgentResponse.from_agent(latest_agent, agent_data)
+
+    # Return Response with ETag header
+    return Response(
+        content=agent_response.model_dump_json(),
+        media_type="application/json",
+        headers={"ETag": agent_response.etag()},
+    )
+
+
+@admin_router.put(
+    "/agents/{agent_id}", tags=["Agent"], status_code=200, operation_id="override_agent"
+)
+async def override_agent(
+    agent_id: str = Path(..., description="ID of the agent to update"),
+    agent: AgentUpdate = Body(AgentUpdate, description="Agent update configuration"),
+    subject: str = Depends(verify_jwt),
+) -> Response:
+    """Override an existing agent.
+
+    Use input to override agent configuration. If some fields are not provided, they will be reset to default values.
+
+    **Path Parameters:**
+    * `agent_id` - ID of the agent to update
+
+    **Request Body:**
+    * `agent` - Agent update configuration
+
+    **Returns:**
+    * `AgentResponse` - Updated agent configuration with additional processed data
+
+    **Raises:**
+    * `HTTPException`:
+        - 400: Invalid agent ID format
+        - 404: Agent not found
+        - 403: Permission denied (if owner mismatch)
+        - 500: Database error
+    """
+    if subject:
+        agent.owner = subject
+
+    if not agent.owner:
+        raise HTTPException(status_code=500, detail="Owner is required")
+
+    existing_agent = await Agent.get(agent_id)
+    if not existing_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Update agent
+    latest_agent = await agent.override(agent_id)
+
+    # Process common post-update actions
+    agent_data = await _process_agent_post_actions(
+        latest_agent, False, "Agent Overridden"
+    )
+
+    agent_data = await _process_telegram_config(agent, existing_agent, agent_data)
 
     agent_response = AgentResponse.from_agent(latest_agent, agent_data)
 
@@ -866,7 +909,7 @@ async def import_agent(
         latest_agent, False, "Agent Updated via YAML Import"
     )
 
-    await _process_telegram_config(agent, agent_data)
+    await _process_telegram_config(agent, existing_agent, agent_data)
 
     return "Agent import successful"
 
