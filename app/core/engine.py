@@ -468,7 +468,7 @@ async def execute_agent(
     quota = await AgentQuota.get(message.agent_id)
     if quota and quota.free_income_daily > 2:
         raise HTTPException(
-            status_code=429,
+            status_code=400,
             detail="This Agent has reached its free CAP income limit for today! Start using paid CAPs or wait until this limit expires in less than 24 hours.",
         )
 
