@@ -172,31 +172,31 @@ async def check_transaction_balance() -> List[AccountCheckingResult]:
     """Check if all credit events have balanced transactions.
 
     For each credit event, the sum of all credit transactions should equal the sum of all debit transactions.
-    Events are processed in batches to prevent memory overflow issues.
-
-    Args:
-        session: Database session
+    Events are processed in batches to prevent memory overflow issues using ID-based pagination for better performance.
 
     Returns:
         List of checking results
     """
     results = []
     batch_size = 1000  # Process 1000 events at a time
-    offset = 0
     total_processed = 0
+    batch_count = 0
+    last_id = ""  # Starting ID for pagination (empty string comes before all valid IDs)
 
     # Time window for events (last 3 days for performance)
-    three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
+    three_days_ago = datetime.now(timezone.utc) - timedelta(hours=4)
 
     while True:
         # Create a new session for each batch to prevent timeouts
         async with get_session() as session:
-            # Get events in batches using SQL pagination
+            # Get events in batches using ID-based pagination
             query = (
                 select(CreditEventTable)
                 .where(CreditEventTable.created_at >= three_days_ago)
+                .where(
+                    CreditEventTable.id > last_id
+                )  # Key change: ID-based pagination with string comparison
                 .order_by(CreditEventTable.id)
-                .offset(offset)
                 .limit(batch_size)
             )
             events_result = await session.execute(query)
@@ -209,11 +209,14 @@ async def check_transaction_balance() -> List[AccountCheckingResult]:
             if not batch_events:
                 break
 
-            # Update counters
-            batch_count = len(batch_events)
-            total_processed += batch_count
+            # Update counters and last_id for next iteration
+            batch_count += 1
+            current_batch_size = len(batch_events)
+            total_processed += current_batch_size
+            last_id = batch_events[-1].id  # Update last_id for next batch
+
             logger.info(
-                f"Processing transaction balance batch: {offset // batch_size + 1}, events: {batch_count}"
+                f"Processing transaction balance batch: {batch_count}, events: {current_batch_size}"
             )
 
             # Process each event in the batch
@@ -258,7 +261,7 @@ async def check_transaction_balance() -> List[AccountCheckingResult]:
                         "created_at": event.created_at.isoformat()
                         if event.created_at
                         else None,
-                        "batch": offset // batch_size + 1,
+                        "batch": batch_count,
                     },
                 )
                 results.append(result)
@@ -269,11 +272,8 @@ async def check_transaction_balance() -> List[AccountCheckingResult]:
                         f"Credit: {credit_sum}, Debit: {debit_sum}"
                     )
 
-        # Move to the next batch outside of session context
-        offset += batch_size
-
     logger.info(
-        f"Completed transaction balance check: processed {total_processed} events in {offset // batch_size} batches"
+        f"Completed transaction balance check: processed {total_processed} events in {batch_count} batches"
     )
 
     return results

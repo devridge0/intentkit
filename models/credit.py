@@ -907,7 +907,10 @@ class CreditTransactionTable(Base):
     """
 
     __tablename__ = "credit_transactions"
-    __table_args__ = (Index("ix_credit_transactions_account", "account_id"),)
+    __table_args__ = (
+        Index("ix_credit_transactions_account", "account_id"),
+        Index("ix_credit_transactions_event_id", "event_id"),
+    )
 
     id = Column(
         String,
