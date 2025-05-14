@@ -724,6 +724,14 @@ async def expense_message(
         amount=total_amount,
     )
 
+    # If using free credits, add to agent's free_income_daily
+    if credit_type == CreditType.FREE:
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=total_amount
+        )
+
     # 2. Update fee account - add credits
     message_account = await CreditAccount.income_in_session(
         session=session,
@@ -968,6 +976,14 @@ async def expense_skill(
         owner_id=user_id,
         amount=skill_cost_info.total_amount,
     )
+
+    # If using free credits, add to agent's free_income_daily
+    if credit_type == CreditType.FREE:
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=skill_cost_info.total_amount
+        )
 
     # 2. Update fee account - add credits
     skill_account = await CreditAccount.income_in_session(

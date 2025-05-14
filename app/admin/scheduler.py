@@ -23,7 +23,9 @@ async def reset_daily_quotas():
     """
     async with get_session() as session:
         stmt = update(AgentQuotaTable).values(
-            message_count_daily=0, twitter_count_daily=0
+            message_count_daily=0,
+            twitter_count_daily=0,
+            free_income_daily=0,
         )
         await session.execute(stmt)
         await session.commit()
