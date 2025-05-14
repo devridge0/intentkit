@@ -479,7 +479,7 @@ async def execute_agent(
     # check user balance
     if need_payment:
         quota = await AgentQuota.get(message.agent_id)
-        if quota and quota.free_income_daily > 2:
+        if quota and quota.free_income_daily > 24000:
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
                 agent_id=input.agent_id,
