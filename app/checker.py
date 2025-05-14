@@ -91,7 +91,7 @@ def create_checker():
     scheduler.add_job(
         run_slow_account_checks,
         trigger=CronTrigger(
-            hour="1,13", minute="0", timezone="UTC"
+            hour="0,12", minute="0", timezone="UTC"
         ),  # Run 2 times a day
         id="slow_account_checks",
         name="Slow Account Consistency Checks",
