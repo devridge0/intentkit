@@ -465,12 +465,6 @@ async def execute_agent(
     Returns:
         list[ChatMessage]: Formatted response lines including timing information
     """
-    quota = await AgentQuota.get(message.agent_id)
-    if quota and quota.free_income_daily > 2:
-        raise HTTPException(
-            status_code=400,
-            detail="This Agent has reached its free CAP income limit for today! Start using paid CAPs or wait until this limit expires in less than 24 hours.",
-        )
 
     resp = []
     start = time.perf_counter()
@@ -484,6 +478,23 @@ async def execute_agent(
 
     # check user balance
     if need_payment:
+        quota = await AgentQuota.get(message.agent_id)
+        if quota and quota.free_income_daily > 2:
+            error_message_create = ChatMessageCreate(
+                id=str(XID()),
+                agent_id=input.agent_id,
+                chat_id=input.chat_id,
+                user_id=input.user_id,
+                author_id=input.agent_id,
+                author_type=AuthorType.SYSTEM,
+                thread_type=input.author_type,
+                reply_to=input.id,
+                message="This Agent has reached its free CAP income limit for today! Start using paid CAPs or wait until this limit expires in less than 24 hours.",
+                time_cost=time.perf_counter() - start,
+            )
+            error_message = await error_message_create.save()
+            resp.append(error_message)
+            return resp
         payer = input.user_id
         if (
             input.author_type == AuthorType.TELEGRAM
