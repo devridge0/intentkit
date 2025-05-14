@@ -466,8 +466,11 @@ async def execute_agent(
         list[ChatMessage]: Formatted response lines including timing information
     """
     quota = await AgentQuota.get(message.agent_id)
-    if quota and not quota.has_message_quota():
-        raise HTTPException(status_code=429, detail="Agent Daily Quota exceeded")
+    if quota and quota.free_income_daily > 2:
+        raise HTTPException(
+            status_code=429,
+            detail="This Agent has reached its free CAP income limit for today! Start using paid CAPs or wait until this limit expires in less than 24 hours.",
+        )
 
     resp = []
     start = time.perf_counter()
@@ -506,9 +509,6 @@ async def execute_agent(
             return resp
         # use this in loop
         total_paid = 0
-
-    # once the input saved, reduce message quota
-    await quota.add_message()
 
     is_private = False
     if input.user_id == agent.owner:
