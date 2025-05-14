@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, List, Optional
 
@@ -132,6 +132,7 @@ class AgentStatisticsResponse(BaseModel):
     balance: Decimal = Field(description="Total balance of the agent's account")
     total_income: Decimal = Field(description="Total income from all credit events")
     net_income: Decimal = Field(description="Net income from all credit events")
+    last_24h_income: Decimal = Field(description="Income from last 24 hours")
 
 
 # ===== API Endpoints =====
@@ -144,6 +145,8 @@ class AgentStatisticsResponse(BaseModel):
 )
 async def get_account(owner_type: OwnerType, owner_id: str) -> CreditAccount:
     """Get a credit account by owner type and ID. It will create a new account if it does not exist.
+
+    This endpoint is not in readonly router, because it may create a new account.
 
     Args:
         owner_type: Type of the owner (user, agent, company)
@@ -282,6 +285,8 @@ async def get_agent_statistics(
 ) -> AgentStatisticsResponse:
     """Get statistics for an agent account.
 
+    This endpoint is not in readonly router, because it may create a new account.
+
     Args:
         agent_id: ID of the agent
         db: Database session
@@ -306,14 +311,10 @@ async def get_agent_statistics(
 
     # Calculate total income (sum of total_amount) and net income (sum of fee_agent_amount) at SQL level
     # Query to get the sum of total_amount and fee_agent_amount
-    stmt = (
-        select(
-            func.sum(CreditEventTable.total_amount).label("total_income"),
-            func.sum(CreditEventTable.fee_agent_amount).label("net_income"),
-        )
-        .where(CreditEventTable.fee_agent_account == agent_account.id)
-        .where(CreditEventTable.fee_agent_amount > 0)
-    )
+    stmt = select(
+        func.sum(CreditEventTable.total_amount).label("total_income"),
+        func.sum(CreditEventTable.fee_agent_amount).label("net_income"),
+    ).where(CreditEventTable.agent_id == agent_id)
     result = await db.execute(stmt)
     row = result.first()
 
@@ -321,12 +322,26 @@ async def get_agent_statistics(
     total_income = row.total_income if row.total_income is not None else Decimal("0")
     net_income = row.net_income if row.net_income is not None else Decimal("0")
 
+    # Calculate last 24h income
+    stmt = select(
+        func.sum(CreditEventTable.total_amount).label("last_24h_income"),
+    ).where(
+        CreditEventTable.agent_id == agent_id,
+        CreditEventTable.created_at >= datetime.now() - timedelta(hours=24),
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+    last_24h_income = (
+        row.last_24h_income if row.last_24h_income is not None else Decimal("0")
+    )
+
     return AgentStatisticsResponse(
         agent_id=agent_id,
         account_id=agent_account.id,
         balance=balance,
         total_income=total_income,
         net_income=net_income,
+        last_24h_income=last_24h_income,
     )
 
 
