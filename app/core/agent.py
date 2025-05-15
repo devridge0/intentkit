@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from abstracts.agent import AgentStoreABC
 from models.agent import Agent, AgentData, AgentQuota
@@ -109,27 +109,49 @@ async def agent_avg_action_cost(agent_id: str) -> Decimal:
             )
             return Decimal("1.0")
 
-        # If we have enough records, calculate the average directly in the database
-        avg_query = select(
-            func.avg(
-                select(func.sum(CreditEventTable.total_amount))
-                .where(
-                    CreditEventTable.agent_id == agent_id,
-                    CreditEventTable.created_at >= three_days_ago,
-                    CreditEventTable.upstream_type == UpstreamType.EXECUTOR,
-                    CreditEventTable.event_type.in_(
-                        [EventType.MESSAGE, EventType.SKILL_CALL]
-                    ),
-                    CreditEventTable.start_message_id.is_not(None),
-                )
-                .group_by(CreditEventTable.start_message_id)
+        # Calculate the average directly in PostgreSQL using a CTE (Common Table Expression)
+        # This avoids loading all data into memory
+        avg_query = text("""
+            WITH action_sums AS (
+                SELECT start_message_id, SUM(total_amount) AS action_cost
+                FROM credit_events
+                WHERE agent_id = :agent_id
+                  AND created_at >= :three_days_ago
+                  AND upstream_type = :upstream_type
+                  AND event_type IN (:event_type_message, :event_type_skill_call)
+                  AND start_message_id IS NOT NULL
+                GROUP BY start_message_id
             )
+            SELECT AVG(action_cost) AS avg_cost
+            FROM action_sums
+        """)
+
+        # Bind parameters to prevent SQL injection and ensure correct types
+        result = await session.execute(
+            avg_query,
+            {
+                "agent_id": agent_id,
+                "three_days_ago": three_days_ago,
+                "upstream_type": UpstreamType.EXECUTOR,
+                "event_type_message": EventType.MESSAGE,
+                "event_type_skill_call": EventType.SKILL_CALL,
+            },
         )
 
-        result = await session.execute(avg_query)
-        avg_cost = result.scalar_one()
+        # Get the result
+        row = result.fetchone()
+        avg_cost = row[0] if row and row[0] is not None else None
 
-        final_cost = Decimal(str(avg_cost)) if avg_cost is not None else Decimal("1.0")
+        # If no results, return the default value
+        if avg_cost is None:
+            time_cost = time.time() - start_time
+            logger.info(
+                f"agent_avg_action_cost for {agent_id}: result=1.0 (no action costs found) timeCost={time_cost:.3f}s"
+            )
+            return Decimal("1.0")
+
+        # Convert to Decimal for consistent precision
+        final_cost = Decimal(str(avg_cost)).quantize(Decimal("0.0001"))
         time_cost = time.time() - start_time
         logger.info(
             f"agent_avg_action_cost for {agent_id}: result={final_cost} (records: {record_count}) timeCost={time_cost:.3f}s"
