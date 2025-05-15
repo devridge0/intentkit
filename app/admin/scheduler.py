@@ -169,7 +169,7 @@ def create_scheduler():
     # Update agent average action costs hourly
     scheduler.add_job(
         update_agent_avg_action_costs,
-        trigger=CronTrigger(minute=10, timezone="UTC"),
+        trigger=CronTrigger(minute=40, timezone="UTC"),
         id="update_agent_avg_action_costs",
         name="Update agent average action costs",
         replace_existing=True,

@@ -837,13 +837,16 @@ class CreditEvent(BaseModel):
         Optional[Decimal], Field(default=Decimal("0"), description="Agent fee amount")
     ]
     free_amount: Annotated[
-        Optional[Decimal], Field(default=Decimal("0"), description="Free credit amount involved")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Free credit amount involved"),
     ]
     reward_amount: Annotated[
-        Optional[Decimal], Field(default=Decimal("0"), description="Reward credit amount involved")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Reward credit amount involved"),
     ]
     permanent_amount: Annotated[
-        Optional[Decimal], Field(default=Decimal("0"), description="Permanent credit amount involved")
+        Optional[Decimal],
+        Field(default=Decimal("0"), description="Permanent credit amount involved"),
     ]
     note: Annotated[Optional[str], Field(None, description="Additional notes")]
     created_at: Annotated[
