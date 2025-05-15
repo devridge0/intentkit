@@ -2268,6 +2268,7 @@ class AgentQuotaTable(Base):
     twitter_limit_daily = Column(BigInteger, default=99999999)
     last_twitter_time = Column(DateTime(timezone=True), default=None, nullable=True)
     free_income_daily = Column(Numeric(22, 4), default=0)
+    avg_action_cost = Column(Numeric(22, 4), default=0)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -2373,6 +2374,10 @@ class AgentQuota(BaseModel):
     free_income_daily: Annotated[
         Decimal,
         PydanticField(default=0, description="Daily free income amount"),
+    ]
+    avg_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Average cost per action"),
     ]
     created_at: Annotated[
         datetime,
