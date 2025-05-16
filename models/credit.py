@@ -2,12 +2,13 @@ import logging
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
-from typing import Annotated, Any, Optional, Tuple
+from typing import Annotated, Any, List, Optional, Tuple
 
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import (
+    ARRAY,
     Column,
     DateTime,
     Index,
@@ -665,6 +666,10 @@ class CreditEventTable(Base):
         String,
         nullable=False,
     )
+    credit_types = Column(
+        ARRAY(String),
+        nullable=True,
+    )
     balance_after = Column(
         Numeric(22, 4),
         nullable=True,
@@ -795,6 +800,10 @@ class CreditEvent(BaseModel):
         ),
     ]
     credit_type: Annotated[CreditType, Field(description="Type of credits involved")]
+    credit_types: Annotated[
+        Optional[List[CreditType]],
+        Field(default=None, description="Array of credit types involved"),
+    ]
     balance_after: Annotated[
         Optional[Decimal],
         Field(None, description="Account total balance after the transaction"),
