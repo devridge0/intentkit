@@ -1,5 +1,5 @@
 import logging
-from typing import Type
+from typing import List, Optional, Type
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -22,6 +22,10 @@ class TwitterGetUserTweetsInput(BaseModel):
     """Input for TwitterGetUserTweets tool."""
 
     user_id: str = Field(description="The Twitter user ID to fetch tweets from")
+    exclude: Optional[List[str]] = Field(
+        default=["replies", "retweets"],
+        description="Types of tweets to exclude (e.g., 'replies', 'retweets')",
+    )
 
 
 class TwitterGetUserTweets(TwitterBaseTool):
@@ -49,6 +53,9 @@ class TwitterGetUserTweets(TwitterBaseTool):
             # Hardcode max_results to 10
             max_results = 10
 
+            # Get exclude parameter with default
+            exclude = kwargs.get("exclude", ["replies", "retweets"])
+
             context = self.context_from_config(config)
             twitter = get_twitter_client(
                 agent_id=context.agent.id,
@@ -75,6 +82,7 @@ class TwitterGetUserTweets(TwitterBaseTool):
                 id=user_id,
                 max_results=max_results,
                 since_id=since_id,
+                exclude=exclude,
                 expansions=[
                     "referenced_tweets.id",
                     "referenced_tweets.id.attachments.media_keys",
