@@ -41,29 +41,27 @@ async def check_account_balance_consistency() -> List[AccountCheckingResult]:
     for that account, properly accounting for credits and debits.
 
     To ensure consistency during system operation, this function processes accounts in batches
-    and uses the maximum updated_at timestamp from each batch to limit transaction queries,
-    ensuring that only transactions created before or at the same time as the account snapshot
-    are considered.
-
-    Args:
-        session: Database session
+    using ID-based pagination and uses the maximum updated_at timestamp from each batch to limit
+    transaction queries, ensuring that only transactions created before or at the same time as
+    the account snapshot are considered.
 
     Returns:
         List of checking results
     """
     results = []
-    batch_size = 1000  # Process 100 accounts at a time
-    offset = 0
+    batch_size = 1000  # Process 1000 accounts at a time
     total_processed = 0
+    batch_count = 0
+    last_id = ""  # Starting ID for pagination (empty string comes before all valid IDs)
 
     while True:
         # Create a new session for each batch to prevent timeouts
         async with get_session() as session:
-            # Get accounts in batches using SQL pagination
+            # Get accounts in batches using ID-based pagination
             query = (
                 select(CreditAccountTable)
+                .where(CreditAccountTable.id > last_id)  # ID-based pagination
                 .order_by(CreditAccountTable.id)
-                .offset(offset)
                 .limit(batch_size)
             )
             accounts_result = await session.execute(query)
@@ -76,11 +74,14 @@ async def check_account_balance_consistency() -> List[AccountCheckingResult]:
             if not batch_accounts:
                 break
 
-            # Update counters
-            batch_count = len(batch_accounts)
-            total_processed += batch_count
+            # Update counters and last_id for next iteration
+            batch_count += 1
+            current_batch_size = len(batch_accounts)
+            total_processed += current_batch_size
+            last_id = batch_accounts[-1].id  # Update last_id for next batch
+
             logger.info(
-                f"Processing account balance batch: {offset // batch_size + 1}, accounts: {batch_count}"
+                f"Processing account balance batch: {batch_count}, accounts: {current_batch_size}"
             )
 
             # Find the maximum updated_at timestamp for this batch of accounts
@@ -92,7 +93,6 @@ async def check_account_balance_consistency() -> List[AccountCheckingResult]:
             )
 
             if not batch_max_updated_at:
-                offset += batch_size
                 continue
 
             # Process each account in the batch
@@ -147,7 +147,7 @@ async def check_account_balance_consistency() -> List[AccountCheckingResult]:
                         "max_updated_at": batch_max_updated_at.isoformat()
                         if batch_max_updated_at
                         else None,
-                        "batch": offset // batch_size + 1,
+                        "batch": batch_count,
                     },
                 )
                 results.append(result)
@@ -158,11 +158,8 @@ async def check_account_balance_consistency() -> List[AccountCheckingResult]:
                         f"Current total: {total_balance}, Expected: {expected_balance}"
                     )
 
-        # Move to the next batch outside of session context
-        offset += batch_size
-
     logger.info(
-        f"Completed account balance consistency check: processed {total_processed} accounts in {offset // batch_size} batches"
+        f"Completed account balance consistency check: processed {total_processed} accounts in {batch_count} batches"
     )
 
     return results
