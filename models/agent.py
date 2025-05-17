@@ -1897,10 +1897,10 @@ class AgentDataTable(Base):
         comment="Twitter self-key userinfo last refresh time",
     )
     twitter_is_verified = Column(
-        Boolean, 
-        nullable=False, 
+        Boolean,
+        nullable=False,
         default=False,
-        comment="Whether the Twitter account is verified"
+        comment="Whether the Twitter account is verified",
     )
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
