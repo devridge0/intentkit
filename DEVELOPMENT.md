@@ -48,8 +48,6 @@ curl "http://127.0.0.1:8000/example/chat?q=Hello"
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
 ### Local Development
-0. It's recommended to use Python [3.12](https://www.python.org/downloads/).
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/crestalnetwork/intentkit.git
@@ -58,12 +56,10 @@ cd intentkit
 
 2. Set up your environment:
 
-If you haven't installed [poetry](https://python-poetry.org/), please [install](https://python-poetry.org/docs/#installation) it first.
-We recommend manually creating a venv; otherwise, the venv created automatically by Poetry may not meet your needs.
+If you haven't installed [uv](https://docs.astral.sh/uv/), please [install](https://docs.astral.sh/uv/getting-started/installation/) it first.
+You don't need to worry about your Python version and venv; uv will automatically handle everything for you.
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-poetry install --with dev
+uv sync
 ```
 
 3. Configure your environment:
