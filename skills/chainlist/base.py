@@ -18,4 +18,4 @@ class ChainlistBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "chainlist" 
+        return "chainlist"
