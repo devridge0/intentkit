@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select, update
 
 from app.config.config import config
-from app.core.agent import agent_avg_action_cost
+from app.core.agent import agent_action_cost
 from app.core.credit import refill_all_free_credits
 from app.services.twitter.oauth2_refresh import refresh_expiring_tokens
 from models.agent import AgentQuotaTable, AgentTable
@@ -45,13 +45,20 @@ async def reset_monthly_quotas():
         await session.commit()
 
 
-async def update_agent_avg_action_costs():
+async def update_agent_action_cost():
     """
-    Update average action costs for all agents.
+    Update action costs for all agents.
 
     This function processes agents in batches of 100 to avoid memory issues.
-    For each agent, it calculates the average action cost using the agent_avg_action_cost function
-    and updates the corresponding record in the agent_quotas table.
+    For each agent, it calculates various action cost metrics:
+    - avg_action_cost: average cost per action
+    - min_action_cost: minimum cost per action
+    - max_action_cost: maximum cost per action
+    - low_action_cost: average cost of the lowest 20% of actions
+    - medium_action_cost: average cost of the middle 60% of actions
+    - high_action_cost: average cost of the highest 20% of actions
+
+    It then updates the corresponding record in the agent_quotas table.
     """
     logger.info("Starting update of agent average action costs")
     start_time = time.time()
@@ -87,15 +94,22 @@ async def update_agent_avg_action_costs():
 
         for agent_id in agent_ids:
             try:
-                # Calculate average action cost for this agent
-                avg_cost = await agent_avg_action_cost(agent_id)
+                # Calculate action costs for this agent
+                costs = await agent_action_cost(agent_id)
 
                 # Update the agent's quota record
                 async with get_session() as session:
                     update_stmt = (
                         update(AgentQuotaTable)
                         .where(AgentQuotaTable.id == agent_id)
-                        .values(avg_action_cost=avg_cost)
+                        .values(
+                            avg_action_cost=costs["avg_action_cost"],
+                            min_action_cost=costs["min_action_cost"],
+                            max_action_cost=costs["max_action_cost"],
+                            low_action_cost=costs["low_action_cost"],
+                            medium_action_cost=costs["medium_action_cost"],
+                            high_action_cost=costs["high_action_cost"],
+                        )
                     )
                     await session.execute(update_stmt)
                     await session.commit()
@@ -103,7 +117,7 @@ async def update_agent_avg_action_costs():
                 total_updated += 1
             except Exception as e:
                 logger.error(
-                    f"Error updating avg_action_cost for agent {agent_id}: {str(e)}"
+                    f"Error updating action costs for agent {agent_id}: {str(e)}"
                 )
 
         batch_time = time.time() - batch_start_time
@@ -111,7 +125,7 @@ async def update_agent_avg_action_costs():
 
     total_time = time.time() - start_time
     logger.info(
-        f"Finished updating average action costs for {total_updated} agents in {total_time:.3f}s"
+        f"Finished updating action costs for {total_updated} agents in {total_time:.3f}s"
     )
 
 
@@ -166,12 +180,12 @@ def create_scheduler():
         replace_existing=True,
     )
 
-    # Update agent average action costs hourly
+    # Update agent action costs hourly
     scheduler.add_job(
-        update_agent_avg_action_costs,
+        update_agent_action_cost,
         trigger=CronTrigger(minute=40, timezone="UTC"),
-        id="update_agent_avg_action_costs",
-        name="Update agent average action costs",
+        id="update_agent_action_cost",
+        name="Update agent action costs",
         replace_existing=True,
     )
 
