@@ -34,18 +34,26 @@ mv example.env .env
 ```bash
 docker compose up
 ```
+This will block current terminal to show logs, you can press Ctrl+C to stop it.
+When you want to run other command, you can open another terminal.
 
-5. To create your first agent:
+5. Try it out:
 ```bash
-cd scripts
-sh create.sh example
-```
-
-6. Try it out:
-```bash
-curl "http://127.0.0.1:8000/example/chat?q=Hello"
+curl "http://127.0.0.1:8000/debug/example/chat?q=Hello"
 ```
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
+
+6. Manage your agent:
+When intentkit first starts, it will create an example agent for you. You can manage your agent by using the scripts in the `scripts` directory.
+```bash
+cd scripts
+# Export agent
+sh export.sh example
+# Import agent
+sh import.sh example
+# Create another agent
+sh create.sh my_agent
+```
 
 ### Local Development
 1. Clone the repository:
@@ -80,18 +88,23 @@ uvicorn app.api:app --reload
 # python -m app.autonomous
 ```
 
-5. To create your first agent:
-```bash
-cd scripts
-sh create.sh example
-```
-
-6. Try it out:
+5. Try it out:
 ```bash
 curl "http://127.0.0.1:8000/debug/example/chat?q=Hello"
 ```
 In terminal, curl cannot auto escape special characters, so you can use browser to test. Just copy the URL to your browser, replace "Hello" with your words.
 
+6. Manage your agent:
+When intentkit first starts, it will create an example agent for you. You can manage your agent by using the scripts in the `scripts` directory.
+```bash
+cd scripts
+# Export agent
+sh export.sh example
+# Import agent
+sh import.sh example
+# Create another agent
+sh create.sh my_agent
+```
 
 ## What's Next
 
