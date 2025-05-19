@@ -455,6 +455,10 @@
           "title": "Token Operations",
           "$ref": "../skills/token/schema.json"
         },
+        "chainlist": {
+          "title": "Chainlist RPC Endpoints",
+          "$ref": "../skills/chainlist/schema.json"
+        },
         "cookiefun": {
           "title": "cookie.fun",
           "$ref": "../skills/cookiefun/schema.json"
