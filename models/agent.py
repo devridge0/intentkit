@@ -2392,6 +2392,26 @@ class AgentQuota(BaseModel):
         Decimal,
         PydanticField(default=0, description="Average cost per action"),
     ]
+    max_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Maximum cost per action"),
+    ]
+    min_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Minimum cost per action"),
+    ]
+    high_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="High expected action cost"),
+    ]
+    medium_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Medium expected action cost"),
+    ]
+    low_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Low expected action cost"),
+    ]
     created_at: Annotated[
         datetime,
         PydanticField(

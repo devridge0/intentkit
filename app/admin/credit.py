@@ -19,6 +19,7 @@ from app.core.credit import (
     reward,
     update_daily_quota,
 )
+from models.agent import AgentQuota
 from models.credit import (
     CreditAccount,
     CreditAccountTable,
@@ -278,6 +279,12 @@ class AgentStatisticsResponse(BaseModel):
     last_24h_permanent_income: Decimal = Field(
         description="Permanent income from last 24 hours"
     )
+    avg_action_cost: Decimal = Field(description="Average action cost")
+    min_action_cost: Decimal = Field(description="Minimum action cost")
+    max_action_cost: Decimal = Field(description="Maximum action cost")
+    low_action_cost: Decimal = Field(description="Low action cost")
+    medium_action_cost: Decimal = Field(description="Medium action cost")
+    high_action_cost: Decimal = Field(description="High action cost")
 
 
 @credit_router.get(
@@ -352,6 +359,7 @@ async def get_agent_statistics(
         if row.last_24h_permanent_income is not None
         else Decimal("0")
     )
+    quota = await AgentQuota.get(agent_id)
     return AgentStatisticsResponse(
         agent_id=agent_id,
         account_id=agent_account.id,
@@ -366,6 +374,12 @@ async def get_agent_statistics(
         ).quantize(Decimal("0.0001"), ROUND_HALF_UP),
         last_24h_income=last_24h_income,
         last_24h_permanent_income=last_24h_permanent_income,
+        avg_action_cost=quota.avg_action_cost,
+        min_action_cost=quota.min_action_cost,
+        max_action_cost=quota.max_action_cost,
+        low_action_cost=quota.low_action_cost,
+        medium_action_cost=quota.medium_action_cost,
+        high_action_cost=quota.high_action_cost,
     )
 
 
