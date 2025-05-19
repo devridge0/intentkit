@@ -1,7 +1,7 @@
 import logging
-import httpx
-from typing import Dict, List, Optional, Type, Any
+from typing import Any, Dict, List, Optional, Type
 
+import httpx
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
 
@@ -50,69 +50,73 @@ class ChainLookup(ChainlistBaseTool):
     async def _fetch_chains_data(self) -> List[Dict[str, Any]]:
         """Fetch chains data from Chainlist API."""
         chainlist_api_url = "https://chainlist.org/rpcs.json"
-        
+
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(chainlist_api_url)
             response.raise_for_status()
             return response.json()
 
     def _filter_chains(
-        self, 
-        chains: List[Dict[str, Any]], 
+        self,
+        chains: List[Dict[str, Any]],
         search_term: Optional[str] = None,
         chain_id: Optional[int] = None,
         no_tracking: bool = False,
-        limit: int = 5
+        limit: int = 5,
     ) -> List[Dict[str, Any]]:
         """Filter chains based on search criteria."""
         filtered_chains = chains
-        
+
         # Filter by chain_id if provided
         if chain_id is not None:
             filtered_chains = [
-                chain for chain in filtered_chains 
-                if chain.get("chainId") == chain_id
+                chain for chain in filtered_chains if chain.get("chainId") == chain_id
             ]
-        
+
         # Filter by search term if provided
         if search_term and chain_id is None:
             normalized_term = self._normalize_text(search_term)
             result = []
-            
+
             for chain in filtered_chains:
                 name = self._normalize_text(chain.get("name", ""))
                 symbol = self._normalize_text(chain.get("chain", ""))
                 short_name = self._normalize_text(chain.get("shortName", ""))
-                
-                if (normalized_term in name or 
-                    normalized_term in symbol or 
-                    normalized_term in short_name):
+
+                if (
+                    normalized_term in name
+                    or normalized_term in symbol
+                    or normalized_term in short_name
+                ):
                     result.append(chain)
-            
+
             filtered_chains = result
-        
+
         # Filter RPC endpoints for each chain if no_tracking is True
         if no_tracking:
             filtered_result = []
             for chain in filtered_chains:
                 if "rpc" not in chain:
                     continue
-                
+
                 chain_copy = dict(chain)
                 chain_copy["rpc"] = [
-                    rpc for rpc in chain["rpc"] 
+                    rpc
+                    for rpc in chain["rpc"]
                     if isinstance(rpc, dict) and rpc.get("tracking") == "none"
                 ]
-                
-                if chain_copy["rpc"]:  # Only include if it has RPC endpoints after filtering
+
+                if chain_copy[
+                    "rpc"
+                ]:  # Only include if it has RPC endpoints after filtering
                     filtered_result.append(chain_copy)
-            
+
             filtered_chains = filtered_result
-        
+
         # Apply limit
         if limit > 0:
             filtered_chains = filtered_chains[:limit]
-        
+
         return filtered_chains
 
     def _format_chain(self, chain: Dict[str, Any]) -> Dict[str, Any]:
@@ -124,16 +128,10 @@ class ChainLookup(ChainlistBaseTool):
                 if isinstance(rpc, dict):
                     url = rpc.get("url")
                     tracking = rpc.get("tracking", "unspecified")
-                    formatted_rpcs.append({
-                        "url": url,
-                        "tracking": tracking
-                    })
+                    formatted_rpcs.append({"url": url, "tracking": tracking})
                 elif isinstance(rpc, str):
-                    formatted_rpcs.append({
-                        "url": rpc,
-                        "tracking": "unspecified"
-                    })
-        
+                    formatted_rpcs.append({"url": rpc, "tracking": "unspecified"})
+
         # Format chain data
         formatted_chain = {
             "name": chain.get("name"),
@@ -146,17 +144,14 @@ class ChainLookup(ChainlistBaseTool):
             "rpc": formatted_rpcs[:3],  # Limit to 3 RPC endpoints per chain
             "total_rpc_count": len(chain.get("rpc", [])),
         }
-        
+
         # Add explorers if available
         if "explorers" in chain and chain["explorers"]:
             formatted_chain["explorers"] = [
-                {
-                    "name": explorer.get("name", ""),
-                    "url": explorer.get("url", "")
-                }
+                {"name": explorer.get("name", ""), "url": explorer.get("url", "")}
                 for explorer in chain["explorers"][:2]  # Limit to 2 explorers
             ]
-        
+
         return formatted_chain
 
     async def _arun(
@@ -177,32 +172,32 @@ class ChainLookup(ChainlistBaseTool):
         try:
             # Fetch data
             chains_data = await self._fetch_chains_data()
-            
+
             # Filter chains based on criteria
             filtered_chains = self._filter_chains(
-                chains_data, 
+                chains_data,
                 search_term=search_term,
                 chain_id=chain_id,
                 no_tracking=no_tracking,
-                limit=limit
+                limit=limit,
             )
-            
+
             # Handle no results
             if not filtered_chains:
                 return {
                     "found": False,
-                    "message": "No chains found matching the search criteria."
+                    "message": "No chains found matching the search criteria.",
                 }
-            
+
             # Format results
             formatted_chains = [self._format_chain(chain) for chain in filtered_chains]
-            
+
             return {
                 "found": True,
                 "count": len(formatted_chains),
-                "chains": formatted_chains
+                "chains": formatted_chains,
             }
-            
+
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error fetching chain data: {e}")
             return {
@@ -210,6 +205,4 @@ class ChainLookup(ChainlistBaseTool):
             }
         except Exception as e:
             logger.error(f"Error fetching chain data: {str(e)}")
-            return {
-                "error": f"An error occurred while fetching chain data: {str(e)}"
-            } 
+            return {"error": f"An error occurred while fetching chain data: {str(e)}"}
