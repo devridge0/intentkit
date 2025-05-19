@@ -133,6 +133,9 @@ class AgentStatisticsResponse(BaseModel):
     total_income: Decimal = Field(description="Total income from all credit events")
     net_income: Decimal = Field(description="Net income from all credit events")
     last_24h_income: Decimal = Field(description="Income from last 24 hours")
+    last_24h_permanent_income: Decimal = Field(
+        description="Permanent income from last 24 hours"
+    )
 
 
 # ===== API Endpoints =====
@@ -325,6 +328,7 @@ async def get_agent_statistics(
     # Calculate last 24h income
     stmt = select(
         func.sum(CreditEventTable.total_amount).label("last_24h_income"),
+        func.sum(CreditEventTable.permanent_amount).label("last_24h_permanent_income"),
     ).where(
         CreditEventTable.agent_id == agent_id,
         CreditEventTable.created_at >= datetime.now() - timedelta(hours=24),
@@ -334,7 +338,11 @@ async def get_agent_statistics(
     last_24h_income = (
         row.last_24h_income if row.last_24h_income is not None else Decimal("0")
     )
-
+    last_24h_permanent_income = (
+        row.last_24h_permanent_income
+        if row.last_24h_permanent_income is not None
+        else Decimal("0")
+    )
     return AgentStatisticsResponse(
         agent_id=agent_id,
         account_id=agent_account.id,
@@ -342,6 +350,7 @@ async def get_agent_statistics(
         total_income=total_income,
         net_income=net_income,
         last_24h_income=last_24h_income,
+        last_24h_permanent_income=last_24h_permanent_income,
     )
 
 
