@@ -359,9 +359,11 @@ async def get_agent_statistics(
         total_income=total_income,
         net_income=net_income,
         permanent_income=permanent_income,
-        permanent_profit=(net_income * permanent_income / total_income if total_income > Decimal("0") else Decimal("0")).quantize(
-            Decimal("0.0001"), ROUND_HALF_UP
-        ),
+        permanent_profit=(
+            net_income * permanent_income / total_income
+            if total_income > Decimal("0")
+            else Decimal("0")
+        ).quantize(Decimal("0.0001"), ROUND_HALF_UP),
         last_24h_income=last_24h_income,
         last_24h_permanent_income=last_24h_permanent_income,
     )
