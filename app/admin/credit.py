@@ -495,7 +495,7 @@ async def list_user_expense_events(
 async def list_transactions(
     user_id: Annotated[str, Query(description="ID of the user")],
     tx_type: Annotated[
-        Optional[TransactionType], Query(description="Transaction type")
+        Optional[List[TransactionType]], Query(description="Transaction types")
     ] = None,
     credit_debit: Annotated[
         Optional[CreditDebit], Query(description="Credit or debit")
@@ -507,6 +507,11 @@ async def list_transactions(
     db: AsyncSession = Depends(get_db),
 ) -> CreditTransactionsResponse:
     """List transactions with optional filtering by transaction type and credit/debit.
+
+    You can use the `credit_debit` field to filter for debits or credits.
+    Alternatively, you can use `tx_type` to directly specify the transaction types you need.
+    For example, selecting `receive_fee_dev` and `reward` will query only those two types
+    of rewards; this way, topup will not be included.
 
     Args:
         user_id: ID of the user
@@ -542,7 +547,7 @@ async def list_transactions(
 
     # Apply optional filters
     if tx_type:
-        query = query.where(CreditTransactionTable.tx_type == tx_type)
+        query = query.where(CreditTransactionTable.tx_type.in_(tx_type))
 
     if credit_debit:
         query = query.where(CreditTransactionTable.credit_debit == credit_debit)
