@@ -23,11 +23,15 @@ from models.agent import AgentQuota
 from models.credit import (
     CreditAccount,
     CreditAccountTable,
+    CreditDebit,
     CreditEvent,
     CreditEventTable,
+    CreditTransaction,
+    CreditTransactionTable,
     Direction,
     EventType,
     OwnerType,
+    TransactionType,
 )
 from models.db import get_db
 from utils.middleware import create_jwt_middleware
@@ -44,6 +48,20 @@ class CreditEventsResponse(BaseModel):
     """Response model for credit events with pagination."""
 
     data: List[CreditEvent] = Field(description="List of credit events")
+    has_more: bool = Field(description="Indicates if there are more items")
+    next_cursor: Optional[str] = Field(None, description="Cursor for next page")
+
+
+class CreditTransactionResp(CreditTransaction):
+    """Credit transaction response model with event data."""
+
+    event: Optional[CreditEvent] = Field(None, description="Associated credit event")
+
+
+class CreditTransactionsResponse(BaseModel):
+    """Response model for credit transactions with pagination."""
+
+    data: List[CreditTransactionResp] = Field(description="List of credit transactions")
     has_more: bool = Field(description="Indicates if there are more items")
     next_cursor: Optional[str] = Field(None, description="Cursor for next page")
 
@@ -462,6 +480,125 @@ async def list_user_expense_events(
 
     return CreditEventsResponse(
         data=events,
+        has_more=has_more,
+        next_cursor=next_cursor,
+    )
+
+
+@credit_router_readonly.get(
+    "/transactions",
+    response_model=CreditTransactionsResponse,
+    operation_id="list_transactions",
+    summary="List Transactions",
+    dependencies=[Depends(verify_jwt)],
+)
+async def list_transactions(
+    user_id: Annotated[str, Query(description="ID of the user")],
+    tx_type: Annotated[
+        Optional[TransactionType], Query(description="Transaction type")
+    ] = None,
+    credit_debit: Annotated[
+        Optional[CreditDebit], Query(description="Credit or debit")
+    ] = None,
+    cursor: Annotated[Optional[str], Query(description="Cursor for pagination")] = None,
+    limit: Annotated[
+        int, Query(description="Maximum number of transactions to return", ge=1, le=100)
+    ] = 20,
+    db: AsyncSession = Depends(get_db),
+) -> CreditTransactionsResponse:
+    """List transactions with optional filtering by transaction type and credit/debit.
+
+    Args:
+        user_id: ID of the user
+        tx_type: Optional filter for transaction type
+        credit_debit: Optional filter for credit or debit
+        cursor: Cursor for pagination
+        limit: Maximum number of transactions to return
+        db: Database session
+
+    Returns:
+        Response with list of transactions and pagination information
+    """
+    # First get the account ID for the user
+    account_query = select(CreditAccountTable.id).where(
+        CreditAccountTable.owner_type == OwnerType.USER,
+        CreditAccountTable.owner_id == user_id,
+    )
+    account_result = await db.execute(account_query)
+    account_id = account_result.scalar_one_or_none()
+
+    if not account_id:
+        # Return empty response if account doesn't exist
+        return CreditTransactionsResponse(
+            data=[],
+            has_more=False,
+            next_cursor=None,
+        )
+
+    # Build query for transactions
+    query = select(CreditTransactionTable).where(
+        CreditTransactionTable.account_id == account_id
+    )
+
+    # Apply optional filters
+    if tx_type:
+        query = query.where(CreditTransactionTable.tx_type == tx_type)
+
+    if credit_debit:
+        query = query.where(CreditTransactionTable.credit_debit == credit_debit)
+
+    # Apply pagination
+    if cursor:
+        # Use ID directly as cursor since IDs are time-ordered
+        query = query.where(CreditTransactionTable.id < cursor)
+
+    # Order by created_at desc, id desc for consistent pagination
+    query = query.order_by(CreditTransactionTable.id.desc()).limit(
+        limit + 1
+    )  # Fetch one extra to determine if there are more
+
+    result = await db.execute(query)
+    transactions = result.scalars().all()
+
+    # Check if there are more results
+    has_more = len(transactions) > limit
+    if has_more:
+        transactions = transactions[:-1]  # Remove the extra item
+
+    # Generate next cursor
+    next_cursor = None
+    if has_more and transactions:
+        last_tx = transactions[-1]
+        next_cursor = last_tx.id
+
+    # Convert SQLAlchemy models to Pydantic models
+    tx_models = [CreditTransaction.model_validate(tx) for tx in transactions]
+
+    # Get all unique event IDs
+    event_ids = {tx.event_id for tx in tx_models}
+
+    # Fetch all related events in a single query
+    events_map = {}
+    if event_ids:
+        events_query = select(CreditEventTable).where(
+            CreditEventTable.id.in_(event_ids)
+        )
+        events_result = await db.execute(events_query)
+        events = events_result.scalars().all()
+
+        # Create a map of event_id to CreditEvent
+        events_map = {event.id: CreditEvent.model_validate(event) for event in events}
+
+    # Create response objects with associated events
+    tx_resp_models = []
+    for tx in tx_models:
+        tx_resp = CreditTransactionResp(
+            **tx.model_dump(), event=events_map.get(tx.event_id)
+        )
+        tx_resp_models.append(tx_resp)
+
+    return CreditTransactionsResponse(
+        data=tx_resp_models,
         has_more=has_more,
         next_cursor=next_cursor,
     )
