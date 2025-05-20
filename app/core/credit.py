@@ -802,6 +802,7 @@ async def expense_message(
         agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
+        model=agent.model,
         total_amount=total_amount,
         credit_type=credit_type,
         balance_after=user_account.credits
@@ -1078,6 +1079,8 @@ async def expense_skill(
         agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
+        skill_call_id=skill_call_id,
+        skill_name=skill_name,
         total_amount=skill_cost_info.total_amount,
         credit_type=credit_type,
         balance_after=user_account.credits

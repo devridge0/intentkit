@@ -570,6 +570,7 @@ class CreditAccount(BaseModel):
 class EventType(str, Enum):
     """Type of credit event."""
 
+    MEMORY = "memory"
     MESSAGE = "message"
     SKILL_CALL = "skill_call"
     RECHARGE = "recharge"
@@ -649,7 +650,15 @@ class CreditEventTable(Base):
         String,
         nullable=True,
     )
+    model = Column(
+        String,
+        nullable=True,
+    )
     skill_call_id = Column(
+        String,
+        nullable=True,
+    )
+    skill_name = Column(
         String,
         nullable=True,
     )
@@ -788,8 +797,14 @@ class CreditEvent(BaseModel):
     message_id: Annotated[
         Optional[str], Field(None, description="ID of the message if applicable")
     ]
+    model: Annotated[
+        Optional[str], Field(None, description="LLM model used if applicable")
+    ]
     skill_call_id: Annotated[
         Optional[str], Field(None, description="ID of the skill call if applicable")
+    ]
+    skill_name: Annotated[
+        Optional[str], Field(None, description="Name of the skill if applicable")
     ]
     direction: Annotated[Direction, Field(description="Direction of the credit flow")]
     total_amount: Annotated[
