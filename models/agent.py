@@ -2282,6 +2282,11 @@ class AgentQuotaTable(Base):
     last_twitter_time = Column(DateTime(timezone=True), default=None, nullable=True)
     free_income_daily = Column(Numeric(22, 4), default=0)
     avg_action_cost = Column(Numeric(22, 4), default=0)
+    min_action_cost = Column(Numeric(22, 4), default=0)
+    max_action_cost = Column(Numeric(22, 4), default=0)
+    low_action_cost = Column(Numeric(22, 4), default=0)
+    medium_action_cost = Column(Numeric(22, 4), default=0)
+    high_action_cost = Column(Numeric(22, 4), default=0)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
