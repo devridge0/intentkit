@@ -7,7 +7,7 @@ from skills.base import IntentKitSkill
 
 
 class CookieFunBaseTool(IntentKitSkill):
-    """Base class for Cookie.fun API tools."""
+    """Base class for CookieFun tools."""
 
     name: str = Field(description="The name of the tool")
     description: str = Field(description="A description of what the tool does")
@@ -18,4 +18,4 @@ class CookieFunBaseTool(IntentKitSkill):
 
     @property
     def category(self) -> str:
-        return "cookiefun"
+        return "cookiefun" 
