@@ -15,6 +15,4 @@ ENDPOINTS = {
 }
 
 # Default Headers
-DEFAULT_HEADERS = {
-    "Content-Type": "application/json"
-} 
+DEFAULT_HEADERS = {"Content-Type": "application/json"}
