@@ -3,11 +3,11 @@ from typing import TypedDict
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
 from skills.cookiefun.base import CookieFunBaseTool
-from skills.cookiefun.get_sectors import GetSectors
 from skills.cookiefun.get_account_details import GetAccountDetails
-from skills.cookiefun.get_account_smart_followers import GetAccountSmartFollowers
-from skills.cookiefun.search_accounts import SearchAccounts
 from skills.cookiefun.get_account_feed import GetAccountFeed
+from skills.cookiefun.get_account_smart_followers import GetAccountSmartFollowers
+from skills.cookiefun.get_sectors import GetSectors
+from skills.cookiefun.search_accounts import SearchAccounts
 
 # Cache skills at the system level, because they are stateless
 _cache: dict[str, CookieFunBaseTool] = {}
@@ -15,6 +15,7 @@ _cache: dict[str, CookieFunBaseTool] = {}
 
 class SkillStates(TypedDict):
     """States for CookieFun skills."""
+
     get_sectors: SkillState
     get_account_details: SkillState
     get_account_smart_followers: SkillState
@@ -67,5 +68,5 @@ def get_cookiefun_skill(
             _cache[name] = GetAccountFeed(skill_store=store)
         else:
             raise ValueError(f"Unknown CookieFun skill: {name}")
-    
-    return _cache[name] 
+
+    return _cache[name]
