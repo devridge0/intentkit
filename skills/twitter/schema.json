@@ -160,6 +160,22 @@
           ],
           "description": "Retrieves user information by username.",
           "default": "disabled"
+        },
+        "get_user_tweets": {
+          "type": "string",
+          "title": "Get User Tweets",
+          "enum": [
+            "disabled",
+            "public",
+            "private"
+          ],
+          "x-enum-title": [
+            "Disabled",
+            "Agent Owner + All Users",
+            "Agent Owner Only"
+          ],
+          "description": "Retrieves tweets from a specific user by their user ID.",
+          "default": "disabled"
         }
       },
       "description": "States for each X skill"

@@ -1234,7 +1234,7 @@ class AgentUpdate(BaseModel):
             if not db_agent:
                 raise HTTPException(status_code=404, detail="Agent not found")
             # check owner
-            if self.owner and db_agent.owner != self.owner:
+            if db_agent.owner and db_agent.owner != self.owner:
                 raise HTTPException(
                     status_code=403,
                     detail="You do not have permission to update this agent",
@@ -1896,6 +1896,12 @@ class AgentDataTable(Base):
         nullable=True,
         comment="Twitter self-key userinfo last refresh time",
     )
+    twitter_is_verified = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Whether the Twitter account is verified",
+    )
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
     telegram_name = Column(String, nullable=True, comment="Telegram display name")
@@ -1987,6 +1993,13 @@ class AgentData(BaseModel):
         PydanticField(
             default=None,
             description="Twitter self-key userinfo last refresh time",
+        ),
+    ]
+    twitter_is_verified: Annotated[
+        bool,
+        PydanticField(
+            default=False,
+            description="Whether the Twitter account is verified",
         ),
     ]
     telegram_id: Annotated[
@@ -2267,6 +2280,13 @@ class AgentQuotaTable(Base):
     twitter_count_daily = Column(BigInteger, default=0)
     twitter_limit_daily = Column(BigInteger, default=99999999)
     last_twitter_time = Column(DateTime(timezone=True), default=None, nullable=True)
+    free_income_daily = Column(Numeric(22, 4), default=0)
+    avg_action_cost = Column(Numeric(22, 4), default=0)
+    min_action_cost = Column(Numeric(22, 4), default=0)
+    max_action_cost = Column(Numeric(22, 4), default=0)
+    low_action_cost = Column(Numeric(22, 4), default=0)
+    medium_action_cost = Column(Numeric(22, 4), default=0)
+    high_action_cost = Column(Numeric(22, 4), default=0)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -2369,6 +2389,34 @@ class AgentQuota(BaseModel):
         Optional[datetime],
         PydanticField(default=None, description="Last Twitter operation timestamp"),
     ]
+    free_income_daily: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Daily free income amount"),
+    ]
+    avg_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Average cost per action"),
+    ]
+    max_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Maximum cost per action"),
+    ]
+    min_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Minimum cost per action"),
+    ]
+    high_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="High expected action cost"),
+    ]
+    medium_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Medium expected action cost"),
+    ]
+    low_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Low expected action cost"),
+    ]
     created_at: Annotated[
         datetime,
         PydanticField(
@@ -2454,6 +2502,42 @@ class AgentQuota(BaseModel):
         if self.twitter_count_daily >= self.twitter_limit_daily:
             return False
         return True
+
+    @staticmethod
+    async def add_free_income_in_session(session, id: str, amount: Decimal) -> None:
+        """Add free income to an agent's quota directly in the database.
+
+        Args:
+            session: SQLAlchemy session
+            id: Agent ID
+            amount: Amount to add to free_income_daily
+
+        Raises:
+            HTTPException: If there are database errors
+        """
+        try:
+            # Check if the record exists using session.get
+            quota_record = await session.get(AgentQuotaTable, id)
+
+            if not quota_record:
+                # Create new record if it doesn't exist
+                quota_record = AgentQuotaTable(id=id, free_income_daily=amount)
+                session.add(quota_record)
+            else:
+                # Use update statement with func to directly add the amount
+                from sqlalchemy import update
+
+                stmt = update(AgentQuotaTable).where(AgentQuotaTable.id == id)
+                stmt = stmt.values(
+                    free_income_daily=func.coalesce(
+                        AgentQuotaTable.free_income_daily, 0
+                    )
+                    + amount
+                )
+                await session.execute(stmt)
+        except Exception as e:
+            logger.error(f"Error adding free income: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
     async def add_message(self) -> None:
         """Add a message to the agent's message count."""
