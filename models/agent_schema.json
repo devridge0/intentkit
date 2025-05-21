@@ -104,7 +104,19 @@
         "Public App",
         "Personal Assistant"
       ],
-      "x-group": "basic"
+      "x-group": "deprecated"
+    },
+    "fee_percentage": {
+      "title": "Service Fee",
+      "type": "number",
+      "description": "A CAPs % added to the base cost, paid to the agent for delivering its unique logic and execution.",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0,
+      "x-step": 1,
+      "x-group": "basic",
+      "x-component": "slider-with-box",
+      "x-nft-extra": 10
     },
     "description": {
       "title": "Description",
@@ -443,6 +455,14 @@
           "title": "Blockchain Portfolio",
           "$ref": "../skills/portfolio/schema.json"
         },
+        "token": {
+          "title": "Token Operations",
+          "$ref": "../skills/token/schema.json"
+        },
+        "chainlist": {
+          "title": "Chainlist RPC Endpoints",
+          "$ref": "../skills/chainlist/schema.json"
+        },
         "cookiefun": {
           "title": "cookie.fun",
           "$ref": "../skills/cookiefun/schema.json"
@@ -563,7 +583,6 @@
             "title": "Frequency in Minutes",
             "type": "integer",
             "description": "How often to run (in minutes)",
-            "default": 1440,
             "x-group": "autonomous"
           },
           "cron": {
@@ -698,28 +717,6 @@
         "solana"
       ],
       "x-group": "internal"
-    }
-  },
-  "if": {
-    "properties": {
-      "mode": {
-        "const": "public"
-      }
-    }
-  },
-  "then": {
-    "properties": {
-      "fee_percentage": {
-        "title": "Agent Fee %",
-        "type": "number",
-        "description": "Set a tip percentage that users will pay on top of the base CAPs fee when interacting with this Agent. This tip goes directly to the Agent's wallet. Interactions by the creator are excluded.",
-        "minimum": 0,
-        "maximum": 1000,
-        "default": 0,
-        "x-step": 20,
-        "x-group": "basic",
-        "x-component": "slider-with-box"
-      }
     }
   },
   "additionalProperties": false

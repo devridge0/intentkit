@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 from epyxid import XID
 from fastapi import HTTPException
 from pydantic import BaseModel
-from sqlalchemy import desc, select, update
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.agent import Agent
@@ -97,11 +97,15 @@ async def recharge(
         account_id=user_account.id,
         total_amount=amount,
         credit_type=CreditType.PERMANENT,
+        credit_types=[CreditType.PERMANENT],
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
         base_amount=amount,
         base_original_amount=amount,
+        permanent_amount=amount,  # Set permanent_amount since this is a permanent credit
+        free_amount=Decimal("0"),  # No free credits involved
+        reward_amount=Decimal("0"),  # No reward credits involved
         note=note,
     )
     session.add(event)
@@ -196,11 +200,15 @@ async def reward(
         account_id=user_account.id,
         total_amount=amount,
         credit_type=CreditType.REWARD,
+        credit_types=[CreditType.REWARD],
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
         base_amount=amount,
         base_original_amount=amount,
+        reward_amount=amount,  # Set reward_amount since this is a reward credit
+        free_amount=Decimal("0"),  # No free credits involved
+        permanent_amount=Decimal("0"),  # No permanent credits involved
         note=note,
     )
     session.add(event)
@@ -318,6 +326,18 @@ async def adjustment(
 
     # 3. Create credit event record
     event_id = str(XID())
+    # Set the appropriate credit amount field based on credit type
+    free_amount = Decimal("0")
+    reward_amount = Decimal("0")
+    permanent_amount = Decimal("0")
+
+    if credit_type == CreditType.FREE:
+        free_amount = abs_amount
+    elif credit_type == CreditType.REWARD:
+        reward_amount = abs_amount
+    elif credit_type == CreditType.PERMANENT:
+        permanent_amount = abs_amount
+
     event = CreditEventTable(
         id=event_id,
         event_type=EventType.ADJUSTMENT,
@@ -328,11 +348,15 @@ async def adjustment(
         account_id=user_account.id,
         total_amount=abs_amount,
         credit_type=credit_type,
+        credit_types=[credit_type],
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
         base_amount=abs_amount,
         base_original_amount=abs_amount,
+        free_amount=free_amount,
+        reward_amount=reward_amount,
+        permanent_amount=permanent_amount,
         note=note,
     )
     session.add(event)
@@ -391,62 +415,9 @@ async def update_daily_quota(
     Returns:
         Updated user credit account
     """
-    # Log the upstream_tx_id for record keeping
-    logger.info(
-        f"Updating quota settings for user {user_id} with upstream_tx_id: {upstream_tx_id}"
+    return await CreditAccount.update_daily_quota(
+        session, user_id, free_quota, refill_amount, upstream_tx_id, note
     )
-
-    # Check that at least one parameter is provided
-    if free_quota is None and refill_amount is None:
-        raise ValueError("At least one of free_quota or refill_amount must be provided")
-
-    # Get current account to check existing values and validate
-    user_account = await CreditAccount.get_or_create_in_session(
-        session, OwnerType.USER, user_id, for_update=True
-    )
-
-    # Use existing values if not provided
-    if free_quota is None:
-        free_quota = user_account.free_quota
-    elif free_quota <= Decimal("0"):
-        raise ValueError("Daily quota must be positive")
-
-    if refill_amount is None:
-        refill_amount = user_account.refill_amount
-    elif refill_amount < Decimal("0"):
-        raise ValueError("Refill amount cannot be negative")
-
-    # Ensure refill_amount doesn't exceed free_quota
-    if refill_amount > free_quota:
-        raise ValueError("Refill amount cannot exceed daily quota")
-
-    if not note:
-        raise ValueError("Quota update requires a note explaining the reason")
-
-    # Already got the user account above, no need to get it again
-
-    # Update the free_quota field
-    stmt = (
-        update(CreditAccountTable)
-        .where(
-            CreditAccountTable.owner_type == OwnerType.USER,
-            CreditAccountTable.owner_id == user_id,
-        )
-        .values(free_quota=free_quota, refill_amount=refill_amount)
-        .returning(CreditAccountTable)
-    )
-    result = await session.scalar(stmt)
-    if not result:
-        raise ValueError("Failed to update user account")
-
-    user_account = CreditAccount.model_validate(result)
-
-    # No credit event needed for updating account settings
-
-    # Commit all changes
-    await session.commit()
-
-    return user_account
 
 
 async def list_credit_events_by_user(
@@ -761,7 +732,7 @@ async def expense_message(
         base_amount * payment_settings.fee_platform_percentage / Decimal("100")
     ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
     fee_agent_amount = Decimal("0")
-    if agent.fee_percentage:
+    if agent.fee_percentage and user_id != agent.owner:
         fee_agent_amount = (
             (base_amount + fee_platform_amount) * agent.fee_percentage / Decimal("100")
         ).quantize(FOURPLACES, rounding=ROUND_HALF_UP)
@@ -770,26 +741,34 @@ async def expense_message(
     )
 
     # 1. Update user account - deduct credits
-    user_account, credit_type = await CreditAccount.expense_in_session(
+    user_account, details = await CreditAccount.expense_in_session(
         session=session,
         owner_type=OwnerType.USER,
         owner_id=user_id,
         amount=total_amount,
     )
 
+    # If using free credits, add to agent's free_income_daily
+    if details.get(CreditType.FREE):
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=details.get(CreditType.FREE)
+        )
+
     # 2. Update fee account - add credits
     message_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_MESSAGE,
-        credit_type=credit_type,
+        credit_type=CreditType.PERMANENT,
         amount=base_amount,
     )
     platform_fee_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
-        credit_type=credit_type,
+        credit_type=CreditType.PERMANENT,
         amount=fee_platform_amount,
     )
     if fee_agent_amount > 0:
@@ -797,12 +776,23 @@ async def expense_message(
             session=session,
             owner_type=OwnerType.AGENT,
             owner_id=agent.id,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,
             amount=fee_agent_amount,
         )
 
     # 3. Create credit event record
     event_id = str(XID())
+    # Set the appropriate credit amount field based on credit type
+    free_amount = details.get(CreditType.FREE, Decimal("0"))
+    reward_amount = details.get(CreditType.REWARD, Decimal("0"))
+    permanent_amount = details.get(CreditType.PERMANENT, Decimal("0"))
+    if CreditType.PERMANENT in details:
+        credit_type = CreditType.PERMANENT
+    elif CreditType.REWARD in details:
+        credit_type = CreditType.REWARD
+    else:
+        credit_type = CreditType.FREE
+
     event = CreditEventTable(
         id=event_id,
         account_id=user_account.id,
@@ -814,8 +804,10 @@ async def expense_message(
         agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
+        model=agent.model,
         total_amount=total_amount,
         credit_type=credit_type,
+        credit_types=details.keys(),
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
@@ -825,6 +817,9 @@ async def expense_message(
         fee_platform_amount=fee_platform_amount,
         fee_agent_amount=fee_agent_amount,
         fee_agent_account=agent_account.id if fee_agent_amount > 0 else None,
+        free_amount=free_amount,
+        reward_amount=reward_amount,
+        permanent_amount=permanent_amount,
     )
     session.add(event)
     await session.flush()
@@ -955,7 +950,7 @@ async def skill_cost(
         FOURPLACES, rounding=ROUND_HALF_UP
     )
     fee_agent_amount = Decimal("0")
-    if agent.fee_percentage:
+    if agent.fee_percentage and user_id != agent.owner:
         fee_agent_amount = (
             (base_amount + fee_platform_amount + fee_dev_amount)
             * agent.fee_percentage
@@ -1015,26 +1010,34 @@ async def expense_skill(
     skill_cost_info = await skill_cost(skill_name, user_id, agent)
 
     # 1. Update user account - deduct credits
-    user_account, credit_type = await CreditAccount.expense_in_session(
+    user_account, details = await CreditAccount.expense_in_session(
         session=session,
         owner_type=OwnerType.USER,
         owner_id=user_id,
         amount=skill_cost_info.total_amount,
     )
 
+    # If using free credits, add to agent's free_income_daily
+    if CreditType.FREE in details:
+        from models.agent import AgentQuota
+
+        await AgentQuota.add_free_income_in_session(
+            session=session, id=agent.id, amount=details[CreditType.FREE]
+        )
+
     # 2. Update fee account - add credits
     skill_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_SKILL,
-        credit_type=credit_type,
+        credit_type=CreditType.PERMANENT,
         amount=skill_cost_info.base_amount,
     )
     platform_account = await CreditAccount.income_in_session(
         session=session,
         owner_type=OwnerType.PLATFORM,
         owner_id=DEFAULT_PLATFORM_ACCOUNT_FEE,
-        credit_type=credit_type,
+        credit_type=CreditType.PERMANENT,
         amount=skill_cost_info.fee_platform_amount,
     )
     if skill_cost_info.fee_dev_amount > 0:
@@ -1050,12 +1053,23 @@ async def expense_skill(
             session=session,
             owner_type=OwnerType.AGENT,
             owner_id=agent.id,
-            credit_type=credit_type,
+            credit_type=CreditType.REWARD,
             amount=skill_cost_info.fee_agent_amount,
         )
 
     # 3. Create credit event record
     event_id = str(XID())
+    # Set the appropriate credit amount field based on credit type
+    free_amount = details.get(CreditType.FREE, Decimal("0"))
+    reward_amount = details.get(CreditType.REWARD, Decimal("0"))
+    permanent_amount = details.get(CreditType.PERMANENT, Decimal("0"))
+    if CreditType.PERMANENT in details:
+        credit_type = CreditType.PERMANENT
+    elif CreditType.REWARD in details:
+        credit_type = CreditType.REWARD
+    else:
+        credit_type = CreditType.FREE
+
     event = CreditEventTable(
         id=event_id,
         account_id=user_account.id,
@@ -1067,8 +1081,11 @@ async def expense_skill(
         agent_id=agent.id,
         message_id=message_id,
         start_message_id=start_message_id,
+        skill_call_id=skill_call_id,
+        skill_name=skill_name,
         total_amount=skill_cost_info.total_amount,
         credit_type=credit_type,
+        credit_types=details.keys(),
         balance_after=user_account.credits
         + user_account.free_credits
         + user_account.reward_credits,
@@ -1082,6 +1099,9 @@ async def expense_skill(
         else None,
         fee_dev_amount=skill_cost_info.fee_dev_amount,
         fee_dev_account=dev_account.id if skill_cost_info.fee_dev_amount > 0 else None,
+        free_amount=free_amount,
+        reward_amount=reward_amount,
+        permanent_amount=permanent_amount,
     )
     session.add(event)
     await session.flush()
@@ -1211,12 +1231,16 @@ async def refill_free_credits_for_account(
         upstream_tx_id=str(XID()),
         direction=Direction.INCOME,
         credit_type=CreditType.FREE,
+        credit_types=[CreditType.FREE],
         total_amount=amount_to_add,
         balance_after=updated_account.credits
         + updated_account.free_credits
         + updated_account.reward_credits,
         base_amount=amount_to_add,
         base_original_amount=amount_to_add,
+        free_amount=amount_to_add,  # Set free_amount since this is a free credit refill
+        reward_amount=Decimal("0"),  # No reward credits involved
+        permanent_amount=Decimal("0"),  # No permanent credits involved
         note=f"Hourly free credits refill of {amount_to_add}",
     )
     session.add(event)
