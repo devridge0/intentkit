@@ -150,12 +150,5 @@ def get_venice_image_skill(
     # Cache and return the newly created instance
     _cache[name] = skill_class(
         skill_store=store,
-        api_key_provider=config.get("api_key_provider", "agent_owner"),
-        safe_mode=config.get("safe_mode", True),
-        hide_watermark=config.get("hide_watermark", True),
-        embed_exif_metadata=config.get("embed_exif_metadata", False),
-        negative_prompt=config.get(
-            "negative_prompt", "(worst quality: 1.4), bad quality, nsfw"
-        ),
     )
     return _cache[name]
