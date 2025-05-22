@@ -98,14 +98,54 @@
       },
       "description": "States for each CookieFun skill (disabled, public, or private)"
     },
-    "api_key": {
+    "api_key_provider": {
       "type": "string",
-      "title": "API Key",
-      "description": "Your CookieFun API key (required for all CookieFun skills)",
-      "x-sensitive": true,
-      "x-link": "[Get your API key](https://cookie.fun/)"
+      "title": "API Key Provider",
+      "description": "Provider of the API key",
+      "enum": [
+        "platform",
+        "agent_owner"
+      ],
+      "x-enum-title": [
+        "Nation Hosted",
+        "Owner Provided"
+      ],
+      "default": "platform"
     }
   },
-  "required": ["states", "api_key", "enabled"],
+  "required": [
+    "states",
+    "enabled"
+  ],
+  "if": {
+    "properties": {
+      "api_key_provider": {
+        "const": "agent_owner"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "CookieFun API Key",
+        "description": "Your CookieFun API key (required for all CookieFun skills)",
+        "x-sensitive": true,
+        "x-link": "[Get your API key](https://cookie.fun/)"
+      }
+    },
+    "if": {
+      "properties": {
+        "enabled": {
+          "const": true
+        }
+      }
+    },
+    "then": {
+      "required": [
+        "api_key"
+      ]
+    }
+  },
   "additionalProperties": true
 } 
