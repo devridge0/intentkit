@@ -38,7 +38,20 @@ class ImageUpscale(VeniceImageUpscaleBaseTool):
         **kwargs,
     ) -> dict:
         """
-        rtrytuyiuhoij
+        Asynchronously upscales an image from the provided URL using the Venice AI API.
+
+        Args:
+            image_url (HttpUrl): The public URL of the image to upscale.
+            scale (Literal[2, 4]): The scale factor for upscaling (2x or 4x).
+            replication (Optional[float]): The replication factor for the upscale process, defaults to 0.35.
+            config (RunnableConfig, optional): Configuration for the runnable, if any.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            dict: The API response containing the URL of the upscaled image.
+
+        Raises:
+            ToolException: If the image cannot be fetched, validated, or upscaled, or if an API error occurs.
         """
 
         try:
