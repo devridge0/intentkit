@@ -55,8 +55,7 @@
     "model",
     "purpose",
     "personality",
-    "principles",
-    "mode"
+    "principles"
   ],
   "properties": {
     "name": {
@@ -104,7 +103,19 @@
         "Public App",
         "Personal Assistant"
       ],
-      "x-group": "basic"
+      "x-group": "deprecated"
+    },
+    "fee_percentage": {
+      "title": "Service Fee",
+      "type": "number",
+      "description": "A CAPs % added to the base cost, paid to the agent for delivering its unique logic and execution.",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0,
+      "x-step": 1,
+      "x-group": "basic",
+      "x-component": "slider-with-box",
+      "x-nft-extra": 10
     },
     "description": {
       "title": "Description",
@@ -435,6 +446,10 @@
       "x-group": "skills",
       "x-inline": true,
       "properties": {
+        "dexscreener": {
+          "title": "DEX Screener",
+          "$ref": "../skills/dexscreener/schema.json"
+        },
         "portfolio": {
           "title": "Blockchain Portfolio",
           "$ref": "../skills/portfolio/schema.json"
@@ -442,6 +457,10 @@
         "token": {
           "title": "Token Operations",
           "$ref": "../skills/token/schema.json"
+        },
+        "chainlist": {
+          "title": "Chainlist RPC Endpoints",
+          "$ref": "../skills/chainlist/schema.json"
         },
         "cookiefun": {
           "title": "cookie.fun",
@@ -697,29 +716,6 @@
         "solana"
       ],
       "x-group": "internal"
-    }
-  },
-  "if": {
-    "properties": {
-      "mode": {
-        "const": "public"
-      }
-    }
-  },
-  "then": {
-    "properties": {
-      "fee_percentage": {
-        "title": "Service Fee",
-        "type": "number",
-        "description": "A CAPs % added to the base cost, paid to the agent for delivering its unique logic and execution.",
-        "minimum": 0,
-        "maximum": 100,
-        "default": 0,
-        "x-step": 1,
-        "x-group": "basic",
-        "x-component": "slider-with-box",
-        "x-nft-extra": 10
-      }
     }
   },
   "additionalProperties": false
