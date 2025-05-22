@@ -51,9 +51,10 @@ class VeniceImageGenerationBaseTool(VeniceImageBaseTool):
     ) -> Dict[str, Any]:
         try:
             context = self.context_from_config(config)
+            skillConfig = self.getSkillConfig(context)
             await self.apply_venice_rate_limit(context)
 
-            final_negative_prompt = negative_prompt or self.negative_prompt
+            final_negative_prompt = negative_prompt or skillConfig.negative_prompt
 
             payload = {
                 "model": self.model_id,
@@ -63,9 +64,9 @@ class VeniceImageGenerationBaseTool(VeniceImageBaseTool):
                 "seed": seed,
                 "format": format,
                 "steps": 30,
-                "safe_mode": self.safe_mode,
-                "hide_watermark": self.hide_watermark,
-                "embed_exif_metadata": self.embed_exif_metadata,
+                "safe_mode": skillConfig.safe_mode,
+                "hide_watermark": skillConfig.hide_watermark,
+                "embed_exif_metadata": skillConfig.embed_exif_metadata,
                 "cfg_scale": cfg_scale or 7.0,
                 "style_preset": style_preset,
                 "negative_prompt": final_negative_prompt,

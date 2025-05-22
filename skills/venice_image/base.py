@@ -7,6 +7,7 @@ from skills.base import IntentKitSkill, SkillContext, SkillStoreABC, ToolExcepti
 from skills.venice_image.api import (
     make_venice_api_request,
 )
+from skills.venice_image.config import VeniceImageConfig
 
 logger = logging.getLogger(__name__)
 
@@ -40,25 +41,29 @@ class VeniceImageBaseTool(IntentKitSkill):
     skill_store: SkillStoreABC = Field(
         description="The skill store for persisting data and configs."
     )
-    api_key_provider: str = Field(
-        default="agent_owner",
-        description="provider of the API Key, could be agent_owner or platform_hosted",
-    )
-    safe_mode: bool = Field(
-        default=True,
-        description="Whether to use safe mode. If enabled, this will blur images that are classified as having adult content",
-    )
-    hide_watermark: bool = Field(
-        default=True,
-        description="Whether to hide the Venice watermark. Venice may ignore this parameter for certain generated content.",
-    )
-    embed_exif_metadata: bool = Field(
-        default=False, description="Whether to embed EXIF metadata in the image."
-    )
-    negative_prompt: str = Field(
-        default="(worst quality: 1.4), bad quality, nsfw",
-        description="The default negative prompt used when no other prompt is provided.",
-    )
+
+    def getSkillConfig(self, context: SkillContext) -> VeniceImageConfig:
+        """
+        Creates a VeniceImageConfig instance from a dictionary of configuration values.
+
+        Args:
+            config: A dictionary containing configuration settings.
+
+        Returns:
+            A VeniceImageConfig object.
+        """
+
+        return VeniceImageConfig(
+            api_key_provider=context.config.get("api_key_provider", "agent_owner"),
+            safe_mode=context.config.get("safe_mode", True),
+            hide_watermark=context.config.get("hide_watermark", True),
+            embed_exif_metadata=context.config.get("embed_exif_metadata", False),
+            negative_prompt=context.config.get(
+                "negative_prompt", "(worst quality: 1.4), bad quality, nsfw"
+            ),
+            rate_limit_number=context.config.get("rate_limit_number"),
+            rate_limit_minutes=context.config.get("rate_limit_minutes"),
+        )
 
     def get_api_key(self, context: SkillContext) -> str:
         """
@@ -71,7 +76,8 @@ class VeniceImageBaseTool(IntentKitSkill):
             ToolException: If the API key is not found or provider is invalid.
         """
         try:
-            if self.api_key_provider == "agent_owner":
+            skillConfig = self.getSkillConfig(context=context)
+            if skillConfig.api_key_provider == "agent_owner":
                 agent_api_key = context.config.get("api_key")
                 if agent_api_key:
                     logger.debug(
@@ -82,7 +88,7 @@ class VeniceImageBaseTool(IntentKitSkill):
                     f"No agent-owned Venice API key found for skill '{self.name}' in category '{self.category}'."
                 )
 
-            elif self.api_key_provider == "platform_hosted":
+            elif skillConfig.api_key_provider == "platform_hosted":
                 system_api_key = self.skill_store.get_system_config("venice_api_key")
                 if system_api_key:
                     logger.debug(
@@ -95,7 +101,7 @@ class VeniceImageBaseTool(IntentKitSkill):
 
             else:
                 raise ToolException(
-                    f"Invalid API key provider '{self.api_key_provider}' for skill '{self.name}'"
+                    f"Invalid API key provider '{skillConfig.api_key_provider}' for skill '{self.name}'"
                 )
 
         except Exception as e:
@@ -111,11 +117,11 @@ class VeniceImageBaseTool(IntentKitSkill):
         """
         try:
             user_id = context.user_id
+            skillConfig = self.getSkillConfig(context=context)
 
-            if self.api_key_provider == "agent_owner":
-                skill_config = context.config
-                limit_num = skill_config.get("rate_limit_number")
-                limit_min = skill_config.get("rate_limit_minutes")
+            if skillConfig.api_key_provider == "agent_owner":
+                limit_num = skillConfig.rate_limit_number
+                limit_min = skillConfig.rate_limit_minutes
 
                 if limit_num and limit_min:
                     logger.debug(
@@ -125,7 +131,7 @@ class VeniceImageBaseTool(IntentKitSkill):
                         user_id, limit_num, limit_min
                     )
 
-            elif self.api_key_provider == "platform_hosted":
+            elif skillConfig.api_key_provider == "platform_hosted":
                 system_limit_num = self.skill_store.get_system_config(
                     f"{self.category}_rate_limit_number"
                 )
