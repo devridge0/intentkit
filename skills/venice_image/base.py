@@ -88,7 +88,7 @@ class VeniceImageBaseTool(IntentKitSkill):
                     f"No agent-owned Venice API key found for skill '{self.name}' in category '{self.category}'."
                 )
 
-            elif skillConfig.api_key_provider == "platform_hosted":
+            elif skillConfig.api_key_provider == "platform":
                 system_api_key = self.skill_store.get_system_config("venice_api_key")
                 if system_api_key:
                     logger.debug(
@@ -113,7 +113,7 @@ class VeniceImageBaseTool(IntentKitSkill):
 
         Rate limits are applied based on the api_key_provider setting:
             - 'agent_owner': uses agent-specific configuration.
-            - 'platform_hosted': uses system-wide configuration.
+            - 'platform': uses system-wide configuration.
         """
         try:
             user_id = context.user_id
@@ -131,7 +131,7 @@ class VeniceImageBaseTool(IntentKitSkill):
                         user_id, limit_num, limit_min
                     )
 
-            elif skillConfig.api_key_provider == "platform_hosted":
+            elif skillConfig.api_key_provider == "platform":
                 system_limit_num = self.skill_store.get_system_config(
                     f"{self.category}_rate_limit_number"
                 )

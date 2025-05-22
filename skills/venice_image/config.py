@@ -8,7 +8,7 @@ class VeniceImageConfig(BaseModel):
 
     api_key_provider: str = Field(
         default="agent_owner",
-        description="Provider of the API Key, could be agent_owner or platform_hosted",
+        description="Provider of the API Key, could be agent_owner or platform",
     )
     safe_mode: bool = Field(
         default=True,
