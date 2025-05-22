@@ -1896,6 +1896,12 @@ class AgentDataTable(Base):
         nullable=True,
         comment="Twitter self-key userinfo last refresh time",
     )
+    twitter_is_verified = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Whether the Twitter account is verified",
+    )
     telegram_id = Column(String, nullable=True, comment="Telegram user ID")
     telegram_username = Column(String, nullable=True, comment="Telegram username")
     telegram_name = Column(String, nullable=True, comment="Telegram display name")
@@ -1987,6 +1993,13 @@ class AgentData(BaseModel):
         PydanticField(
             default=None,
             description="Twitter self-key userinfo last refresh time",
+        ),
+    ]
+    twitter_is_verified: Annotated[
+        bool,
+        PydanticField(
+            default=False,
+            description="Whether the Twitter account is verified",
         ),
     ]
     telegram_id: Annotated[
@@ -2268,6 +2281,12 @@ class AgentQuotaTable(Base):
     twitter_limit_daily = Column(BigInteger, default=99999999)
     last_twitter_time = Column(DateTime(timezone=True), default=None, nullable=True)
     free_income_daily = Column(Numeric(22, 4), default=0)
+    avg_action_cost = Column(Numeric(22, 4), default=0)
+    min_action_cost = Column(Numeric(22, 4), default=0)
+    max_action_cost = Column(Numeric(22, 4), default=0)
+    low_action_cost = Column(Numeric(22, 4), default=0)
+    medium_action_cost = Column(Numeric(22, 4), default=0)
+    high_action_cost = Column(Numeric(22, 4), default=0)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -2373,6 +2392,30 @@ class AgentQuota(BaseModel):
     free_income_daily: Annotated[
         Decimal,
         PydanticField(default=0, description="Daily free income amount"),
+    ]
+    avg_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Average cost per action"),
+    ]
+    max_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Maximum cost per action"),
+    ]
+    min_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Minimum cost per action"),
+    ]
+    high_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="High expected action cost"),
+    ]
+    medium_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Medium expected action cost"),
+    ]
+    low_action_cost: Annotated[
+        Decimal,
+        PydanticField(default=0, description="Low expected action cost"),
     ]
     created_at: Annotated[
         datetime,

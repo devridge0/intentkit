@@ -502,7 +502,10 @@ async def execute_agent(
         ):
             payer = agent.owner
         user_account = await CreditAccount.get_or_create(OwnerType.USER, payer)
-        if not user_account.has_sufficient_credits(1):
+        avg_count = 1
+        if quota and quota.avg_action_cost > 0:
+            avg_count = quota.avg_action_cost
+        if not user_account.has_sufficient_credits(avg_count):
             error_message_create = ChatMessageCreate(
                 id=str(XID()),
                 agent_id=input.agent_id,
@@ -633,6 +636,7 @@ async def execute_agent(
                         user_id=input.user_id,
                         author_id=input.agent_id,
                         author_type=AuthorType.AGENT,
+                        model=agent.model,
                         thread_type=input.author_type,
                         reply_to=input.id,
                         message=msg.content,
@@ -724,6 +728,7 @@ async def execute_agent(
                     user_id=input.user_id,
                     author_id=input.agent_id,
                     author_type=AuthorType.SKILL,
+                    model=agent.model,
                     thread_type=input.author_type,
                     reply_to=input.id,
                     message="",
