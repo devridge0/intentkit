@@ -1,9 +1,12 @@
+import logging
 from typing import Type
 
 from pydantic import BaseModel, Field
 
 from abstracts.skill import SkillStoreABC
 from skills.base import IntentKitSkill
+
+logger = logging.getLogger(__name__)
 
 
 class CookieFunBaseTool(IntentKitSkill):

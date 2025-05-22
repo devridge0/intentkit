@@ -2,7 +2,7 @@ from typing import TypedDict
 
 from abstracts.skill import SkillStoreABC
 from skills.base import SkillConfig, SkillState
-from skills.cookiefun.base import CookieFunBaseTool
+from skills.cookiefun.base import CookieFunBaseTool, logger
 from skills.cookiefun.get_account_details import GetAccountDetails
 from skills.cookiefun.get_account_feed import GetAccountFeed
 from skills.cookiefun.get_account_smart_followers import GetAccountSmartFollowers
@@ -47,7 +47,9 @@ async def get_skills(
             available_skills.append(skill_name)
 
     # Get each skill using the cached getter
-    return [get_cookiefun_skill(name, store) for name in available_skills]
+    skills = [get_cookiefun_skill(name, store) for name in available_skills]
+    logger.info("Returning %d CookieFun skills", len(skills))
+    return skills
 
 
 def get_cookiefun_skill(
@@ -55,6 +57,7 @@ def get_cookiefun_skill(
     store: SkillStoreABC,
 ) -> CookieFunBaseTool:
     """Get a CookieFun skill by name."""
+
     if name not in _cache:
         if name == "get_sectors":
             _cache[name] = GetSectors(skill_store=store)
@@ -67,6 +70,7 @@ def get_cookiefun_skill(
         elif name == "get_account_feed":
             _cache[name] = GetAccountFeed(skill_store=store)
         else:
+            logger.error("Unknown CookieFun skill: %s", name)
             raise ValueError(f"Unknown CookieFun skill: {name}")
 
     return _cache[name]
